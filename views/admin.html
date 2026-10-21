@@ -4,99 +4,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>後台管理</title>
+<title>KKNews 後台管理</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="stylesheet" href="/assets/ui.css">
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#1c1b19;--muted:#8a857c;--line:#e4dfd6}
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:#f3f0ea;color:var(--ink);margin:0}
-  header{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px;background:#ffffffd9;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-  header h1{margin:0;font-size:18px;margin-right:auto}
-  .badge{background:var(--ink);color:#fff;border-radius:99px;padding:3px 10px;font-size:12px;margin-left:8px;font-weight:600}
-  main{padding:24px;max-width:1500px;margin:0 auto}
-  input,textarea{width:100%;padding:10px 12px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:14px;resize:vertical;background:#fff;transition:.2s}
-  input:focus,textarea:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
-  button{padding:9px 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
-  button:hover{opacity:.88;transform:translateY(-1px)}
-  button.s{background:#fff;color:var(--ink);border:1px solid var(--line)}
-  button.s.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  button.d{background:#fff;color:#b42318;border:1px solid #f3c9c5}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-  .item{background:#fff;border-radius:18px;padding:16px;box-shadow:0 8px 28px #0000000f;transition:.2s}
-  .item:hover{box-shadow:0 14px 36px #0000001c}
-  .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px;word-break:break-all;line-height:1.5}
-  .meta b{color:var(--ink);font-size:14px}
-  canvas{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
-  .row{display:flex;gap:8px;margin-top:12px}
-  .row button{flex:1}
-  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:80px 0}
-  .sz{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
-  .sz input{width:80px;margin:0;padding:8px 10px}
-  .hide{display:none!important}
-  .u-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px}
-  .u-card{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px #0000000f;display:flex;flex-direction:column;gap:12px}
-  .u-head{display:flex;align-items:center;gap:14px}
-  .u-av{width:52px;height:52px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none;object-fit:cover;border:2px solid var(--line)}
-  .u-title{flex:1;min-width:0}
-  .u-title b{font-size:16px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .u-title span{font-size:13px;color:var(--muted)}
-  .u-photos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#f8f6f2;padding:12px 10px;border-radius:14px;border:1px solid var(--line)}
-  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
-  .u-pbox small{font-size:11px;font-weight:700;color:var(--muted)}
-  .u-pbox img{width:82px;height:82px;border-radius:12px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
-  .u-pbox .no-pic{width:82px;height:82px;border-radius:12px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:11px;color:var(--muted);background:#fff}
-  .u-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f6f3ee;padding:10px 14px;border-radius:12px;text-align:center}
-  .u-stat b{font-size:20px;display:block;color:var(--ink)}
-  .u-stat small{font-size:12px;color:var(--muted)}
-  .u-sec{font-size:12.5px;color:var(--muted);line-height:1.7;word-break:break-all;border-top:1px solid var(--line);padding-top:10px}
-  .u-sec-title{font-size:12px;font-weight:700;color:var(--ink);background:#f3f0ea;display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
-  .u-sec strong{color:var(--ink)}
-  .u-sec a{color:#0b57d0;text-decoration:none;font-weight:600}.u-sec a:hover{text-decoration:underline}
-  .mini-photos{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:#f8f6f2;border-radius:10px}
-  .mini-photos .mp{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
-  .mini-photos img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
-  /* 後台上方 Supabase 全開放狀態資訊卡（還原 Supabase Primary Database 面板 + 即時 API 數據） */
-  .status-bar{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:22px;align-items:stretch}
-  .db-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;min-width:320px;box-shadow:0 6px 20px #0000000a;display:flex;flex-direction:column;justify-content:space-between}
+  header{position:sticky;top:0;z-index:10;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 24px;background:#ffffffd9;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .head-left{display:flex;align-items:center;gap:12px;margin-right:auto}
+  header h1{margin:0;font-size:17px;display:flex;align-items:center;gap:8px}
+  .badge{background:var(--ink);color:#fff;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600}
+  main{padding:22px 24px;max-width:1500px;margin:0 auto}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+  .search-input{flex:1;min-width:220px;max-width:360px;padding:9px 14px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;background:#fff}
+  .search-input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
+  .sz{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:5px 10px}
+  .sz input{width:68px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit;font-size:13.5px}
+
+  /* 狀態列 */
+  .status-bar{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;align-items:stretch}
+  .db-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;min-width:min(300px,100%);box-shadow:0 6px 20px #0000000a;display:flex;flex-direction:column;justify-content:space-between}
   .db-top{display:flex;align-items:flex-start;gap:14px}
   .db-ico{width:42px;height:42px;border-radius:11px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
   .db-ico.err{background:#ef4444;color:#fff}
   .db-ico svg{width:22px;height:22px}
   .db-title{flex:1;min-width:0}
   .db-title b{font-size:15px;display:block;color:var(--ink);margin-bottom:2px}
-  .db-title span{font-size:13px;color:#64748b;display:block;line-height:1.4}
+  .db-title span{font-size:12.5px;color:var(--muted);display:block;line-height:1.4}
   .jp-flag{width:34px;height:24px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
   .jp-flag::after{content:"";width:11px;height:11px;border-radius:50%;background:#bc002d}
-  .db-foot{border-top:1px solid #f1f5f9;margin-top:12px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#64748b;gap:8px;flex-wrap:wrap}
+  .db-foot{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--muted);gap:8px;flex-wrap:wrap}
   .db-foot strong{color:var(--ink);font-weight:600}
-  .api-card{flex:1;min-width:320px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;box-shadow:0 6px 20px #0000000a;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;align-items:center}
-  .api-metric{padding:8px 12px;background:#f8f6f2;border-radius:12px;border:1px solid var(--line)}
+  .api-card{flex:1;min-width:min(320px,100%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;box-shadow:0 6px 20px #0000000a;display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;align-items:center}
+  .api-metric{padding:8px 12px;background:var(--paper);border-radius:12px;border:1px solid var(--line)}
   .api-metric small{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
-  .api-metric b{font-size:16px;color:var(--ink);display:block;word-break:break-all}
-  .api-metric span{font-size:11px;color:#067647;font-weight:600}
-  .sync-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:#f6f3ee;border:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:600}
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px #10b98128;animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
-  .u-badge{font-size:11.5px;padding:3px 9px;border-radius:99px;font-weight:700;background:#e8f6ee;color:#067647;border:1px solid #a6e0c2;white-space:nowrap}
-  .u-badge.warn{background:#fef3c7;color:#b45309;border-color:#fde68a}
+  .api-metric b{font-size:15.5px;color:var(--ink);display:block;word-break:break-all}
+  .api-metric span{font-size:11px;color:var(--ok);font-weight:600}
+
+  /* 投稿卡片網格 */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:20px}
+  .item{background:#fff;border-radius:18px;padding:16px;border:1px solid var(--line);box-shadow:0 8px 28px #0000000a;transition:.2s;display:flex;flex-direction:column}
+  .item:hover{box-shadow:0 14px 36px #00000016}
+  .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px;word-break:break-all;line-height:1.55}
+  .meta-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .meta-head b{color:var(--ink);font-size:14px}
+  canvas{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
+  .item textarea,.item input{width:100%;padding:9px 12px;margin-top:8px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;resize:vertical;background:#fff}
+  .item textarea:focus,.item input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
+  .row{display:flex;gap:8px;margin-top:12px}
+  .row .btn{flex:1}
+
+  /* 帳號網格 */
+  .u-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(380px,100%),1fr));gap:18px}
+  .u-card{background:#fff;border-radius:18px;padding:18px 20px;border:1px solid var(--line);box-shadow:0 8px 28px #0000000a;display:flex;flex-direction:column;gap:12px}
+  .u-head{display:flex;align-items:center;gap:14px}
+  .u-av{width:48px;height:48px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none;object-fit:cover;border:2px solid var(--line)}
+  .u-title{flex:1;min-width:0}
+  .u-title b{font-size:15.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .u-title span{font-size:12.5px;color:var(--muted)}
+  .u-photos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--paper);padding:12px 10px;border-radius:14px;border:1px solid var(--line)}
+  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+  .u-pbox small{font-size:11px;font-weight:700;color:var(--muted)}
+  .u-pbox img{width:76px;height:76px;border-radius:10px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
+  .u-pbox .no-pic{width:76px;height:76px;border-radius:10px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:11px;color:var(--muted);background:#fff;padding:4px}
+  .u-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--paper);padding:10px 14px;border-radius:12px;text-align:center}
+  .u-stat b{font-size:19px;display:block;color:var(--ink)}
+  .u-stat small{font-size:12px;color:var(--muted)}
+  .u-sec{font-size:12.5px;color:var(--muted);line-height:1.65;word-break:break-all;border-top:1px solid var(--line);padding-top:10px}
+  .u-sec-title{font-size:11.5px;font-weight:700;color:var(--ink);background:var(--paper);border:1px solid var(--line);display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
+  .u-sec strong{color:var(--ink)}
+  .mini-photos{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+  .mini-photos .mp{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+  .mini-photos img{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
+  .lightbox-img{max-width:min(90vw,540px);max-height:80vh;border-radius:16px;display:block;box-shadow:0 24px 70px #0008}
 </style>
 </head>
 <body>
 <header>
-  <h1 id="pageTitle">投稿管理<span class="badge" id="count">0</span></h1>
-  <div class="sync-pill" title="系統每 3 秒自動同步最新投稿、帳號資訊與 Supabase 即時狀態">
-    <span class="sync-dot" id="syncDot"></span>
-    <span id="syncText">即時自動同步中</span>
+  <div class="head-left">
+    <div class="brand"><img src="/icon.svg" alt="">KKNEWS <small>ADMIN</small></div>
+    <h1><span id="pageTitle">投稿管理</span><span class="badge" id="count">0</span></h1>
   </div>
-  <button id="toggleUsers" class="s">已登入帳號 (<span id="uCount">0</span>)</button>
-  <label class="sz" id="szWrap">文字大小 <input id="size" type="number" min="24" max="200" step="2"></label>
-  <button id="reload" class="s">立即重整</button>
-  <button id="dlAll">全部下載 ZIP</button>
-  <button id="logout" class="s">登出</button>
+  <button type="button" id="toggleUsers" class="btn ghost sm">已登入帳號 (<span id="uCount">0</span>)</button>
+  <button type="button" id="reload" class="btn ghost sm">重新整理</button>
+  <button type="button" id="dlAll" class="btn sm">全部下載 ZIP</button>
+  <button type="button" id="logout" class="btn ghost sm">登出</button>
 </header>
+
 <main>
-  <!-- 後台全開放 Supabase 即時狀態面板 -->
+  <!-- 後台 Supabase 即時狀態面板 -->
   <div class="status-bar" id="adminStatusBar">
     <div class="db-card">
       <div class="db-top">
@@ -105,68 +100,101 @@
         </div>
         <div class="db-title">
           <b id="dbName">Primary Database</b>
-          <span id="dbRegion">Northeast Asia (Tokyo)</span>
-          <span id="dbSpec">ap-northeast-1 · t3.nano</span>
+          <span id="dbRegion">連線檢查中…</span>
+          <span id="dbSpec">—</span>
         </div>
         <div class="jp-flag" title="Tokyo (ap-northeast-1)"></div>
       </div>
       <div class="db-foot">
-        <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
-        <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
-        <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
-        <span><span id="stConns">—/60</span> conns</span>
+        <span><strong>CPU</strong> <span id="stCpu">—</span></span> ·
+        <span><strong>Disk</strong> <span id="stDisk">—</span></span> ·
+        <span><strong>RAM</strong> <span id="stRam">—</span></span> ·
+        <span><span id="stConns">—</span> conns</span>
       </div>
     </div>
 
     <div class="api-card">
       <div class="api-metric">
-        <small>Supabase 專案與狀態</small>
+        <small>Supabase 專案 ID</small>
         <b id="stRef">—</b>
-        <span id="stHealth">● REST & Auth 正常</span>
+        <span id="stHealth">檢查中…</span>
       </div>
       <div class="api-metric">
-        <small>API 延遲 / 快取命中</small>
+        <small>API 回應延遲</small>
         <b id="stLatency">— ms</b>
-        <span id="stCache">快取命中 —%</span>
+        <span id="stCache">快取命中 —</span>
       </div>
       <div class="api-metric">
-        <small>真實 RAM / Disk 用量</small>
-        <b id="stRealRam">— / — MB</b>
-        <span id="stRealDisk">Disk — MB / — GB</span>
-      </div>
-      <div class="api-metric">
-        <small>DB 大小 / WAL 日誌</small>
+        <small>資料庫實際佔用</small>
         <b id="stDbSize">— MB</b>
-        <span id="stWalSize">WAL — MB</span>
+        <span>PostgreSQL</span>
       </div>
       <div class="api-metric">
-        <small>SQL 查詢 / 交易 Commit</small>
-        <b id="stQueries">— 次</b>
-        <span id="stXact">Commit — / Rollback —</span>
-      </div>
-      <div class="api-metric">
-        <small>資料列讀寫 / 網路流量</small>
-        <b id="stTuples">寫入 — 筆</b>
-        <span id="stNet">⬇ — MB / ⬆ — MB</span>
-      </div>
-      <div class="api-metric">
-        <small>系統負載 (1m/5m/15m)</small>
-        <b id="stLoad">— / — / —</b>
-        <span id="stCounts">貼文 — 篇 · 帳號 — 人</span>
+        <small>資料表／Auth 統計</small>
+        <b id="stCounts">—</b>
+        <span id="stNodeMem">Server RAM —</span>
       </div>
     </div>
+  </div>
+
+  <!-- 搜尋與工具列 -->
+  <div class="toolbar">
+    <input type="search" id="searchInput" class="search-input" placeholder="搜尋諺語、作者、姓名、信箱或 IP…">
+    <label class="sz" id="szWrap">卡片字級 <input id="size" type="number" min="24" max="200" step="2"></label>
   </div>
 
   <div id="grid" class="grid"></div>
   <div id="usersGrid" class="u-grid hide"></div>
 </main>
 
+<!-- 照片放大燈箱 -->
+<div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
+  <img id="lightboxImg" class="lightbox-img" alt="放大預覽">
+</div>
+
+<!-- 刪除確認彈窗 -->
+<div id="confirmModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal" style="max-width:360px">
+    <h3 id="confirmTitle">確定要刪除這筆投稿？</h3>
+    <p class="sub" style="text-align:center;margin-bottom:10px">刪除後將無法復原。</p>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="cancelDelBtn">取消</button>
+      <button type="button" class="btn danger" id="confirmDelBtn">確定刪除</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hide" role="status" aria-live="polite"></div>
+
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let rows = [], users = [], userMap = {}, showUsers = false;
-let lastRowsSig = "", lastUsersSig = "", isLoading = false;
+let rows = [], users = [], userMap = {}, photoCache = {}, showUsers = false, searchQuery = "", pendingDeleteId = null;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
+
+function toast(msg, isErr = false) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast" + (isErr ? " err" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add("hide"), 2800);
+}
+
+/* 安全網址檢查：只允許 https:// 與 data:image/，徹底阻擋 javascript: 注入 */
+function safeImgSrc(url) {
+  const s = String(url || "").trim();
+  if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/i.test(s)) return s;
+  if (/^https:\/\/[^\s"'<>]+$/i.test(s)) return s;
+  return "";
+}
+
+function openLightbox(src) {
+  const safe = safeImgSrc(src);
+  if (!safe) return;
+  $("lightboxImg").src = safe;
+  $("lightbox").classList.remove("hide");
+}
+$("lightbox").onclick = () => { $("lightbox").classList.add("hide"); $("lightboxImg").src = ""; };
 
 /* ---------- 卡片繪製：768x1024 米白圓角卡 + 黑色粗體字 ---------- */
 const FONT = '"Reggae One","Noto Serif TC",serif';
@@ -181,8 +209,7 @@ function drawCard(canvas, text, author) {
   ctx.beginPath(); ctx.roundRect(28, 4, 692, 996, 44); ctx.fill();
   ctx.restore();
   const CARD_X = 28, CARD_W = 692;
-  const size = FONT_SIZE;                   // 後台可調的文字大小
-  // 卡片左右各留一個字寬 → 每行可用寬度 = 卡片寬 - 2 個字；最多 8 字
+  const size = FONT_SIZE;
   const PER_LINE = Math.max(1, Math.min(8, Math.floor((CARD_W - 2 * size) / size)));
   ctx.font = `${size}px ${FONT}`;
   const lines = [];
@@ -194,7 +221,7 @@ function drawCard(canvas, text, author) {
   const lh = size * 1.35, total = lines.length * lh, top = 500 - total / 2;
   let widest = 0;
   lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
-  const x = CARD_X + (CARD_W - widest) / 2;  // 以卡片中心置中
+  const x = CARD_X + (CARD_W - widest) / 2;
   ctx.fillStyle = "#000"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
   lines.forEach((l, i) => ctx.fillText(l, x, top + lh * i + lh / 2));
   const as = 32;
@@ -203,89 +230,42 @@ function drawCard(canvas, text, author) {
 }
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
 
-/* ---------- 即時狀態與自動重整 ---------- */
-function applyAdminStatus(st) {
-  if (!st) return;
-  $("dbIco").classList.toggle("err", !st.ok);
-  $("dbName").textContent = st.dbName || "Primary Database";
-  $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
-  $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
-  $("stCpu").textContent = (st.cpuPct ?? "—") + "%";
-  $("stDisk").textContent = (st.diskPct ?? "—") + "%";
-  $("stRam").textContent = (st.ramPct ?? "—") + "%";
-  $("stConns").textContent = `${st.conns ?? "—"}/${st.maxConns ?? 60}`;
-  $("stRef").textContent = st.projectRef || "—";
-  $("stHealth").textContent = st.ok ? "● PostgreSQL 100% 即時連線" : "● 連線異常";
-  $("stHealth").style.color = st.ok ? "#067647" : "#b42318";
-  $("stLatency").textContent = (st.latencyMs ?? "—") + " ms";
-  $("stCache").textContent = `快取命中 ${st.cacheHitPct ?? "—"}%`;
-  $("stRealRam").textContent = `${st.memUsedMb ?? "—"} / ${st.memTotalMb ?? "—"} MB`;
-  $("stRealDisk").textContent = `Disk ${st.diskUsedMb ?? "—"} MB / ${st.diskTotalGb ?? "—"} GB`;
-  $("stDbSize").textContent = (st.dbSizeMb ?? "—") + " MB";
-  $("stWalSize").textContent = `WAL ${st.walSizeMb ?? "—"} MB`;
-  $("stQueries").textContent = `${st.totalQueries ?? "—"} 條查詢`;
-  $("stXact").textContent = `Commit ${st.xactCommit ?? "—"} · Rollback ${st.xactRollback ?? "—"}`;
-  $("stTuples").textContent = `+${st.tupInserted ?? 0} / 改${st.tupUpdated ?? 0} / 刪${st.tupDeleted ?? 0}`;
-  $("stNet").textContent = `⬇ ${st.netRxMb ?? "—"} MB · ⬆ ${st.netTxMb ?? "—"} MB`;
-  $("stLoad").textContent = `${st.load1 ?? "—"} / ${st.load5 ?? "—"} / ${st.load15 ?? "—"}`;
-  $("stCounts").textContent = `貼文 ${st.proverbsCount ?? rows.length} 篇 · 帳號 ${st.usersCount ?? users.length} 人`;
-}
-
-function updateHeaderCounts() {
-  $("toggleUsers").classList.toggle("active", showUsers);
-  $("toggleUsers").innerHTML = showUsers
-    ? `← 返回投稿卡片 (${rows.length})`
-    : `已登入帳號 (<span id="uCount">${users.length}</span>)`;
-  $("pageTitle").innerHTML = (showUsers ? "已登入帳號列表" : "投稿管理") + `<span class="badge" id="count">${showUsers ? users.length : rows.length}</span>`;
-}
-
-function isEditingCard() {
-  const a = document.activeElement;
-  return a && $("grid").contains(a) && (a.tagName === "TEXTAREA" || a.tagName === "INPUT");
-}
-
-async function load(forceRender = false) {
-  if (isLoading) return;
-  isLoading = true;
-  try {
-    const [rp, ru, rs] = await Promise.all([
-      fetch("/api/admin/proverbs"),
-      fetch("/api/admin/users"),
-      fetch("/api/admin/status"),
-    ]);
-    if (rp.status === 404 || ru.status === 404) { location.reload(); return; }
-    const nextRows = rp.ok ? await rp.json() : rows;
-    const nextUsers = ru.ok ? await ru.json() : users;
-    if (rs.ok) applyAdminStatus(await rs.json());
-
-    rows = nextRows;
-    users = nextUsers;
-    userMap = {};
-    for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
-
-    updateHeaderCounts();
-    const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
-    $("syncText").textContent = `即時自動重整 · ${nowStr}`;
-
-    const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|");
-    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}:${u.geo ? u.geo.lat + "," + u.geo.lng : ""}`).join("|");
-
-    if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
-      lastRowsSig = rowsSig;
-      await render();
-    }
-    if (forceRender || usersSig !== lastUsersSig) {
-      lastUsersSig = usersSig;
-      renderUsers();
-    }
-  } catch {} finally {
-    isLoading = false;
+/* ---------- 資料載入 ---------- */
+async function load() {
+  const [rp, ru, rs] = await Promise.all([
+    fetch("/api/admin/proverbs"),
+    fetch("/api/admin/users"),
+    fetch("/api/admin/status"),
+  ]);
+  if (rp.status === 404 || ru.status === 404) return location.reload();
+  if (!rp.ok || !ru.ok) toast("部分資料載入失敗，請重試", true);
+  rows = rp.ok ? await rp.json() : [];
+  users = ru.ok ? await ru.json() : [];
+  const st = rs.ok ? await rs.json() : null;
+  if (st) {
+    $("dbIco").classList.toggle("err", !st.ok);
+    $("dbName").textContent = st.dbName || "Primary Database";
+    $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
+    $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
+    $("stCpu").textContent = st.cpuPct != null ? st.cpuPct + "%" : "—";
+    $("stDisk").textContent = st.diskPct != null ? st.diskPct + "%" : "—";
+    $("stRam").textContent = st.ramPct != null ? st.ramPct + "%" : "—";
+    $("stConns").textContent = st.conns != null ? `${st.conns}/${st.maxConns}` : "—";
+    $("stRef").textContent = st.projectRef || "—";
+    $("stHealth").textContent = st.ok ? "● REST & Auth 連線正常" : "● 連線異常";
+    $("stHealth").style.color = st.ok ? "var(--ok)" : "var(--err)";
+    $("stLatency").textContent = st.latencyMs != null ? st.latencyMs + " ms" : "—";
+    $("stCache").textContent = st.cacheHitPct != null ? `快取命中 ${st.cacheHitPct}%` : "快取命中 —";
+    $("stDbSize").textContent = st.dbSizeMb != null ? st.dbSizeMb + " MB" : "— MB";
+    $("stCounts").textContent = `${st.proverbsCount ?? 0} 篇 / ${st.usersCount ?? 0} 人`;
+    $("stNodeMem").textContent = `Server RAM ${st.nodeRssMb ?? "—"} MB`;
   }
+  userMap = {};
+  for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
+  $("uCount").textContent = users.length;
+  render();
+  renderUsers();
 }
-
-// 每 3 秒自動即時整理與重整所有資訊；切換回分頁時也立即同步
-setInterval(() => load(false), 3000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) load(false); });
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fname = r => `${r.id}_${(r.user_email || "").split("@")[0]}.png`;
@@ -294,73 +274,164 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 function fmtGeo(g) {
-  if (!g || g.lat == null || g.lng == null) return "未授權或未提供位置";
+  if (!g || typeof g.lat !== "number" || typeof g.lng !== "number") return "未授權或未提供位置";
   const url = `https://www.google.com/maps?q=${encodeURIComponent(g.lat + "," + g.lng)}`;
-  return `<a href="${url}" target="_blank" rel="noopener">${esc(g.lat)}, ${esc(g.lng)}</a>（精準度 ±${esc(g.accuracy || 0)}m）`;
+  return `<a href="${url}" target="_blank" rel="noopener">${esc(g.lat)}, ${esc(g.lng)}</a>（±${esc(g.accuracy || 0)}m）`;
 }
+
+async function fetchUserPhotos(uid) {
+  if (!uid) return { front: "", right: "", left: "" };
+  if (photoCache[uid]) return photoCache[uid];
+  const r = await fetch(`/api/admin/users/${encodeURIComponent(uid)}/photos`);
+  if (!r.ok) { toast("照片讀取失敗", true); return { front: "", right: "", left: "" }; }
+  const d = await r.json();
+  photoCache[uid] = d;
+  return d;
+}
+
 function unpackRow(r) {
   let name = r.user_name || "";
   let meta = r.user_meta || {};
   if (name.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(name);
-      name = parsed.name || "";
-      meta = { ...parsed, ...meta };
-    } catch {}
+    try { const parsed = JSON.parse(name); name = parsed.name || ""; meta = { ...parsed, ...meta }; } catch {}
   }
   const u = userMap[r.user_id] || userMap[r.user_email] || {};
   return {
     ...r,
+    uid: r.user_id || u.id || "",
     display_name: name || u.name || (r.user_email || "").split("@")[0],
     device_info: r.device_info || meta.device_info || u.last_device || "未記錄裝置",
+    ip_address: r.ip_address || meta.ip_address || u.last_ip || "",
+    google_sub: r.google_sub || meta.google_sub || u.google_sub || "",
+    given_name: meta.given_name || u.given_name || "",
+    family_name: meta.family_name || u.family_name || "",
+    picture: safeImgSrc(r.user_avatar || meta.picture || u.picture || ""),
+    has_photos: Boolean(u.has_photos),
+    hd: meta.hd || u.hd || "",
+    locale: meta.locale || u.locale || "",
+    timezone: meta.timezone || u.timezone || "",
+    geo: meta.geo || u.geo || null,
+    gpu: meta.gpu || u.gpu || "",
+    cores: meta.cores || u.cores || "",
+    memory: meta.memory || u.memory || "",
+    battery: meta.battery || u.battery || "",
+    network: meta.network || u.network || "",
   };
 }
 
-/* 投稿管理：保持乾淨簡潔（詳細收集的資訊全部整理至「已登入帳號」分頁中顯示） */
+function matchSearch(fields) {
+  if (!searchQuery) return true;
+  const q = searchQuery.toLowerCase();
+  return fields.some(f => String(f || "").toLowerCase().includes(q));
+}
+
 async function render() {
+  const filtered = rows.map(unpackRow).filter(r => matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info]));
+  if (!showUsers) $("count").textContent = filtered.length;
   const grid = $("grid"); grid.innerHTML = "";
-  if (!rows.length) { grid.innerHTML = '<div class="empty">目前還沒有投稿</div>'; return; }
-  await ensureFont(rows.map(r => r.content + r.author).join(""));
-  for (const raw of rows) {
-    const r = unpackRow(raw);
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty">${searchQuery ? "找不到符合搜尋條件的投稿" : "目前還沒有投稿"}</div>`;
+    return;
+  }
+  await ensureFont(filtered.map(r => r.content + r.author).join(""));
+  for (const r of filtered) {
     const el = document.createElement("div"); el.className = "item";
-    el.innerHTML = `<div class="meta">
-        <b>#${r.id} · ${esc(r.display_name)}</b><br>
-        📧 ${esc(r.user_email)} · 🕒 ${new Date(r.created_at).toLocaleString()}<br>
-        💻 裝置／瀏覽器：${esc(r.device_info)}
+    const hw = [
+      r.gpu ? `GPU: ${esc(r.gpu)}` : "",
+      r.cores ? `CPU: ${esc(r.cores)}` : "",
+      r.memory ? `RAM: ${esc(r.memory)}` : "",
+      r.battery ? `電量: ${esc(r.battery)}` : "",
+      r.network ? `網路: ${esc(r.network)}` : "",
+    ].filter(Boolean).join(" · ");
+
+    el.innerHTML = `
+      <div class="meta">
+        <div class="meta-head">
+          <b>#${r.id} · ${esc(r.display_name)}</b>
+          <span>${new Date(r.created_at).toLocaleString()}</span>
+        </div>
+        <div class="mini-photos">
+          <div class="mp">
+            ${r.picture ? `<img data-zoom="${esc(r.picture)}" src="${esc(r.picture)}" alt="Google 頭貼" title="點擊放大 Google 頭貼" referrerpolicy="no-referrer">` : ""}
+            <span><b>Google 帳號</b><br>${esc(r.user_email)}</span>
+          </div>
+          <div class="mp selfie-slot" style="margin-left:auto">
+            ${r.has_photos ? `<button type="button" class="btn ghost sm load-photos">載入實拍 (3張)</button>` : `<span>未拍攝實拍照</span>`}
+          </div>
+        </div>
+        <div class="u-sec">
+          <span class="u-sec-title">Google 帳號原始資料</span><br>
+          姓名：<strong>${esc(r.display_name)}</strong>（姓：${esc(r.family_name || "—")} / 名：${esc(r.given_name || "—")}）<br>
+          Google ID：${esc(r.google_sub || "—")} · 網域：${esc(r.hd || "—")}
+        </div>
+        <div class="u-sec" style="margin-top:6px">
+          <span class="u-sec-title">環境與定位資訊</span><br>
+          裝置／瀏覽器：<strong>${esc(r.device_info)}</strong><br>
+          GPS 位置：${fmtGeo(r.geo)}<br>
+          IP 位址：<strong>${esc(r.ip_address || "—")}</strong> · 時區/語系：${esc(r.timezone || "—")} / ${esc(r.locale || "—")}
+          ${hw ? `<br>硬體細節：${hw}` : ""}
+        </div>
       </div>
-      <canvas></canvas><textarea rows="2"></textarea><input placeholder="來源">
-      <div class="row"><button class="dl">下載 PNG</button><button class="d del">刪除</button></div>`;
+      <canvas></canvas>
+      <textarea rows="2" aria-label="諺語內容"></textarea>
+      <input placeholder="來源" aria-label="來源人名">
+      <div class="row">
+        <button type="button" class="btn sm dl">下載 PNG</button>
+        <button type="button" class="btn danger sm del">刪除</button>
+      </div>`;
+
+    const loadBtn = el.querySelector(".load-photos");
+    if (loadBtn) {
+      loadBtn.onclick = async () => {
+        loadBtn.disabled = true; loadBtn.textContent = "載入中…";
+        const p = await fetchUserPhotos(r.uid);
+        const slot = el.querySelector(".selfie-slot");
+        slot.innerHTML = "";
+        for (const [label, src] of [["正面", p.front], ["向右", p.right], ["向左", p.left]]) {
+          const safe = safeImgSrc(src);
+          if (safe) {
+            const im = document.createElement("img");
+            im.src = safe; im.alt = label; im.title = `實拍：${label}（點擊放大）`;
+            im.onclick = () => openLightbox(safe);
+            slot.appendChild(im);
+          }
+        }
+        if (!slot.children.length) slot.textContent = "無實拍照";
+      };
+    }
+
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
     ta.value = r.content; au.value = r.author;
     const redraw = async () => { await ensureFont(ta.value + au.value); drawCard(cv, ta.value, au.value); };
-    ta.oninput = au.oninput = redraw; drawCard(cv, r.content, r.author);
+    ta.oninput = au.oninput = redraw;
+    drawCard(cv, r.content, r.author);
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
-    el.querySelector(".del").onclick = async () => {
-      if (!confirm("確定刪除？")) return;
-      await fetch("/api/admin/proverbs/" + r.id, { method: "DELETE", headers: H });
-      load(true);
+    el.querySelector(".del").onclick = () => {
+      pendingDeleteId = r.id;
+      $("confirmModal").classList.remove("hide");
     };
     grid.appendChild(el);
   }
 }
 
-/* 已登入帳號：集中顯示所有收集的資訊（Google 帳號原始資料 + 3 張相機核實照 + GPS 定位 + 硬體與環境資訊 + 登入/貼文統計） */
 function renderUsers() {
+  const filtered = users.filter(u => matchSearch([u.name, u.email, u.last_ip, u.last_device, u.google_sub]));
+  if (showUsers) $("count").textContent = filtered.length;
   const ug = $("usersGrid"); ug.innerHTML = "";
-  if (!users.length) { ug.innerHTML = '<div class="empty">目前還沒有任何登入過的帳號</div>'; return; }
-  for (const u of users) {
+  if (!filtered.length) {
+    ug.innerHTML = `<div class="empty">${searchQuery ? "找不到符合搜尋條件的帳號" : "目前還沒有任何登入過的帳號"}</div>`;
+    return;
+  }
+  for (const u of filtered) {
     const el = document.createElement("div"); el.className = "u-card";
     const displayName = u.name || (u.email || "").split("@")[0] || "未命名";
-    const avHtml = u.picture
-      ? `<img class="u-av" src="${esc(u.picture)}" alt="" referrerpolicy="no-referrer">`
+    const pic = safeImgSrc(u.picture);
+    const avHtml = pic
+      ? `<img class="u-av" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
       : `<div class="u-av">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
     const selfieAt = u.selfie_at ? new Date(u.selfie_at).toLocaleString() : "";
-    const verifiedBadge = u.selfie
-      ? `<span class="u-badge">✓ 已完成 3 角度實拍核實</span>`
-      : `<span class="u-badge warn">尚未完成實拍</span>`;
 
     el.innerHTML = `
       <div class="u-head">
@@ -369,71 +440,128 @@ function renderUsers() {
           <b>${esc(displayName)}</b>
           <span>${esc(u.email)}</span>
         </div>
-        ${verifiedBadge}
+        ${u.has_photos ? `<button type="button" class="btn ghost sm u-load-photos">顯示實拍照片</button>` : ""}
       </div>
       <div class="u-photos">
         <div class="u-pbox">
-          <small>🔹 Google 頭貼</small>
-          ${u.picture ? `<img src="${esc(u.picture)}" title="點擊放大" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : `<div class="no-pic">無頭貼</div>`}
+          <small>Google 頭貼</small>
+          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google 頭貼" title="點擊放大" referrerpolicy="no-referrer">` : `<div class="no-pic">無頭貼</div>`}
         </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：正面</small>
-          ${u.selfie ? `<img src="${esc(u.selfie)}" title="正面（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
+        <div class="u-pbox" data-slot="front">
+          <small>實拍：正面</small>
+          <div class="no-pic">${u.has_photos ? "點擊上方載入" : "未拍攝"}</div>
         </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：向右</small>
-          ${u.selfie_right ? `<img src="${esc(u.selfie_right)}" title="向右（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
+        <div class="u-pbox" data-slot="right">
+          <small>實拍：向右</small>
+          <div class="no-pic">${u.has_photos ? "點擊上方載入" : "未拍攝"}</div>
         </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：向左</small>
-          ${u.selfie_left ? `<img src="${esc(u.selfie_left)}" title="向左（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
+        <div class="u-pbox" data-slot="left">
+          <small>實拍：向左</small>
+          <div class="no-pic">${u.has_photos ? "點擊上方載入" : "未拍攝"}</div>
         </div>
       </div>
       <div class="u-stats">
         <div class="u-stat"><b>${u.login_count}</b><small>累積登入次數</small></div>
-        <div class="u-stat"><b>${u.post_count}</b><small>累積貼文留言次數</small></div>
+        <div class="u-stat"><b>${u.post_count}</b><small>累積投稿次數</small></div>
       </div>
       <div class="u-sec">
-        <div class="u-sec-title">🔹 Google 帳號資訊（OAuth 提供）</div>
-        <div>👤 <strong>全名：</strong>${esc(displayName)}（姓氏：${esc(u.family_name || "—")} / 名字：${esc(u.given_name || "—")}）</div>
-        <div>📧 <strong>電子郵件：</strong>${esc(u.email)}（${u.email_verified ? "已驗證" : "未驗證"}）</div>
-        <div>🏫 <strong>學校網域 (hd)：</strong>${esc(u.hd || "—")}</div>
-        <div>🔑 <strong>Google 唯一 ID (sub)：</strong>${esc(u.google_sub || "—")}</div>
+        <div class="u-sec-title">Google 帳號資訊（OAuth 提供）</div>
+        <div><strong>全名：</strong>${esc(displayName)}（姓氏：${esc(u.family_name || "—")} / 名字：${esc(u.given_name || "—")}）</div>
+        <div><strong>電子郵件：</strong>${esc(u.email)}（${u.email_verified ? "已驗證" : "未驗證"}）</div>
+        <div><strong>學校網域 (hd)：</strong>${esc(u.hd || "—")} · <strong>Google ID：</strong>${esc(u.google_sub || "—")}</div>
       </div>
       <div class="u-sec">
-        <div class="u-sec-title">🔸 我們收集的資訊（相機核實／定位／裝置硬體環境）</div>
-        <div>🕒 <strong>最後登入時間：</strong>${esc(lastLogin)}</div>
-        <div>📅 <strong>首次註冊時間：</strong>${esc(createdAt)}${selfieAt ? `（實拍核實：${esc(selfieAt)}）` : ""}</div>
-        <div>📍 <strong>GPS 定位座標：</strong>${fmtGeo(u.geo)}</div>
-        <div>🌐 <strong>最後登入 IP：</strong>${esc(u.last_ip || "—")} · <strong>網路：</strong>${esc(u.network || "—")}</div>
-        <div>💻 <strong>裝置／瀏覽器：</strong>${esc(u.last_device)}</div>
-        <div>🖥️ <strong>顯示晶片 (GPU)：</strong>${esc(u.gpu || "—")}</div>
-        <div>⚙️ <strong>CPU / 記憶體 / 電量：</strong>${esc(u.cores || "—")} / ${esc(u.memory || "—")} / ${esc(u.battery || "—")}</div>
-        <div>🌍 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
-        ${u.last_ua ? `<div style="font-size:11.5px;margin-top:4px;opacity:.85">🧭 <strong>User-Agent：</strong>${esc(u.last_ua)}</div>` : ""}
+        <div class="u-sec-title">相機核實／定位／硬體環境</div>
+        <div><strong>最後登入：</strong>${esc(lastLogin)}</div>
+        <div><strong>首次註冊：</strong>${esc(createdAt)}${selfieAt ? `（實拍核實：${esc(selfieAt)}）` : ""}</div>
+        <div><strong>GPS 定位座標：</strong>${fmtGeo(u.geo)}</div>
+        <div><strong>最後登入 IP：</strong>${esc(u.last_ip || "—")} · <strong>網路：</strong>${esc(u.network || "—")}</div>
+        <div><strong>裝置／瀏覽器：</strong>${esc(u.last_device)}</div>
+        <div><strong>顯示晶片 (GPU)：</strong>${esc(u.gpu || "—")}</div>
+        <div><strong>CPU / 記憶體 / 電量：</strong>${esc(u.cores || "—")} / ${esc(u.memory || "—")} / ${esc(u.battery || "—")}</div>
+        <div><strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
       </div>`;
+
+    const btn = el.querySelector(".u-load-photos");
+    if (btn) {
+      btn.onclick = async () => {
+        btn.disabled = true; btn.textContent = "載入中…";
+        const p = await fetchUserPhotos(u.id);
+        for (const [k, label] of [["front", "正面"], ["right", "向右"], ["left", "向左"]]) {
+          const box = el.querySelector(`[data-slot="${k}"]`);
+          const safe = safeImgSrc(p[k]);
+          box.innerHTML = `<small>實拍：${label}</small>`;
+          if (safe) {
+            const im = document.createElement("img");
+            im.src = safe; im.alt = label; im.title = `${label}（點擊放大）`;
+            im.onclick = () => openLightbox(safe);
+            box.appendChild(im);
+          } else {
+            const d = document.createElement("div"); d.className = "no-pic"; d.textContent = "無照片";
+            box.appendChild(d);
+          }
+        }
+        btn.remove();
+      };
+    }
     ug.appendChild(el);
   }
 }
 
+// 統一委派處理帶有 data-zoom 的圖片放大
+document.addEventListener("click", ev => {
+  const z = ev.target.closest?.("[data-zoom]");
+  if (z) openLightbox(z.getAttribute("data-zoom"));
+});
+
+$("cancelDelBtn").onclick = () => { pendingDeleteId = null; $("confirmModal").classList.add("hide"); };
+$("confirmDelBtn").onclick = async () => {
+  if (pendingDeleteId == null) return;
+  const id = pendingDeleteId;
+  $("confirmDelBtn").disabled = true;
+  const r = await fetch("/api/admin/proverbs/" + id, { method: "DELETE", headers: H });
+  $("confirmDelBtn").disabled = false;
+  $("confirmModal").classList.add("hide");
+  pendingDeleteId = null;
+  if (r.ok) { toast("已刪除投稿 #" + id); load(); }
+  else toast("刪除失敗", true);
+};
+
+$("searchInput").oninput = ev => {
+  searchQuery = ev.target.value.trim();
+  render();
+  renderUsers();
+};
+
 $("toggleUsers").onclick = () => {
   showUsers = !showUsers;
-  updateHeaderCounts();
+  $("toggleUsers").classList.toggle("active", showUsers);
+  $("toggleUsers").innerHTML = showUsers
+    ? `← 返回投稿卡片 (${rows.length})`
+    : `已登入帳號 (<span id="uCount">${users.length}</span>)`;
+  $("pageTitle").textContent = showUsers ? "已登入帳號列表" : "投稿管理";
   $("grid").classList.toggle("hide", showUsers);
   $("usersGrid").classList.toggle("hide", !showUsers);
   $("szWrap").classList.toggle("hide", showUsers);
   $("dlAll").classList.toggle("hide", showUsers);
+  render();
+  renderUsers();
 };
 
 $("dlAll").onclick = async () => {
-  const zip = new JSZip(), items = [...document.querySelectorAll(".item")];
+  const items = [...document.querySelectorAll(".item")];
+  if (!items.length) return toast("目前沒有可下載的卡片", true);
+  $("dlAll").disabled = true;
+  const zip = new JSZip();
   for (let i = 0; i < items.length; i++) {
     const blob = await new Promise(res => items[i].querySelector("canvas").toBlob(res));
     zip.file(fname(rows[i]), blob);
   }
   save(await zip.generateAsync({ type: "blob" }), "proverbs.zip");
+  $("dlAll").disabled = false;
+  toast(`已打包下載 ${items.length} 張卡片`);
 };
-$("reload").onclick = () => load(true);
+$("reload").onclick = () => { photoCache = {}; load(); toast("已重新整理"); };
 $("size").value = FONT_SIZE;
 $("size").oninput = () => {
   const v = Math.min(200, Math.max(24, parseInt($("size").value) || 70));
@@ -444,7 +572,7 @@ $("size").oninput = () => {
   });
 };
 $("logout").onclick = async () => { await fetch("/api/admin/logout", { method: "POST", headers: H }); location.replace("/"); };
-load(true);
+load();
 </script>
 </body>
 </html>

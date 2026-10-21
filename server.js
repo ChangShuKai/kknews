@@ -109,7 +109,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob: mediastream:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob: mediastream:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin",
@@ -213,7 +213,7 @@ app.post("/api/auth/google", async (req, res) => {
     data = retry.data;
     error = retry.error;
   }
-  if (error || !data?.user) return res.status(401).json({ error: "oauth", detail: error?.message || "" });
+  if (error || !data?.user) return res.status(401).json({ error: "oauth" });
   const u = data.user, email = (u.email || "").toLowerCase();
   if (!email.endsWith(SCHOOL)) {
     if (Date.now() - new Date(u.created_at).getTime() < 120e3) await db.auth.admin.deleteUser(u.id).catch(() => {});
@@ -267,10 +267,11 @@ app.get("/api/me", async (req, res) => {
 app.post("/api/verify-profile", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
+  if (await limited("verify:" + u.id, 10, 3600e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
   const { selfieFront, selfieRight, selfieLeft, clientMeta } = req.body || {};
   const imgs = [selfieFront, selfieRight, selfieLeft];
   for (const img of imgs) {
-    if (typeof img !== "string" || !img.startsWith("data:image/")) return res.status(400).json({ error: "請完成正面、向右、向左三張清晰臉部拍攝" });
+    if (typeof img !== "string" || !JPEG.test(img)) return res.status(400).json({ error: "請完成正面、向右、向左三張清晰臉部拍攝" });
     if (img.length > 1500000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
   }
   const cm = cleanMeta(clientMeta);
@@ -297,6 +298,7 @@ app.post("/api/proverbs", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
   if (!u.verified && !(await hasVerified(u.id))) return res.status(403).json({ error: "請先完成身分核實" });
+  if (await limited("post:" + u.id, 15, 600e3)) return res.status(429).json({ error: "投稿太頻繁，請稍後再試" });
   // 每個人可不限次數上傳資料，每次皆建立獨立卡片
   const content = String(req.body?.content ?? "").trim(), author = String(req.body?.author ?? "").trim();
   if (!content || content.length > 100 || !author || author.length > 30) return res.status(400).json({ error: "內容格式不正確" });
@@ -457,10 +459,14 @@ app.get("/api/admin/users/:id/photos", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   const id = String(req.params.id);
   if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({});
-  const { data } = await db.from("user_profiles").select("selfie_front,selfie_right,selfie_left,selfie_at").eq("user_id", id).maybeSingle();
-  if (!data) return res.json({ front: "", right: "", left: "", at: "" });
+  const { data } = await db.from("user_profiles").select("selfie_front,selfie_right,selfie_left,selfie_at").eq("user_id", id).maybeSingle().then(r => r, () => ({ data: null }));
   audit(req, "view_photos", id);
-  res.json({ front: data.selfie_front, right: data.selfie_right, left: data.selfie_left, at: data.selfie_at });
+  if (data && data.selfie_front) {
+    return res.json({ front: data.selfie_front, right: data.selfie_right, left: data.selfie_left, at: data.selfie_at });
+  }
+  const { data: uData } = await db.auth.admin.getUserById(id).catch(() => ({}));
+  const md = uData?.user?.user_metadata || {};
+  res.json({ front: md.kk_selfie || "", right: md.kk_selfie_right || "", left: md.kk_selfie_left || "", at: md.kk_selfie_at || "" });
 });
 
 /* 資料庫即時狀態：直接抓取 Supabase /customer/v1/privileged/metrics 真實 Prometheus 指標 */
