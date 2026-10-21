@@ -54,20 +54,24 @@ function drawCard(canvas, text, author) {
   ctx.fillStyle = "#f4f2ee";
   ctx.beginPath(); ctx.roundRect(28, 4, 692, 996, 44); ctx.fill();
   ctx.restore();
-  const maxW = 590, x = 92;
-  let size = 96, lines;
-  for (; size >= 36; size -= 4) {
-    ctx.font = `${size}px ${FONT}`;
-    lines = wrap(ctx, text, maxW);
-    if (lines.length <= (size > 60 ? 2 : 5)) break;
+  const PER_LINE = 8;                       // 每行最多 8 個字
+  const size = 56;                          // 文字大小
+  ctx.font = `${size}px ${FONT}`;
+  const lines = [];
+  for (const para of String(text).split("\n")) {
+    const chars = Array.from(para);
+    if (!chars.length) { lines.push(""); continue; }
+    for (let i = 0; i < chars.length; i += PER_LINE) lines.push(chars.slice(i, i + PER_LINE).join(""));
   }
-  const lh = size * 1.25, total = lines.length * lh, top = 520 - total / 2;
-  ctx.fillStyle = "#000"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  const lh = size * 1.35, total = lines.length * lh, top = 500 - total / 2;
   let widest = 0;
-  lines.forEach((l, i) => { ctx.fillText(l, x, top + lh * i + lh / 2); widest = Math.max(widest, ctx.measureText(l).width); });
-  const as = Math.max(34, Math.round(size * 0.45));
+  lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
+  const x = (W - widest) / 2;               // 文字區塊置中
+  ctx.fillStyle = "#000"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  lines.forEach((l, i) => ctx.fillText(l, x, top + lh * i + lh / 2));
+  const as = 32;
   ctx.font = `${as}px ${FONT}`; ctx.textAlign = "right";
-  ctx.fillText("-" + author, x + Math.max(widest, 400), top + total + as * 0.9);
+  ctx.fillText("-" + author, x + widest, top + total + as * 0.9);
 }
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
 
