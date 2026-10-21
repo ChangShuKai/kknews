@@ -32,7 +32,7 @@ $("btn").onclick = async () => {
   if (r.ok) { location.replace("/adminusercontrol"); return; }
   $("err").textContent = r.status === 429 ? "嘗試次數過多，請稍後再試" : "帳號或密碼錯誤";
 };
-$("pw").onkeydown = e => e.key === "Enter" && $("btn").click();
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("btn").click(); });
 </script>
 </body>
 </html>
