@@ -76,7 +76,7 @@ app.use((req, res, next) => {
   if (SECURE) res.set("Strict-Transport-Security", "max-age=31536000");
   next();
 });
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "4mb" }));
 // 所有寫入操作必須帶自訂標頭（簡易 CSRF 防護，搭配 SameSite cookie）
 app.use((req, res, next) => {
   if (req.method !== "GET" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
@@ -168,7 +168,7 @@ app.post("/api/auth/google", async (req, res) => {
   // 更新該帳號在 Supabase auth.users 的累積登入次數、最後登入時間與裝置資訊
   const loginCount = (Number(md.kk_login_count) || 0) + 1;
   const nowIso = new Date().toISOString();
-  const hasSelfie = Boolean(md.kk_selfie);
+  const hasSelfie = Boolean(md.kk_selfie && md.kk_selfie_right && md.kk_selfie_left);
   await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md,
@@ -211,7 +211,8 @@ app.get("/api/me", async (req, res) => {
   let needsVerification = !u.verified;
   if (needsVerification) {
     const { data } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
-    if (data?.user?.user_metadata?.kk_selfie) needsVerification = false;
+    const md = data?.user?.user_metadata || {};
+    if (md.kk_selfie && md.kk_selfie_right && md.kk_selfie_left) needsVerification = false;
   }
   res.json({
     user: { email: u.email, name: u.name, picture: u.picture, needsVerification },
@@ -222,11 +223,16 @@ app.get("/api/me", async (req, res) => {
 app.post("/api/verify-profile", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
-  const { selfie, geo, clientMeta } = req.body || {};
-  if (!selfie || typeof selfie !== "string" || !selfie.startsWith("data:image/")) {
-    return res.status(400).json({ error: "請使用相機拍攝清晰臉部照片" });
+  const { selfieFront, selfieRight, selfieLeft, selfie, geo, clientMeta } = req.body || {};
+  const front = selfieFront || selfie || "";
+  const right = selfieRight || "";
+  const left = selfieLeft || "";
+  for (const img of [front, right, left]) {
+    if (!img || typeof img !== "string" || !img.startsWith("data:image/")) {
+      return res.status(400).json({ error: "請完成正面、向右、向左三張清晰臉部拍攝" });
+    }
+    if (img.length > 1200000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
   }
-  if (selfie.length > 1500000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
 
   const { data: existing } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
   const md = existing?.user?.user_metadata || {};
@@ -237,7 +243,9 @@ app.post("/api/verify-profile", async (req, res) => {
   const { error } = await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md,
-      kk_selfie: selfie,
+      kk_selfie: front,
+      kk_selfie_right: right,
+      kk_selfie_left: left,
       kk_selfie_at: new Date().toISOString(),
       kk_geo: geo || md.kk_geo || null,
       kk_gpu: cm.gpu || md.kk_gpu || "",
@@ -414,6 +422,8 @@ app.get("/api/admin/users", async (req, res) => {
       family_name: md.family_name || "",
       picture: md.picture || md.avatar_url || "",
       selfie: md.kk_selfie || "",
+      selfie_right: md.kk_selfie_right || "",
+      selfie_left: md.kk_selfie_left || "",
       selfie_at: md.kk_selfie_at || "",
       google_sub: md.sub || md.provider_id || "",
       email_verified: md.email_verified ?? Boolean(u.email_confirmed_at),

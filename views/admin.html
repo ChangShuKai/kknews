@@ -41,11 +41,11 @@
   .u-title{flex:1;min-width:0}
   .u-title b{font-size:16px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .u-title span{font-size:13px;color:var(--muted)}
-  .u-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8f6f2;padding:12px;border-radius:14px;border:1px solid var(--line)}
-  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-  .u-pbox small{font-size:11.5px;font-weight:700;color:var(--muted)}
-  .u-pbox img{width:110px;height:110px;border-radius:14px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
-  .u-pbox .no-pic{width:110px;height:110px;border-radius:14px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted);background:#fff}
+  .u-photos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#f8f6f2;padding:12px 10px;border-radius:14px;border:1px solid var(--line)}
+  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+  .u-pbox small{font-size:11px;font-weight:700;color:var(--muted)}
+  .u-pbox img{width:82px;height:82px;border-radius:12px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
+  .u-pbox .no-pic{width:82px;height:82px;border-radius:12px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:11px;color:var(--muted);background:#fff}
   .u-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f6f3ee;padding:10px 14px;border-radius:12px;text-align:center}
   .u-stat b{font-size:20px;display:block;color:var(--ink)}
   .u-stat small{font-size:12px;color:var(--muted)}
@@ -53,9 +53,9 @@
   .u-sec-title{font-size:12px;font-weight:700;color:var(--ink);background:#f3f0ea;display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
   .u-sec strong{color:var(--ink)}
   .u-sec a{color:#0b57d0;text-decoration:none;font-weight:600}.u-sec a:hover{text-decoration:underline}
-  .mini-photos{display:flex;gap:10px;align-items:center;margin:8px 0;padding:8px 10px;background:#f8f6f2;border-radius:10px}
+  .mini-photos{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:#f8f6f2;border-radius:10px}
   .mini-photos .mp{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
-  .mini-photos img{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
+  .mini-photos img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
 </style>
 </head>
 <body>
@@ -170,6 +170,8 @@ function unpackRow(r) {
     family_name: meta.family_name || u.family_name || "",
     picture: r.user_avatar || meta.picture || u.picture || "",
     selfie: u.selfie || "",
+    selfie_right: u.selfie_right || "",
+    selfie_left: u.selfie_left || "",
     hd: meta.hd || u.hd || "",
     locale: meta.locale || u.locale || "",
     timezone: meta.timezone || u.timezone || "",
@@ -203,11 +205,13 @@ async function render() {
         <div class="mini-photos">
           <div class="mp">
             ${r.picture ? `<img src="${esc(r.picture)}" title="點擊放大 Google 帳號頭貼" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : ""}
-            <span><b>Google 帳號</b><br>${esc(r.user_email)}</span>
+            <span><b>🔹 Google 帳號</b><br>${esc(r.user_email)}</span>
           </div>
           <div class="mp" style="margin-left:auto">
-            ${r.selfie ? `<img src="${esc(r.selfie)}" title="點擊放大相機核實自拍照" onclick="window.open(this.src)">` : ""}
-            <span><b>${r.selfie ? "📸 實拍大頭照" : "未拍攝實拍照"}</b></span>
+            ${r.selfie ? `<img src="${esc(r.selfie)}" title="實拍：正面（點擊放大）" onclick="window.open(this.src)">` : ""}
+            ${r.selfie_right ? `<img src="${esc(r.selfie_right)}" title="實拍：向右（點擊放大）" onclick="window.open(this.src)">` : ""}
+            ${r.selfie_left ? `<img src="${esc(r.selfie_left)}" title="實拍：向左（點擊放大）" onclick="window.open(this.src)">` : ""}
+            <span><b>${r.selfie ? "🔸 實拍 3 張" : "未拍攝實拍照"}</b></span>
           </div>
         </div>
         <div class="u-sec">
@@ -261,12 +265,20 @@ function renderUsers() {
       </div>
       <div class="u-photos">
         <div class="u-pbox">
-          <small>🔹 Google 帳號頭貼</small>
+          <small>🔹 Google 頭貼</small>
           ${u.picture ? `<img src="${esc(u.picture)}" title="點擊放大" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : `<div class="no-pic">無頭貼</div>`}
         </div>
         <div class="u-pbox">
-          <small>🔸 我們收集的相機實拍照</small>
-          ${u.selfie ? `<img src="${esc(u.selfie)}" title="點擊放大（拍攝於 ${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">尚未拍攝</div>`}
+          <small>🔸 實拍：正面</small>
+          ${u.selfie ? `<img src="${esc(u.selfie)}" title="正面（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
+        </div>
+        <div class="u-pbox">
+          <small>🔸 實拍：向右</small>
+          ${u.selfie_right ? `<img src="${esc(u.selfie_right)}" title="向右（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
+        </div>
+        <div class="u-pbox">
+          <small>🔸 實拍：向左</small>
+          ${u.selfie_left ? `<img src="${esc(u.selfie_left)}" title="向左（${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">未拍攝</div>`}
         </div>
       </div>
       <div class="u-stats">

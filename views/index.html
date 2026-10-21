@@ -33,10 +33,38 @@
   .send:hover{opacity:.9;transform:translateY(-1px)}.send:disabled{opacity:.5;cursor:wait;transform:none}
   .btn-outline{margin-top:10px;width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
   .btn-outline:hover{border-color:var(--ink)}
-  .notice{background:#fff8eb;border:1px solid #f5d9a6;color:#7a4f01;padding:12px 14px;border-radius:12px;font-size:13.5px;line-height:1.6;margin-bottom:16px}
-  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:280px;margin:0 auto 14px;border-radius:18px;overflow:hidden;background:#1c1b19;display:grid;place-items:center;border:2px solid var(--line)}
-  .cam-box video,.cam-box img{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-  .cam-tip{color:#fff;font-size:13px;text-align:center;padding:16px;opacity:.85}
+  .notice{background:#fff8eb;border:1px solid #f5d9a6;color:#7a4f01;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;margin-bottom:14px}
+  /* 酷炫 Face ID 掃描艙介面 */
+  .hud-wrap{background:linear-gradient(145deg,#0f172a,#1e293b);border-radius:20px;padding:18px 16px;color:#f8fafc;box-shadow:inset 0 0 30px #00000080,0 12px 30px #00000026;margin-bottom:14px;position:relative;overflow:hidden}
+  .hud-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .hud-step{background:#ffffff12;border:1px solid #ffffff24;border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;color:#94a3b8;transition:.3s}
+  .hud-step.active{background:#06b6d426;border-color:#22d3ee;color:#22d3ee;font-weight:700;box-shadow:0 0 12px #22d3ee40}
+  .hud-step.done{background:#10b98126;border-color:#34d399;color:#34d399;font-weight:700}
+  .hud-guide{text-align:center;font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:12px;min-height:24px;letter-spacing:.03em;text-shadow:0 0 10px #38bdf866}
+  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:270px;margin:0 auto 14px;border-radius:22px;overflow:hidden;background:#020617;display:grid;place-items:center;border:2px solid #334155;box-shadow:0 0 25px #0ea5e933}
+  .cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  .cam-tip{color:#94a3b8;font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
+  /* 臉部對準框與雷射掃描線 */
+  .face-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;display:grid;place-items:center}
+  .face-svg{width:82%;height:82%;filter:drop-shadow(0 0 8px #22d3ee99);transition:.35s}
+  .scan-line{position:absolute;left:12%;right:12%;height:2px;background:linear-gradient(90deg,transparent,#22d3ee,#fff,#22d3ee,transparent);box-shadow:0 0 12px 2px #22d3ee;animation:scan 2.4s ease-in-out infinite;opacity:.85}
+  @keyframes scan{0%,100%{top:14%}50%{top:84%}}
+  .dir-arrow{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#020617cc;border:1px solid #22d3ee88;color:#22d3ee;padding:4px 14px;border-radius:99px;font-size:13px;font-weight:700;backdrop-filter:blur(4px);white-space:nowrap;animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+  .shots-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .shot-slot{aspect-ratio:1/1;border-radius:12px;border:1.5px dashed #475569;background:#0f172a;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:#64748b}
+  .shot-slot img{width:100%;height:100%;object-fit:cover}
+  .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#00000099;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
+  .hud-btn{width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,#0ea5e9,#2563eb);color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px #0ea5e94d;transition:.2s}
+  .hud-btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px #0ea5e966}
+  .hud-btn:disabled{opacity:.5;cursor:wait;transform:none}
+  /* 警告與隱私彈窗 Modal */
+  .modal-bg{position:fixed;inset:0;background:#000000b3;backdrop-filter:blur(6px);z-index:99;display:grid;place-items:center;padding:20px;animation:up .25s ease both}
+  .modal{width:min(420px,100%);background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 24px 70px #00000066;text-align:center}
+  .modal-icon{width:56px;height:56px;border-radius:50%;background:#fee2e2;color:#dc2626;display:grid;place-items:center;font-size:28px;margin:0 auto 14px}
+  .modal h3{margin:0 0 14px;font-size:20px;color:#1c1b19}
+  .modal-warn{background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;padding:12px 14px;border-radius:12px;font-size:14.5px;font-weight:700;line-height:1.55;margin-bottom:12px;text-align:left}
+  .modal-priv{background:#f8fafc;border:1.5px solid #e2e8f0;color:#334155;padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:600;line-height:1.55;margin-bottom:18px;text-align:left}
   .msg{margin-top:16px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
   .msg.show{display:block}.msg.err{background:#fdecec;color:#b42318}.msg.ok{background:#e8f6ee;color:#067647}
   .hide{display:none!important}
@@ -56,23 +84,57 @@
     <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
   </div>
 
-  <!-- 首次註冊身分核實：強制相機拍攝大頭照 + 位置授權 -->
+  <!-- 首次註冊身分核實：酷炫三角度生物辨識掃描框 -->
   <div id="verifyView" class="hide">
     <div class="notice">
       🛡️ <b>首次登入身分核實說明：</b><br>
-      收集臉部照片與目前位置<b>僅為了核實本人身分、避免惡意濫用或冒名投稿</b>，不會公開顯示於卡片上。<b>請務必開啟相機並拍攝臉部清晰之正面照</b>。
+      收集這些資訊與臉部照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（共 3 張：正面、向右、向左）</b>。
     </div>
-    <div class="cam-box">
-      <video id="camVideo" autoplay playsinline muted class="hide"></video>
-      <img id="camPreview" alt="預覽照片" class="hide">
-      <div id="camPlaceholder" class="cam-tip">請點擊下方「開啟相機拍攝」<br>並允許相機與位置權限</div>
+
+    <div class="hud-wrap">
+      <div class="hud-steps">
+        <div class="hud-step active" id="st0">1. 正面對準</div>
+        <div class="hud-step" id="st1">2. 向右微轉</div>
+        <div class="hud-step" id="st2">3. 向左微轉</div>
+      </div>
+      <div class="hud-guide" id="hudGuide">請開啟相機，將臉部對準框內</div>
+
+      <div class="cam-box">
+        <video id="camVideo" autoplay playsinline muted class="hide"></video>
+        <div class="face-overlay hide" id="faceOverlay">
+          <div class="scan-line"></div>
+          <!-- 科技感臉部輪廓與四角瞄準線 SVG -->
+          <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
+            <!-- 四角準星 -->
+            <path d="M15 45 V20 Q15 15 20 15 H45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M155 15 H180 Q185 15 185 20 V45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M15 155 V180 Q15 185 20 185 H45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M155 185 H180 Q185 185 185 180 V155" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- 臉部輪廓框 -->
+            <ellipse cx="100" cy="96" rx="52" ry="66" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="8 5"/>
+            <!-- 眼部與中心十字定位線 -->
+            <line x1="68" y1="82" x2="88" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
+            <line x1="112" y1="82" x2="132" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
+            <line x1="100" y1="70" x2="100" y2="112" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.5"/>
+          </svg>
+          <div class="dir-arrow" id="dirHint">👤 請正對鏡頭</div>
+        </div>
+        <div id="camPlaceholder" class="cam-tip">點擊下方按鈕啟動臉部掃描艙<br>並允許相機與位置權限</div>
+      </div>
+
+      <div class="shots-row">
+        <div class="shot-slot" id="slot0">待拍正面<span>1. 正面</span></div>
+        <div class="shot-slot" id="slot1">待拍向右<span>2. 向右</span></div>
+        <div class="shot-slot" id="slot2">待拍向左<span>3. 向左</span></div>
+      </div>
     </div>
+
     <!-- 手機或無 WebRTC 環境的原生相機備援（指定前置鏡頭 capture="user"） -->
     <input type="file" id="camInput" accept="image/*" capture="user" class="hide">
-    <button type="button" class="btn-outline" id="startCamBtn">📷 開啟相機</button>
-    <button type="button" class="send hide" id="snapBtn">📸 拍攝臉部清晰照片</button>
-    <button type="button" class="btn-outline hide" id="retakeBtn">🔄 重新拍攝</button>
-    <button type="button" class="send hide" id="confirmVerifyBtn">✅ 完成核實並開始投稿</button>
+    <button type="button" class="hud-btn" id="startCamBtn">📷 啟動臉部驗證相機</button>
+    <button type="button" class="hud-btn hide" id="snapBtn">📸 拍攝第 1 張（正面）</button>
+    <button type="button" class="btn-outline hide" id="retakeBtn">🔄 重新拍攝三張</button>
+    <button type="button" class="send hide" id="confirmVerifyBtn">✅ 完成核實並送出</button>
   </div>
 
   <div id="formView" class="hide">
@@ -85,6 +147,22 @@
   </div>
   <div id="msg" class="msg"></div>
 </div>
+
+<!-- 核實完成後彈窗 -->
+<div id="legalModal" class="modal-bg hide">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <h3>身分核實完成 · 重要聲明</h3>
+    <div class="modal-warn">
+      🚨 請勿重複或是蓄意洗版 否則將依台灣法律依法提告!
+    </div>
+    <div class="modal-priv">
+      🔒 你的資訊將被收集，我們不會將您的資訊提供給任何第三方廠商，即便公司破產。
+    </div>
+    <button type="button" class="send" id="closeModalBtn" style="margin-top:0">我已詳閱並同意遵守</button>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
 function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = "msg show " + (ok ? "ok" : "err"); if (!t) m.className = "msg"; }
@@ -92,9 +170,43 @@ const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type
 
 let googleClientId = "";
 let currentUser = null;
-let capturedSelfie = "";
+let capturedShots = ["", "", ""]; // [正面, 向右, 向左]
+let stepIdx = 0;
 let cachedGeo = null;
 let camStream = null;
+
+const STEP_CFG = [
+  { title: "請將臉部對準框中央（正面）", hint: "👤 請正對鏡頭，保持臉部清晰", btn: "📸 拍攝第 1 張（正面）", transform: "scale(1)" },
+  { title: "很好！現在請將臉部微向右轉 ➡️", hint: "➡️ 請將頭微向右轉約 20°", btn: "📸 拍攝第 2 張（向右一張）", transform: "perspective(400px) rotateY(18deg)" },
+  { title: "最後一步！請將臉部微向左轉 ⬅️", hint: "⬅️ 請將頭微向左轉約 20°", btn: "📸 拍攝第 3 張（向左一張）", transform: "perspective(400px) rotateY(-18deg)" },
+];
+
+function updateStepUI() {
+  for (let i = 0; i < 3; i++) {
+    const st = $("st" + i);
+    st.className = "hud-step" + (i < stepIdx ? " done" : i === stepIdx ? " active" : "");
+    const slot = $("slot" + i);
+    const labels = ["1. 正面", "2. 向右", "3. 向左"];
+    if (capturedShots[i]) {
+      slot.innerHTML = `<img src="${capturedShots[i]}" alt=""><span>✓ ${labels[i]}</span>`;
+    } else {
+      slot.innerHTML = `待拍攝<span>${labels[i]}</span>`;
+    }
+  }
+  if (stepIdx < 3) {
+    const cfg = STEP_CFG[stepIdx];
+    $("hudGuide").textContent = cfg.title;
+    $("dirHint").textContent = cfg.hint;
+    $("snapBtn").textContent = cfg.btn;
+    $("faceSvg").style.transform = cfg.transform;
+  } else {
+    $("hudGuide").textContent = "🎉 三張臉部掃描皆已完成！請點擊下方完成核實";
+    $("faceOverlay").classList.add("hide");
+    $("snapBtn").classList.add("hide");
+    $("retakeBtn").classList.remove("hide");
+    $("confirmVerifyBtn").classList.remove("hide");
+  }
+}
 
 function getGeoPosition(timeout = 6000) {
   if (cachedGeo) return Promise.resolve(cachedGeo);
@@ -204,27 +316,29 @@ function stopCamera() {
 
 async function startCamera() {
   say("");
-  // 同步請求定位權限以收集位置
   getGeoPosition();
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
-      camStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
-        audio: false,
-      });
+      if (!camStream) {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+          audio: false,
+        });
+      }
       const v = $("camVideo");
       v.srcObject = camStream;
       v.classList.remove("hide");
-      $("camPreview").classList.add("hide");
+      $("faceOverlay").classList.remove("hide");
       $("camPlaceholder").classList.add("hide");
       $("startCamBtn").classList.add("hide");
       $("snapBtn").classList.remove("hide");
       $("retakeBtn").classList.add("hide");
       $("confirmVerifyBtn").classList.add("hide");
+      updateStepUI();
       return;
     } catch {}
   }
-  // 若瀏覽器不支援直接串流或被阻擋，喚起原生前置相機拍攝
+  // 若瀏覽器不支援直接串流，喚起原生前置相機拍攝當前步驟
   $("camInput").click();
 }
 
@@ -234,22 +348,21 @@ $("snapBtn").onclick = () => {
   const v = $("camVideo");
   if (!v.videoWidth) return say("相機尚在準備中，請稍候一秒再按");
   const c = document.createElement("canvas");
-  const s = Math.min(v.videoWidth, v.videoHeight, 480);
+  const s = Math.min(v.videoWidth, v.videoHeight, 440);
   c.width = s; c.height = s;
   const ctx = c.getContext("2d");
   const sx = (v.videoWidth - s) / 2, sy = (v.videoHeight - s) / 2;
   ctx.translate(s, 0); ctx.scale(-1, 1);
   ctx.drawImage(v, sx, sy, s, s, 0, 0, s, s);
-  capturedSelfie = c.toDataURL("image/jpeg", 0.82);
-  stopCamera();
-  v.classList.add("hide");
-  const img = $("camPreview");
-  img.src = capturedSelfie;
-  img.style.transform = "none";
-  img.classList.remove("hide");
-  $("snapBtn").classList.add("hide");
-  $("retakeBtn").classList.remove("hide");
-  $("confirmVerifyBtn").classList.remove("hide");
+  capturedShots[stepIdx] = c.toDataURL("image/jpeg", 0.8);
+  stepIdx++;
+  updateStepUI();
+  if (stepIdx >= 3) {
+    stopCamera();
+    v.classList.add("hide");
+    $("camPlaceholder").textContent = "✅ 已完成正面、向右、向左三張拍攝";
+    $("camPlaceholder").classList.remove("hide");
+  }
 };
 
 $("camInput").onchange = ev => {
@@ -260,19 +373,21 @@ $("camInput").onchange = ev => {
     const im = new Image();
     im.onload = () => {
       const c = document.createElement("canvas");
-      const s = 480; c.width = s; c.height = s;
+      const s = 440; c.width = s; c.height = s;
       const ctx = c.getContext("2d");
       const m = Math.min(im.width, im.height);
       ctx.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, s, s);
-      capturedSelfie = c.toDataURL("image/jpeg", 0.82);
-      const preview = $("camPreview");
-      preview.src = capturedSelfie;
-      preview.style.transform = "none";
-      preview.classList.remove("hide");
-      $("camPlaceholder").classList.add("hide");
-      $("startCamBtn").classList.add("hide");
-      $("retakeBtn").classList.remove("hide");
-      $("confirmVerifyBtn").classList.remove("hide");
+      capturedShots[stepIdx] = c.toDataURL("image/jpeg", 0.8);
+      stepIdx++;
+      updateStepUI();
+      $("camInput").value = "";
+      if (stepIdx < 3) {
+        $("startCamBtn").textContent = STEP_CFG[stepIdx].btn;
+        $("startCamBtn").classList.remove("hide");
+      } else {
+        $("startCamBtn").classList.add("hide");
+        $("camPlaceholder").textContent = "✅ 已完成正面、向右、向左三張拍攝";
+      }
     };
     im.src = reader.result;
   };
@@ -280,18 +395,32 @@ $("camInput").onchange = ev => {
 };
 
 $("retakeBtn").onclick = () => {
-  capturedSelfie = "";
+  capturedShots = ["", "", ""];
+  stepIdx = 0;
+  updateStepUI();
   startCamera();
 };
 
 $("confirmVerifyBtn").onclick = async () => {
-  if (!capturedSelfie) return say("請先使用相機拍攝清晰臉部照片");
+  if (capturedShots.some(x => !x)) return say("請完成正面、向右、向左三張清晰臉部照片拍攝");
   $("confirmVerifyBtn").disabled = true;
   const clientMeta = await collectClientMeta(true);
-  const r = await api("/api/verify-profile", { selfie: capturedSelfie, geo: clientMeta.geo, clientMeta });
+  const r = await api("/api/verify-profile", {
+    selfieFront: capturedShots[0],
+    selfieRight: capturedShots[1],
+    selfieLeft: capturedShots[2],
+    geo: clientMeta.geo,
+    clientMeta,
+  });
   const j = await r.json().catch(() => ({}));
   $("confirmVerifyBtn").disabled = false;
   if (!r.ok) return say(j.error || "核實失敗，請重試");
+  // 顯示警告與隱私彈窗
+  $("legalModal").classList.remove("hide");
+};
+
+$("closeModalBtn").onclick = () => {
+  $("legalModal").classList.add("hide");
   currentUser.needsVerification = false;
   renderMe(currentUser);
   say("身分核實完成！現在可以開始投稿。", true);
