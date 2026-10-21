@@ -34,25 +34,35 @@
   .sz{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
   .sz input{width:80px;margin:0;padding:8px 10px}
   .hide{display:none!important}
-  .u-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px}
+  .u-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px}
   .u-card{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px #0000000f;display:flex;flex-direction:column;gap:12px}
   .u-head{display:flex;align-items:center;gap:14px}
-  .u-av{width:48px;height:48px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none;object-fit:cover;border:2px solid var(--line)}
+  .u-av{width:52px;height:52px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none;object-fit:cover;border:2px solid var(--line)}
   .u-title{flex:1;min-width:0}
   .u-title b{font-size:16px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .u-title span{font-size:13px;color:var(--muted)}
+  .u-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8f6f2;padding:12px;border-radius:14px;border:1px solid var(--line)}
+  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .u-pbox small{font-size:11.5px;font-weight:700;color:var(--muted)}
+  .u-pbox img{width:110px;height:110px;border-radius:14px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
+  .u-pbox .no-pic{width:110px;height:110px;border-radius:14px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted);background:#fff}
   .u-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f6f3ee;padding:10px 14px;border-radius:12px;text-align:center}
   .u-stat b{font-size:20px;display:block;color:var(--ink)}
   .u-stat small{font-size:12px;color:var(--muted)}
-  .u-info{font-size:12.5px;color:var(--muted);line-height:1.7;word-break:break-all;border-top:1px solid var(--line);padding-top:10px}
-  .u-info strong{color:var(--ink)}
+  .u-sec{font-size:12.5px;color:var(--muted);line-height:1.7;word-break:break-all;border-top:1px solid var(--line);padding-top:10px}
+  .u-sec-title{font-size:12px;font-weight:700;color:var(--ink);background:#f3f0ea;display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
+  .u-sec strong{color:var(--ink)}
+  .u-sec a{color:#0b57d0;text-decoration:none;font-weight:600}.u-sec a:hover{text-decoration:underline}
+  .mini-photos{display:flex;gap:10px;align-items:center;margin:8px 0;padding:8px 10px;background:#f8f6f2;border-radius:10px}
+  .mini-photos .mp{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+  .mini-photos img{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
 </style>
 </head>
 <body>
 <header>
   <h1 id="pageTitle">投稿管理<span class="badge" id="count">0</span></h1>
   <button id="toggleUsers" class="s">已登入帳號 (<span id="uCount">0</span>)</button>
-  <label class="sz" id="szWrap">文字大小 <input id="size" type="number" min="24" max="120" step="2"></label>
+  <label class="sz" id="szWrap">文字大小 <input id="size" type="number" min="24" max="200" step="2"></label>
   <button id="reload" class="s">重新整理</button>
   <button id="dlAll">全部下載 ZIP</button>
   <button id="logout" class="s">登出</button>
@@ -65,7 +75,7 @@
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let rows = [], users = [], showUsers = false;
+let rows = [], users = [], userMap = {}, showUsers = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
 
 /* ---------- 卡片繪製：768x1024 米白圓角卡 + 黑色粗體字 ---------- */
@@ -121,6 +131,8 @@ async function load() {
   if (rp.status === 404 || ru.status === 404) return location.reload();   // session 過期
   rows = rp.ok ? await rp.json() : [];
   users = ru.ok ? await ru.json() : [];
+  userMap = {};
+  for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
   $("uCount").textContent = users.length;
   render();
   renderUsers();
@@ -130,6 +142,11 @@ const fname = r => `${r.id}_${(r.user_email || "").split("@")[0]}.png`;
 function save(blob, name) {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function fmtGeo(g) {
+  if (!g || g.lat == null || g.lng == null) return "未授權或未提供位置";
+  const url = `https://www.google.com/maps?q=${encodeURIComponent(g.lat + "," + g.lng)}`;
+  return `<a href="${url}" target="_blank" rel="noopener">${esc(g.lat)}, ${esc(g.lng)}</a>（精準度 ±${esc(g.accuracy || 0)}m）`;
 }
 function unpackRow(r) {
   let name = r.user_name || "";
@@ -141,19 +158,27 @@ function unpackRow(r) {
       meta = { ...parsed, ...meta };
     } catch {}
   }
+  const u = userMap[r.user_id] || userMap[r.user_email] || {};
   return {
     ...r,
-    display_name: name || (r.user_email || "").split("@")[0],
-    device_info: r.device_info || meta.device_info || "未記錄裝置",
-    user_agent: r.user_agent || meta.user_agent || "",
-    ip_address: r.ip_address || meta.ip_address || "",
-    google_sub: r.google_sub || meta.google_sub || "",
-    given_name: meta.given_name || "",
-    family_name: meta.family_name || "",
-    picture: r.user_avatar || meta.picture || "",
-    hd: meta.hd || "",
-    locale: meta.locale || "",
-    timezone: meta.timezone || "",
+    display_name: name || u.name || (r.user_email || "").split("@")[0],
+    device_info: r.device_info || meta.device_info || u.last_device || "未記錄裝置",
+    user_agent: r.user_agent || meta.user_agent || u.last_ua || "",
+    ip_address: r.ip_address || meta.ip_address || u.last_ip || "",
+    google_sub: r.google_sub || meta.google_sub || u.google_sub || "",
+    given_name: meta.given_name || u.given_name || "",
+    family_name: meta.family_name || u.family_name || "",
+    picture: r.user_avatar || meta.picture || u.picture || "",
+    selfie: u.selfie || "",
+    hd: meta.hd || u.hd || "",
+    locale: meta.locale || u.locale || "",
+    timezone: meta.timezone || u.timezone || "",
+    geo: meta.geo || u.geo || null,
+    gpu: meta.gpu || u.gpu || "",
+    cores: meta.cores || u.cores || "",
+    memory: meta.memory || u.memory || "",
+    battery: meta.battery || u.battery || "",
+    network: meta.network || u.network || "",
   };
 }
 
@@ -165,20 +190,38 @@ async function render() {
   for (const raw of rows) {
     const r = unpackRow(raw);
     const el = document.createElement("div"); el.className = "item";
-    const extraGoogle = [
-      r.google_sub ? `Google ID: ${esc(r.google_sub)}` : "",
-      (r.family_name || r.given_name) ? `姓/名: ${esc(r.family_name)} / ${esc(r.given_name)}` : "",
-      r.hd ? `網域(hd): ${esc(r.hd)}` : "",
-      r.locale ? `語系: ${esc(r.locale)}` : "",
-      r.timezone ? `時區: ${esc(r.timezone)}` : "",
-      r.ip_address ? `IP: ${esc(r.ip_address)}` : "",
+    const hw = [
+      r.gpu ? `GPU: ${esc(r.gpu)}` : "",
+      r.cores ? `CPU: ${esc(r.cores)}` : "",
+      r.memory ? `RAM: ${esc(r.memory)}` : "",
+      r.battery ? `電量: ${esc(r.battery)}` : "",
+      r.network ? `網路: ${esc(r.network)}` : "",
     ].filter(Boolean).join(" · ");
 
     el.innerHTML = `<div class="meta">
-        <b>#${r.id} · ${esc(r.display_name)}</b><br>
-        📧 ${esc(r.user_email)} · 🕒 ${new Date(r.created_at).toLocaleString()}<br>
-        💻 裝置／瀏覽器：<span style="color:var(--ink);font-weight:500">${esc(r.device_info)}</span>
-        ${extraGoogle ? `<br><span style="font-size:11.5px;opacity:.85">${extraGoogle}</span>` : ""}
+        <b>#${r.id} · ${esc(r.display_name)}</b> · 🕒 ${new Date(r.created_at).toLocaleString()}
+        <div class="mini-photos">
+          <div class="mp">
+            ${r.picture ? `<img src="${esc(r.picture)}" title="點擊放大 Google 帳號頭貼" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : ""}
+            <span><b>Google 帳號</b><br>${esc(r.user_email)}</span>
+          </div>
+          <div class="mp" style="margin-left:auto">
+            ${r.selfie ? `<img src="${esc(r.selfie)}" title="點擊放大相機核實自拍照" onclick="window.open(this.src)">` : ""}
+            <span><b>${r.selfie ? "📸 實拍大頭照" : "未拍攝實拍照"}</b></span>
+          </div>
+        </div>
+        <div class="u-sec">
+          <span class="u-sec-title">🔹 Google 帳號原始資料</span><br>
+          姓名：<strong>${esc(r.display_name)}</strong>（姓：${esc(r.family_name || "—")} / 名：${esc(r.given_name || "—")}）<br>
+          Google ID：${esc(r.google_sub || "—")} · 網域：${esc(r.hd || "—")}
+        </div>
+        <div class="u-sec" style="margin-top:6px">
+          <span class="u-sec-title">🔸 我們收集的環境與定位資訊</span><br>
+          💻 裝置／瀏覽器：<strong>${esc(r.device_info)}</strong><br>
+          📍 GPS 位置：${fmtGeo(r.geo)}<br>
+          🌐 IP 位址：<strong>${esc(r.ip_address || "—")}</strong> · 時區/語系：${esc(r.timezone || "—")} / ${esc(r.locale || "—")}
+          ${hw ? `<br>⚙️ 硬體細節：${hw}` : ""}
+        </div>
       </div>
       <canvas></canvas><textarea rows="2"></textarea><input placeholder="來源">
       <div class="row"><button class="dl">下載 PNG</button><button class="d del">刪除</button></div>`;
@@ -206,6 +249,8 @@ function renderUsers() {
       : `<div class="u-av">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
+    const selfieAt = u.selfie_at ? new Date(u.selfie_at).toLocaleString() : "";
+
     el.innerHTML = `
       <div class="u-head">
         ${avHtml}
@@ -214,19 +259,37 @@ function renderUsers() {
           <span>${esc(u.email)}</span>
         </div>
       </div>
+      <div class="u-photos">
+        <div class="u-pbox">
+          <small>🔹 Google 帳號頭貼</small>
+          ${u.picture ? `<img src="${esc(u.picture)}" title="點擊放大" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : `<div class="no-pic">無頭貼</div>`}
+        </div>
+        <div class="u-pbox">
+          <small>🔸 我們收集的相機實拍照</small>
+          ${u.selfie ? `<img src="${esc(u.selfie)}" title="點擊放大（拍攝於 ${esc(selfieAt)}）" onclick="window.open(this.src)">` : `<div class="no-pic">尚未拍攝</div>`}
+        </div>
+      </div>
       <div class="u-stats">
         <div class="u-stat"><b>${u.login_count}</b><small>累積登入次數</small></div>
         <div class="u-stat"><b>${u.post_count}</b><small>累積貼文留言次數</small></div>
       </div>
-      <div class="u-info">
-        <div>🕒 <strong>最後登入時間：</strong>${esc(lastLogin)}</div>
-        <div>📅 <strong>首次註冊時間：</strong>${esc(createdAt)}</div>
-        <div>💻 <strong>裝置／瀏覽器：</strong>${esc(u.last_device)}</div>
+      <div class="u-sec">
+        <div class="u-sec-title">🔹 Google 帳號資訊（OAuth 提供）</div>
+        <div>👤 <strong>全名：</strong>${esc(displayName)}（姓氏：${esc(u.family_name || "—")} / 名字：${esc(u.given_name || "—")}）</div>
+        <div>📧 <strong>電子郵件：</strong>${esc(u.email)}（${u.email_verified ? "已驗證" : "未驗證"}）</div>
+        <div>🏫 <strong>學校網域 (hd)：</strong>${esc(u.hd || "—")}</div>
         <div>🔑 <strong>Google 唯一 ID (sub)：</strong>${esc(u.google_sub || "—")}</div>
-        <div>👤 <strong>姓氏 / 名字：</strong>${esc(u.family_name || "—")} / ${esc(u.given_name || "—")}</div>
-        <div>🏫 <strong>學校網域 (hd)：</strong>${esc(u.hd || "—")} · <strong>信箱驗證：</strong>${u.email_verified ? "已驗證" : "未驗證"}</div>
-        <div>🌐 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
-        ${u.last_ip ? `<div>📍 <strong>最後登入 IP：</strong>${esc(u.last_ip)}</div>` : ""}
+      </div>
+      <div class="u-sec">
+        <div class="u-sec-title">🔸 我們收集的資訊（相機核實／定位／硬體環境）</div>
+        <div>🕒 <strong>最後登入時間：</strong>${esc(lastLogin)}</div>
+        <div>📅 <strong>首次註冊時間：</strong>${esc(createdAt)}${selfieAt ? `（實拍核實：${esc(selfieAt)}）` : ""}</div>
+        <div>📍 <strong>GPS 定位座標：</strong>${fmtGeo(u.geo)}</div>
+        <div>🌐 <strong>最後登入 IP：</strong>${esc(u.last_ip || "—")} · <strong>網路：</strong>${esc(u.network || "—")}</div>
+        <div>💻 <strong>裝置／瀏覽器：</strong>${esc(u.last_device)}</div>
+        <div>🖥️ <strong>顯示晶片 (GPU)：</strong>${esc(u.gpu || "—")}</div>
+        <div>⚙️ <strong>CPU / 記憶體 / 電量：</strong>${esc(u.cores || "—")} / ${esc(u.memory || "—")} / ${esc(u.battery || "—")}</div>
+        <div>🌍 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
       </div>`;
     ug.appendChild(el);
   }
@@ -256,7 +319,7 @@ $("dlAll").onclick = async () => {
 $("reload").onclick = load;
 $("size").value = FONT_SIZE;
 $("size").oninput = () => {
-  const v = Math.min(120, Math.max(24, parseInt($("size").value) || 70));
+  const v = Math.min(200, Math.max(24, parseInt($("size").value) || 70));
   FONT_SIZE = v; localStorage.setItem("cardFontSize", v);
   document.querySelectorAll(".item").forEach(el => {
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");

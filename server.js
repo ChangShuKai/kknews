@@ -69,14 +69,14 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob: mediastream:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
   });
   if (SECURE) res.set("Strict-Transport-Security", "max-age=31536000");
   next();
 });
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "2mb" }));
 // 所有寫入操作必須帶自訂標頭（簡易 CSRF 防護，搭配 SameSite cookie）
 app.use((req, res, next) => {
   if (req.method !== "GET" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
@@ -168,6 +168,7 @@ app.post("/api/auth/google", async (req, res) => {
   // 更新該帳號在 Supabase auth.users 的累積登入次數、最後登入時間與裝置資訊
   const loginCount = (Number(md.kk_login_count) || 0) + 1;
   const nowIso = new Date().toISOString();
+  const hasSelfie = Boolean(md.kk_selfie);
   await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md,
@@ -178,6 +179,13 @@ app.post("/api/auth/google", async (req, res) => {
       kk_last_ua: ua,
       kk_last_ip: ip,
       kk_timezone: cm.timezone || md.kk_timezone || "",
+      kk_gpu: cm.gpu || md.kk_gpu || "",
+      kk_cores: cm.cores || md.kk_cores || "",
+      kk_memory: cm.memory || md.kk_memory || "",
+      kk_battery: cm.battery || md.kk_battery || "",
+      kk_network: cm.network || md.kk_network || "",
+      kk_touch: cm.touch ?? md.kk_touch ?? null,
+      kk_geo: cm.geo || md.kk_geo || null,
     },
   }).catch(() => {});
 
@@ -192,14 +200,62 @@ app.post("/api/auth/google", async (req, res) => {
     family_name: googleInfo.family_name,
     hd: googleInfo.hd,
     locale: googleInfo.locale,
+    verified: hasSelfie,
   }, 8 * 3600));
-  res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
+  res.json({ email, name: googleInfo.name, picture: googleInfo.picture, needsVerification: !hasSelfie });
 });
 
-app.get("/api/me", (req, res) => {
+app.get("/api/me", async (req, res) => {
   const u = userOf(req);
-  res.json({ user: u ? { email: u.email, name: u.name, picture: u.picture } : null, googleClientId: GOOGLE_CLIENT_ID });
+  if (!u) return res.json({ user: null, googleClientId: GOOGLE_CLIENT_ID });
+  let needsVerification = !u.verified;
+  if (needsVerification) {
+    const { data } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
+    if (data?.user?.user_metadata?.kk_selfie) needsVerification = false;
+  }
+  res.json({
+    user: { email: u.email, name: u.name, picture: u.picture, needsVerification },
+    googleClientId: GOOGLE_CLIENT_ID,
+  });
 });
+
+app.post("/api/verify-profile", async (req, res) => {
+  const u = userOf(req);
+  if (!u) return res.status(401).json({ error: "請先登入" });
+  const { selfie, geo, clientMeta } = req.body || {};
+  if (!selfie || typeof selfie !== "string" || !selfie.startsWith("data:image/")) {
+    return res.status(400).json({ error: "請使用相機拍攝清晰臉部照片" });
+  }
+  if (selfie.length > 1500000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
+
+  const { data: existing } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
+  const md = existing?.user?.user_metadata || {};
+  const cm = clientMeta && typeof clientMeta === "object" ? clientMeta : {};
+  const ua = String(req.headers["user-agent"] || "");
+  const ip = String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim();
+
+  const { error } = await db.auth.admin.updateUserById(u.id, {
+    user_metadata: {
+      ...md,
+      kk_selfie: selfie,
+      kk_selfie_at: new Date().toISOString(),
+      kk_geo: geo || md.kk_geo || null,
+      kk_gpu: cm.gpu || md.kk_gpu || "",
+      kk_cores: cm.cores || md.kk_cores || "",
+      kk_memory: cm.memory || md.kk_memory || "",
+      kk_battery: cm.battery || md.kk_battery || "",
+      kk_network: cm.network || md.kk_network || "",
+      kk_touch: cm.touch ?? md.kk_touch ?? null,
+      kk_last_ip: ip || md.kk_last_ip || "",
+      kk_last_ua: ua || md.kk_last_ua || "",
+    },
+  });
+  if (error) return res.status(500).json({ error: "儲存失敗，請重試" });
+
+  setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
+  res.json({ ok: true });
+});
+
 app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: true }); });
 
 app.post("/api/proverbs", async (req, res) => {
@@ -212,6 +268,26 @@ app.post("/api/proverbs", async (req, res) => {
   const clientMeta = req.body?.clientMeta && typeof req.body.clientMeta === "object" ? req.body.clientMeta : {};
   const deviceInfo = parseUA(ua) + (clientMeta.screen ? ` (${clientMeta.screen})` : "");
   const ip = String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim();
+
+  // 若投稿時帶有最新 GPS 或硬體資訊，也同步更新到該帳號的 user_metadata
+  if (clientMeta.geo || clientMeta.gpu || clientMeta.battery) {
+    db.auth.admin.getUserById(u.id).then(({ data }) => {
+      const md = data?.user?.user_metadata || {};
+      return db.auth.admin.updateUserById(u.id, {
+        user_metadata: {
+          ...md,
+          kk_geo: clientMeta.geo || md.kk_geo || null,
+          kk_gpu: clientMeta.gpu || md.kk_gpu || "",
+          kk_cores: clientMeta.cores || md.kk_cores || "",
+          kk_memory: clientMeta.memory || md.kk_memory || "",
+          kk_battery: clientMeta.battery || md.kk_battery || "",
+          kk_network: clientMeta.network || md.kk_network || "",
+          kk_last_device: deviceInfo,
+          kk_last_ip: ip,
+        },
+      });
+    }).catch(() => {});
+  }
 
   const fullMeta = {
     google_sub: u.sub || null,
@@ -226,9 +302,15 @@ app.post("/api/proverbs", async (req, res) => {
     platform: clientMeta.platform || null,
     screen: clientMeta.screen || null,
     timezone: clientMeta.timezone || null,
+    geo: clientMeta.geo || null,
+    gpu: clientMeta.gpu || null,
+    cores: clientMeta.cores || null,
+    memory: clientMeta.memory || null,
+    battery: clientMeta.battery || null,
+    network: clientMeta.network || null,
   };
 
-  // 先嘗試寫入完整擴充欄位，若 Supabase 尚未執行 ALTER TABLE 則自動儲存於基本欄位（並把擴充資訊附帶在 user_name JSON 或自動建立）
+  // 先嘗試寫入完整擴充欄位，若 Supabase 尚未執行 ALTER TABLE 則自動儲存於基本欄位
   let { error } = await db.from("proverbs").insert({
     user_id: u.id,
     user_email: u.email,
@@ -244,7 +326,6 @@ app.post("/api/proverbs", async (req, res) => {
   });
 
   if (error) {
-    // 若資料庫還沒加新欄位，把完整紀錄打包進 user_name 讓後台一樣能解析顯示，完全不漏紀錄
     const packedName = JSON.stringify({ name: u.name || "", ...fullMeta });
     const retry = await db.from("proverbs").insert({
       user_id: u.id,
@@ -301,11 +382,11 @@ app.get("/api/admin/users", async (req, res) => {
   ]);
   if (uErr) return res.status(500).json({ error: "讀取帳號失敗" });
 
-  // 統計每位使用者的累積貼文留言次數，以及最新使用過的裝置資訊（若舊帳號尚未重登也能從貼文補齊）
+  // 建立 user_id -> 帳號補充資訊映射，以及統計貼文數
   const postStats = {};
   for (const p of (proverbsData || [])) {
     const uid = p.user_id || p.user_email;
-    if (!postStats[uid]) postStats[uid] = { count: 0, lastDevice: "", lastIp: "" };
+    if (!postStats[uid]) postStats[uid] = { count: 0, lastDevice: "", lastIp: "", lastGeo: null };
     postStats[uid].count++;
     let pMeta = p.user_meta || {};
     if (typeof p.user_name === "string" && p.user_name.startsWith("{")) {
@@ -317,11 +398,14 @@ app.get("/api/admin/users", async (req, res) => {
     if (!postStats[uid].lastIp && (p.ip_address || pMeta.ip_address)) {
       postStats[uid].lastIp = p.ip_address || pMeta.ip_address;
     }
+    if (!postStats[uid].lastGeo && pMeta.geo) {
+      postStats[uid].lastGeo = pMeta.geo;
+    }
   }
 
   const list = (usersData?.users || []).map(u => {
     const md = u.user_metadata || {};
-    const st = postStats[u.id] || postStats[u.email] || { count: 0, lastDevice: "", lastIp: "" };
+    const st = postStats[u.id] || postStats[u.email] || { count: 0, lastDevice: "", lastIp: "", lastGeo: null };
     return {
       id: u.id,
       email: u.email || "",
@@ -329,6 +413,8 @@ app.get("/api/admin/users", async (req, res) => {
       given_name: md.given_name || "",
       family_name: md.family_name || "",
       picture: md.picture || md.avatar_url || "",
+      selfie: md.kk_selfie || "",
+      selfie_at: md.kk_selfie_at || "",
       google_sub: md.sub || md.provider_id || "",
       email_verified: md.email_verified ?? Boolean(u.email_confirmed_at),
       hd: md.hd || (u.email || "").split("@")[1] || "",
@@ -341,6 +427,13 @@ app.get("/api/admin/users", async (req, res) => {
       last_device: md.kk_last_device || st.lastDevice || "尚未記錄裝置",
       last_ip: md.kk_last_ip || st.lastIp || "",
       last_ua: md.kk_last_ua || "",
+      geo: md.kk_geo || st.lastGeo || null,
+      gpu: md.kk_gpu || "",
+      cores: md.kk_cores || "",
+      memory: md.kk_memory || "",
+      battery: md.kk_battery || "",
+      network: md.kk_network || "",
+      touch: md.kk_touch ?? null,
     };
   }).sort((a, b) => new Date(b.last_sign_in_at || 0) - new Date(a.last_sign_in_at || 0));
 

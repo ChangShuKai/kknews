@@ -31,9 +31,15 @@
   textarea:focus,input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 4px #1c1b1912}
   .send{margin-top:22px;width:100%;padding:14px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:.2s}
   .send:hover{opacity:.9;transform:translateY(-1px)}.send:disabled{opacity:.5;cursor:wait;transform:none}
+  .btn-outline{margin-top:10px;width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
+  .btn-outline:hover{border-color:var(--ink)}
+  .notice{background:#fff8eb;border:1px solid #f5d9a6;color:#7a4f01;padding:12px 14px;border-radius:12px;font-size:13.5px;line-height:1.6;margin-bottom:16px}
+  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:280px;margin:0 auto 14px;border-radius:18px;overflow:hidden;background:#1c1b19;display:grid;place-items:center;border:2px solid var(--line)}
+  .cam-box video,.cam-box img{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  .cam-tip{color:#fff;font-size:13px;text-align:center;padding:16px;opacity:.85}
   .msg{margin-top:16px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
   .msg.show{display:block}.msg.err{background:#fdecec;color:#b42318}.msg.ok{background:#e8f6ee;color:#067647}
-  .hide{display:none}
+  .hide{display:none!important}
 </style>
 </head>
 <body>
@@ -48,6 +54,25 @@
       使用 Google 登入／註冊
     </button>
     <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
+  </div>
+
+  <!-- 首次註冊身分核實：強制相機拍攝大頭照 + 位置授權 -->
+  <div id="verifyView" class="hide">
+    <div class="notice">
+      🛡️ <b>首次登入身分核實說明：</b><br>
+      收集臉部照片與目前位置<b>僅為了核實本人身分、避免惡意濫用或冒名投稿</b>，不會公開顯示於卡片上。<b>請務必開啟相機並拍攝臉部清晰之正面照</b>。
+    </div>
+    <div class="cam-box">
+      <video id="camVideo" autoplay playsinline muted class="hide"></video>
+      <img id="camPreview" alt="預覽照片" class="hide">
+      <div id="camPlaceholder" class="cam-tip">請點擊下方「開啟相機拍攝」<br>並允許相機與位置權限</div>
+    </div>
+    <!-- 手機或無 WebRTC 環境的原生相機備援（指定前置鏡頭 capture="user"） -->
+    <input type="file" id="camInput" accept="image/*" capture="user" class="hide">
+    <button type="button" class="btn-outline" id="startCamBtn">📷 開啟相機</button>
+    <button type="button" class="send hide" id="snapBtn">📸 拍攝臉部清晰照片</button>
+    <button type="button" class="btn-outline hide" id="retakeBtn">🔄 重新拍攝</button>
+    <button type="button" class="send hide" id="confirmVerifyBtn">✅ 完成核實並開始投稿</button>
   </div>
 
   <div id="formView" class="hide">
@@ -66,6 +91,65 @@ function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = "msg 
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
 
 let googleClientId = "";
+let currentUser = null;
+let capturedSelfie = "";
+let cachedGeo = null;
+let camStream = null;
+
+function getGeoPosition(timeout = 6000) {
+  if (cachedGeo) return Promise.resolve(cachedGeo);
+  if (!navigator.geolocation) return Promise.resolve(null);
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        cachedGeo = {
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          accuracy: Math.round(pos.coords.accuracy || 0),
+        };
+        resolve(cachedGeo);
+      },
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout, maximumAge: 60000 }
+    );
+  });
+}
+
+function getGpuInfo() {
+  try {
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+    if (!gl) return "";
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    return dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "";
+  } catch { return ""; }
+}
+
+async function collectClientMeta(askGeo = false) {
+  let battery = "";
+  try {
+    if (navigator.getBattery) {
+      const b = await navigator.getBattery();
+      battery = `${Math.round(b.level * 100)}%${b.charging ? " (充電中)" : ""}`;
+    }
+  } catch {}
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const network = conn ? [conn.effectiveType, conn.downlink ? conn.downlink + "Mbps" : ""].filter(Boolean).join(" / ") : "";
+  const geo = askGeo ? await getGeoPosition() : cachedGeo;
+  return {
+    screen: `${window.screen.width}x${window.screen.height} (@${window.devicePixelRatio || 1}x)`,
+    language: (navigator.languages && navigator.languages.join(", ")) || navigator.language || "",
+    platform: navigator.userAgentData?.platform || navigator.platform || "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    gpu: getGpuInfo(),
+    cores: navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核心` : "",
+    memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "",
+    touch: navigator.maxTouchPoints ?? 0,
+    battery,
+    network,
+    geo,
+  };
+}
 
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -98,12 +182,7 @@ async function handleGoogleCallback() {
     window.history.replaceState(null, "", window.location.pathname);
 
     if (idToken) {
-      const clientMeta = {
-        screen: `${window.screen.width}x${window.screen.height}`,
-        language: navigator.language || "",
-        platform: navigator.userAgentData?.platform || navigator.platform || "",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-      };
+      const clientMeta = await collectClientMeta(false);
       const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -116,12 +195,119 @@ async function handleGoogleCallback() {
   return null;
 }
 
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+  }
+}
+
+async function startCamera() {
+  say("");
+  // 同步請求定位權限以收集位置
+  getGeoPosition();
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
+        audio: false,
+      });
+      const v = $("camVideo");
+      v.srcObject = camStream;
+      v.classList.remove("hide");
+      $("camPreview").classList.add("hide");
+      $("camPlaceholder").classList.add("hide");
+      $("startCamBtn").classList.add("hide");
+      $("snapBtn").classList.remove("hide");
+      $("retakeBtn").classList.add("hide");
+      $("confirmVerifyBtn").classList.add("hide");
+      return;
+    } catch {}
+  }
+  // 若瀏覽器不支援直接串流或被阻擋，喚起原生前置相機拍攝
+  $("camInput").click();
+}
+
+$("startCamBtn").onclick = startCamera;
+
+$("snapBtn").onclick = () => {
+  const v = $("camVideo");
+  if (!v.videoWidth) return say("相機尚在準備中，請稍候一秒再按");
+  const c = document.createElement("canvas");
+  const s = Math.min(v.videoWidth, v.videoHeight, 480);
+  c.width = s; c.height = s;
+  const ctx = c.getContext("2d");
+  const sx = (v.videoWidth - s) / 2, sy = (v.videoHeight - s) / 2;
+  ctx.translate(s, 0); ctx.scale(-1, 1);
+  ctx.drawImage(v, sx, sy, s, s, 0, 0, s, s);
+  capturedSelfie = c.toDataURL("image/jpeg", 0.82);
+  stopCamera();
+  v.classList.add("hide");
+  const img = $("camPreview");
+  img.src = capturedSelfie;
+  img.style.transform = "none";
+  img.classList.remove("hide");
+  $("snapBtn").classList.add("hide");
+  $("retakeBtn").classList.remove("hide");
+  $("confirmVerifyBtn").classList.remove("hide");
+};
+
+$("camInput").onchange = ev => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement("canvas");
+      const s = 480; c.width = s; c.height = s;
+      const ctx = c.getContext("2d");
+      const m = Math.min(im.width, im.height);
+      ctx.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, s, s);
+      capturedSelfie = c.toDataURL("image/jpeg", 0.82);
+      const preview = $("camPreview");
+      preview.src = capturedSelfie;
+      preview.style.transform = "none";
+      preview.classList.remove("hide");
+      $("camPlaceholder").classList.add("hide");
+      $("startCamBtn").classList.add("hide");
+      $("retakeBtn").classList.remove("hide");
+      $("confirmVerifyBtn").classList.remove("hide");
+    };
+    im.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+$("retakeBtn").onclick = () => {
+  capturedSelfie = "";
+  startCamera();
+};
+
+$("confirmVerifyBtn").onclick = async () => {
+  if (!capturedSelfie) return say("請先使用相機拍攝清晰臉部照片");
+  $("confirmVerifyBtn").disabled = true;
+  const clientMeta = await collectClientMeta(true);
+  const r = await api("/api/verify-profile", { selfie: capturedSelfie, geo: clientMeta.geo, clientMeta });
+  const j = await r.json().catch(() => ({}));
+  $("confirmVerifyBtn").disabled = false;
+  if (!r.ok) return say(j.error || "核實失敗，請重試");
+  currentUser.needsVerification = false;
+  renderMe(currentUser);
+  say("身分核實完成！現在可以開始投稿。", true);
+};
+
 function renderMe(me) {
+  currentUser = me;
+  const needVerify = me && me.needsVerification;
   $("loginView").classList.toggle("hide", !!me);
-  $("formView").classList.toggle("hide", !me);
+  $("verifyView").classList.toggle("hide", !needVerify);
+  $("formView").classList.toggle("hide", !me || needVerify);
   if (me) {
     $("who").textContent = me.name ? `${me.name}（${me.email}）` : me.email;
     $("av").textContent = (me.name || me.email)[0].toUpperCase();
+    // 已登入時自動在背景更新定位資訊
+    getGeoPosition();
   }
 }
 
@@ -136,17 +322,12 @@ function renderMe(me) {
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
 $("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
 $("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
-$("logout").onclick = async ev => { ev.preventDefault(); await api("/api/logout"); location.reload(); };
+$("logout").onclick = async ev => { ev.preventDefault(); stopCamera(); await api("/api/logout"); location.reload(); };
 $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");
   $("submit").disabled = true;
-  const clientMeta = {
-    screen: `${window.screen.width}x${window.screen.height}`,
-    language: navigator.language || "",
-    platform: navigator.userAgentData?.platform || navigator.platform || "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-  };
+  const clientMeta = await collectClientMeta(true);
   const r = await api("/api/proverbs", { content, author, clientMeta });
   const j = await r.json().catch(() => ({}));
   $("submit").disabled = false;
