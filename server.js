@@ -23,14 +23,19 @@ function splitPage(html, name) {
   const out = html.replace(/<script>([\s\S]*?)<\/script>/, (m, code) => { js = code; return `<script src="/assets/${name}.js" defer></script>`; });
   return { html: out, js };
 }
-const read = (...p) => fs.readFileSync(path.join(__dirname, ...p), "utf8");   // 字面路徑，讓 Vercel 追蹤得到
+function readIconSvg() {
+  for (const p of [path.join(__dirname, "icon.svg"), path.join(__dirname, "views", "icon.svg")]) {
+    try { return fs.readFileSync(p, "utf8"); } catch {}
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#1868c7"/><text x="50" y="64" font-size="42" font-family="sans-serif" font-weight="bold" fill="#fff" text-anchor="middle">KK</text></svg>';
+}
 const PAGES = {
-  index: splitPage(read("views", "index.html"), "index"),
-  login: splitPage(read("views", "admin-login.html"), "login"),
-  admin: splitPage(read("views", "admin.html"), "admin"),
-  css: read("views", "ui.css"),
-  jszip: read("node_modules", "jszip", "dist", "jszip.min.js"),
-  icon: read("icon.svg"),
+  index: splitPage(fs.readFileSync(path.join(__dirname, "views", "index.html"), "utf8"), "index"),
+  login: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"), "login"),
+  admin: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"), "admin"),
+  css: fs.readFileSync(path.join(__dirname, "views", "ui.css"), "utf8"),
+  jszip: fs.readFileSync(path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), "utf8"),
+  icon: readIconSvg(),
 };
 
 // 服務金鑰只存在於伺服器，瀏覽器永遠拿不到

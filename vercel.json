@@ -1,1 +1,1 @@
-{"functions":{"api/index.js":{"includeFiles":"{views/**,node_modules/jszip/dist/jszip.min.js}"}},"rewrites":[{"source":"/(.*)","destination":"/api"}]}
+{"functions":{"api/index.js":{"includeFiles":"{views/**,icon.svg,node_modules/jszip/dist/jszip.min.js}"}},"rewrites":[{"source":"/(.*)","destination":"/api"}]}
