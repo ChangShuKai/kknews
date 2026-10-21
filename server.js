@@ -15,9 +15,12 @@ for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, S
 }
 const SCHOOL = "@hlc.edu.tw";
 const SECURE = BASE_URL.startsWith("https");
-const VIEWS = path.join(__dirname, "views");
-const view = n => fs.readFileSync(path.join(VIEWS, n), "utf8");
-const PAGES = { index: view("index.html"), login: view("admin-login.html"), admin: view("admin.html") };
+const PAGES = {   // 使用字面路徑，讓 Vercel 打包時能追蹤到檔案
+  index: fs.readFileSync(path.join(__dirname, "views", "index.html"), "utf8"),
+  login: fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"),
+  admin: fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"),
+  jszip: fs.readFileSync(path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), "utf8"),
+};
 
 // 服務金鑰只存在於伺服器，瀏覽器永遠拿不到
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -143,7 +146,7 @@ app.get("/adminusercontrol", (req, res) => {
 });
 app.get("/adminusercontrol/jszip.js", (req, res) => {
   if (!adminOf(req)) return notFound(res);
-  res.type("js").sendFile(path.join(__dirname, "node_modules/jszip/dist/jszip.min.js"));
+  res.type("js").send(PAGES.jszip);
 });
 
 app.post("/api/admin/login", async (req, res) => {

@@ -1,1 +1,0 @@
-{"functions":{"server.js":{"includeFiles":"{views/**,node_modules/jszip/dist/jszip.min.js}"}},"rewrites":[{"source":"/(.*)","destination":"/server.js"}]}
