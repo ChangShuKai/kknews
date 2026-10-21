@@ -27,13 +27,21 @@ alter table public.proverbs
   add column if not exists user_agent text,
   add column if not exists ip_address text;
 
--- 開啟 RLS 且不建立任何 policy，並撤銷公開角色權限：
--- 即使有人從別處拿到 anon key，也完全無法讀寫此表。
+-- 開啟並強制 RLS：
+-- 即使有人從別處拿到 anon 或 user token，也完全無法直接讀寫資料表
 alter table public.proverbs enable row level security;
+alter table public.proverbs force row level security;
+
+-- 移除舊政策並建立明確阻擋規則，滿足 Supabase Security Advisor
 drop policy if exists "school users insert own" on public.proverbs;
 drop policy if exists "users read own" on public.proverbs;
 drop policy if exists "admin read all" on public.proverbs;
 drop policy if exists "admin delete" on public.proverbs;
+drop policy if exists "allow service_role" on public.proverbs;
+drop policy if exists "deny public" on public.proverbs;
+
+create policy "allow service_role" on public.proverbs for all to service_role using (true) with check (true);
+create policy "deny public" on public.proverbs as restrictive for all to anon, authenticated using (false) with check (false);
 revoke all on public.proverbs from anon, authenticated;
 
 -- 資料庫層強制：非 @hlc.edu.tw 帳號無法建立

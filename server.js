@@ -184,18 +184,48 @@ const hardwarePatch = (md, cm) => ({
   kk_memory: cm.memory || md.kk_memory || "", kk_battery: cm.battery || md.kk_battery || "",
   kk_network: cm.network || md.kk_network || "", kk_touch: cm.touch ?? md.kk_touch ?? null,
 });
-// 是否已完成實拍：優先看 user_profiles 資料表，若資料表尚未建立則檢查 user_metadata
-async function hasVerified(uid, mdFallback = null) {
+// 確保儲存桶存在（私有，僅 service_role 存取）
+let bucketChecked = false;
+async function ensureVerifyBucket() {
+  if (bucketChecked) return;
   try {
-    const { data, error } = await db.from("user_profiles").select("user_id").eq("user_id", uid).maybeSingle();
-    if (!error && data) return true;
+    await db.storage.createBucket("kknews-verify", { public: false });
   } catch {}
-  let md = mdFallback;
-  if (!md) {
-    const { data } = await db.auth.admin.getUserById(uid).catch(() => ({}));
-    md = data?.user?.user_metadata || {};
-  }
-  return Boolean(md.kk_selfie && md.kk_selfie_right && md.kk_selfie_left);
+  bucketChecked = true;
+}
+
+// 帳號全裝置核實檢查：任一條件滿足即代表該帳號已完成過初始收集，永不再要求拍攝
+async function hasVerified(uid, mdFallback = null) {
+  if (!uid) return false;
+  // 1. 先看傳入的 metadata 或 kk_verified
+  if (mdFallback && (mdFallback.kk_verified === true || mdFallback.kk_selfie || mdFallback.kk_selfie_at)) return true;
+
+  // 2. 查 Supabase Auth 權威 user_metadata
+  try {
+    const { data: uData } = await db.auth.admin.getUserById(uid).catch(() => ({}));
+    const md = uData?.user?.user_metadata || {};
+    if (md.kk_verified === true || md.kk_selfie || md.kk_selfie_at) return true;
+  } catch {}
+
+  // 3. 查私有 Storage 實拍檔
+  try {
+    const { data: stFiles } = await db.storage.from("kknews-verify").list("", { search: uid + ".json", limit: 1 });
+    if (stFiles && stFiles.length > 0) return true;
+  } catch {}
+
+  // 4. 查 user_profiles 資料表
+  try {
+    const { data } = await db.from("user_profiles").select("user_id").eq("user_id", uid).maybeSingle();
+    if (data) return true;
+  } catch {}
+
+  // 5. 若已有發過投稿，代表先前必定已核實通過
+  try {
+    const { data: pv } = await db.from("proverbs").select("id").eq("user_id", uid).limit(1);
+    if (pv && pv.length > 0) return true;
+  } catch {}
+
+  return false;
 }
 
 app.post("/api/auth/google", async (req, res) => {
@@ -224,7 +254,10 @@ app.post("/api/auth/google", async (req, res) => {
     if (Date.now() - new Date(u.created_at).getTime() < 120e3) await db.auth.admin.deleteUser(u.id).catch(() => {});
     return res.status(403).json({ error: "domain" });
   }
-  const md = u.user_metadata || {};
+
+  // 讀取 Supabase 現存最新完整 metadata，避免覆寫核實狀態
+  const { data: existingUser } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
+  const md = { ...(u.user_metadata || {}), ...(existingUser?.user?.user_metadata || {}) };
   const ua = str(req.headers["user-agent"], 300);
   const cm = cleanMeta(clientMeta);
   const deviceInfo = parseUA(ua) + (cm.screen ? ` (${cm.screen})` : "");
@@ -240,10 +273,12 @@ app.post("/api/auth/google", async (req, res) => {
     picture: str(claims.picture || md.avatar_url || md.picture, 300),
     locale: str(claims.locale || md.locale || cm.language, 20),
   };
+
   const verified = await hasVerified(u.id, md);
   await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md, ...googleInfo,
+      kk_verified: verified ? true : (md.kk_verified ?? false),
       kk_login_count: (Number(md.kk_login_count) || 0) + 1,
       kk_last_login_at: new Date().toISOString(),
       kk_last_device: deviceInfo, kk_last_ua: ua, kk_last_ip: clientIp(req),
@@ -264,35 +299,48 @@ app.get("/api/me", async (req, res) => {
   const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, "") };
   const u = userOf(req);
   if (!u) return res.json({ user: null, ...base });
-  let needsVerification = !u.verified;
-  if (needsVerification && await hasVerified(u.id)) needsVerification = false;
-  res.json({ user: { email: u.email, name: u.name, picture: u.picture, needsVerification }, ...base });
+  const verified = u.verified || (await hasVerified(u.id));
+  if (verified && !u.verified) {
+    setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
+  }
+  res.json({ user: { email: u.email, name: u.name, picture: u.picture, needsVerification: !verified }, ...base });
 });
 
 app.post("/api/verify-profile", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
-  if (await limited("verify:" + u.id, 10, 3600e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
+  if (await hasVerified(u.id)) {
+    setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
+    return res.json({ ok: true, alreadyVerified: true });
+  }
+  if (await limited("verify:" + u.id, 15, 3600e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
   const { selfieFront, selfieRight, selfieLeft, clientMeta } = req.body || {};
   const imgs = [selfieFront, selfieRight, selfieLeft];
   for (const img of imgs) {
     if (typeof img !== "string" || !JPEG.test(img)) return res.status(400).json({ error: "請完成正面、向右、向左三張清晰臉部拍攝" });
-    if (img.length > 1500000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
+    if (img.length > 2000000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
   }
   const cm = cleanMeta(clientMeta);
   const nowIso = new Date().toISOString();
-  // 同時嘗試寫入 user_profiles 與 user_metadata，確保不論是否執行額外 SQL 都能可靠儲存與顯示
+
+  await ensureVerifyBucket();
+  // 1. 照片存入專用 Private Storage（不受 JWT 標頭大小限制，永久安全保存）
+  const photoPayload = JSON.stringify({ front: selfieFront, right: selfieRight, left: selfieLeft, at: nowIso, geo: cm.geo });
+  await db.storage.from("kknews-verify").upload(`${u.id}.json`, Buffer.from(photoPayload), { contentType: "application/json", upsert: true }).catch(() => {});
+
+  // 2. 同時寫入 user_profiles 表（若存在）
   await db.from("user_profiles").upsert({
     user_id: u.id, selfie_front: selfieFront, selfie_right: selfieRight, selfie_left: selfieLeft, selfie_at: nowIso,
-  }).then(() => {}, () => {});
+  }).catch(() => {});
+
+  // 3. 標記帳號 kk_verified = true，並保留縮圖或拍照時間，不再向 JWT 堆積龐大字串
   await patchMeta(u.id, md => ({
     ...hardwarePatch(md, cm),
-    kk_selfie: selfieFront,
-    kk_selfie_right: selfieRight,
-    kk_selfie_left: selfieLeft,
+    kk_verified: true,
     kk_selfie_at: nowIso,
     kk_last_ip: clientIp(req),
   })).catch(() => {});
+
   setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
   res.json({ ok: true });
 });
@@ -380,13 +428,15 @@ app.get("/api/admin/proverbs", async (req, res) => {
 // 已登入帳號完整彙整（包含實拍三張照片、定位、硬體環境、登入與貼文次數）
 app.get("/api/admin/users", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
-  const [{ data: usersData, error: uErr }, { data: proverbsData }, profilesRes] = await Promise.all([
+  const [{ data: usersData, error: uErr }, { data: proverbsData }, profilesRes, storageFilesRes] = await Promise.all([
     db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     db.from("proverbs").select("*").order("created_at", { ascending: false }),
     db.from("user_profiles").select("user_id,selfie_front,selfie_right,selfie_left,selfie_at").then(r => r, () => ({ data: [] })),
+    db.storage.from("kknews-verify").list("", { limit: 1000 }).then(r => r, () => ({ data: [] })),
   ]);
   if (uErr) return res.status(500).json({ error: "讀取帳號失敗" });
   const profileMap = Object.fromEntries(((profilesRes && profilesRes.data) || []).map(p => [p.user_id, p]));
+  const storageSet = new Set(((storageFilesRes && storageFilesRes.data) || []).map(f => f.name.replace(/\.json$/, "")));
 
   const postStats = {};
   for (const p of (proverbsData || [])) {
@@ -420,10 +470,12 @@ app.get("/api/admin/users", async (req, res) => {
     const md = u.user_metadata || {};
     const pf = profileMap[u.id] || {};
     const st = postStats[u.id] || postStats[u.email] || { count: 0 };
+    const hasStorage = storageSet.has(u.id);
     const selfie = pf.selfie_front || md.kk_selfie || "";
     const selfieRight = pf.selfie_right || md.kk_selfie_right || "";
     const selfieLeft = pf.selfie_left || md.kk_selfie_left || "";
     const selfieAt = pf.selfie_at || md.kk_selfie_at || "";
+    const hasPhotos = Boolean(selfie || hasStorage || md.kk_verified);
     return {
       id: u.id,
       email: u.email || "",
@@ -431,7 +483,7 @@ app.get("/api/admin/users", async (req, res) => {
       given_name: md.given_name || "",
       family_name: md.family_name || "",
       picture: md.picture || md.avatar_url || "",
-      has_photos: Boolean(selfie),
+      has_photos: hasPhotos,
       selfie,
       selfie_right: selfieRight,
       selfie_left: selfieLeft,
@@ -464,11 +516,24 @@ app.get("/api/admin/users/:id/photos", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   const id = String(req.params.id);
   if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({});
-  const { data } = await db.from("user_profiles").select("selfie_front,selfie_right,selfie_left,selfie_at").eq("user_id", id).maybeSingle().then(r => r, () => ({ data: null }));
   audit(req, "view_photos", id);
+
+  // 1. 優先從私有 Storage 讀取
+  try {
+    const { data: stBlob, error: stErr } = await db.storage.from("kknews-verify").download(`${id}.json`);
+    if (!stErr && stBlob) {
+      const parsed = JSON.parse(await stBlob.text());
+      return res.json({ front: parsed.front || "", right: parsed.right || "", left: parsed.left || "", at: parsed.at || "" });
+    }
+  } catch {}
+
+  // 2. 查 user_profiles 表
+  const { data } = await db.from("user_profiles").select("selfie_front,selfie_right,selfie_left,selfie_at").eq("user_id", id).maybeSingle().then(r => r, () => ({ data: null }));
   if (data && data.selfie_front) {
     return res.json({ front: data.selfie_front, right: data.selfie_right, left: data.selfie_left, at: data.selfie_at });
   }
+
+  // 3. 查 user_metadata 舊格式
   const { data: uData } = await db.auth.admin.getUserById(id).catch(() => ({}));
   const md = uData?.user?.user_metadata || {};
   res.json({ front: md.kk_selfie || "", right: md.kk_selfie_right || "", left: md.kk_selfie_left || "", at: md.kk_selfie_at || "" });

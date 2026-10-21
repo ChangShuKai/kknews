@@ -445,6 +445,9 @@ $("confirmVerifyBtn").onclick = async () => {
 $("closeModalBtn").onclick = () => {
   $("legalModal").classList.add("hide");
   currentUser.needsVerification = false;
+  if (currentUser.email) {
+    localStorage.setItem("kk_verified_" + currentUser.email.toLowerCase(), "1");
+  }
   capturedShots = ["", "", ""];
   renderMe(currentUser);
   say("身分核實完成！現在可以開始投稿。", true);
@@ -485,6 +488,9 @@ function renderMe(me) {
     $("topAvImg").classList.add("hide");
   }
 
+  if (me.email && localStorage.getItem("kk_verified_" + me.email.toLowerCase()) === "1") {
+    me.needsVerification = false;
+  }
   if (me.needsVerification) {
     show("verifyView");
     getGeoPosition();
@@ -524,7 +530,11 @@ async function refreshPublicStatus() {
   const data = r.ok ? await r.json() : {};
   googleClientId = data.googleClientId || "";
   baseUrl = data.baseUrl || "";
-  renderMe(callbackUser || data.user || null);
+  const u = callbackUser || data.user || null;
+  if (u && !u.needsVerification && u.email) {
+    localStorage.setItem("kk_verified_" + u.email.toLowerCase(), "1");
+  }
+  renderMe(u);
 })();
 
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
