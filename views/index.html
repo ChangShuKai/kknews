@@ -15,11 +15,21 @@
   @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .brand{font-size:13px;letter-spacing:.25em;color:var(--muted)}
-  .sys-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:12px;color:var(--ink);font-weight:500}
-  .sys-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px #10b98126}
-  .sys-dot.warn{background:#f59e0b;box-shadow:0 0 0 2px #f59e0b26}
+  /* 前台上方 Supabase 系統狀態卡（顯示國家、ap-northeast-1 與即時 CPU/Disk/RAM/conns） */
+  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:22px}
+  .db-top{display:flex;align-items:center;gap:12px}
+  .db-ico{width:38px;height:38px;border-radius:10px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
+  .db-ico.err{background:#ef4444;color:#fff}
+  .db-ico svg{width:20px;height:20px}
+  .db-title{flex:1;min-width:0}
+  .db-title b{font-size:14px;display:block;color:var(--ink)}
+  .db-title span{font-size:12px;color:#64748b;display:block;line-height:1.35}
+  .jp-flag{width:30px;height:20px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
+  .jp-flag::after{content:"";width:10px;height:10px;border-radius:50%;background:#bc002d}
+  .db-foot{border-top:1px solid var(--line);margin-top:10px;padding-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#64748b;gap:4px;flex-wrap:wrap}
+  .db-foot strong{color:var(--ink);font-weight:600}
   h1{margin:0 0 8px;font-size:26px;line-height:1.3}
-  .sub{margin:0 0 28px;color:var(--muted);font-size:14px;line-height:1.6}
+  .sub{margin:0 0 20px;color:var(--muted);font-size:14px;line-height:1.6}
   .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
   .gbtn:hover{box-shadow:0 6px 20px #0000001a;transform:translateY(-1px);border-color:#cfc9bd}
   .gbtn svg{width:22px;height:22px}
@@ -81,9 +91,25 @@
 <div class="card">
   <div class="brand-row">
     <div class="brand">KKNEWS</div>
-    <div class="sys-pill" title="系統連線狀態">
-      <span class="sys-dot" id="sysDot"></span>
-      <span id="sysText">系統正常</span>
+  </div>
+  <!-- 一般使用者可見之系統狀態：國家、區域 ap-northeast-1 與即時 CPU / Disk / RAM / conns -->
+  <div class="db-card">
+    <div class="db-top">
+      <div class="db-ico" id="dbIco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </div>
+      <div class="db-title">
+        <b id="dbName">Primary Database</b>
+        <span id="dbRegion">Northeast Asia (Tokyo)</span>
+        <span id="dbSpec">ap-northeast-1 · t3.nano</span>
+      </div>
+      <div class="jp-flag" title="Japan (ap-northeast-1)"></div>
+    </div>
+    <div class="db-foot">
+      <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
+      <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
+      <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
+      <span><span id="stConns">—/60</span> conns</span>
     </div>
   </div>
   <h1>寫下你想說的一句話</h1>
@@ -457,11 +483,22 @@ function renderMe(me) {
   }
 }
 
+async function refreshPublicStatus() {
+  try {
+    const r = await fetch("/api/status");
+    if (!r.ok) return;
+    const s = await r.json();
+    $("dbIco").classList.toggle("err", !s.ok);
+    $("stCpu").textContent = s.cpuPct + "%";
+    $("stDisk").textContent = s.diskPct + "%";
+    $("stRam").textContent = s.ramPct + "%";
+    $("stConns").textContent = `${s.conns}/${s.maxConns}`;
+  } catch {}
+}
+
 (async () => {
-  fetch("/api/status").then(r => r.json()).then(s => {
-    $("sysDot").classList.toggle("warn", !s.ok);
-    $("sysText").textContent = s.ok ? "系統正常" : "維護中";
-  }).catch(() => {});
+  refreshPublicStatus();
+  setInterval(refreshPublicStatus, 10000);
   const callbackUser = await handleGoogleCallback();
   const r = await fetch("/api/me");
   const data = r.ok ? await r.json() : {};

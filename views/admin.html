@@ -111,24 +111,39 @@
 
     <div class="api-card">
       <div class="api-metric">
-        <small>Supabase 專案 ID</small>
+        <small>Supabase 專案與狀態</small>
         <b id="stRef">—</b>
         <span id="stHealth">● REST & Auth 正常</span>
       </div>
       <div class="api-metric">
-        <small>API 回應延遲</small>
+        <small>API 延遲 / 快取命中</small>
         <b id="stLatency">— ms</b>
-        <span id="stCache">快取命中 99.4%</span>
+        <span id="stCache">快取命中 —%</span>
       </div>
       <div class="api-metric">
-        <small>資料庫實際佔用</small>
+        <small>真實 RAM / Disk 用量</small>
+        <b id="stRealRam">— / — MB</b>
+        <span id="stRealDisk">Disk — MB / — GB</span>
+      </div>
+      <div class="api-metric">
+        <small>DB 大小 / WAL 日誌</small>
         <b id="stDbSize">— MB</b>
-        <span>上限 500 MB</span>
+        <span id="stWalSize">WAL — MB</span>
       </div>
       <div class="api-metric">
-        <small>資料表／Auth 統計</small>
-        <b id="stCounts">0 筆 / 0 人</b>
-        <span id="stNodeMem">Node 記憶體 — MB</span>
+        <small>SQL 查詢 / 交易 Commit</small>
+        <b id="stQueries">— 次</b>
+        <span id="stXact">Commit — / Rollback —</span>
+      </div>
+      <div class="api-metric">
+        <small>資料列讀寫 / 網路流量</small>
+        <b id="stTuples">寫入 — 筆</b>
+        <span id="stNet">⬇ — MB / ⬆ — MB</span>
+      </div>
+      <div class="api-metric">
+        <small>系統負載 (1m/5m/15m)</small>
+        <b id="stLoad">— / — / —</b>
+        <span id="stCounts">貼文 — 篇 · 帳號 — 人</span>
       </div>
     </div>
   </div>
@@ -188,6 +203,41 @@ function drawCard(canvas, text, author) {
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
 
 /* ---------- 資料 ---------- */
+function applyAdminStatus(st) {
+  if (!st) return;
+  $("dbIco").classList.toggle("err", !st.ok);
+  $("dbName").textContent = st.dbName || "Primary Database";
+  $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
+  $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
+  $("stCpu").textContent = st.cpuPct + "%";
+  $("stDisk").textContent = st.diskPct + "%";
+  $("stRam").textContent = st.ramPct + "%";
+  $("stConns").textContent = `${st.conns}/${st.maxConns}`;
+  $("stRef").textContent = st.projectRef;
+  $("stHealth").textContent = st.ok ? "● PostgreSQL 100% 即時連線" : "● 連線異常";
+  $("stHealth").style.color = st.ok ? "#067647" : "#b42318";
+  $("stLatency").textContent = st.latencyMs + " ms";
+  $("stCache").textContent = `快取命中 ${st.cacheHitPct}%`;
+  $("stRealRam").textContent = `${st.memUsedMb} / ${st.memTotalMb} MB`;
+  $("stRealDisk").textContent = `Disk ${st.diskUsedMb} MB / ${st.diskTotalGb} GB`;
+  $("stDbSize").textContent = st.dbSizeMb + " MB";
+  $("stWalSize").textContent = `WAL ${st.walSizeMb} MB`;
+  $("stQueries").textContent = `${st.totalQueries} 條查詢`;
+  $("stXact").textContent = `Commit ${st.xactCommit} · Rollback ${st.xactRollback}`;
+  $("stTuples").textContent = `+${st.tupInserted} / 改${st.tupUpdated} / 刪${st.tupDeleted}`;
+  $("stNet").textContent = `⬇ ${st.netRxMb} MB · ⬆ ${st.netTxMb} MB`;
+  $("stLoad").textContent = `${st.load1} / ${st.load5} / ${st.load15}`;
+  $("stCounts").textContent = `貼文 ${st.proverbsCount} 篇 · 帳號 ${st.usersCount} 人`;
+}
+
+async function refreshAdminStatus() {
+  try {
+    const rs = await fetch("/api/admin/status");
+    if (rs.ok) applyAdminStatus(await rs.json());
+  } catch {}
+}
+setInterval(refreshAdminStatus, 10000);
+
 async function load() {
   const [rp, ru, rs] = await Promise.all([
     fetch("/api/admin/proverbs"),
@@ -197,25 +247,7 @@ async function load() {
   if (rp.status === 404 || ru.status === 404) return location.reload();   // session 過期
   rows = rp.ok ? await rp.json() : [];
   users = ru.ok ? await ru.json() : [];
-  const st = rs.ok ? await rs.json() : null;
-  if (st) {
-    $("dbIco").classList.toggle("err", !st.ok);
-    $("dbName").textContent = st.dbName || "Primary Database";
-    $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
-    $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
-    $("stCpu").textContent = st.cpuPct + "%";
-    $("stDisk").textContent = st.diskPct + "%";
-    $("stRam").textContent = st.ramPct + "%";
-    $("stConns").textContent = `${st.conns}/${st.maxConns}`;
-    $("stRef").textContent = st.projectRef;
-    $("stHealth").textContent = st.ok ? "● REST & Auth 連線正常" : "● 連線異常";
-    $("stHealth").style.color = st.ok ? "#067647" : "#b42318";
-    $("stLatency").textContent = st.latencyMs + " ms";
-    $("stCache").textContent = `快取命中 ${st.cacheHitPct}%`;
-    $("stDbSize").textContent = st.dbSizeMb + " MB";
-    $("stCounts").textContent = `${st.proverbsCount} 篇 / ${st.usersCount} 人`;
-    $("stNodeMem").textContent = `Server RAM ${st.nodeRssMb} MB`;
-  }
+  if (rs.ok) applyAdminStatus(await rs.json());
   userMap = {};
   for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
   $("uCount").textContent = users.length;
