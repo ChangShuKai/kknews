@@ -44,13 +44,16 @@
   .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:270px;margin:0 auto 14px;border-radius:22px;overflow:hidden;background:#020617;display:grid;place-items:center;border:2px solid #334155;box-shadow:0 0 25px #0ea5e933}
   .cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
   .cam-tip{color:#94a3b8;font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
-  /* 臉部對準框與雷射掃描線 */
+  /* 臉部對準框與方向箭頭指示 */
   .face-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;display:grid;place-items:center}
-  .face-svg{width:82%;height:82%;filter:drop-shadow(0 0 8px #22d3ee99);transition:.35s}
-  .scan-line{position:absolute;left:12%;right:12%;height:2px;background:linear-gradient(90deg,transparent,#22d3ee,#fff,#22d3ee,transparent);box-shadow:0 0 12px 2px #22d3ee;animation:scan 2.4s ease-in-out infinite;opacity:.85}
-  @keyframes scan{0%,100%{top:14%}50%{top:84%}}
-  .dir-arrow{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#020617cc;border:1px solid #22d3ee88;color:#22d3ee;padding:4px 14px;border-radius:99px;font-size:13px;font-weight:700;backdrop-filter:blur(4px);white-space:nowrap;animation:pulse 1.2s infinite}
-  @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+  .face-svg{width:84%;height:84%;filter:drop-shadow(0 0 8px #22d3ee99);transition:.35s}
+  .turn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;filter:drop-shadow(0 0 10px #22d3ee);opacity:0;transition:.3s}
+  .turn-arrow.right{right:10px;animation:nudgeR 1s ease-in-out infinite}
+  .turn-arrow.left{left:10px;animation:nudgeL 1s ease-in-out infinite}
+  .turn-arrow.show{opacity:1}
+  @keyframes nudgeR{0%,100%{transform:translate(0,-50%)}50%{transform:translate(8px,-50%)}}
+  @keyframes nudgeL{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-8px,-50%)}}
+  .dir-arrow{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#020617d9;border:1.5px solid #22d3ee;color:#22d3ee;padding:5px 16px;border-radius:99px;font-size:13.5px;font-weight:700;backdrop-filter:blur(4px);white-space:nowrap;box-shadow:0 0 14px #22d3ee4d}
   .shots-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
   .shot-slot{aspect-ratio:1/1;border-radius:12px;border:1.5px dashed #475569;background:#0f172a;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:#64748b}
   .shot-slot img{width:100%;height:100%;object-fit:cover}
@@ -102,7 +105,6 @@
       <div class="cam-box">
         <video id="camVideo" autoplay playsinline muted class="hide"></video>
         <div class="face-overlay hide" id="faceOverlay">
-          <div class="scan-line"></div>
           <!-- 科技感臉部輪廓與四角瞄準線 SVG -->
           <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
             <!-- 四角準星 -->
@@ -116,6 +118,16 @@
             <line x1="68" y1="82" x2="88" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
             <line x1="112" y1="82" x2="132" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
             <line x1="100" y1="70" x2="100" y2="112" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.5"/>
+          </svg>
+          <!-- 向右轉動態雙箭頭指示 -->
+          <svg class="turn-arrow right" id="arrowRight" viewBox="0 0 64 64" fill="none">
+            <path d="M14 16 L30 32 L14 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+            <path d="M32 16 L48 32 L32 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- 向左轉動態雙箭頭指示 -->
+          <svg class="turn-arrow left" id="arrowLeft" viewBox="0 0 64 64" fill="none">
+            <path d="M50 16 L34 32 L50 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+            <path d="M32 16 L16 32 L32 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <div class="dir-arrow" id="dirHint">👤 請正對鏡頭</div>
         </div>
@@ -176,9 +188,9 @@ let cachedGeo = null;
 let camStream = null;
 
 const STEP_CFG = [
-  { title: "請將臉部對準框中央（正面）", hint: "👤 請正對鏡頭，保持臉部清晰", btn: "📸 拍攝第 1 張（正面）", transform: "scale(1)" },
-  { title: "很好！現在請將臉部微向右轉 ➡️", hint: "➡️ 請將頭微向右轉約 20°", btn: "📸 拍攝第 2 張（向右一張）", transform: "perspective(400px) rotateY(18deg)" },
-  { title: "最後一步！請將臉部微向左轉 ⬅️", hint: "⬅️ 請將頭微向左轉約 20°", btn: "📸 拍攝第 3 張（向左一張）", transform: "perspective(400px) rotateY(-18deg)" },
+  { title: "請將臉部對準框中央（正面）", hint: "👤 請正對鏡頭，保持臉部清晰", btn: "📸 拍攝第 1 張（正面）", transform: "scale(1)", arrow: "" },
+  { title: "請順著箭頭方向，將臉向右微轉 ➔", hint: "➔ 請向右轉頭約 20° 再按拍攝", btn: "📸 拍攝第 2 張（向右一張）", transform: "perspective(400px) rotateY(18deg)", arrow: "right" },
+  { title: "⬅ 請順著箭頭方向，將臉向左微轉", hint: "⬅ 請向左轉頭約 20° 再按拍攝", btn: "📸 拍攝第 3 張（向左一張）", transform: "perspective(400px) rotateY(-18deg)", arrow: "left" },
 ];
 
 function updateStepUI() {
@@ -199,8 +211,10 @@ function updateStepUI() {
     $("dirHint").textContent = cfg.hint;
     $("snapBtn").textContent = cfg.btn;
     $("faceSvg").style.transform = cfg.transform;
+    $("arrowRight").classList.toggle("show", cfg.arrow === "right");
+    $("arrowLeft").classList.toggle("show", cfg.arrow === "left");
   } else {
-    $("hudGuide").textContent = "🎉 三張臉部掃描皆已完成！請點擊下方完成核實";
+    $("hudGuide").textContent = "🎉 三張臉部拍攝皆已完成！請點擊下方完成核實";
     $("faceOverlay").classList.add("hide");
     $("snapBtn").classList.add("hide");
     $("retakeBtn").classList.remove("hide");
