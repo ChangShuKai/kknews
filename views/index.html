@@ -66,16 +66,22 @@ const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type
 
 let googleClientId = "";
 
-function loginWithGoogleOAuth() {
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function loginWithGoogleOAuth() {
   if (!googleClientId) return say("尚未設定 GOOGLE_CLIENT_ID 環境變數");
   const origin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? window.location.origin
     : "https://kknews.vercel.app";
   const redirectUri = encodeURIComponent(origin);
-  const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-  sessionStorage.setItem("google_nonce", nonce);
+  const rawNonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  sessionStorage.setItem("google_nonce", rawNonce);
+  const hashedNonce = await sha256Hex(rawNonce);
 
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${redirectUri}&response_type=id_token&scope=openid%20email%20profile&nonce=${nonce}&hd=hlc.edu.tw&prompt=select_account`;
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${redirectUri}&response_type=id_token&scope=openid%20email%20profile&nonce=${hashedNonce}&hd=hlc.edu.tw&prompt=select_account`;
   window.location.href = authUrl;
 }
 
@@ -94,7 +100,7 @@ async function handleGoogleCallback() {
       const r = await api("/api/auth/google", { idToken, nonce });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : "登入失敗，請重試。");
+        say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : ("登入失敗：" + (j.detail || "請重試。")));
         return null;
       }
       return j;

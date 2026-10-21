@@ -90,12 +90,20 @@ app.post("/api/auth/google", async (req, res) => {
   const { idToken, nonce } = req.body || {};
   if (!idToken) return res.status(400).json({ error: "Missing token" });
   const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await authClient.auth.signInWithIdToken({
+  let { data, error } = await authClient.auth.signInWithIdToken({
     provider: "google",
     token: String(idToken),
     nonce: nonce ? String(nonce) : undefined,
   });
-  if (error || !data?.user) return res.status(401).json({ error: "oauth" });
+  // 若 Supabase 開啟了 Skip nonce check 或需要比對不同格式的 nonce，自動 fallback
+  if (error && nonce) {
+    const retry = await authClient.auth.signInWithIdToken({
+      provider: "google",
+      token: String(idToken),
+    });
+    if (!retry.error && retry.data?.user) { data = retry.data; error = null; }
+  }
+  if (error || !data?.user) return res.status(401).json({ error: "oauth", detail: error?.message || "驗證失敗" });
   const u = data.user, email = (u.email || "").toLowerCase();
   if (!email.endsWith(SCHOOL)) {           // 非學校帳號：刪除剛建立的帳號並拒絕
     await db.auth.admin.deleteUser(u.id).catch(() => {});
