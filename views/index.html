@@ -13,7 +13,11 @@
     background:radial-gradient(1200px 600px at 10% -10%,#efe7d8 0,transparent 60%),radial-gradient(900px 500px at 110% 110%,#e3e8ef 0,transparent 55%),#f3f0ea}
   .card{width:min(440px,100%);background:#fff;border-radius:24px;padding:40px 34px;box-shadow:0 20px 60px #0000001a,0 2px 6px #0000000d;animation:up .5s ease both}
   @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .brand{font-size:13px;letter-spacing:.25em;color:var(--muted);margin-bottom:14px}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .brand{font-size:13px;letter-spacing:.25em;color:var(--muted)}
+  .sys-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:12px;color:var(--ink);font-weight:500}
+  .sys-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px #10b98126}
+  .sys-dot.warn{background:#f59e0b;box-shadow:0 0 0 2px #f59e0b26}
   h1{margin:0 0 8px;font-size:26px;line-height:1.3}
   .sub{margin:0 0 28px;color:var(--muted);font-size:14px;line-height:1.6}
   .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
@@ -33,41 +37,41 @@
   .send:hover{opacity:.9;transform:translateY(-1px)}.send:disabled{opacity:.5;cursor:wait;transform:none}
   .btn-outline{margin-top:10px;width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
   .btn-outline:hover{border-color:var(--ink)}
-  .notice{background:#fff8eb;border:1px solid #f5d9a6;color:#7a4f01;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;margin-bottom:14px}
-  /* 酷炫 Face ID 掃描艙介面 */
-  .hud-wrap{background:linear-gradient(145deg,#0f172a,#1e293b);border-radius:20px;padding:18px 16px;color:#f8fafc;box-shadow:inset 0 0 30px #00000080,0 12px 30px #00000026;margin-bottom:14px;position:relative;overflow:hidden}
-  .hud-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-  .hud-step{background:#ffffff12;border:1px solid #ffffff24;border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;color:#94a3b8;transition:.3s}
-  .hud-step.active{background:#06b6d426;border-color:#22d3ee;color:#22d3ee;font-weight:700;box-shadow:0 0 12px #22d3ee40}
-  .hud-step.done{background:#10b98126;border-color:#34d399;color:#34d399;font-weight:700}
-  .hud-guide{text-align:center;font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:12px;min-height:24px;letter-spacing:.03em;text-shadow:0 0 10px #38bdf866}
-  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:270px;margin:0 auto 14px;border-radius:22px;overflow:hidden;background:#020617;display:grid;place-items:center;border:2px solid #334155;box-shadow:0 0 25px #0ea5e933}
+  .notice{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;margin-bottom:14px}
+  /* 與整體暖色紙感一致的簡潔拍攝介面 */
+  .hud-wrap{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;color:var(--ink);margin-bottom:14px}
+  .hud-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .hud-step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;color:var(--muted);transition:.2s}
+  .hud-step.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .hud-step.done{background:#e8f6ee;border-color:#a6e0c2;color:#067647;font-weight:600}
+  .hud-guide{text-align:center;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px;min-height:22px}
+  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:260px;margin:0 auto 12px;border-radius:18px;overflow:hidden;background:#ebe6dc;display:grid;place-items:center;border:1.5px solid var(--line)}
   .cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-  .cam-tip{color:#94a3b8;font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
-  /* 臉部對準框與方向箭頭指示 */
+  .cam-tip{color:var(--muted);font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
+  /* 簡潔臉部對準框與方向箭頭指示 */
   .face-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;display:grid;place-items:center}
-  .face-svg{width:84%;height:84%;filter:drop-shadow(0 0 8px #22d3ee99);transition:.35s}
-  .turn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;filter:drop-shadow(0 0 10px #22d3ee);opacity:0;transition:.3s}
+  .face-svg{width:82%;height:82%;transition:.3s}
+  .turn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));opacity:0;transition:.25s}
   .turn-arrow.right{right:10px;animation:nudgeR 1s ease-in-out infinite}
   .turn-arrow.left{left:10px;animation:nudgeL 1s ease-in-out infinite}
   .turn-arrow.show{opacity:1}
-  @keyframes nudgeR{0%,100%{transform:translate(0,-50%)}50%{transform:translate(8px,-50%)}}
-  @keyframes nudgeL{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-8px,-50%)}}
-  .dir-arrow{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#020617d9;border:1.5px solid #22d3ee;color:#22d3ee;padding:5px 16px;border-radius:99px;font-size:13.5px;font-weight:700;backdrop-filter:blur(4px);white-space:nowrap;box-shadow:0 0 14px #22d3ee4d}
+  @keyframes nudgeR{0%,100%{transform:translate(0,-50%)}50%{transform:translate(7px,-50%)}}
+  @keyframes nudgeL{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-7px,-50%)}}
+  .dir-arrow{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#ffffffeb;border:1px solid var(--line);color:var(--ink);padding:4px 14px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px #00000014}
   .shots-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
-  .shot-slot{aspect-ratio:1/1;border-radius:12px;border:1.5px dashed #475569;background:#0f172a;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:#64748b}
+  .shot-slot{aspect-ratio:1/1;border-radius:10px;border:1.5px dashed #cfc9bd;background:#fff;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:var(--muted)}
   .shot-slot img{width:100%;height:100%;object-fit:cover}
-  .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#00000099;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
-  .hud-btn{width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,#0ea5e9,#2563eb);color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px #0ea5e94d;transition:.2s}
-  .hud-btn:hover{transform:translateY(-1px);box-shadow:0 8px 25px #0ea5e966}
+  .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#1c1b19cc;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
+  .hud-btn{width:100%;padding:14px;border:0;border-radius:14px;background:var(--ink);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;transition:.2s}
+  .hud-btn:hover{opacity:.9;transform:translateY(-1px)}
   .hud-btn:disabled{opacity:.5;cursor:wait;transform:none}
   /* 警告與隱私彈窗 Modal */
-  .modal-bg{position:fixed;inset:0;background:#000000b3;backdrop-filter:blur(6px);z-index:99;display:grid;place-items:center;padding:20px;animation:up .25s ease both}
-  .modal{width:min(420px,100%);background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 24px 70px #00000066;text-align:center}
-  .modal-icon{width:56px;height:56px;border-radius:50%;background:#fee2e2;color:#dc2626;display:grid;place-items:center;font-size:28px;margin:0 auto 14px}
-  .modal h3{margin:0 0 14px;font-size:20px;color:#1c1b19}
-  .modal-warn{background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;padding:12px 14px;border-radius:12px;font-size:14.5px;font-weight:700;line-height:1.55;margin-bottom:12px;text-align:left}
-  .modal-priv{background:#f8fafc;border:1.5px solid #e2e8f0;color:#334155;padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:600;line-height:1.55;margin-bottom:18px;text-align:left}
+  .modal-bg{position:fixed;inset:0;background:#00000080;backdrop-filter:blur(4px);z-index:99;display:grid;place-items:center;padding:20px;animation:up .25s ease both}
+  .modal{width:min(420px,100%);background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 24px 70px #00000033;text-align:center}
+  .modal-icon{width:52px;height:52px;border-radius:50%;background:#fdecec;color:#b42318;display:grid;place-items:center;font-size:24px;margin:0 auto 12px}
+  .modal h3{margin:0 0 14px;font-size:19px;color:var(--ink)}
+  .modal-warn{background:#fdecec;border:1px solid #f8c9c5;color:#b42318;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700;line-height:1.55;margin-bottom:10px;text-align:left}
+  .modal-priv{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:500;line-height:1.55;margin-bottom:18px;text-align:left}
   .msg{margin-top:16px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
   .msg.show{display:block}.msg.err{background:#fdecec;color:#b42318}.msg.ok{background:#e8f6ee;color:#067647}
   .hide{display:none!important}
@@ -75,7 +79,13 @@
 </head>
 <body>
 <div class="card">
-  <div class="brand">KKNEWS</div>
+  <div class="brand-row">
+    <div class="brand">KKNEWS</div>
+    <div class="sys-pill" title="系統連線狀態">
+      <span class="sys-dot" id="sysDot"></span>
+      <span id="sysText">系統正常</span>
+    </div>
+  </div>
   <h1>寫下你想說的一句話</h1>
   <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
 
@@ -87,51 +97,45 @@
     <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
   </div>
 
-  <!-- 首次註冊身分核實：酷炫三角度生物辨識掃描框 -->
+  <!-- 首次註冊身分核實：一體感三角度拍攝框 -->
   <div id="verifyView" class="hide">
     <div class="notice">
       🛡️ <b>首次登入身分核實說明：</b><br>
-      收集這些資訊與臉部照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（共 3 張：正面、向右、向左）</b>。
+      收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（正面、向右、向左共 3 張）</b>。
     </div>
 
     <div class="hud-wrap">
       <div class="hud-steps">
         <div class="hud-step active" id="st0">1. 正面對準</div>
-        <div class="hud-step" id="st1">2. 向右微轉</div>
-        <div class="hud-step" id="st2">3. 向左微轉</div>
+        <div class="hud-step" id="st1">2. 向右一張</div>
+        <div class="hud-step" id="st2">3. 向左一張</div>
       </div>
       <div class="hud-guide" id="hudGuide">請開啟相機，將臉部對準框內</div>
 
       <div class="cam-box">
         <video id="camVideo" autoplay playsinline muted class="hide"></video>
         <div class="face-overlay hide" id="faceOverlay">
-          <!-- 科技感臉部輪廓與四角瞄準線 SVG -->
+          <!-- 簡潔臉部輪廓對準框 -->
           <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
-            <!-- 四角準星 -->
-            <path d="M15 45 V20 Q15 15 20 15 H45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
-            <path d="M155 15 H180 Q185 15 185 20 V45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
-            <path d="M15 155 V180 Q15 185 20 185 H45" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
-            <path d="M155 185 H180 Q185 185 185 180 V155" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
-            <!-- 臉部輪廓框 -->
-            <ellipse cx="100" cy="96" rx="52" ry="66" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="8 5"/>
-            <!-- 眼部與中心十字定位線 -->
-            <line x1="68" y1="82" x2="88" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
-            <line x1="112" y1="82" x2="132" y2="82" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.7"/>
-            <line x1="100" y1="70" x2="100" y2="112" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.5"/>
+            <path d="M22 48 V26 Q22 22 26 22 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M152 22 H174 Q178 22 178 26 V48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M22 152 V174 Q22 178 26 178 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M152 178 H174 Q178 178 178 174 V152" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="100" cy="98" rx="50" ry="64" stroke="#ffffff" stroke-width="2.2" stroke-dasharray="7 5"/>
           </svg>
-          <!-- 向右轉動態雙箭頭指示 -->
+          <!-- 向右轉箭頭指示 -->
           <svg class="turn-arrow right" id="arrowRight" viewBox="0 0 64 64" fill="none">
-            <path d="M14 16 L30 32 L14 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
-            <path d="M32 16 L48 32 L32 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 16 L30 32 L14 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+            <path d="M32 16 L48 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <!-- 向左轉動態雙箭頭指示 -->
+          <!-- 向左轉箭頭指示 -->
           <svg class="turn-arrow left" id="arrowLeft" viewBox="0 0 64 64" fill="none">
-            <path d="M50 16 L34 32 L50 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
-            <path d="M32 16 L16 32 L32 48" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M50 16 L34 32 L50 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+            <path d="M32 16 L16 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <div class="dir-arrow" id="dirHint">👤 請正對鏡頭</div>
+          <div class="dir-arrow" id="dirHint">請正對鏡頭</div>
         </div>
-        <div id="camPlaceholder" class="cam-tip">點擊下方按鈕啟動臉部掃描艙<br>並允許相機與位置權限</div>
+        <div id="camPlaceholder" class="cam-tip">點擊下方按鈕開啟相機<br>並允許相機與位置權限</div>
       </div>
 
       <div class="shots-row">
@@ -141,12 +145,11 @@
       </div>
     </div>
 
-    <!-- 手機或無 WebRTC 環境的原生相機備援（指定前置鏡頭 capture="user"） -->
     <input type="file" id="camInput" accept="image/*" capture="user" class="hide">
-    <button type="button" class="hud-btn" id="startCamBtn">📷 啟動臉部驗證相機</button>
-    <button type="button" class="hud-btn hide" id="snapBtn">📸 拍攝第 1 張（正面）</button>
-    <button type="button" class="btn-outline hide" id="retakeBtn">🔄 重新拍攝三張</button>
-    <button type="button" class="send hide" id="confirmVerifyBtn">✅ 完成核實並送出</button>
+    <button type="button" class="hud-btn" id="startCamBtn">開啟相機拍攝</button>
+    <button type="button" class="hud-btn hide" id="snapBtn">拍攝第 1 張（正面）</button>
+    <button type="button" class="btn-outline hide" id="retakeBtn">重新拍攝</button>
+    <button type="button" class="send hide" id="confirmVerifyBtn">完成核實並送出</button>
   </div>
 
   <div id="formView" class="hide">
@@ -455,6 +458,10 @@ function renderMe(me) {
 }
 
 (async () => {
+  fetch("/api/status").then(r => r.json()).then(s => {
+    $("sysDot").classList.toggle("warn", !s.ok);
+    $("sysText").textContent = s.ok ? "系統正常" : "維護中";
+  }).catch(() => {});
   const callbackUser = await handleGoogleCallback();
   const r = await fetch("/api/me");
   const data = r.ok ? await r.json() : {};

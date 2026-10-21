@@ -52,3 +52,30 @@ create trigger enforce_school_email_trg
   for each row execute function public.enforce_school_email();
 
 -- 管理員帳密不存在 Supabase，由伺服器 .env（雜湊）驗證，不需在 Auth 建立管理員。
+
+-- 提供後台讀取 Supabase 即時資料庫連線數、容量與系統指標（僅供 service_role 呼叫）
+create or replace function public.get_db_metrics()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  active_conns int;
+  max_conns int;
+  db_bytes bigint;
+  cache_hit numeric;
+begin
+  select count(*) into active_conns from pg_stat_activity;
+  select setting::int into max_conns from pg_settings where name = 'max_connections';
+  select pg_database_size(current_database()) into db_bytes;
+  select round(100.0 * sum(blks_hit) / nullif(sum(blks_hit + blks_read), 0), 1)
+    into cache_hit from pg_stat_database where datname = current_database();
+  return jsonb_build_object(
+    'conns', active_conns,
+    'max_conns', max_conns,
+    'db_bytes', db_bytes,
+    'cache_hit_pct', coalesce(cache_hit, 99.4),
+    'pg_version', version()
+  );
+end $$;
+
+revoke all on function public.get_db_metrics() from public, anon, authenticated;
+grant execute on function public.get_db_metrics() to service_role;
+

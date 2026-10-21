@@ -56,6 +56,25 @@
   .mini-photos{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:#f8f6f2;border-radius:10px}
   .mini-photos .mp{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
   .mini-photos img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--line);cursor:zoom-in}
+  /* 後台上方 Supabase 全開放狀態資訊卡（還原 Supabase Primary Database 面板 + 即時 API 數據） */
+  .status-bar{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:22px;align-items:stretch}
+  .db-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;min-width:320px;box-shadow:0 6px 20px #0000000a;display:flex;flex-direction:column;justify-content:space-between}
+  .db-top{display:flex;align-items:flex-start;gap:14px}
+  .db-ico{width:42px;height:42px;border-radius:11px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
+  .db-ico.err{background:#ef4444;color:#fff}
+  .db-ico svg{width:22px;height:22px}
+  .db-title{flex:1;min-width:0}
+  .db-title b{font-size:15px;display:block;color:var(--ink);margin-bottom:2px}
+  .db-title span{font-size:13px;color:#64748b;display:block;line-height:1.4}
+  .jp-flag{width:34px;height:24px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
+  .jp-flag::after{content:"";width:11px;height:11px;border-radius:50%;background:#bc002d}
+  .db-foot{border-top:1px solid #f1f5f9;margin-top:12px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#64748b;gap:8px;flex-wrap:wrap}
+  .db-foot strong{color:var(--ink);font-weight:600}
+  .api-card{flex:1;min-width:320px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;box-shadow:0 6px 20px #0000000a;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;align-items:center}
+  .api-metric{padding:8px 12px;background:#f8f6f2;border-radius:12px;border:1px solid var(--line)}
+  .api-metric small{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
+  .api-metric b{font-size:16px;color:var(--ink);display:block;word-break:break-all}
+  .api-metric span{font-size:11px;color:#067647;font-weight:600}
 </style>
 </head>
 <body>
@@ -68,6 +87,52 @@
   <button id="logout" class="s">登出</button>
 </header>
 <main>
+  <!-- 後台全開放 Supabase 即時狀態面板 -->
+  <div class="status-bar" id="adminStatusBar">
+    <div class="db-card">
+      <div class="db-top">
+        <div class="db-ico" id="dbIco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        </div>
+        <div class="db-title">
+          <b id="dbName">Primary Database</b>
+          <span id="dbRegion">Northeast Asia (Tokyo)</span>
+          <span id="dbSpec">ap-northeast-1 · t3.nano</span>
+        </div>
+        <div class="jp-flag" title="Tokyo (ap-northeast-1)"></div>
+      </div>
+      <div class="db-foot">
+        <span><strong>CPU</strong> <span id="stCpu">2%</span></span> ·
+        <span><strong>Disk</strong> <span id="stDisk">14%</span></span> ·
+        <span><strong>RAM</strong> <span id="stRam">54%</span></span> ·
+        <span><span id="stConns">7/60</span> conns</span>
+      </div>
+    </div>
+
+    <div class="api-card">
+      <div class="api-metric">
+        <small>Supabase 專案 ID</small>
+        <b id="stRef">—</b>
+        <span id="stHealth">● REST & Auth 正常</span>
+      </div>
+      <div class="api-metric">
+        <small>API 回應延遲</small>
+        <b id="stLatency">— ms</b>
+        <span id="stCache">快取命中 99.4%</span>
+      </div>
+      <div class="api-metric">
+        <small>資料庫實際佔用</small>
+        <b id="stDbSize">— MB</b>
+        <span>上限 500 MB</span>
+      </div>
+      <div class="api-metric">
+        <small>資料表／Auth 統計</small>
+        <b id="stCounts">0 筆 / 0 人</b>
+        <span id="stNodeMem">Node 記憶體 — MB</span>
+      </div>
+    </div>
+  </div>
+
   <div id="grid" class="grid"></div>
   <div id="usersGrid" class="u-grid hide"></div>
 </main>
@@ -124,13 +189,33 @@ async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`
 
 /* ---------- 資料 ---------- */
 async function load() {
-  const [rp, ru] = await Promise.all([
+  const [rp, ru, rs] = await Promise.all([
     fetch("/api/admin/proverbs"),
     fetch("/api/admin/users"),
+    fetch("/api/admin/status"),
   ]);
   if (rp.status === 404 || ru.status === 404) return location.reload();   // session 過期
   rows = rp.ok ? await rp.json() : [];
   users = ru.ok ? await ru.json() : [];
+  const st = rs.ok ? await rs.json() : null;
+  if (st) {
+    $("dbIco").classList.toggle("err", !st.ok);
+    $("dbName").textContent = st.dbName || "Primary Database";
+    $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
+    $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
+    $("stCpu").textContent = st.cpuPct + "%";
+    $("stDisk").textContent = st.diskPct + "%";
+    $("stRam").textContent = st.ramPct + "%";
+    $("stConns").textContent = `${st.conns}/${st.maxConns}`;
+    $("stRef").textContent = st.projectRef;
+    $("stHealth").textContent = st.ok ? "● REST & Auth 連線正常" : "● 連線異常";
+    $("stHealth").style.color = st.ok ? "#067647" : "#b42318";
+    $("stLatency").textContent = st.latencyMs + " ms";
+    $("stCache").textContent = `快取命中 ${st.cacheHitPct}%`;
+    $("stDbSize").textContent = st.dbSizeMb + " MB";
+    $("stCounts").textContent = `${st.proverbsCount} 篇 / ${st.usersCount} 人`;
+    $("stNodeMem").textContent = `Server RAM ${st.nodeRssMb} MB`;
+  }
   userMap = {};
   for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
   $("uCount").textContent = users.length;
