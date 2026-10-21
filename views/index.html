@@ -5,18 +5,39 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KKNews 諺語投稿</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="stylesheet" href="/assets/ui.css">
 <style>
-  :root{--ink:#1c1b19;--paper:#f6f3ee;--muted:#8a857c;--line:#e4dfd6;--accent:#1c1b19}
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-    font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink);
-    background:radial-gradient(1200px 600px at 10% -10%,#efe7d8 0,transparent 60%),radial-gradient(900px 500px at 110% 110%,#e3e8ef 0,transparent 55%),#f3f0ea}
-  .card{width:min(440px,100%);background:#fff;border-radius:24px;padding:40px 34px;box-shadow:0 20px 60px #0000001a,0 2px 6px #0000000d;animation:up .5s ease both}
-  @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .brand{font-size:13px;letter-spacing:.25em;color:var(--muted)}
-  /* 前台上方 Supabase 系統狀態卡（顯示國家、ap-northeast-1 與即時 CPU/Disk/RAM/conns） */
-  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:22px}
+  .me{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 12px;background:var(--paper);border-radius:12px;font-size:13px}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+  .me .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .me button{background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline}
+  .hint{margin-top:14px;font-size:12.5px;color:var(--muted);text-align:center}
+  .hint b{color:var(--ink)}
+  .hud-wrap{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+  .hud-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .hud-step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;color:var(--muted);transition:.2s}
+  .hud-step.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+  .hud-step.done{background:var(--ok-bg);border-color:#a6e0c2;color:var(--ok);font-weight:600}
+  .hud-guide{text-align:center;font-size:14px;font-weight:600;margin-bottom:12px;min-height:22px}
+  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:260px;margin:0 auto 12px;border-radius:18px;overflow:hidden;background:#ebe6dc;display:grid;place-items:center;border:1.5px solid var(--line)}
+  .cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  .cam-tip{color:var(--muted);font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
+  .face-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;display:grid;place-items:center}
+  .face-svg{width:82%;height:82%;transition:.3s}
+  .turn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));opacity:0;transition:.25s}
+  .turn-arrow.right{right:10px;animation:nudgeR 1s ease-in-out infinite}
+  .turn-arrow.left{left:10px;animation:nudgeL 1s ease-in-out infinite}
+  .turn-arrow.show{opacity:1}
+  @keyframes nudgeR{0%,100%{transform:translate(0,-50%)}50%{transform:translate(7px,-50%)}}
+  @keyframes nudgeL{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-7px,-50%)}}
+  .dir-arrow{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#ffffffeb;border:1px solid var(--line);padding:4px 14px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  .shots-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .shot-slot{aspect-ratio:1/1;border-radius:10px;border:1.5px dashed #cfc9bd;background:#fff;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:var(--muted)}
+  .shot-slot img{width:100%;height:100%;object-fit:cover}
+  .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#1c1b19cc;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
+  .skel-block{height:52px;margin-top:12px}
+  /* 一般使用者上方 Supabase 即時系統狀態卡（國家、ap-northeast-1、CPU/Disk/RAM/conns 即時自動重整） */
+  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:20px}
   .db-top{display:flex;align-items:center;gap:12px}
   .db-ico{width:38px;height:38px;border-radius:10px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
   .db-ico.err{background:#ef4444;color:#fff}
@@ -28,69 +49,13 @@
   .jp-flag::after{content:"";width:10px;height:10px;border-radius:50%;background:#bc002d}
   .db-foot{border-top:1px solid var(--line);margin-top:10px;padding-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#64748b;gap:4px;flex-wrap:wrap}
   .db-foot strong{color:var(--ink);font-weight:600}
-  h1{margin:0 0 8px;font-size:26px;line-height:1.3}
-  .sub{margin:0 0 20px;color:var(--muted);font-size:14px;line-height:1.6}
-  .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
-  .gbtn:hover{box-shadow:0 6px 20px #0000001a;transform:translateY(-1px);border-color:#cfc9bd}
-  .gbtn svg{width:22px;height:22px}
-  .hint{margin-top:16px;font-size:12.5px;color:var(--muted);text-align:center}
-  .hint b{color:var(--ink)}
-  .me{display:flex;align-items:center;gap:10px;margin-bottom:22px;padding:10px 12px;background:var(--paper);border-radius:12px;font-size:13px}
-  .av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
-  .me .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .me a{color:var(--muted);text-decoration:none;font-size:12.5px}.me a:hover{color:var(--ink)}
-  label{display:flex;justify-content:space-between;margin:16px 0 6px;font-size:13px;font-weight:600}
-  label span{font-weight:400;color:var(--muted)}
-  textarea,input{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:16px;background:#fff;transition:.2s;resize:none}
-  textarea:focus,input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 4px #1c1b1912}
-  .send{margin-top:22px;width:100%;padding:14px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:.2s}
-  .send:hover{opacity:.9;transform:translateY(-1px)}.send:disabled{opacity:.5;cursor:wait;transform:none}
-  .btn-outline{margin-top:10px;width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
-  .btn-outline:hover{border-color:var(--ink)}
-  .notice{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;margin-bottom:14px}
-  /* 與整體暖色紙感一致的簡潔拍攝介面 */
-  .hud-wrap{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;color:var(--ink);margin-bottom:14px}
-  .hud-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .hud-step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 4px;text-align:center;font-size:12px;color:var(--muted);transition:.2s}
-  .hud-step.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
-  .hud-step.done{background:#e8f6ee;border-color:#a6e0c2;color:#067647;font-weight:600}
-  .hud-guide{text-align:center;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px;min-height:22px}
-  .cam-box{position:relative;width:100%;aspect-ratio:1/1;max-width:260px;margin:0 auto 12px;border-radius:18px;overflow:hidden;background:#ebe6dc;display:grid;place-items:center;border:1.5px solid var(--line)}
-  .cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-  .cam-tip{color:var(--muted);font-size:13px;text-align:center;padding:20px;line-height:1.6;z-index:3}
-  /* 簡潔臉部對準框與方向箭頭指示 */
-  .face-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;display:grid;place-items:center}
-  .face-svg{width:82%;height:82%;transition:.3s}
-  .turn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));opacity:0;transition:.25s}
-  .turn-arrow.right{right:10px;animation:nudgeR 1s ease-in-out infinite}
-  .turn-arrow.left{left:10px;animation:nudgeL 1s ease-in-out infinite}
-  .turn-arrow.show{opacity:1}
-  @keyframes nudgeR{0%,100%{transform:translate(0,-50%)}50%{transform:translate(7px,-50%)}}
-  @keyframes nudgeL{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-7px,-50%)}}
-  .dir-arrow{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#ffffffeb;border:1px solid var(--line);color:var(--ink);padding:4px 14px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px #00000014}
-  .shots-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
-  .shot-slot{aspect-ratio:1/1;border-radius:10px;border:1.5px dashed #cfc9bd;background:#fff;overflow:hidden;position:relative;display:grid;place-items:center;font-size:11px;color:var(--muted)}
-  .shot-slot img{width:100%;height:100%;object-fit:cover}
-  .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#1c1b19cc;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
-  .hud-btn{width:100%;padding:14px;border:0;border-radius:14px;background:var(--ink);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;transition:.2s}
-  .hud-btn:hover{opacity:.9;transform:translateY(-1px)}
-  .hud-btn:disabled{opacity:.5;cursor:wait;transform:none}
-  /* 警告與隱私彈窗 Modal */
-  .modal-bg{position:fixed;inset:0;background:#00000080;backdrop-filter:blur(4px);z-index:99;display:grid;place-items:center;padding:20px;animation:up .25s ease both}
-  .modal{width:min(420px,100%);background:#fff;border-radius:22px;padding:28px 24px;box-shadow:0 24px 70px #00000033;text-align:center}
-  .modal-icon{width:52px;height:52px;border-radius:50%;background:#fdecec;color:#b42318;display:grid;place-items:center;font-size:24px;margin:0 auto 12px}
-  .modal h3{margin:0 0 14px;font-size:19px;color:var(--ink)}
-  .modal-warn{background:#fdecec;border:1px solid #f8c9c5;color:#b42318;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:700;line-height:1.55;margin-bottom:10px;text-align:left}
-  .modal-priv{background:var(--paper);border:1px solid var(--line);color:var(--ink);padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:500;line-height:1.55;margin-bottom:18px;text-align:left}
-  .msg{margin-top:16px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
-  .msg.show{display:block}.msg.err{background:#fdecec;color:#b42318}.msg.ok{background:#e8f6ee;color:#067647}
-  .hide{display:none!important}
 </style>
 </head>
-<body>
-<div class="card">
+<body class="center-page">
+<main class="card">
   <div class="brand-row">
-    <div class="brand">KKNEWS</div>
+    <div class="brand"><img src="/icon.svg" alt="">KKNEWS</div>
+    <div class="pill" title="系統每 3 秒即時自動重整"><span class="dot" id="sysDot"></span><span id="sysText">即時連線</span></div>
   </div>
   <!-- 一般使用者可見之系統狀態：國家、區域 ap-northeast-1 與即時 CPU / Disk / RAM / conns -->
   <div class="db-card">
@@ -112,19 +77,25 @@
       <span><span id="stConns">—/60</span> conns</span>
     </div>
   </div>
+
   <h1>寫下你想說的一句話</h1>
   <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
 
+  <div id="loadingView">
+    <div class="skel skel-block"></div>
+  </div>
+
   <div id="loginView" class="hide">
-    <button type="button" class="gbtn" id="googleLoginBtn">
-      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+    <button type="button" class="btn ghost block" id="googleLoginBtn" style="margin-top:0">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
       使用 Google 登入／註冊
     </button>
     <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
   </div>
 
-  <!-- 首次註冊身分核實：一體感三角度拍攝框 -->
+  <!-- 首次註冊身分核實：三角度臉部拍攝框 -->
   <div id="verifyView" class="hide">
+    <div class="me"><div class="av" id="av2"></div><div class="t" id="who2"></div><button type="button" id="logout2">登出</button></div>
     <div class="notice">
       🛡️ <b>首次登入身分核實說明：</b><br>
       收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（正面、向右、向左共 3 張）</b>。
@@ -136,12 +107,11 @@
         <div class="hud-step" id="st1">2. 向右一張</div>
         <div class="hud-step" id="st2">3. 向左一張</div>
       </div>
-      <div class="hud-guide" id="hudGuide">請開啟相機，將臉部對準框內</div>
+      <div class="hud-guide" id="hudGuide" aria-live="polite">請開啟相機，將臉部對準框內</div>
 
       <div class="cam-box">
         <video id="camVideo" autoplay playsinline muted class="hide"></video>
         <div class="face-overlay hide" id="faceOverlay">
-          <!-- 簡潔臉部輪廓對準框 -->
           <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
             <path d="M22 48 V26 Q22 22 26 22 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
             <path d="M152 22 H174 Q178 22 178 26 V48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
@@ -149,12 +119,10 @@
             <path d="M152 178 H174 Q178 178 178 174 V152" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
             <ellipse cx="100" cy="98" rx="50" ry="64" stroke="#ffffff" stroke-width="2.2" stroke-dasharray="7 5"/>
           </svg>
-          <!-- 向右轉箭頭指示 -->
           <svg class="turn-arrow right" id="arrowRight" viewBox="0 0 64 64" fill="none">
             <path d="M14 16 L30 32 L14 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
             <path d="M32 16 L48 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <!-- 向左轉箭頭指示 -->
           <svg class="turn-arrow left" id="arrowLeft" viewBox="0 0 64 64" fill="none">
             <path d="M50 16 L34 32 L50 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
             <path d="M32 16 L16 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -171,45 +139,43 @@
       </div>
     </div>
 
-    <input type="file" id="camInput" accept="image/*" capture="user" class="hide">
-    <button type="button" class="hud-btn" id="startCamBtn">開啟相機拍攝</button>
-    <button type="button" class="hud-btn hide" id="snapBtn">拍攝第 1 張（正面）</button>
-    <button type="button" class="btn-outline hide" id="retakeBtn">重新拍攝</button>
-    <button type="button" class="send hide" id="confirmVerifyBtn">完成核實並送出</button>
+    <input type="file" id="camInput" accept="image/*" capture="user" class="hide" aria-label="拍攝照片">
+    <button type="button" class="btn block" id="startCamBtn" style="margin-top:0">開啟相機拍攝</button>
+    <button type="button" class="btn block hide" id="snapBtn">拍攝第 1 張（正面）</button>
+    <button type="button" class="btn ghost block hide" id="retakeBtn">重新拍攝</button>
+    <button type="button" class="btn block hide" id="confirmVerifyBtn">完成核實並送出</button>
   </div>
 
   <div id="formView" class="hide">
-    <div class="me"><div class="av" id="av"></div><div class="t" id="who"></div><a href="#" id="logout">登出</a></div>
-    <label>諺語／你想說的話 <span id="cc">0/100</span></label>
-    <textarea id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea>
-    <label>來源（人名） <span id="ac">0/30</span></label>
-    <input id="author" maxlength="30" placeholder="例如：阿昕">
-    <button class="send" id="submit">送出投稿</button>
+    <div class="me"><div class="av" id="av"></div><div class="t" id="who"></div><button type="button" id="logout">登出</button></div>
+    <label class="field"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
+      <textarea class="input" id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea></label>
+    <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
+      <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
+    <button class="btn block" id="submit">送出投稿</button>
   </div>
-  <div id="msg" class="msg"></div>
-</div>
+  <div id="msg" class="alert" role="status" aria-live="polite"></div>
+</main>
 
-<!-- 核實完成後彈窗 -->
-<div id="legalModal" class="modal-bg hide">
+<!-- 核實完成後彈窗顯示警告與隱私聲明 -->
+<div id="legalModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
   <div class="modal">
-    <div class="modal-icon">⚠️</div>
-    <h3>身分核實完成 · 重要聲明</h3>
-    <div class="modal-warn">
-      🚨 請勿重複或是蓄意洗版 否則將依台灣法律依法提告!
+    <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg></div>
+    <h3 id="legalTitle">身分核實完成 · 重要聲明</h3>
+    <div class="box-warn">🚨 請勿重複或是蓄意洗版 否則將依台灣法律依法提告!</div>
+    <div class="box-priv">🔒 你的資訊將被收集，我們不會將您的資訊提供給任何第三方廠商，即便公司破產</div>
+    <div class="actions">
+      <button type="button" class="btn" id="closeModalBtn">我已詳閱並同意遵守</button>
     </div>
-    <div class="modal-priv">
-      🔒 你的資訊將被收集，我們不會將您的資訊提供給任何第三方廠商，即便公司破產。
-    </div>
-    <button type="button" class="send" id="closeModalBtn" style="margin-top:0">我已詳閱並同意遵守</button>
   </div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
-function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = "msg show " + (ok ? "ok" : "err"); if (!t) m.className = "msg"; }
+function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert"; }
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
 
-let googleClientId = "";
+let googleClientId = "", baseUrl = "";
 let currentUser = null;
 let capturedShots = ["", "", ""]; // [正面, 向右, 向左]
 let stepIdx = 0;
@@ -223,15 +189,18 @@ const STEP_CFG = [
 ];
 
 function updateStepUI() {
+  const labels = ["1. 正面", "2. 向右", "3. 向左"];
   for (let i = 0; i < 3; i++) {
-    const st = $("st" + i);
-    st.className = "hud-step" + (i < stepIdx ? " done" : i === stepIdx ? " active" : "");
+    $("st" + i).className = "hud-step" + (i < stepIdx ? " done" : i === stepIdx ? " active" : "");
     const slot = $("slot" + i);
-    const labels = ["1. 正面", "2. 向右", "3. 向左"];
+    slot.textContent = "";
     if (capturedShots[i]) {
-      slot.innerHTML = `<img src="${capturedShots[i]}" alt=""><span>✓ ${labels[i]}</span>`;
+      const img = document.createElement("img"); img.src = capturedShots[i]; img.alt = labels[i] + " 已拍攝";
+      const sp = document.createElement("span"); sp.textContent = "✓ " + labels[i];
+      slot.append(img, sp);
     } else {
-      slot.innerHTML = `待拍攝<span>${labels[i]}</span>`;
+      slot.append("待拍攝");
+      const sp = document.createElement("span"); sp.textContent = labels[i]; slot.append(sp);
     }
   }
   if (stepIdx < 3) {
@@ -257,11 +226,7 @@ function getGeoPosition(timeout = 6000) {
   return new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(
       pos => {
-        cachedGeo = {
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-          accuracy: Math.round(pos.coords.accuracy || 0),
-        };
+        cachedGeo = { lat: Number(pos.coords.latitude.toFixed(6)), lng: Number(pos.coords.longitude.toFixed(6)), accuracy: Math.round(pos.coords.accuracy || 0) };
         resolve(cachedGeo);
       },
       () => resolve(null),
@@ -300,9 +265,7 @@ async function collectClientMeta(askGeo = false) {
     cores: navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核心` : "",
     memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "",
     touch: navigator.maxTouchPoints ?? 0,
-    battery,
-    network,
-    geo,
+    battery, network, geo,
   };
 }
 
@@ -310,51 +273,40 @@ async function sha256Hex(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
+const randomHex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, "0")).join("");
 
 async function loginWithGoogleOAuth() {
   if (!googleClientId) return say("尚未設定 GOOGLE_CLIENT_ID 環境變數");
-  const origin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? window.location.origin
-    : "https://kknews.vercel.app";
-  const redirectUri = encodeURIComponent(origin);
-  const rawNonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+  const origin = isLocal ? location.origin : "https://kknews.vercel.app";
+  const rawNonce = randomHex(24), state = randomHex(16);
   sessionStorage.setItem("google_nonce", rawNonce);
+  sessionStorage.setItem("google_state", state);
   const hashedNonce = await sha256Hex(rawNonce);
-
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${redirectUri}&response_type=id_token&scope=openid%20email%20profile&nonce=${hashedNonce}&hd=hlc.edu.tw&prompt=select_account`;
-  window.location.href = authUrl;
+  location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(origin)}&response_type=id_token&scope=openid%20email%20profile&nonce=${hashedNonce}&state=${state}&hd=hlc.edu.tw&prompt=select_account`;
 }
 
 async function handleGoogleCallback() {
-  const hash = window.location.hash;
-  if (hash && hash.includes("id_token=")) {
-    const params = new URLSearchParams(hash.substring(1));
-    const idToken = params.get("id_token");
-    const nonce = sessionStorage.getItem("google_nonce") || undefined;
-    sessionStorage.removeItem("google_nonce");
-
-    // 清除網址列長長的 token，讓網址恢復乾淨
-    window.history.replaceState(null, "", window.location.pathname);
-
-    if (idToken) {
-      const clientMeta = await collectClientMeta(false);
-      const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : ("登入失敗：" + (j.detail || "請重試。")));
-        return null;
-      }
-      return j;
-    }
+  const hash = location.hash;
+  if (!(hash && hash.includes("id_token="))) return null;
+  const params = new URLSearchParams(hash.substring(1));
+  const idToken = params.get("id_token");
+  const nonce = sessionStorage.getItem("google_nonce") || undefined;
+  sessionStorage.removeItem("google_nonce"); sessionStorage.removeItem("google_state");
+  history.replaceState(null, "", location.pathname);   // 清掉網址列的 token
+  if (!idToken) return null;
+  const clientMeta = await collectClientMeta(false);
+  const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : r.status === 429 ? "嘗試次數過多，請稍後再試。" : "登入失敗，請重試。");
+    return null;
   }
-  return null;
+  return j;
 }
 
 function stopCamera() {
-  if (camStream) {
-    camStream.getTracks().forEach(t => t.stop());
-    camStream = null;
-  }
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
 }
 
 async function startCamera() {
@@ -363,10 +315,7 @@ async function startCamera() {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
       if (!camStream) {
-        camStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } },
-          audio: false,
-        });
+        camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } }, audio: false });
       }
       const v = $("camVideo");
       v.srcObject = camStream;
@@ -381,10 +330,8 @@ async function startCamera() {
       return;
     } catch {}
   }
-  // 若瀏覽器不支援直接串流，喚起原生前置相機拍攝當前步驟
-  $("camInput").click();
+  $("camInput").click();   // 不支援串流時，改喚起原生前置相機
 }
-
 $("startCamBtn").onclick = startCamera;
 
 $("snapBtn").onclick = () => {
@@ -394,9 +341,8 @@ $("snapBtn").onclick = () => {
   const s = Math.min(v.videoWidth, v.videoHeight, 440);
   c.width = s; c.height = s;
   const ctx = c.getContext("2d");
-  const sx = (v.videoWidth - s) / 2, sy = (v.videoHeight - s) / 2;
   ctx.translate(s, 0); ctx.scale(-1, 1);
-  ctx.drawImage(v, sx, sy, s, s, 0, 0, s, s);
+  ctx.drawImage(v, (v.videoWidth - s) / 2, (v.videoHeight - s) / 2, s, s, 0, 0, s, s);
   capturedShots[stepIdx] = c.toDataURL("image/jpeg", 0.8);
   stepIdx++;
   updateStepUI();
@@ -417,9 +363,8 @@ $("camInput").onchange = ev => {
     im.onload = () => {
       const c = document.createElement("canvas");
       const s = 440; c.width = s; c.height = s;
-      const ctx = c.getContext("2d");
       const m = Math.min(im.width, im.height);
-      ctx.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, s, s);
+      c.getContext("2d").drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, s, s);
       capturedShots[stepIdx] = c.toDataURL("image/jpeg", 0.8);
       stepIdx++;
       updateStepUI();
@@ -437,51 +382,47 @@ $("camInput").onchange = ev => {
   reader.readAsDataURL(file);
 };
 
-$("retakeBtn").onclick = () => {
-  capturedShots = ["", "", ""];
-  stepIdx = 0;
-  updateStepUI();
-  startCamera();
-};
+$("retakeBtn").onclick = () => { capturedShots = ["", "", ""]; stepIdx = 0; updateStepUI(); startCamera(); };
 
 $("confirmVerifyBtn").onclick = async () => {
   if (capturedShots.some(x => !x)) return say("請完成正面、向右、向左三張清晰臉部照片拍攝");
   $("confirmVerifyBtn").disabled = true;
   const clientMeta = await collectClientMeta(true);
-  const r = await api("/api/verify-profile", {
-    selfieFront: capturedShots[0],
-    selfieRight: capturedShots[1],
-    selfieLeft: capturedShots[2],
-    geo: clientMeta.geo,
-    clientMeta,
-  });
+  const r = await api("/api/verify-profile", { selfieFront: capturedShots[0], selfieRight: capturedShots[1], selfieLeft: capturedShots[2], clientMeta });
   const j = await r.json().catch(() => ({}));
   $("confirmVerifyBtn").disabled = false;
   if (!r.ok) return say(j.error || "核實失敗，請重試");
-  // 顯示警告與隱私彈窗
+  // 完成核實後彈出警告與隱私聲明視窗
   $("legalModal").classList.remove("hide");
 };
 
 $("closeModalBtn").onclick = () => {
   $("legalModal").classList.add("hide");
   currentUser.needsVerification = false;
+  capturedShots = ["", "", ""];
   renderMe(currentUser);
   say("身分核實完成！現在可以開始投稿。", true);
 };
 
+function show(view) {
+  for (const id of ["loadingView", "loginView", "verifyView", "formView"]) $(id).classList.toggle("hide", id !== view);
+}
 function renderMe(me) {
   currentUser = me;
-  const needVerify = me && me.needsVerification;
-  $("loginView").classList.toggle("hide", !!me);
-  $("verifyView").classList.toggle("hide", !needVerify);
-  $("formView").classList.toggle("hide", !me || needVerify);
-  if (me) {
-    $("who").textContent = me.name ? `${me.name}（${me.email}）` : me.email;
-    $("av").textContent = (me.name || me.email)[0].toUpperCase();
-    // 已登入時自動在背景更新定位資訊
+  if (!me) { show("loginView"); return; }
+  const label = me.name ? `${me.name}（${me.email}）` : me.email;
+  const initial = (me.name || me.email)[0].toUpperCase();
+  for (const [w, a] of [["who", "av"], ["who2", "av2"]]) { $(w).textContent = label; $(a).textContent = initial; }
+  if (me.needsVerification) {
+    show("verifyView");
     getGeoPosition();
+    return;
   }
+  show("formView");
+  getGeoPosition();
 }
+
+async function doLogout(ev) { ev?.preventDefault?.(); stopCamera(); await api("/api/logout"); location.reload(); }
 
 async function refreshPublicStatus() {
   try {
@@ -489,27 +430,35 @@ async function refreshPublicStatus() {
     if (!r.ok) return;
     const s = await r.json();
     $("dbIco").classList.toggle("err", !s.ok);
-    $("stCpu").textContent = s.cpuPct + "%";
-    $("stDisk").textContent = s.diskPct + "%";
-    $("stRam").textContent = s.ramPct + "%";
-    $("stConns").textContent = `${s.conns}/${s.maxConns}`;
-  } catch {}
+    $("sysDot").className = "dot" + (s.ok ? "" : " warn");
+    $("sysText").textContent = s.ok ? "即時連線" : "維護中";
+    $("stCpu").textContent = (s.cpuPct ?? "—") + "%";
+    $("stDisk").textContent = (s.diskPct ?? "—") + "%";
+    $("stRam").textContent = (s.ramPct ?? "—") + "%";
+    $("stConns").textContent = `${s.conns ?? "—"}/${s.maxConns ?? 60}`;
+  } catch {
+    $("sysDot").className = "dot warn";
+    $("sysText").textContent = "連線異常";
+  }
 }
 
 (async () => {
   refreshPublicStatus();
-  setInterval(refreshPublicStatus, 10000);
+  setInterval(refreshPublicStatus, 3000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(); });
   const callbackUser = await handleGoogleCallback();
   const r = await fetch("/api/me");
   const data = r.ok ? await r.json() : {};
   googleClientId = data.googleClientId || "";
+  baseUrl = data.baseUrl || "";
   renderMe(callbackUser || data.user || null);
 })();
 
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
 $("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
 $("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
-$("logout").onclick = async ev => { ev.preventDefault(); stopCamera(); await api("/api/logout"); location.reload(); };
+$("logout").onclick = doLogout;
+$("logout2").onclick = doLogout;
 $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");

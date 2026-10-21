@@ -79,3 +79,36 @@ end $$;
 revoke all on function public.get_db_metrics() from public, anon, authenticated;
 grant execute on function public.get_db_metrics() to service_role;
 
+
+-- ===== 安全強化新增（請在 Supabase SQL Editor 執行一次）=====
+-- 實拍照片改存專用資料表：只有 service_role（伺服器）能讀寫，使用者無法透過 Supabase 改寫
+create table if not exists public.user_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  selfie_front text not null,
+  selfie_right text not null,
+  selfie_left text not null,
+  selfie_at timestamptz not null default now()
+);
+alter table public.user_profiles enable row level security;
+revoke all on public.user_profiles from anon, authenticated;
+
+-- 限流紀錄（serverless 多實例也能共用）
+create table if not exists public.rate_limits (
+  id bigint generated always as identity primary key,
+  key text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists rate_limits_key_time on public.rate_limits (key, created_at);
+alter table public.rate_limits enable row level security;
+revoke all on public.rate_limits from anon, authenticated;
+
+-- 後台操作稽核紀錄
+create table if not exists public.admin_audit (
+  id bigint generated always as identity primary key,
+  action text not null,
+  target text,
+  ip text,
+  created_at timestamptz not null default now()
+);
+alter table public.admin_audit enable row level security;
+revoke all on public.admin_audit from anon, authenticated;

