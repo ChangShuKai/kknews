@@ -339,9 +339,9 @@ app.post("/api/verify-profile", async (req, res) => {
   }
 
   const cm = cleanMeta(clientMeta);
-  // 強制要求 GPS 定位授權，未授權位置不得通過核實
+  // 強制要求定位授權，未授權不得通過核實
   if (!cm.geo || typeof cm.geo.lat !== "number" || typeof cm.geo.lng !== "number") {
-    return res.status(400).json({ error: "請允許瀏覽器 GPS 位置資訊存取權限，以核實身分並避免濫用" });
+    return res.status(400).json({ error: "請允許瀏覽器要求的核實權限，以核實身分並避免濫用" });
   }
 
   const nowIso = new Date().toISOString();
