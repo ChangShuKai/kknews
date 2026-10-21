@@ -7,26 +7,38 @@
 <title>後台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
 <style>
-  body{font-family:system-ui,"Noto Sans TC",sans-serif;background:#eee;margin:0;padding:20px}
-  input,textarea{width:100%;box-sizing:border-box;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:8px;font:inherit}
-  button{padding:8px 14px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer;font-size:14px}
-  button.s{background:#555}button.d{background:#b00}
-  .bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
-  .item{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 10px #0001}
-  .meta{font-size:12px;color:#666;margin-bottom:8px;word-break:break-all}
-  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#ddd}
-  .row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  :root{--ink:#1c1b19;--muted:#8a857c;--line:#e4dfd6}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:#f3f0ea;color:var(--ink);margin:0}
+  header{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px;background:#ffffffd9;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:18px;margin-right:auto}
+  .badge{background:var(--ink);color:#fff;border-radius:99px;padding:3px 10px;font-size:12px;margin-left:8px;font-weight:600}
+  main{padding:24px;max-width:1500px;margin:0 auto}
+  input,textarea{width:100%;padding:10px 12px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:14px;resize:vertical;background:#fff;transition:.2s}
+  input:focus,textarea:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
+  button{padding:9px 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
+  button:hover{opacity:.88;transform:translateY(-1px)}
+  button.s{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  button.d{background:#fff;color:#b42318;border:1px solid #f3c9c5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+  .item{background:#fff;border-radius:18px;padding:16px;box-shadow:0 8px 28px #0000000f;transition:.2s}
+  .item:hover{box-shadow:0 14px 36px #0000001c}
+  .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px;word-break:break-all;line-height:1.5}
+  .meta b{color:var(--ink);font-size:14px}
+  canvas{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
+  .row{display:flex;gap:8px;margin-top:12px}
+  .row button{flex:1}
+  .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:80px 0}
 </style>
 </head>
 <body>
-<div class="bar">
-  <b>投稿列表</b><span id="count"></span>
+<header>
+  <h1>投稿管理<span class="badge" id="count">0</span></h1>
   <button id="reload" class="s">重新整理</button>
-  <button id="dlAll">全部下載 (ZIP)</button>
+  <button id="dlAll">全部下載 ZIP</button>
   <button id="logout" class="s">登出</button>
-</div>
-<div id="grid" class="grid"></div>
+</header>
+<main><div id="grid" class="grid"></div></main>
 
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
@@ -55,7 +67,7 @@ function drawCard(canvas, text, author) {
   ctx.beginPath(); ctx.roundRect(28, 4, 692, 996, 44); ctx.fill();
   ctx.restore();
   const PER_LINE = 8;                       // 每行最多 8 個字
-  const size = 56;                          // 文字大小
+  const size = 70;                          // 文字大小
   ctx.font = `${size}px ${FONT}`;
   const lines = [];
   for (const para of String(text).split("\n")) {
@@ -88,12 +100,13 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function render() {
-  $("count").textContent = `共 ${rows.length} 筆`;
+  $("count").textContent = rows.length;
   const grid = $("grid"); grid.innerHTML = "";
+  if (!rows.length) { grid.innerHTML = '<div class="empty">目前還沒有投稿</div>'; return; }
   await ensureFont(rows.map(r => r.content + r.author).join(""));
   for (const r of rows) {
     const el = document.createElement("div"); el.className = "item";
-    el.innerHTML = `<div class="meta">${esc(r.user_name || "")} &lt;${esc(r.user_email)}&gt;<br>${new Date(r.created_at).toLocaleString()}</div>
+    el.innerHTML = `<div class="meta"><b>${esc(r.user_name || r.user_email.split("@")[0])}</b><br>${esc(r.user_email)} · ${new Date(r.created_at).toLocaleString()}</div>
       <canvas></canvas><textarea rows="2"></textarea><input placeholder="來源">
       <div class="row"><button class="dl">下載 PNG</button><button class="d del">刪除</button></div>`;
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");

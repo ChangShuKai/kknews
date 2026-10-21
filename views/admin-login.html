@@ -6,15 +6,23 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Login</title>
 <style>
-  body{font-family:system-ui,sans-serif;background:#eee;margin:0}
-  .login{max-width:340px;margin:12vh auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 6px 24px #0002}
-  input{width:100%;box-sizing:border-box;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:15px}
-  button{width:100%;margin-top:8px;padding:10px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
-  .err{color:#c00;font-size:14px;min-height:20px}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;font-family:system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#1c1b19;
+    background:radial-gradient(1000px 500px at 10% -10%,#efe7d8 0,transparent 60%),#f3f0ea}
+  .login{width:min(380px,100%);background:#fff;padding:36px 30px;border-radius:22px;box-shadow:0 20px 60px #0000001a;animation:up .4s ease both}
+  @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .brand{font-size:12px;letter-spacing:.25em;color:#8a857c;margin-bottom:10px}
+  h2{margin:0 0 22px;font-size:22px}
+  input{width:100%;padding:13px 14px;margin:6px 0;border:1.5px solid #e4dfd6;border-radius:12px;font-size:15px;transition:.2s}
+  input:focus{outline:0;border-color:#1c1b19;box-shadow:0 0 0 4px #1c1b1912}
+  button{width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:#1c1b19;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:.2s}
+  button:hover{opacity:.9}button:disabled{opacity:.5}
+  .err{color:#b42318;font-size:14px;min-height:22px;margin-top:10px}
 </style>
 </head>
 <body>
 <div class="login">
+  <div class="brand">KKNEWS ADMIN</div>
   <h2>管理員登入</h2>
   <input id="email" type="text" placeholder="帳號" autocomplete="off" autocapitalize="off" spellcheck="false">
   <input id="pw" type="text" placeholder="密碼" autocomplete="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security:disc">
@@ -25,11 +33,12 @@
 const $ = id => document.getElementById(id);
 const k = new URLSearchParams(location.search).get("k") || "";
 $("btn").onclick = async () => {
-  $("err").textContent = "";
+  $("err").textContent = ""; $("btn").disabled = true;
   const r = await fetch("/api/admin/login", { method: "POST",
     headers: { "Content-Type": "application/json", "X-Requested-With": "fetch", "X-Access-Key": k },
     body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }) });
   if (r.ok) { location.replace("/adminusercontrol"); return; }
+  $("btn").disabled = false;
   $("err").textContent = r.status === 429 ? "嘗試次數過多，請稍後再試" : "帳號或密碼錯誤";
 };
 $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("btn").click(); });

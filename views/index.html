@@ -5,37 +5,63 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KKNews 諺語投稿</title>
 <style>
-  body{font-family:system-ui,"Noto Sans TC",sans-serif;background:#f4f1ea;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center}
-  .box{background:#fff;padding:32px;border-radius:16px;box-shadow:0 8px 30px #0002;width:min(420px,92vw)}
-  h1{margin:0 0 16px;font-size:22px}
-  label{display:block;margin:12px 0 4px;font-size:14px;color:#555}
-  input,textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;font-family:inherit}
-  button,a.btn{display:block;text-align:center;text-decoration:none;box-sizing:border-box;margin-top:16px;width:100%;padding:12px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;cursor:pointer}
-  a.g{background:#fff;color:#111;border:1px solid #ccc}
-  .msg{margin-top:12px;font-size:14px;min-height:20px}.err{color:#c00}.ok{color:#080}
-  .hide{display:none}.me{font-size:13px;color:#666;margin-bottom:8px}
+  :root{--ink:#1c1b19;--paper:#f6f3ee;--muted:#8a857c;--line:#e4dfd6;--accent:#1c1b19}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink);
+    background:radial-gradient(1200px 600px at 10% -10%,#efe7d8 0,transparent 60%),radial-gradient(900px 500px at 110% 110%,#e3e8ef 0,transparent 55%),#f3f0ea}
+  .card{width:min(440px,100%);background:#fff;border-radius:24px;padding:40px 34px;box-shadow:0 20px 60px #0000001a,0 2px 6px #0000000d;animation:up .5s ease both}
+  @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .brand{font-size:13px;letter-spacing:.25em;color:var(--muted);margin-bottom:14px}
+  h1{margin:0 0 8px;font-size:26px;line-height:1.3}
+  .sub{margin:0 0 28px;color:var(--muted);font-size:14px;line-height:1.6}
+  .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);font-size:16px;font-weight:600;text-decoration:none;cursor:pointer;transition:.2s}
+  .gbtn:hover{box-shadow:0 6px 20px #0000001a;transform:translateY(-1px);border-color:#cfc9bd}
+  .gbtn svg{width:22px;height:22px}
+  .hint{margin-top:16px;font-size:12.5px;color:var(--muted);text-align:center}
+  .hint b{color:var(--ink)}
+  .me{display:flex;align-items:center;gap:10px;margin-bottom:22px;padding:10px 12px;background:var(--paper);border-radius:12px;font-size:13px}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+  .me .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .me a{color:var(--muted);text-decoration:none;font-size:12.5px}.me a:hover{color:var(--ink)}
+  label{display:flex;justify-content:space-between;margin:16px 0 6px;font-size:13px;font-weight:600}
+  label span{font-weight:400;color:var(--muted)}
+  textarea,input{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:16px;background:#fff;transition:.2s;resize:none}
+  textarea:focus,input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 4px #1c1b1912}
+  .send{margin-top:22px;width:100%;padding:14px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:.2s}
+  .send:hover{opacity:.9;transform:translateY(-1px)}.send:disabled{opacity:.5;cursor:wait;transform:none}
+  .msg{margin-top:16px;padding:11px 14px;border-radius:10px;font-size:14px;display:none}
+  .msg.show{display:block}.msg.err{background:#fdecec;color:#b42318}.msg.ok{background:#e8f6ee;color:#067647}
+  .hide{display:none}
 </style>
 </head>
 <body>
-<div class="box">
+<div class="card">
+  <div class="brand">KKNEWS</div>
   <h1>寫下你想說的一句話</h1>
+  <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
+
   <div id="loginView" class="hide">
-    <p>請使用學校帳號（<b>@hlc.edu.tw</b>）登入或註冊。</p>
-    <a class="btn g" href="/auth/google">使用 Google 登入／註冊</a>
+    <a class="gbtn" href="/auth/google">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+      使用 Google 登入／註冊
+    </a>
+    <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
   </div>
+
   <div id="formView" class="hide">
-    <div class="me">登入：<span id="who"></span> · <a href="#" id="logout">登出</a></div>
-    <label>諺語／你想說的話</label>
-    <textarea id="content" rows="3" maxlength="100"></textarea>
-    <label>來源（人名）</label>
-    <input id="author" maxlength="30">
-    <button id="submit">送出</button>
+    <div class="me"><div class="av" id="av"></div><div class="t" id="who"></div><a href="#" id="logout">登出</a></div>
+    <label>諺語／你想說的話 <span id="cc">0/100</span></label>
+    <textarea id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea>
+    <label>來源（人名） <span id="ac">0/30</span></label>
+    <input id="author" maxlength="30" placeholder="例如：阿昕">
+    <button class="send" id="submit">送出投稿</button>
   </div>
   <div id="msg" class="msg"></div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
-const say = (t, ok) => { $("msg").textContent = t; $("msg").className = "msg " + (ok ? "ok" : "err"); };
+function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = "msg show " + (ok ? "ok" : "err"); if (!t) m.className = "msg"; }
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
 
 (async () => {
@@ -45,17 +71,21 @@ const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type
   const me = r.ok ? await r.json() : null;
   $("loginView").classList.toggle("hide", !!me);
   $("formView").classList.toggle("hide", !me);
-  if (me) $("who").textContent = me.email;
+  if (me) { $("who").textContent = me.name ? `${me.name}（${me.email}）` : me.email; $("av").textContent = (me.name || me.email)[0].toUpperCase(); }
 })();
 
+$("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
+$("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
 $("logout").onclick = async ev => { ev.preventDefault(); await api("/api/logout"); location.reload(); };
 $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");
+  $("submit").disabled = true;
   const r = await api("/api/proverbs", { content, author });
   const j = await r.json().catch(() => ({}));
+  $("submit").disabled = false;
   if (!r.ok) return say(j.error || "送出失敗");
-  $("content").value = ""; $("author").value = "";
+  $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
   say("已送出，謝謝投稿！", true);
 };
 </script>
