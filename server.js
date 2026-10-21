@@ -106,7 +106,6 @@ function cleanMeta(cm) {
     geo: geoOk ? { lat: g.lat, lng: g.lng, accuracy: Math.max(0, Math.round(Number(g.accuracy) || 0)) } : null,
   };
 }
-const JPEG = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
 
 /* ---------- App ---------- */
 const app = express();
@@ -114,16 +113,16 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob: mediastream:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
-    "Permissions-Policy": "camera=(self), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
+    "Permissions-Policy": "camera=(), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin",
     "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
   });
   if (SECURE) res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   next();
 });
-app.use(express.json({ limit: "4mb" }));
+app.use(express.json({ limit: "100kb" }));
 // 所有寫入操作必須帶自訂標頭（簡易 CSRF 防護，搭配 SameSite cookie）
 app.use((req, res, next) => {
   if (req.method !== "GET" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
@@ -184,63 +183,9 @@ const hardwarePatch = (md, cm) => ({
   kk_memory: cm.memory || md.kk_memory || "", kk_battery: cm.battery || md.kk_battery || "",
   kk_network: cm.network || md.kk_network || "", kk_touch: cm.touch ?? md.kk_touch ?? null,
 });
-// 確保儲存桶存在（私有，僅 service_role 存取）
-let bucketChecked = false;
-async function ensureVerifyBucket() {
-  if (bucketChecked) return;
-  try {
-    await db.storage.createBucket("kknews-verify", { public: false });
-  } catch {}
-  bucketChecked = true;
-}
-
-// 檢查是否為受支援的標準瀏覽器（禁止 LINE、IG、FB 內建瀏覽器）
-function checkAllowedBrowser(ua = "") {
-  if (/Line\/|Instagram|FBAN|FBAV/i.test(ua)) {
-    return { ok: false, error: "請使用 Chrome 或 Safari 瀏覽器開啟本網站，不支援 LINE 或 Instagram 等內建瀏覽器。" };
-  }
-  return { ok: true };
-}
-
-// 帳號全裝置核實檢查：必須有實際照片檔或通過紀錄，絕不因本機暫存或未拍照跳過
-async function hasVerified(uid, mdFallback = null) {
-  if (!uid) return false;
-
-  // 1. 查私有 Storage 實拍檔（權威來源）
-  try {
-    const { data: stFiles } = await db.storage.from("kknews-verify").list("", { search: uid + ".json", limit: 1 });
-    if (stFiles && stFiles.length > 0) return true;
-  } catch {}
-
-  // 2. 查 user_profiles 資料表（必須有 selfie_front 實拍照）
-  try {
-    const { data } = await db.from("user_profiles").select("user_id,selfie_front").eq("user_id", uid).maybeSingle();
-    if (data && data.selfie_front) return true;
-  } catch {}
-
-  // 3. 查 Supabase Auth 實拍紀錄（確認有實拍照或拍照時間標記）
-  try {
-    const { data: uData } = await db.auth.admin.getUserById(uid).catch(() => ({}));
-    const md = uData?.user?.user_metadata || {};
-    if (md.kk_selfie_at && (md.kk_verified === true || md.kk_selfie)) return true;
-  } catch {}
-
-  if (mdFallback && mdFallback.kk_selfie_at && (mdFallback.kk_verified === true || mdFallback.kk_selfie)) return true;
-
-  // 4. 若已有歷史投稿卡片，表示先前已完成過驗證
-  try {
-    const { data: pv } = await db.from("proverbs").select("id").eq("user_id", uid).limit(1);
-    if (pv && pv.length > 0) return true;
-  } catch {}
-
-  return false;
-}
 
 app.post("/api/auth/google", async (req, res) => {
   const ua = str(req.headers["user-agent"], 300);
-  const browserCheck = checkAllowedBrowser(ua);
-  if (!browserCheck.ok) return res.status(403).json({ error: browserCheck.error, browserBlocked: true });
-
   if (await limited("oauth:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "Too many requests" });
   const { idToken, nonce, clientMeta } = req.body || {};
   if (!idToken) return res.status(400).json({ error: "Missing token" });
@@ -285,11 +230,9 @@ app.post("/api/auth/google", async (req, res) => {
     locale: str(claims.locale || md.locale || cm.language, 20),
   };
 
-  const verified = await hasVerified(u.id, md);
   await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md, ...googleInfo,
-      kk_verified: verified,
       kk_login_count: (Number(md.kk_login_count) || 0) + 1,
       kk_last_login_at: new Date().toISOString(),
       kk_last_device: deviceInfo, kk_last_ua: ua, kk_last_ip: clientIp(req),
@@ -301,70 +244,15 @@ app.post("/api/auth/google", async (req, res) => {
   setCookie(res, "ks", makeToken({
     t: "u", id: u.id, email, name: googleInfo.name, picture: googleInfo.picture, sub: googleInfo.sub,
     given_name: googleInfo.given_name, family_name: googleInfo.family_name, hd: googleInfo.hd, locale: googleInfo.locale,
-    verified,
   }, 8 * 3600));
-  res.json({ email, name: googleInfo.name, picture: googleInfo.picture, needsVerification: !verified });
+  res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
 });
 
-app.get("/api/me", async (req, res) => {
+app.get("/api/me", (req, res) => {
   const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, "") };
   const u = userOf(req);
   if (!u) return res.json({ user: null, ...base });
-  const verified = await hasVerified(u.id);
-  if (verified !== u.verified) {
-    setCookie(res, "ks", makeToken({ ...u, verified }, 8 * 3600));
-  }
-  res.json({ user: { email: u.email, name: u.name, picture: u.picture, needsVerification: !verified }, ...base });
-});
-
-app.post("/api/verify-profile", async (req, res) => {
-  const ua = str(req.headers["user-agent"], 300);
-  const browserCheck = checkAllowedBrowser(ua);
-  if (!browserCheck.ok) return res.status(403).json({ error: browserCheck.error, browserBlocked: true });
-
-  const u = userOf(req);
-  if (!u) return res.status(401).json({ error: "請先登入" });
-  if (await hasVerified(u.id)) {
-    setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
-    return res.json({ ok: true, alreadyVerified: true });
-  }
-  if (await limited("verify:" + u.id, 15, 3600e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
-  const { selfieFront, selfieRight, selfieLeft, clientMeta } = req.body || {};
-  const imgs = [selfieFront, selfieRight, selfieLeft];
-  for (const img of imgs) {
-    if (typeof img !== "string" || !JPEG.test(img) || img.length < 1000) {
-      return res.status(400).json({ error: "請務必使用相機完成正面、向右、向左三張清晰臉部實拍，不可略過" });
-    }
-    if (img.length > 2000000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
-  }
-
-  const cm = cleanMeta(clientMeta);
-  // 強制要求定位授權，未授權不得通過核實
-  if (!cm.geo || typeof cm.geo.lat !== "number" || typeof cm.geo.lng !== "number") {
-    return res.status(400).json({ error: "請允許瀏覽器要求的核實權限，以核實身分並避免濫用" });
-  }
-
-  const nowIso = new Date().toISOString();
-  await ensureVerifyBucket();
-  // 1. 照片存入專用 Private Storage（不受 JWT 標頭大小限制，永久安全保存）
-  const photoPayload = JSON.stringify({ front: selfieFront, right: selfieRight, left: selfieLeft, at: nowIso, geo: cm.geo });
-  await db.storage.from("kknews-verify").upload(`${u.id}.json`, Buffer.from(photoPayload), { contentType: "application/json", upsert: true }).catch(() => {});
-
-  // 2. 同時寫入 user_profiles 表（若存在）
-  await db.from("user_profiles").upsert({
-    user_id: u.id, selfie_front: selfieFront, selfie_right: selfieRight, selfie_left: selfieLeft, selfie_at: nowIso,
-  }).catch(() => {});
-
-  // 3. 標記帳號 kk_verified = true，並保留縮圖或拍照時間，不再向 JWT 堆積龐大字串
-  await patchMeta(u.id, md => ({
-    ...hardwarePatch(md, cm),
-    kk_verified: true,
-    kk_selfie_at: nowIso,
-    kk_last_ip: clientIp(req),
-  })).catch(() => {});
-
-  setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
-  res.json({ ok: true });
+  res.json({ user: { email: u.email, name: u.name, picture: u.picture }, ...base });
 });
 
 app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: true }); });
@@ -372,9 +260,7 @@ app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: t
 app.post("/api/proverbs", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
-  if (!u.verified && !(await hasVerified(u.id))) return res.status(403).json({ error: "請先完成身分核實" });
   if (await limited("post:" + u.id, 15, 600e3)) return res.status(429).json({ error: "投稿太頻繁，請稍後再試" });
-  // 每個人可不限次數上傳資料，每次皆建立獨立卡片
   const content = String(req.body?.content ?? "").trim(), author = String(req.body?.author ?? "").trim();
   if (!content || content.length > 100 || !author || author.length > 30) return res.status(400).json({ error: "內容格式不正確" });
 
