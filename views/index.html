@@ -7,10 +7,22 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
-  .me{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 12px;background:var(--paper);border-radius:12px;font-size:13px}
-  .av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
-  .me .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .me button{background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline}
+  body.with-topbar{min-height:100vh;display:flex;flex-direction:column}
+  .top-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{margin:0}
+  /* 頂部 Dock 欄 */
+  .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008}
+  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .dock-item:hover{color:var(--ink)}
+  .dock-item.active{background:var(--ink);color:#fff;box-shadow:0 2px 8px #00000022}
+  /* 右上角帳號區 */
+  .acct-zone{display:flex;align-items:center;gap:10px}
+  .acct-pill{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;background:var(--paper);border:1px solid var(--line);border-radius:99px;font-size:13px}
+  .av{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;object-fit:cover}
+  .acct-info{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
+  .acct-logout{background:none;border:0;border-left:1px solid var(--line);padding-left:9px;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+  .acct-logout:hover{color:var(--err)}
+  .page-wrap{flex:1;display:grid;place-items:center;padding:24px 20px}
   .hint{margin-top:14px;font-size:12.5px;color:var(--muted);text-align:center}
   .hint b{color:var(--ink)}
   .hud-wrap{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
@@ -36,126 +48,160 @@
   .shot-slot img{width:100%;height:100%;object-fit:cover}
   .shot-slot span{position:absolute;bottom:0;inset-inline:0;background:#1c1b19cc;color:#fff;font-size:10.5px;text-align:center;padding:2px 0}
   .skel-block{height:52px;margin-top:12px}
-  /* 一般使用者上方 Supabase 即時系統狀態卡（國家、ap-northeast-1、CPU/Disk/RAM/conns 即時自動重整） */
-  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:20px}
+  /* 點進「即時數據」才顯示的系統狀態卡（國家、ap-northeast-1、CPU/Disk/RAM/conns 即時自動重整） */
+  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:6px}
   .db-top{display:flex;align-items:center;gap:12px}
-  .db-ico{width:38px;height:38px;border-radius:10px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
+  .db-ico{width:40px;height:40px;border-radius:10px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
   .db-ico.err{background:#ef4444;color:#fff}
-  .db-ico svg{width:20px;height:20px}
+  .db-ico svg{width:21px;height:21px}
   .db-title{flex:1;min-width:0}
-  .db-title b{font-size:14px;display:block;color:var(--ink)}
-  .db-title span{font-size:12px;color:#64748b;display:block;line-height:1.35}
-  .jp-flag{width:30px;height:20px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
+  .db-title b{font-size:15px;display:block;color:var(--ink)}
+  .db-title span{font-size:12.5px;color:#64748b;display:block;line-height:1.4}
+  .jp-flag{width:32px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
   .jp-flag::after{content:"";width:10px;height:10px;border-radius:50%;background:#bc002d}
-  .db-foot{border-top:1px solid var(--line);margin-top:10px;padding-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#64748b;gap:4px;flex-wrap:wrap}
+  .db-foot{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#64748b;gap:6px;flex-wrap:wrap}
   .db-foot strong{color:var(--ink);font-weight:600}
+  .sync-note{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between}
 </style>
 </head>
-<body class="center-page">
-<main class="card">
-  <div class="brand-row">
-    <div class="brand"><img src="/icon.svg" alt="">KKNEWS</div>
-    <div class="pill" title="系統每 3 秒即時自動重整"><span class="dot" id="sysDot"></span><span id="sysText">即時連線</span></div>
-  </div>
-  <!-- 一般使用者可見之系統狀態：國家、區域 ap-northeast-1 與即時 CPU / Disk / RAM / conns -->
-  <div class="db-card">
-    <div class="db-top">
-      <div class="db-ico" id="dbIco">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      </div>
-      <div class="db-title">
-        <b id="dbName">Primary Database</b>
-        <span id="dbRegion">Northeast Asia (Tokyo)</span>
-        <span id="dbSpec">ap-northeast-1 · t3.nano</span>
-      </div>
-      <div class="jp-flag" title="Japan (ap-northeast-1)"></div>
-    </div>
-    <div class="db-foot">
-      <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
-      <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
-      <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
-      <span><span id="stConns">—/60</span> conns</span>
-    </div>
-  </div>
+<body class="with-topbar">
+<!-- 頂部導覽列：左側品牌、中間 Dock 欄、右上角帳號區 -->
+<header class="top-header">
+  <div class="brand"><img src="/icon.svg" alt="">KKNEWS</div>
 
-  <h1>寫下你想說的一句話</h1>
-  <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
-
-  <div id="loadingView">
-    <div class="skel skel-block"></div>
-  </div>
-
-  <div id="loginView" class="hide">
-    <button type="button" class="btn ghost block" id="googleLoginBtn" style="margin-top:0">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-      使用 Google 登入／註冊
+  <nav class="dock-bar" aria-label="功能切換">
+    <button type="button" class="dock-item active" id="dockPost">✍️ 投稿卡片</button>
+    <button type="button" class="dock-item" id="dockStatus">
+      <span class="dot" id="sysDot"></span>
+      <span>即時系統數據</span>
     </button>
-    <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
-  </div>
+  </nav>
 
-  <!-- 首次註冊身分核實：三角度臉部拍攝框 -->
-  <div id="verifyView" class="hide">
-    <div class="me"><div class="av" id="av2"></div><div class="t" id="who2"></div><button type="button" id="logout2">登出</button></div>
-    <div class="notice">
-      🛡️ <b>首次登入身分核實說明：</b><br>
-      收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（正面、向右、向左共 3 張）</b>。
+  <!-- 右上角帳號區 -->
+  <div class="acct-zone" id="acctZone">
+    <div class="acct-pill" id="acctGuest">
+      <span class="acct-info" style="color:var(--muted);padding-left:4px">尚未登入</span>
+      <button type="button" class="acct-logout" id="topLoginBtn" style="color:var(--ink)">Google 登入</button>
+    </div>
+    <div class="acct-pill hide" id="acctUser">
+      <div class="av" id="topAv">U</div>
+      <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
+      <span class="acct-info" id="topWho"></span>
+      <button type="button" class="acct-logout" id="topLogoutBtn">登出</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrap">
+  <!-- 分頁 1：投稿與核實主卡片 -->
+  <main class="card" id="mainCardView">
+    <h1>寫下你想說的一句話</h1>
+    <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
+
+    <div id="loadingView">
+      <div class="skel skel-block"></div>
     </div>
 
-    <div class="hud-wrap">
-      <div class="hud-steps">
-        <div class="hud-step active" id="st0">1. 正面對準</div>
-        <div class="hud-step" id="st1">2. 向右一張</div>
-        <div class="hud-step" id="st2">3. 向左一張</div>
-      </div>
-      <div class="hud-guide" id="hudGuide" aria-live="polite">請開啟相機，將臉部對準框內</div>
+    <div id="loginView" class="hide">
+      <button type="button" class="btn ghost block" id="googleLoginBtn" style="margin-top:0">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+        使用 Google 登入／註冊
+      </button>
+      <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
+    </div>
 
-      <div class="cam-box">
-        <video id="camVideo" autoplay playsinline muted class="hide"></video>
-        <div class="face-overlay hide" id="faceOverlay">
-          <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
-            <path d="M22 48 V26 Q22 22 26 22 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <path d="M152 22 H174 Q178 22 178 26 V48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <path d="M22 152 V174 Q22 178 26 178 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <path d="M152 178 H174 Q178 178 178 174 V152" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-            <ellipse cx="100" cy="98" rx="50" ry="64" stroke="#ffffff" stroke-width="2.2" stroke-dasharray="7 5"/>
-          </svg>
-          <svg class="turn-arrow right" id="arrowRight" viewBox="0 0 64 64" fill="none">
-            <path d="M14 16 L30 32 L14 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
-            <path d="M32 16 L48 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <svg class="turn-arrow left" id="arrowLeft" viewBox="0 0 64 64" fill="none">
-            <path d="M50 16 L34 32 L50 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
-            <path d="M32 16 L16 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div class="dir-arrow" id="dirHint">請正對鏡頭</div>
+    <!-- 首次註冊身分核實：三角度臉部拍攝框 -->
+    <div id="verifyView" class="hide">
+      <div class="notice">
+        🛡️ <b>首次登入身分核實說明：</b><br>
+        收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（正面、向右、向左共 3 張）</b>。
+      </div>
+
+      <div class="hud-wrap">
+        <div class="hud-steps">
+          <div class="hud-step active" id="st0">1. 正面對準</div>
+          <div class="hud-step" id="st1">2. 向右一張</div>
+          <div class="hud-step" id="st2">3. 向左一張</div>
         </div>
-        <div id="camPlaceholder" class="cam-tip">點擊下方按鈕開啟相機<br>並允許相機與位置權限</div>
+        <div class="hud-guide" id="hudGuide" aria-live="polite">請開啟相機，將臉部對準框內</div>
+
+        <div class="cam-box">
+          <video id="camVideo" autoplay playsinline muted class="hide"></video>
+          <div class="face-overlay hide" id="faceOverlay">
+            <svg class="face-svg" id="faceSvg" viewBox="0 0 200 200" fill="none">
+              <path d="M22 48 V26 Q22 22 26 22 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M152 22 H174 Q178 22 178 26 V48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M22 152 V174 Q22 178 26 178 H48" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M152 178 H174 Q178 178 178 174 V152" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+              <ellipse cx="100" cy="98" rx="50" ry="64" stroke="#ffffff" stroke-width="2.2" stroke-dasharray="7 5"/>
+            </svg>
+            <svg class="turn-arrow right" id="arrowRight" viewBox="0 0 64 64" fill="none">
+              <path d="M14 16 L30 32 L14 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+              <path d="M32 16 L48 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg class="turn-arrow left" id="arrowLeft" viewBox="0 0 64 64" fill="none">
+              <path d="M50 16 L34 32 L50 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+              <path d="M32 16 L16 32 L32 48" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="dir-arrow" id="dirHint">請正對鏡頭</div>
+          </div>
+          <div id="camPlaceholder" class="cam-tip">點擊下方按鈕開啟相機<br>並允許相機與位置權限</div>
+        </div>
+
+        <div class="shots-row">
+          <div class="shot-slot" id="slot0">待拍正面<span>1. 正面</span></div>
+          <div class="shot-slot" id="slot1">待拍向右<span>2. 向右</span></div>
+          <div class="shot-slot" id="slot2">待拍向左<span>3. 向左</span></div>
+        </div>
       </div>
 
-      <div class="shots-row">
-        <div class="shot-slot" id="slot0">待拍正面<span>1. 正面</span></div>
-        <div class="shot-slot" id="slot1">待拍向右<span>2. 向右</span></div>
-        <div class="shot-slot" id="slot2">待拍向左<span>3. 向左</span></div>
-      </div>
+      <input type="file" id="camInput" accept="image/*" capture="user" class="hide" aria-label="拍攝照片">
+      <button type="button" class="btn block" id="startCamBtn" style="margin-top:0">開啟相機拍攝</button>
+      <button type="button" class="btn block hide" id="snapBtn">拍攝第 1 張（正面）</button>
+      <button type="button" class="btn ghost block hide" id="retakeBtn">重新拍攝</button>
+      <button type="button" class="btn block hide" id="confirmVerifyBtn">完成核實並送出</button>
     </div>
 
-    <input type="file" id="camInput" accept="image/*" capture="user" class="hide" aria-label="拍攝照片">
-    <button type="button" class="btn block" id="startCamBtn" style="margin-top:0">開啟相機拍攝</button>
-    <button type="button" class="btn block hide" id="snapBtn">拍攝第 1 張（正面）</button>
-    <button type="button" class="btn ghost block hide" id="retakeBtn">重新拍攝</button>
-    <button type="button" class="btn block hide" id="confirmVerifyBtn">完成核實並送出</button>
-  </div>
+    <div id="formView" class="hide">
+      <label class="field" style="margin-top:0"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
+        <textarea class="input" id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea></label>
+      <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
+        <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
+      <button class="btn block" id="submit">送出投稿</button>
+    </div>
+    <div id="msg" class="alert" role="status" aria-live="polite"></div>
+  </main>
 
-  <div id="formView" class="hide">
-    <div class="me"><div class="av" id="av"></div><div class="t" id="who"></div><button type="button" id="logout">登出</button></div>
-    <label class="field"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
-      <textarea class="input" id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea></label>
-    <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
-      <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
-    <button class="btn block" id="submit">送出投稿</button>
-  </div>
-  <div id="msg" class="alert" role="status" aria-live="polite"></div>
-</main>
+  <!-- 分頁 2：點進頂部 Dock「即時系統數據」才顯示的保守版即時數據卡 -->
+  <section class="card hide" id="statusCardView" aria-label="即時系統數據">
+    <h2>系統即時運行狀態</h2>
+    <p class="sub" style="margin-bottom:16px">以下為 Supabase 雲端資料庫真實 API 即時監測數據（每 3 秒自動同步）。</p>
+    <div class="db-card">
+      <div class="db-top">
+        <div class="db-ico" id="dbIco">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        </div>
+        <div class="db-title">
+          <b id="dbName">Primary Database</b>
+          <span id="dbRegion">Northeast Asia (Tokyo)</span>
+          <span id="dbSpec">ap-northeast-1 · t3.nano</span>
+        </div>
+        <div class="jp-flag" title="Japan (ap-northeast-1)"></div>
+      </div>
+      <div class="db-foot">
+        <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
+        <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
+        <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
+        <span><span id="stConns">—/60</span> conns</span>
+      </div>
+    </div>
+    <div class="sync-note">
+      <span id="sysText">● 即時連線正常</span>
+      <span id="stUpdatedAt">更新時間：—</span>
+    </div>
+    <button type="button" class="btn ghost block" id="backToPostBtn">← 返回投稿卡片</button>
+  </section>
+</div>
 
 <!-- 核實完成後彈窗顯示警告與隱私聲明 -->
 <div id="legalModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
@@ -404,15 +450,41 @@ $("closeModalBtn").onclick = () => {
   say("身分核實完成！現在可以開始投稿。", true);
 };
 
+function switchDock(tab) {
+  const isStatus = tab === "status";
+  $("dockPost").classList.toggle("active", !isStatus);
+  $("dockStatus").classList.toggle("active", isStatus);
+  $("mainCardView").classList.toggle("hide", isStatus);
+  $("statusCardView").classList.toggle("hide", !isStatus);
+  if (isStatus) refreshPublicStatus();
+}
+$("dockPost").onclick = () => switchDock("post");
+$("dockStatus").onclick = () => switchDock("status");
+$("backToPostBtn").onclick = () => switchDock("post");
+
 function show(view) {
   for (const id of ["loadingView", "loginView", "verifyView", "formView"]) $(id).classList.toggle("hide", id !== view);
 }
 function renderMe(me) {
   currentUser = me;
+  $("acctGuest").classList.toggle("hide", Boolean(me));
+  $("acctUser").classList.toggle("hide", !me);
   if (!me) { show("loginView"); return; }
+
   const label = me.name ? `${me.name}（${me.email}）` : me.email;
-  const initial = (me.name || me.email)[0].toUpperCase();
-  for (const [w, a] of [["who", "av"], ["who2", "av2"]]) { $(w).textContent = label; $(a).textContent = initial; }
+  const initial = (me.name || me.email || "U")[0].toUpperCase();
+  $("topWho").textContent = label;
+  $("topWho").title = label;
+  if (me.picture && /^https:\/\//i.test(me.picture)) {
+    $("topAvImg").src = me.picture;
+    $("topAvImg").classList.remove("hide");
+    $("topAv").classList.add("hide");
+  } else {
+    $("topAv").textContent = initial;
+    $("topAv").classList.remove("hide");
+    $("topAvImg").classList.add("hide");
+  }
+
   if (me.needsVerification) {
     show("verifyView");
     getGeoPosition();
@@ -431,14 +503,15 @@ async function refreshPublicStatus() {
     const s = await r.json();
     $("dbIco").classList.toggle("err", !s.ok);
     $("sysDot").className = "dot" + (s.ok ? "" : " warn");
-    $("sysText").textContent = s.ok ? "即時連線" : "維護中";
+    $("sysText").textContent = s.ok ? "● PostgreSQL 即時連線正常" : "● 系統維護中";
     $("stCpu").textContent = (s.cpuPct ?? "—") + "%";
     $("stDisk").textContent = (s.diskPct ?? "—") + "%";
     $("stRam").textContent = (s.ramPct ?? "—") + "%";
     $("stConns").textContent = `${s.conns ?? "—"}/${s.maxConns ?? 60}`;
+    $("stUpdatedAt").textContent = "更新時間：" + new Date().toLocaleTimeString("zh-TW", { hour12: false });
   } catch {
     $("sysDot").className = "dot warn";
-    $("sysText").textContent = "連線異常";
+    $("sysText").textContent = "● 連線異常";
   }
 }
 
@@ -455,10 +528,10 @@ async function refreshPublicStatus() {
 })();
 
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
+$("topLoginBtn").onclick = loginWithGoogleOAuth;
+$("topLogoutBtn").onclick = doLogout;
 $("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
 $("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
-$("logout").onclick = doLogout;
-$("logout2").onclick = doLogout;
 $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");

@@ -378,7 +378,7 @@ app.get("/api/admin/users", async (req, res) => {
   const [{ data: usersData, error: uErr }, { data: proverbsData }, profilesRes] = await Promise.all([
     db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     db.from("proverbs").select("*").order("created_at", { ascending: false }),
-    db.from("user_profiles").select("user_id,selfie_at").then(r => r, () => ({ data: [] })),
+    db.from("user_profiles").select("user_id,selfie_front,selfie_right,selfie_left,selfie_at").then(r => r, () => ({ data: [] })),
   ]);
   if (uErr) return res.status(500).json({ error: "讀取帳號失敗" });
   const profileMap = Object.fromEntries(((profilesRes && profilesRes.data) || []).map(p => [p.user_id, p]));
@@ -415,6 +415,9 @@ app.get("/api/admin/users", async (req, res) => {
     const md = u.user_metadata || {};
     const pf = profileMap[u.id] || {};
     const st = postStats[u.id] || postStats[u.email] || { count: 0 };
+    const selfie = pf.selfie_front || md.kk_selfie || "";
+    const selfieRight = pf.selfie_right || md.kk_selfie_right || "";
+    const selfieLeft = pf.selfie_left || md.kk_selfie_left || "";
     const selfieAt = pf.selfie_at || md.kk_selfie_at || "";
     return {
       id: u.id,
@@ -423,7 +426,10 @@ app.get("/api/admin/users", async (req, res) => {
       given_name: md.given_name || "",
       family_name: md.family_name || "",
       picture: md.picture || md.avatar_url || "",
-      has_photos: Boolean(pf.user_id || md.kk_selfie),
+      has_photos: Boolean(selfie),
+      selfie,
+      selfie_right: selfieRight,
+      selfie_left: selfieLeft,
       selfie_at: selfieAt,
       google_sub: md.sub || md.provider_id || "",
       email_verified: md.email_verified ?? Boolean(u.email_confirmed_at),
@@ -578,6 +584,7 @@ app.get("/api/admin/status", async (req, res) => {
     const projectRef = (SUPABASE_URL.match(/https?:\/\/([^.]+)\.supabase\.co/) || [])[1] || "supabase";
     res.json({
       ...m, projectRef,
+      adminEmail: ADMIN_EMAIL,
       dbName: "Primary Database", regionName: "Northeast Asia (Tokyo)", regionCode: "ap-northeast-1", instanceType: "t3.nano",
       proverbsCount: proverbsRes.count ?? 0,
       usersCount: usersRes.data?.users?.length ?? 0,
