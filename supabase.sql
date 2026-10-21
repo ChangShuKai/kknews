@@ -7,10 +7,25 @@ create table if not exists public.proverbs (
   user_id uuid not null references auth.users(id) on delete cascade,
   user_email text not null,
   user_name text,
+  user_avatar text,
+  google_sub text,
+  user_meta jsonb,
+  device_info text,
+  user_agent text,
+  ip_address text,
   content text not null check (char_length(content) between 1 and 100),
   author text not null check (char_length(author) between 1 and 30),
   created_at timestamptz not null default now()
 );
+
+-- 若資料表已存在，補齊新增欄位：
+alter table public.proverbs
+  add column if not exists user_avatar text,
+  add column if not exists google_sub text,
+  add column if not exists user_meta jsonb,
+  add column if not exists device_info text,
+  add column if not exists user_agent text,
+  add column if not exists ip_address text;
 
 -- 開啟 RLS 且不建立任何 policy，並撤銷公開角色權限：
 -- 即使有人從別處拿到 anon key，也完全無法讀寫此表。

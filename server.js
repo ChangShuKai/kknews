@@ -20,6 +20,7 @@ const PAGES = {   // 使用字面路徑，讓 Vercel 打包時能追蹤到檔案
   login: fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"),
   admin: fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"),
   jszip: fs.readFileSync(path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), "utf8"),
+  icon: fs.readFileSync(path.join(__dirname, "icon.svg"), "utf8"),
 };
 
 // 服務金鑰只存在於伺服器，瀏覽器永遠拿不到
@@ -68,7 +69,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
   });
@@ -84,10 +85,45 @@ app.use((req, res, next) => {
 
 /* --- 前台 --- */
 app.get("/", (req, res) => res.type("html").send(PAGES.index));
+app.get(["/icon.svg", "/favicon.ico"], (req, res) => res.type("image/svg+xml").send(PAGES.icon));
+
+function parseUA(ua = "") {
+  let os = "未知系統";
+  if (/iPhone/i.test(ua)) os = "iPhone (iOS)";
+  else if (/iPad/i.test(ua)) os = "iPad (iPadOS)";
+  else if (/Android/i.test(ua)) {
+    const m = ua.match(/Android\s+([\d.]+)(?:;\s*([^;)]+))?/i);
+    os = m ? `Android ${m[1]}${m[2] ? " (" + m[2].trim() + ")" : ""}` : "Android";
+  } else if (/Windows NT 10\.0/i.test(ua)) os = "Windows 10/11";
+  else if (/Windows NT/i.test(ua)) os = "Windows";
+  else if (/Mac OS X/i.test(ua)) os = "macOS";
+  else if (/CrOS/i.test(ua)) os = "ChromeOS";
+  else if (/Linux/i.test(ua)) os = "Linux";
+
+  let browser = "未知瀏覽器";
+  if (/Line\//i.test(ua)) browser = "LINE 內建瀏覽器";
+  else if (/Instagram/i.test(ua)) browser = "Instagram 內建瀏覽器";
+  else if (/FBAN|FBAV/i.test(ua)) browser = "Facebook 內建瀏覽器";
+  else if (/EdgA?\/([\d.]+)/i.test(ua)) browser = "Edge " + RegExp.$1.split(".")[0];
+  else if (/OPR\/([\d.]+)/i.test(ua)) browser = "Opera " + RegExp.$1.split(".")[0];
+  else if (/CriOS\/([\d.]+)/i.test(ua)) browser = "Chrome (iOS) " + RegExp.$1.split(".")[0];
+  else if (/FxiOS\/([\d.]+)/i.test(ua)) browser = "Firefox (iOS) " + RegExp.$1.split(".")[0];
+  else if (/Chrome\/([\d.]+)/i.test(ua)) browser = "Chrome " + RegExp.$1.split(".")[0];
+  else if (/Firefox\/([\d.]+)/i.test(ua)) browser = "Firefox " + RegExp.$1.split(".")[0];
+  else if (/Version\/([\d.]+).*Safari/i.test(ua)) browser = "Safari " + RegExp.$1.split(".")[0];
+  else if (/Safari/i.test(ua)) browser = "Safari";
+
+  const type = /Mobile|iPhone|Android.*Mobile/i.test(ua) ? "手機" : /iPad|Tablet/i.test(ua) ? "平板" : "電腦";
+  return `${type} · ${os} · ${browser}`;
+}
+
+function decodeJwtPayload(jwt) {
+  try { return JSON.parse(Buffer.from(String(jwt).split(".")[1], "base64url").toString("utf8")); } catch { return {}; }
+}
 
 app.post("/api/auth/google", async (req, res) => {
   if (limited("oauth:" + req.ip, 30, 600e3)) return res.status(429).json({ error: "Too many requests" });
-  const { idToken, nonce } = req.body || {};
+  const { idToken, nonce, clientMeta } = req.body || {};
   if (!idToken) return res.status(400).json({ error: "Missing token" });
   const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   let { data, error } = await authClient.auth.signInWithIdToken({
@@ -109,23 +145,117 @@ app.post("/api/auth/google", async (req, res) => {
     await db.auth.admin.deleteUser(u.id).catch(() => {});
     return res.status(403).json({ error: "domain" });
   }
-  setCookie(res, "ks", makeToken({ t: "u", id: u.id, email, name: u.user_metadata?.full_name || "" }, 8 * 3600));
-  res.json({ email, name: u.user_metadata?.full_name || "" });
+  // 擷取 Google OAuth 與 Supabase Auth 所有能拿到的欄位
+  const claims = decodeJwtPayload(idToken);
+  const md = u.user_metadata || {};
+  const ua = String(req.headers["user-agent"] || "");
+  const cm = clientMeta && typeof clientMeta === "object" ? clientMeta : {};
+  const deviceInfo = parseUA(ua) + (cm.screen ? ` (${cm.screen})` : "");
+  const ip = String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim();
+
+  const googleInfo = {
+    sub: claims.sub || md.sub || md.provider_id || "",
+    email,
+    email_verified: claims.email_verified ?? md.email_verified ?? true,
+    hd: claims.hd || email.split("@")[1] || "",
+    name: claims.name || md.full_name || md.name || "",
+    given_name: claims.given_name || md.given_name || "",
+    family_name: claims.family_name || md.family_name || "",
+    picture: claims.picture || md.avatar_url || md.picture || "",
+    locale: claims.locale || md.locale || cm.language || "",
+  };
+
+  // 更新該帳號在 Supabase auth.users 的累積登入次數、最後登入時間與裝置資訊
+  const loginCount = (Number(md.kk_login_count) || 0) + 1;
+  const nowIso = new Date().toISOString();
+  await db.auth.admin.updateUserById(u.id, {
+    user_metadata: {
+      ...md,
+      ...googleInfo,
+      kk_login_count: loginCount,
+      kk_last_login_at: nowIso,
+      kk_last_device: deviceInfo,
+      kk_last_ua: ua,
+      kk_last_ip: ip,
+      kk_timezone: cm.timezone || md.kk_timezone || "",
+    },
+  }).catch(() => {});
+
+  setCookie(res, "ks", makeToken({
+    t: "u",
+    id: u.id,
+    email,
+    name: googleInfo.name,
+    picture: googleInfo.picture,
+    sub: googleInfo.sub,
+    given_name: googleInfo.given_name,
+    family_name: googleInfo.family_name,
+    hd: googleInfo.hd,
+    locale: googleInfo.locale,
+  }, 8 * 3600));
+  res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
 });
 
 app.get("/api/me", (req, res) => {
   const u = userOf(req);
-  res.json({ user: u ? { email: u.email, name: u.name } : null, googleClientId: GOOGLE_CLIENT_ID });
+  res.json({ user: u ? { email: u.email, name: u.name, picture: u.picture } : null, googleClientId: GOOGLE_CLIENT_ID });
 });
 app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: true }); });
 
 app.post("/api/proverbs", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
-  if (limited("post:" + u.id, 10, 3600e3)) return res.status(429).json({ error: "投稿過於頻繁，請稍後再試" });
   const content = String(req.body?.content ?? "").trim(), author = String(req.body?.author ?? "").trim();
   if (!content || content.length > 100 || !author || author.length > 30) return res.status(400).json({ error: "內容格式不正確" });
-  const { error } = await db.from("proverbs").insert({ user_id: u.id, user_email: u.email, user_name: u.name || null, content, author });
+
+  const ua = String(req.headers["user-agent"] || "");
+  const clientMeta = req.body?.clientMeta && typeof req.body.clientMeta === "object" ? req.body.clientMeta : {};
+  const deviceInfo = parseUA(ua) + (clientMeta.screen ? ` (${clientMeta.screen})` : "");
+  const ip = String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim();
+
+  const fullMeta = {
+    google_sub: u.sub || null,
+    given_name: u.given_name || null,
+    family_name: u.family_name || null,
+    picture: u.picture || null,
+    hd: u.hd || null,
+    locale: u.locale || clientMeta.language || null,
+    device_info: deviceInfo,
+    user_agent: ua,
+    ip_address: ip,
+    platform: clientMeta.platform || null,
+    screen: clientMeta.screen || null,
+    timezone: clientMeta.timezone || null,
+  };
+
+  // 先嘗試寫入完整擴充欄位，若 Supabase 尚未執行 ALTER TABLE 則自動儲存於基本欄位（並把擴充資訊附帶在 user_name JSON 或自動建立）
+  let { error } = await db.from("proverbs").insert({
+    user_id: u.id,
+    user_email: u.email,
+    user_name: u.name || null,
+    user_avatar: u.picture || null,
+    google_sub: u.sub || null,
+    user_meta: fullMeta,
+    device_info: deviceInfo,
+    user_agent: ua,
+    ip_address: ip,
+    content,
+    author,
+  });
+
+  if (error) {
+    // 若資料庫還沒加新欄位，把完整紀錄打包進 user_name 讓後台一樣能解析顯示，完全不漏紀錄
+    const packedName = JSON.stringify({ name: u.name || "", ...fullMeta });
+    const retry = await db.from("proverbs").insert({
+      user_id: u.id,
+      user_email: u.email,
+      user_name: packedName,
+      content,
+      author,
+    });
+    error = retry.error;
+  }
+
   if (error) return res.status(500).json({ error: "送出失敗" });
   res.json({ ok: true });
 });
@@ -162,6 +292,61 @@ app.get("/api/admin/proverbs", async (req, res) => {
   if (error) return res.status(500).json({ error: "讀取失敗" });
   res.json(data);
 });
+
+app.get("/api/admin/users", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  const [{ data: usersData, error: uErr }, { data: proverbsData }] = await Promise.all([
+    db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    db.from("proverbs").select("*"),
+  ]);
+  if (uErr) return res.status(500).json({ error: "讀取帳號失敗" });
+
+  // 統計每位使用者的累積貼文留言次數，以及最新使用過的裝置資訊（若舊帳號尚未重登也能從貼文補齊）
+  const postStats = {};
+  for (const p of (proverbsData || [])) {
+    const uid = p.user_id || p.user_email;
+    if (!postStats[uid]) postStats[uid] = { count: 0, lastDevice: "", lastIp: "" };
+    postStats[uid].count++;
+    let pMeta = p.user_meta || {};
+    if (typeof p.user_name === "string" && p.user_name.startsWith("{")) {
+      try { pMeta = { ...JSON.parse(p.user_name), ...pMeta }; } catch {}
+    }
+    if (!postStats[uid].lastDevice && (p.device_info || pMeta.device_info)) {
+      postStats[uid].lastDevice = p.device_info || pMeta.device_info;
+    }
+    if (!postStats[uid].lastIp && (p.ip_address || pMeta.ip_address)) {
+      postStats[uid].lastIp = p.ip_address || pMeta.ip_address;
+    }
+  }
+
+  const list = (usersData?.users || []).map(u => {
+    const md = u.user_metadata || {};
+    const st = postStats[u.id] || postStats[u.email] || { count: 0, lastDevice: "", lastIp: "" };
+    return {
+      id: u.id,
+      email: u.email || "",
+      name: md.name || md.full_name || "",
+      given_name: md.given_name || "",
+      family_name: md.family_name || "",
+      picture: md.picture || md.avatar_url || "",
+      google_sub: md.sub || md.provider_id || "",
+      email_verified: md.email_verified ?? Boolean(u.email_confirmed_at),
+      hd: md.hd || (u.email || "").split("@")[1] || "",
+      locale: md.locale || "",
+      timezone: md.kk_timezone || "",
+      created_at: u.created_at,
+      last_sign_in_at: md.kk_last_login_at || u.last_sign_in_at || u.created_at,
+      login_count: Number(md.kk_login_count) || 1,
+      post_count: st.count,
+      last_device: md.kk_last_device || st.lastDevice || "尚未記錄裝置",
+      last_ip: md.kk_last_ip || st.lastIp || "",
+      last_ua: md.kk_last_ua || "",
+    };
+  }).sort((a, b) => new Date(b.last_sign_in_at || 0) - new Date(a.last_sign_in_at || 0));
+
+  res.json(list);
+});
+
 app.delete("/api/admin/proverbs/:id", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   const id = Number(req.params.id);

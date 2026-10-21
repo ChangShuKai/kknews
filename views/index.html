@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KKNews 諺語投稿</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
 <style>
   :root{--ink:#1c1b19;--paper:#f6f3ee;--muted:#8a857c;--line:#e4dfd6;--accent:#1c1b19}
   *{box-sizing:border-box}
@@ -97,7 +98,13 @@ async function handleGoogleCallback() {
     window.history.replaceState(null, "", window.location.pathname);
 
     if (idToken) {
-      const r = await api("/api/auth/google", { idToken, nonce });
+      const clientMeta = {
+        screen: `${window.screen.width}x${window.screen.height}`,
+        language: navigator.language || "",
+        platform: navigator.userAgentData?.platform || navigator.platform || "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      };
+      const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : ("登入失敗：" + (j.detail || "請重試。")));
@@ -134,12 +141,18 @@ $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");
   $("submit").disabled = true;
-  const r = await api("/api/proverbs", { content, author });
+  const clientMeta = {
+    screen: `${window.screen.width}x${window.screen.height}`,
+    language: navigator.language || "",
+    platform: navigator.userAgentData?.platform || navigator.platform || "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+  };
+  const r = await api("/api/proverbs", { content, author, clientMeta });
   const j = await r.json().catch(() => ({}));
   $("submit").disabled = false;
   if (!r.ok) return say(j.error || "送出失敗");
   $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
-  say("已送出，謝謝投稿！", true);
+  say("已送出，謝謝投稿！（可繼續上傳下一張卡片）", true);
 };
 </script>
 </body>
