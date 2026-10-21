@@ -1,45 +1,31 @@
--- 在 Supabase Dashboard > SQL Editor 執行一次
+-- 在 Supabase SQL Editor 執行（可重複執行）
+-- 架構：瀏覽器完全不接觸 Supabase。所有存取都經過自家伺服器，
+-- 並使用只存在於伺服器的 service_role 金鑰。
 
 create table if not exists public.proverbs (
   id bigint generated always as identity primary key,
-  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  user_email text not null default (auth.jwt() ->> 'email'),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  user_email text not null,
   user_name text,
   content text not null check (char_length(content) between 1 and 100),
   author text not null check (char_length(author) between 1 and 30),
   created_at timestamptz not null default now()
 );
 
+-- 開啟 RLS 且不建立任何 policy，並撤銷公開角色權限：
+-- 即使有人從別處拿到 anon key，也完全無法讀寫此表。
 alter table public.proverbs enable row level security;
+drop policy if exists "school users insert own" on public.proverbs;
+drop policy if exists "users read own" on public.proverbs;
+drop policy if exists "admin read all" on public.proverbs;
+drop policy if exists "admin delete" on public.proverbs;
+revoke all on public.proverbs from anon, authenticated;
 
--- 學校帳號才能投稿，且只能以自己身分寫入
-create policy "school users insert own" on public.proverbs
-  for insert to authenticated
-  with check (
-    user_id = auth.uid()
-    and (auth.jwt() ->> 'email') like '%@hlc.edu.tw'
-  );
-
--- 使用者可看自己的投稿
-create policy "users read own" on public.proverbs
-  for select to authenticated
-  using (user_id = auth.uid());
-
--- 管理員可看全部/刪除
-create policy "admin read all" on public.proverbs
-  for select to authenticated
-  using ((auth.jwt() ->> 'email') = 'admin@sixstarculture.com');
-
-create policy "admin delete" on public.proverbs
-  for delete to authenticated
-  using ((auth.jwt() ->> 'email') = 'admin@sixstarculture.com');
-
--- 後端強制：非 @hlc.edu.tw 帳號(管理員除外)無法註冊(Google 或 Email 皆適用)
+-- 資料庫層強制：非 @hlc.edu.tw 帳號無法建立
 create or replace function public.enforce_school_email()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  if lower(new.email) not like '%@hlc.edu.tw'
-     and lower(new.email) <> 'admin@sixstarculture.com' then
+  if lower(new.email) not like '%@hlc.edu.tw' then
     raise exception 'Only @hlc.edu.tw accounts are allowed';
   end if;
   return new;
@@ -50,5 +36,4 @@ create trigger enforce_school_email_trg
   before insert on auth.users
   for each row execute function public.enforce_school_email();
 
--- 之後請到 Dashboard > Authentication > Users > Add user
--- 建立管理員：admin@sixstarculture.com / sixstarculture.password（勾選 Auto Confirm User）
+-- 管理員帳密不存在 Supabase，由伺服器 .env（雜湊）驗證，不需在 Auth 建立管理員。

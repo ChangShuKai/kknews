@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Login</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#eee;margin:0}
+  .login{max-width:340px;margin:12vh auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 6px 24px #0002}
+  input{width:100%;box-sizing:border-box;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:15px}
+  button{width:100%;margin-top:8px;padding:10px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+  .err{color:#c00;font-size:14px;min-height:20px}
+</style>
+</head>
+<body>
+<div class="login">
+  <h2>管理員登入</h2>
+  <input id="email" type="email" placeholder="帳號" autocomplete="username">
+  <input id="pw" type="password" placeholder="密碼" autocomplete="current-password">
+  <button id="btn">登入</button>
+  <div id="err" class="err"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const k = new URLSearchParams(location.search).get("k") || "";
+$("btn").onclick = async () => {
+  $("err").textContent = "";
+  const r = await fetch("/api/admin/login", { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Requested-With": "fetch", "X-Access-Key": k },
+    body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }) });
+  if (r.ok) { location.replace("/adminusercontrol"); return; }
+  $("err").textContent = r.status === 429 ? "嘗試次數過多，請稍後再試" : "帳號或密碼錯誤";
+};
+$("pw").onkeydown = e => e.key === "Enter" && $("btn").click();
+</script>
+</body>
+</html>
