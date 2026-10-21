@@ -110,11 +110,28 @@
       <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
     </div>
 
+    <!-- 非 Chrome / Safari 瀏覽器警告視窗 -->
+    <div id="browserBlockView" class="hide">
+      <div class="modal-bg" style="position:static;padding:0;background:none;backdrop-filter:none">
+        <div class="modal" style="width:100%;box-shadow:none;border:1.5px solid var(--err);padding:24px 20px;text-align:center">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <h2 style="font-size:20px;color:var(--err);margin-bottom:8px">請使用 Chrome 或 Safari 開啟</h2>
+          <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:18px">
+            檢測到您目前使用的是 <b>LINE / Instagram 內建瀏覽器</b>。<br>
+            內建瀏覽器無法支援相機臉部實拍與 GPS 定位核實功能。<br><br>
+            請點擊畫面右上角或右下角 <b>「···」</b>，並選擇 <b>「在 Chrome 中開啟」</b> 或 <b>「在 Safari 中開啟」</b>。
+          </p>
+          <button type="button" class="btn block" id="copyUrlBtn">複製網站連結手動開啟</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 首次註冊身分核實：三角度臉部拍攝框 -->
     <div id="verifyView" class="hide">
       <div class="notice">
         🛡️ <b>首次登入身分核實說明：</b><br>
-        收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<b>請務必拍攝臉部清晰照片（正面、向右、向左共 3 張）</b>。
+        收集這些資訊與照片<b>只是為了核實身分避免濫用</b>，不會公開於卡片上。<br>
+        系統<b>強制要求開啟相機（正面、向右、向左共 3 張）並允許 GPS 位置存取</b>，核實完成後方可使用投稿功能。
       </div>
 
       <div class="hud-wrap">
@@ -145,7 +162,7 @@
             </svg>
             <div class="dir-arrow" id="dirHint">請正對鏡頭</div>
           </div>
-          <div id="camPlaceholder" class="cam-tip">點擊下方按鈕開啟相機<br>並允許相機與位置權限</div>
+          <div id="camPlaceholder" class="cam-tip">點擊下方按鈕開啟相機<br>並務必允許相機與 GPS 定位權限</div>
         </div>
 
         <div class="shots-row">
@@ -431,9 +448,14 @@ $("camInput").onchange = ev => {
 $("retakeBtn").onclick = () => { capturedShots = ["", "", ""]; stepIdx = 0; updateStepUI(); startCamera(); };
 
 $("confirmVerifyBtn").onclick = async () => {
-  if (capturedShots.some(x => !x)) return say("請完成正面、向右、向左三張清晰臉部照片拍攝");
+  if (capturedShots.some(x => !x)) return say("請使用相機完成正面、向右、向左三張清晰臉部照片拍攝");
+  say("正在核實臉部與 GPS 位置中…");
   $("confirmVerifyBtn").disabled = true;
   const clientMeta = await collectClientMeta(true);
+  if (!clientMeta.geo || typeof clientMeta.geo.lat !== "number" || typeof clientMeta.geo.lng !== "number") {
+    $("confirmVerifyBtn").disabled = false;
+    return say("請點擊網址列旁的鎖頭或設定，允許「位置資訊」存取權限後再按完成核實！");
+  }
   const r = await api("/api/verify-profile", { selfieFront: capturedShots[0], selfieRight: capturedShots[1], selfieLeft: capturedShots[2], clientMeta });
   const j = await r.json().catch(() => ({}));
   $("confirmVerifyBtn").disabled = false;
@@ -445,9 +467,6 @@ $("confirmVerifyBtn").onclick = async () => {
 $("closeModalBtn").onclick = () => {
   $("legalModal").classList.add("hide");
   currentUser.needsVerification = false;
-  if (currentUser.email) {
-    localStorage.setItem("kk_verified_" + currentUser.email.toLowerCase(), "1");
-  }
   capturedShots = ["", "", ""];
   renderMe(currentUser);
   say("身分核實完成！現在可以開始投稿。", true);
@@ -465,10 +484,32 @@ $("dockPost").onclick = () => switchDock("post");
 $("dockStatus").onclick = () => switchDock("status");
 $("backToPostBtn").onclick = () => switchDock("post");
 
-function show(view) {
-  for (const id of ["loadingView", "loginView", "verifyView", "formView"]) $(id).classList.toggle("hide", id !== view);
+function isRestrictedBrowser() {
+  const ua = navigator.userAgent || "";
+  return /Line\/|Instagram|FBAN|FBAV/i.test(ua);
 }
+
+function show(view) {
+  for (const id of ["loadingView", "browserBlockView", "loginView", "verifyView", "formView"]) {
+    const el = $(id);
+    if (el) el.classList.toggle("hide", id !== view);
+  }
+}
+
+$("copyUrlBtn").onclick = () => {
+  navigator.clipboard.writeText(location.href).then(() => {
+    say("已複製網站連結！請開啟 Chrome 或 Safari 貼上開啟。", true);
+  }).catch(() => {
+    prompt("請複製以下連結並在 Chrome 或 Safari 開啟：", location.href);
+  });
+};
+
 function renderMe(me) {
+  if (isRestrictedBrowser()) {
+    show("browserBlockView");
+    return;
+  }
+
   currentUser = me;
   $("acctGuest").classList.toggle("hide", Boolean(me));
   $("acctUser").classList.toggle("hide", !me);
@@ -488,16 +529,12 @@ function renderMe(me) {
     $("topAvImg").classList.add("hide");
   }
 
-  if (me.email && localStorage.getItem("kk_verified_" + me.email.toLowerCase()) === "1") {
-    me.needsVerification = false;
-  }
   if (me.needsVerification) {
     show("verifyView");
-    getGeoPosition();
+    getGeoPosition().catch(() => {});
     return;
   }
   show("formView");
-  getGeoPosition();
 }
 
 async function doLogout(ev) { ev?.preventDefault?.(); stopCamera(); await api("/api/logout"); location.reload(); }
@@ -522,6 +559,10 @@ async function refreshPublicStatus() {
 }
 
 (async () => {
+  if (isRestrictedBrowser()) {
+    show("browserBlockView");
+    return;
+  }
   refreshPublicStatus();
   setInterval(refreshPublicStatus, 3000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(); });
@@ -530,15 +571,17 @@ async function refreshPublicStatus() {
   const data = r.ok ? await r.json() : {};
   googleClientId = data.googleClientId || "";
   baseUrl = data.baseUrl || "";
-  const u = callbackUser || data.user || null;
-  if (u && !u.needsVerification && u.email) {
-    localStorage.setItem("kk_verified_" + u.email.toLowerCase(), "1");
-  }
-  renderMe(u);
+  renderMe(callbackUser || data.user || null);
 })();
 
-$("googleLoginBtn").onclick = loginWithGoogleOAuth;
-$("topLoginBtn").onclick = loginWithGoogleOAuth;
+$("googleLoginBtn").onclick = () => {
+  if (isRestrictedBrowser()) { show("browserBlockView"); return; }
+  loginWithGoogleOAuth();
+};
+$("topLoginBtn").onclick = () => {
+  if (isRestrictedBrowser()) { show("browserBlockView"); return; }
+  loginWithGoogleOAuth();
+};
 $("topLogoutBtn").onclick = doLogout;
 $("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
 $("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";

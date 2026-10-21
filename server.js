@@ -194,32 +194,40 @@ async function ensureVerifyBucket() {
   bucketChecked = true;
 }
 
-// 帳號全裝置核實檢查：任一條件滿足即代表該帳號已完成過初始收集，永不再要求拍攝
+// 檢查是否為受支援的標準瀏覽器（禁止 LINE、IG、FB 內建瀏覽器）
+function checkAllowedBrowser(ua = "") {
+  if (/Line\/|Instagram|FBAN|FBAV/i.test(ua)) {
+    return { ok: false, error: "請使用 Chrome 或 Safari 瀏覽器開啟本網站，不支援 LINE 或 Instagram 等內建瀏覽器。" };
+  }
+  return { ok: true };
+}
+
+// 帳號全裝置核實檢查：必須有實際照片檔或通過紀錄，絕不因本機暫存或未拍照跳過
 async function hasVerified(uid, mdFallback = null) {
   if (!uid) return false;
-  // 1. 先看傳入的 metadata 或 kk_verified
-  if (mdFallback && (mdFallback.kk_verified === true || mdFallback.kk_selfie || mdFallback.kk_selfie_at)) return true;
 
-  // 2. 查 Supabase Auth 權威 user_metadata
-  try {
-    const { data: uData } = await db.auth.admin.getUserById(uid).catch(() => ({}));
-    const md = uData?.user?.user_metadata || {};
-    if (md.kk_verified === true || md.kk_selfie || md.kk_selfie_at) return true;
-  } catch {}
-
-  // 3. 查私有 Storage 實拍檔
+  // 1. 查私有 Storage 實拍檔（權威來源）
   try {
     const { data: stFiles } = await db.storage.from("kknews-verify").list("", { search: uid + ".json", limit: 1 });
     if (stFiles && stFiles.length > 0) return true;
   } catch {}
 
-  // 4. 查 user_profiles 資料表
+  // 2. 查 user_profiles 資料表（必須有 selfie_front 實拍照）
   try {
-    const { data } = await db.from("user_profiles").select("user_id").eq("user_id", uid).maybeSingle();
-    if (data) return true;
+    const { data } = await db.from("user_profiles").select("user_id,selfie_front").eq("user_id", uid).maybeSingle();
+    if (data && data.selfie_front) return true;
   } catch {}
 
-  // 5. 若已有發過投稿，代表先前必定已核實通過
+  // 3. 查 Supabase Auth 實拍紀錄（確認有實拍照或拍照時間標記）
+  try {
+    const { data: uData } = await db.auth.admin.getUserById(uid).catch(() => ({}));
+    const md = uData?.user?.user_metadata || {};
+    if (md.kk_selfie_at && (md.kk_verified === true || md.kk_selfie)) return true;
+  } catch {}
+
+  if (mdFallback && mdFallback.kk_selfie_at && (mdFallback.kk_verified === true || mdFallback.kk_selfie)) return true;
+
+  // 4. 若已有歷史投稿卡片，表示先前已完成過驗證
   try {
     const { data: pv } = await db.from("proverbs").select("id").eq("user_id", uid).limit(1);
     if (pv && pv.length > 0) return true;
@@ -229,6 +237,10 @@ async function hasVerified(uid, mdFallback = null) {
 }
 
 app.post("/api/auth/google", async (req, res) => {
+  const ua = str(req.headers["user-agent"], 300);
+  const browserCheck = checkAllowedBrowser(ua);
+  if (!browserCheck.ok) return res.status(403).json({ error: browserCheck.error, browserBlocked: true });
+
   if (await limited("oauth:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "Too many requests" });
   const { idToken, nonce, clientMeta } = req.body || {};
   if (!idToken) return res.status(400).json({ error: "Missing token" });
@@ -258,7 +270,6 @@ app.post("/api/auth/google", async (req, res) => {
   // 讀取 Supabase 現存最新完整 metadata，避免覆寫核實狀態
   const { data: existingUser } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
   const md = { ...(u.user_metadata || {}), ...(existingUser?.user?.user_metadata || {}) };
-  const ua = str(req.headers["user-agent"], 300);
   const cm = cleanMeta(clientMeta);
   const deviceInfo = parseUA(ua) + (cm.screen ? ` (${cm.screen})` : "");
 
@@ -278,7 +289,7 @@ app.post("/api/auth/google", async (req, res) => {
   await db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md, ...googleInfo,
-      kk_verified: verified ? true : (md.kk_verified ?? false),
+      kk_verified: verified,
       kk_login_count: (Number(md.kk_login_count) || 0) + 1,
       kk_last_login_at: new Date().toISOString(),
       kk_last_device: deviceInfo, kk_last_ua: ua, kk_last_ip: clientIp(req),
@@ -299,14 +310,18 @@ app.get("/api/me", async (req, res) => {
   const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, "") };
   const u = userOf(req);
   if (!u) return res.json({ user: null, ...base });
-  const verified = u.verified || (await hasVerified(u.id));
-  if (verified && !u.verified) {
-    setCookie(res, "ks", makeToken({ ...u, verified: true }, 8 * 3600));
+  const verified = await hasVerified(u.id);
+  if (verified !== u.verified) {
+    setCookie(res, "ks", makeToken({ ...u, verified }, 8 * 3600));
   }
   res.json({ user: { email: u.email, name: u.name, picture: u.picture, needsVerification: !verified }, ...base });
 });
 
 app.post("/api/verify-profile", async (req, res) => {
+  const ua = str(req.headers["user-agent"], 300);
+  const browserCheck = checkAllowedBrowser(ua);
+  if (!browserCheck.ok) return res.status(403).json({ error: browserCheck.error, browserBlocked: true });
+
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
   if (await hasVerified(u.id)) {
@@ -317,12 +332,19 @@ app.post("/api/verify-profile", async (req, res) => {
   const { selfieFront, selfieRight, selfieLeft, clientMeta } = req.body || {};
   const imgs = [selfieFront, selfieRight, selfieLeft];
   for (const img of imgs) {
-    if (typeof img !== "string" || !JPEG.test(img)) return res.status(400).json({ error: "請完成正面、向右、向左三張清晰臉部拍攝" });
+    if (typeof img !== "string" || !JPEG.test(img) || img.length < 1000) {
+      return res.status(400).json({ error: "請務必使用相機完成正面、向右、向左三張清晰臉部實拍，不可略過" });
+    }
     if (img.length > 2000000) return res.status(400).json({ error: "照片檔案過大，請重拍" });
   }
-  const cm = cleanMeta(clientMeta);
-  const nowIso = new Date().toISOString();
 
+  const cm = cleanMeta(clientMeta);
+  // 強制要求 GPS 定位授權，未授權位置不得通過核實
+  if (!cm.geo || typeof cm.geo.lat !== "number" || typeof cm.geo.lng !== "number") {
+    return res.status(400).json({ error: "請允許瀏覽器 GPS 位置資訊存取權限，以核實身分並避免濫用" });
+  }
+
+  const nowIso = new Date().toISOString();
   await ensureVerifyBucket();
   // 1. 照片存入專用 Private Storage（不受 JWT 標頭大小限制，永久安全保存）
   const photoPayload = JSON.stringify({ front: selfieFront, right: selfieRight, left: selfieLeft, at: nowIso, geo: cm.geo });
