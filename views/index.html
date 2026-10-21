@@ -42,10 +42,10 @@
   <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
 
   <div id="loginView" class="hide">
-    <a class="gbtn" href="/auth/google">
+    <button type="button" class="gbtn" id="googleLoginBtn">
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
       使用 Google 登入／註冊
-    </a>
+    </button>
     <div class="hint">僅限學校帳號 <b>@hlc.edu.tw</b></div>
   </div>
 
@@ -64,16 +64,60 @@ const $ = id => document.getElementById(id);
 function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = "msg show " + (ok ? "ok" : "err"); if (!t) m.className = "msg"; }
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
 
-(async () => {
-  const e = new URLSearchParams(location.search).get("e");
-  if (e) { say(e === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : "登入失敗，請重試。"); history.replaceState(null, "", "/"); }
-  const r = await fetch("/api/me");
-  const me = r.ok ? await r.json() : null;
+let googleClientId = "";
+
+function loginWithGoogleOAuth() {
+  if (!googleClientId) return say("尚未設定 GOOGLE_CLIENT_ID 環境變數");
+  const redirectUri = encodeURIComponent(window.location.origin);
+  const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+  sessionStorage.setItem("google_nonce", nonce);
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${redirectUri}&response_type=id_token&scope=openid%20email%20profile&nonce=${nonce}&hd=hlc.edu.tw&prompt=select_account`;
+  window.location.href = authUrl;
+}
+
+async function handleGoogleCallback() {
+  const hash = window.location.hash;
+  if (hash && hash.includes("id_token=")) {
+    const params = new URLSearchParams(hash.substring(1));
+    const idToken = params.get("id_token");
+    const nonce = sessionStorage.getItem("google_nonce") || undefined;
+    sessionStorage.removeItem("google_nonce");
+
+    // 清除網址列長長的 token，讓網址恢復乾淨
+    window.history.replaceState(null, "", window.location.pathname);
+
+    if (idToken) {
+      const r = await api("/api/auth/google", { idToken, nonce });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : "登入失敗，請重試。");
+        return null;
+      }
+      return j;
+    }
+  }
+  return null;
+}
+
+function renderMe(me) {
   $("loginView").classList.toggle("hide", !!me);
   $("formView").classList.toggle("hide", !me);
-  if (me) { $("who").textContent = me.name ? `${me.name}（${me.email}）` : me.email; $("av").textContent = (me.name || me.email)[0].toUpperCase(); }
+  if (me) {
+    $("who").textContent = me.name ? `${me.name}（${me.email}）` : me.email;
+    $("av").textContent = (me.name || me.email)[0].toUpperCase();
+  }
+}
+
+(async () => {
+  const callbackUser = await handleGoogleCallback();
+  const r = await fetch("/api/me");
+  const data = r.ok ? await r.json() : {};
+  googleClientId = data.googleClientId || "";
+  renderMe(callbackUser || data.user || null);
 })();
 
+$("googleLoginBtn").onclick = loginWithGoogleOAuth;
 $("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
 $("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
 $("logout").onclick = async ev => { ev.preventDefault(); await api("/api/logout"); location.reload(); };

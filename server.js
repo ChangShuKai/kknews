@@ -8,7 +8,7 @@ const { createClient } = require("@supabase/supabase-js");
 const {
   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET,
   ADMIN_EMAIL, ADMIN_PASSWORD_HASH, BASE_URL = "http://localhost:3000",
-  ADMIN_ACCESS_KEY = "", PORT = 3000,
+  ADMIN_ACCESS_KEY = "", PORT = 3000, GOOGLE_CLIENT_ID = "",
 } = process.env;
 for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH })) {
   if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
@@ -85,43 +85,29 @@ app.use((req, res, next) => {
 /* --- 前台 --- */
 app.get("/", (req, res) => res.type("html").send(PAGES.index));
 
-const pkceClient = store => createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: {
-  flowType: "pkce", persistSession: true, autoRefreshToken: false, detectSessionInUrl: false,
-  storage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; }, removeItem: k => { delete store[k]; } },
-} });
-
-app.get("/auth/google", async (req, res) => {
-  if (limited("oauth:" + req.ip, 30, 600e3)) return res.status(429).send("Too many requests");
-  const store = {};
-  const { data, error } = await pkceClient(store).auth.signInWithOAuth({ provider: "google", options: {
-    redirectTo: BASE_URL + "/auth/callback", skipBrowserRedirect: true,
-    queryParams: { hd: "hlc.edu.tw", prompt: "select_account" },
-  } });
-  if (error) return res.redirect("/?e=oauth");
-  setCookie(res, "kp", b64(JSON.stringify(store)), { maxAge: 600 });
-  res.redirect(data.url);
-});
-
-app.get("/auth/callback", async (req, res) => {
-  const { code, error_description } = req.query;
-  let store;
-  try { store = JSON.parse(Buffer.from(cookies(req).kp || "", "base64url")); } catch { store = null; }
-  clearCookie(res, "kp");
-  if (error_description || !code || !store) return res.redirect("/?e=domain");
-  const { data, error } = await pkceClient(store).auth.exchangeCodeForSession(String(code));
-  if (error || !data?.user) return res.redirect("/?e=oauth");
+app.post("/api/auth/google", async (req, res) => {
+  if (limited("oauth:" + req.ip, 30, 600e3)) return res.status(429).json({ error: "Too many requests" });
+  const { idToken, nonce } = req.body || {};
+  if (!idToken) return res.status(400).json({ error: "Missing token" });
+  const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await authClient.auth.signInWithIdToken({
+    provider: "google",
+    token: String(idToken),
+    nonce: nonce ? String(nonce) : undefined,
+  });
+  if (error || !data?.user) return res.status(401).json({ error: "oauth" });
   const u = data.user, email = (u.email || "").toLowerCase();
   if (!email.endsWith(SCHOOL)) {           // 非學校帳號：刪除剛建立的帳號並拒絕
     await db.auth.admin.deleteUser(u.id).catch(() => {});
-    return res.redirect("/?e=domain");
+    return res.status(403).json({ error: "domain" });
   }
   setCookie(res, "ks", makeToken({ t: "u", id: u.id, email, name: u.user_metadata?.full_name || "" }, 8 * 3600));
-  res.redirect("/");
+  res.json({ email, name: u.user_metadata?.full_name || "" });
 });
 
 app.get("/api/me", (req, res) => {
   const u = userOf(req);
-  u ? res.json({ email: u.email, name: u.name }) : res.status(401).json({});
+  res.json({ user: u ? { email: u.email, name: u.name } : null, googleClientId: GOOGLE_CLIENT_ID });
 });
 app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: true }); });
 

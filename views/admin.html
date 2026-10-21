@@ -29,11 +29,14 @@
   .row{display:flex;gap:8px;margin-top:12px}
   .row button{flex:1}
   .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:80px 0}
+  .sz{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+  .sz input{width:80px;margin:0;padding:8px 10px}
 </style>
 </head>
 <body>
 <header>
   <h1>投稿管理<span class="badge" id="count">0</span></h1>
+  <label class="sz">文字大小 <input id="size" type="number" min="24" max="120" step="2"></label>
   <button id="reload" class="s">重新整理</button>
   <button id="dlAll">全部下載 ZIP</button>
   <button id="logout" class="s">登出</button>
@@ -57,6 +60,7 @@ function wrap(ctx, text, maxW) {
   if (cur) lines.push(cur);
   return lines;
 }
+let FONT_SIZE = parseInt(localStorage.getItem("cardFontSize")) || 70;
 function drawCard(canvas, text, author) {
   const W = 768, H = 1024; canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -66,8 +70,10 @@ function drawCard(canvas, text, author) {
   ctx.fillStyle = "#f4f2ee";
   ctx.beginPath(); ctx.roundRect(28, 4, 692, 996, 44); ctx.fill();
   ctx.restore();
-  const PER_LINE = 8;                       // 每行最多 8 個字
-  const size = 70;                          // 文字大小
+  const CARD_X = 28, CARD_W = 692;
+  const size = FONT_SIZE;                   // 後台可調的文字大小
+  // 卡片左右各留一個字寬 → 每行可用寬度 = 卡片寬 - 2 個字；最多 8 字
+  const PER_LINE = Math.max(1, Math.min(8, Math.floor((CARD_W - 2 * size) / size)));
   ctx.font = `${size}px ${FONT}`;
   const lines = [];
   for (const para of String(text).split("\n")) {
@@ -78,7 +84,7 @@ function drawCard(canvas, text, author) {
   const lh = size * 1.35, total = lines.length * lh, top = 500 - total / 2;
   let widest = 0;
   lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
-  const x = (W - widest) / 2;               // 文字區塊置中
+  const x = CARD_X + (CARD_W - widest) / 2;  // 以卡片中心置中
   ctx.fillStyle = "#000"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
   lines.forEach((l, i) => ctx.fillText(l, x, top + lh * i + lh / 2));
   const as = 32;
@@ -130,6 +136,15 @@ $("dlAll").onclick = async () => {
   save(await zip.generateAsync({ type: "blob" }), "proverbs.zip");
 };
 $("reload").onclick = load;
+$("size").value = FONT_SIZE;
+$("size").oninput = () => {
+  const v = Math.min(120, Math.max(24, parseInt($("size").value) || 70));
+  FONT_SIZE = v; localStorage.setItem("cardFontSize", v);
+  document.querySelectorAll(".item").forEach(el => {
+    const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
+    drawCard(cv, ta.value, au.value);
+  });
+};
 $("logout").onclick = async () => { await fetch("/api/admin/logout", { method: "POST", headers: H }); location.replace("/"); };
 load();
 </script>
