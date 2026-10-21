@@ -68,7 +68,10 @@ let googleClientId = "";
 
 function loginWithGoogleOAuth() {
   if (!googleClientId) return say("尚未設定 GOOGLE_CLIENT_ID 環境變數");
-  const redirectUri = encodeURIComponent(window.location.origin);
+  const origin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? window.location.origin
+    : "https://kknews.vercel.app";
+  const redirectUri = encodeURIComponent(origin);
   const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
   sessionStorage.setItem("google_nonce", nonce);
 
