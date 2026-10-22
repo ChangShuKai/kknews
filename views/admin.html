@@ -17,22 +17,25 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
   /* 頂部中央 Dock 欄 */
-  .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008}
-  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008;flex-wrap:wrap}
+  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
   .dock-item:hover{color:var(--ink)}
   .dock-item.active{background:var(--ink);color:#fff;box-shadow:0 2px 8px #00000022}
   .dock-badge{background:#00000014;color:inherit;border-radius:99px;padding:1px 8px;font-size:11.5px;font-weight:700}
   .dock-item.active .dock-badge{background:#ffffff2e;color:#fff}
 
-  /* 右上角帳號區 */
+  /* 右上角帳號與權限區 */
   .acct-zone{display:flex;align-items:center;gap:10px}
   .acct-pill{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;background:var(--paper);border:1px solid var(--line);border-radius:99px;font-size:13px}
   .acct-av{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
-  .acct-info{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
+  .role-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+  .role-tag.readonly{background:#e0f2fe;color:#075985;border-color:#bae6fd}
+  .acct-info{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
   .acct-logout{background:none;border:0;border-left:1px solid var(--line);padding-left:9px;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
   .acct-logout:hover{color:var(--err)}
 
   main{padding:22px 24px;max-width:1500px;margin:0 auto}
+  .ro-banner{background:#f0f9ff;border:1px solid #bae6fd;color:#0c4a6e;padding:11px 16px;border-radius:12px;font-size:13.5px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
   .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
   .search-input{flex:1;min-width:220px;max-width:380px;padding:9px 14px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;background:#fff}
   .search-input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
@@ -67,8 +70,9 @@
   .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px;word-break:break-all;line-height:1.6}
   .meta-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
   .meta-head b{color:var(--ink);font-size:14px}
-  canvas{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
+  canvas.card-cv{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
   .item textarea,.item input{width:100%;padding:9px 12px;margin-top:8px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;resize:vertical;background:#fff}
+  .item textarea[readonly],.item input[readonly]{background:var(--paper);color:var(--muted);cursor:not-allowed}
   .item textarea:focus,.item input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
   .row{display:flex;gap:8px;margin-top:12px}
   .row .btn{flex:1}
@@ -95,13 +99,65 @@
   .u-sec-title{font-size:11.5px;font-weight:700;color:var(--ink);background:var(--paper);border:1px solid var(--line);display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
   .u-sec strong{color:var(--ink)}
   .lightbox-img{max-width:min(90vw,540px);max-height:80vh;border-radius:16px;display:block;box-shadow:0 24px 70px #0008}
+
+  /* ===== 分頁 3：Google 表單 API 與 CSV 數據面板 ===== */
+  .panel-wrap{display:flex;flex-direction:column;gap:20px}
+  .panel-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 8px 28px #00000008}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .panel-head h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}
+  .panel-head p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+
+  .forms-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .form-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:.18s}
+  .form-tab-btn:hover{border-color:var(--ink)}
+  .form-tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .api-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:var(--paper);padding:16px;border-radius:14px;border:1px solid var(--line)}
+  .api-kv small{font-size:11.5px;color:var(--muted);font-weight:600;display:block;margin-bottom:3px}
+  .api-kv div{font-size:13.5px;font-weight:600;color:var(--ink);word-break:break-all}
+
+  .cp-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
+  .cp-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
+  .cp-item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700}
+  .cp-entry{font-family:monospace;font-size:12px;background:var(--paper);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+
+  .table-scroll{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+  table.data-tbl{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left}
+  table.data-tbl th{background:var(--paper);color:var(--ink);font-weight:700;padding:11px 14px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+  table.data-tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;max-width:340px;word-break:break-word}
+  table.data-tbl tr:last-child td{border-bottom:0}
+  table.data-tbl tr:hover td{background:#faf8f5}
+
+  .stat-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
+  .stat-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .stat-box h4{margin:0 0 10px;font-size:14px;line-height:1.4}
+  .bar-row{margin-bottom:8px;font-size:12.5px}
+  .bar-lbl{display:flex;justify-content:space-between;margin-bottom:3px;gap:8px}
+  .bar-track{height:7px;background:#e4dfd6;border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--ink);border-radius:99px}
+
+  /* ===== 分頁 4：多重管理員權限設定面板 ===== */
+  .admin-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+  @media (max-width:960px){.admin-layout{grid-template-columns:1fr}}
+  .adm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin-bottom:10px;flex-wrap:wrap}
+  .adm-info b{font-size:15px;display:block}
+  .adm-info span{font-size:12.5px;color:var(--muted)}
+  .adm-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .select-sm{padding:7px 10px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:13px;background:#fff}
+
+  /* 表單設定彈窗 */
+  .modal-lg{width:min(760px,100%);max-height:88vh;overflow-y:auto;text-align:left}
+  .modal-lg h3{text-align:left;margin-bottom:6px}
+  .cp-edit-card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){.grid-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
   <div class="head-left">
     <div class="brand"><img src="/icon.svg" alt="">KKNEWS <small>ADMIN</small></div>
-    <div class="sync-pill" title="系統每 3 秒自動同步最新投稿、帳號資訊與 Supabase 即時狀態">
+    <div class="sync-pill" title="系統每 3 秒自動同步最新投稿、帳號資訊、Google 表單與 Supabase 即時狀態">
       <span class="sync-dot" id="syncDot"></span>
       <span id="syncText">即時自動同步中</span>
     </div>
@@ -117,16 +173,25 @@
       <span>👥 已登入帳號</span>
       <span class="dock-badge" id="uCount">0</span>
     </button>
+    <button type="button" class="dock-item" id="dockForms">
+      <span>📋 Google 表單 / CSV</span>
+      <span class="dock-badge" id="fCount">0</span>
+    </button>
+    <button type="button" class="dock-item" id="dockAdmins">
+      <span>🛡️ 管理員權限</span>
+      <span class="dock-badge" id="aCount">1</span>
+    </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
       <span>即時系統數據</span>
     </button>
   </nav>
 
-  <!-- 右上角帳號區 -->
+  <!-- 右上角帳號與權限區 -->
   <div class="acct-zone">
     <div class="acct-pill">
       <div class="acct-av" id="adminAv">A</div>
+      <span class="role-tag" id="adminRoleBadge">👑 Super Admin</span>
       <span class="acct-info" id="adminWho">管理員</span>
       <button type="button" class="acct-logout" id="logout">登出</button>
     </div>
@@ -134,21 +199,129 @@
 </header>
 
 <main>
-  <!-- 搜尋與操作工具列（在投稿管理／已登入帳號分頁顯示） -->
+  <!-- 一般管理員（唯讀）提示橫幅 -->
+  <div id="readOnlyBanner" class="ro-banner hide">
+    <span>👁️ 您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號、Google 表單 API 與 CSV 回傳結果，但無法執行修改或刪除。</span>
+    <span>最高權限由 Super Admin 管理</span>
+  </div>
+
+  <!-- 搜尋與操作工具列 -->
   <div class="toolbar" id="mainToolbar">
-    <input type="search" id="searchInput" class="search-input" placeholder="搜尋諺語、作者、姓名、信箱或 IP…">
+    <input type="search" id="searchInput" class="search-input" placeholder="搜尋諺語、作者、姓名、信箱、表單回答或 IP…">
     <label class="sz" id="szWrap">卡片字級 <input id="size" type="number" min="24" max="200" step="2"></label>
     <button type="button" id="reload" class="btn ghost sm">立即重整</button>
     <button type="button" id="dlAll" class="btn sm">全部下載 ZIP</button>
   </div>
 
-  <!-- 分頁 1：投稿管理卡片網格（保持乾淨簡潔） -->
+  <!-- 分頁 1：投稿管理卡片網格 -->
   <div id="grid" class="grid"></div>
 
-  <!-- 分頁 2：已登入帳號列表（集中顯示所有收集的資訊與實拍照） -->
+  <!-- 分頁 2：已登入帳號列表 -->
   <div id="usersGrid" class="u-grid hide"></div>
 
-  <!-- 分頁 3：點進頂部 Dock「即時系統數據」才顯示的全開放 Supabase 真實數據面板 -->
+  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
+  <section id="formsPanel" class="panel-wrap hide" aria-label="Google 表單 API 與 CSV 數據">
+    <div class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h3>📋 全部 Google 表單與 API 串接資訊</h3>
+          <p>檢視所有互動表單的 Google Form API 端點、試算表 CSV 連結與各時間點題目設定（Super Admin 可新增或修改設定，一般 Admin 僅供查看）。</p>
+        </div>
+        <div class="adm-actions" id="superFormActions">
+          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增表單來源</button>
+          <button type="button" class="btn sm" id="editActiveFormBtn">⚙️ 編輯目前表單 API 與題目</button>
+          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
+        </div>
+      </div>
+
+      <!-- 表單切換列 -->
+      <div class="forms-tabs" id="formsTabList"></div>
+
+      <!-- 當前選中表單的 API 詳細資訊 -->
+      <div class="api-info-grid" id="activeFormApiGrid"></div>
+
+      <!-- 當前選中表單的指定時間點與題目對應表 -->
+      <div class="cp-list" id="activeFormCpList"></div>
+    </div>
+
+    <!-- 結果 CSV 與 Google 表單回傳數據表 -->
+    <div class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h3>📊 Google 表單回傳結果與 CSV 數據檢視</h3>
+          <p id="csvSourceHint">整合顯示網站即時收集之表單回應與 Google 試算表 CSV 回傳結果。</p>
+        </div>
+        <div class="adm-actions">
+          <button type="button" class="btn ghost sm" id="syncCsvBtn">🔄 同步最新 CSV 結果</button>
+          <button type="button" class="btn sm" id="exportCsvBtn">📥 匯出下載 CSV 報表</button>
+          <button type="button" class="btn ghost sm" id="openImportCsvBtn">📤 匯入 CSV 數據</button>
+          <button type="button" class="btn danger sm" id="clearResponsesBtn">🗑️ 清空本表單紀錄</button>
+        </div>
+      </div>
+
+      <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
+
+      <!-- 各題選項統計分佈 -->
+      <div id="dfcStatBars" class="stat-bars"></div>
+
+      <!-- CSV / 回傳結果完整資料表 -->
+      <div class="table-scroll">
+        <table class="data-tbl" id="dfcCsvTable">
+          <thead id="dfcCsvThead"></thead>
+          <tbody id="dfcCsvTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分頁 4：多種管理員權限設定（Super Admin vs 一般唯讀 Admin） -->
+  <section id="adminsPanel" class="panel-wrap hide" aria-label="管理員權限管理">
+    <div class="admin-layout">
+      <div class="panel-card">
+        <div class="panel-head">
+          <div>
+            <h3>🛡️ 後台管理員帳號清單</h3>
+            <p>原 <b>sixstarculture.com</b> 主帳號擁有最高權限（Super Admin）；一般管理員（Admin）登入後僅能查看數據，無法刪除或修改任何資料。</p>
+          </div>
+        </div>
+        <div id="adminsListWrap"></div>
+      </div>
+
+      <!-- Super Admin 專屬：新增管理員表單 -->
+      <div class="panel-card" id="addAdminCard">
+        <div class="panel-head">
+          <div>
+            <h3>➕ 新增後台管理員</h3>
+            <p>僅限 Super Admin 可新增管理員帳號並指定權限等級。</p>
+          </div>
+        </div>
+        <form id="createAdminForm" autocomplete="off">
+          <label class="field" style="margin-top:0">
+            <span class="lbl">管理員登入信箱 <span>必填</span></span>
+            <input class="input" id="newAdminEmail" type="email" placeholder="例如：staff@example.com" required>
+          </label>
+          <label class="field">
+            <span class="lbl">顯示名稱／備註 <span>選填</span></span>
+            <input class="input" id="newAdminName" placeholder="例如：活動組檢視人員">
+          </label>
+          <label class="field">
+            <span class="lbl">登入密碼 <span>至少 6 碼</span></span>
+            <input class="input" id="newAdminPw" type="password" placeholder="設定此管理員的登入密碼" minlength="6" required>
+          </label>
+          <label class="field">
+            <span class="lbl">權限等級</span>
+            <select class="input" id="newAdminRole">
+              <option value="admin">👁️ 一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）</option>
+              <option value="super_admin">👑 最高管理員 Super Admin（完整權限：可修改、刪除與管理帳號）</option>
+            </select>
+          </label>
+          <button type="submit" class="btn block" id="createAdminBtn">建立管理員帳號</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分頁 5：點進頂部 Dock「即時系統數據」才顯示的全開放 Supabase 真實數據面板 -->
   <section id="adminStatusBar" class="status-panel hide" aria-label="Supabase 即時系統數據">
     <div class="status-bar">
       <div class="db-card">
@@ -234,14 +407,92 @@
   </div>
 </div>
 
+<!-- Super Admin 專屬：編輯 / 新增 Google 表單 API 與題目設定彈窗 -->
+<div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
+  <div class="modal modal-lg">
+    <h3 id="formConfigModalTitle">⚙️ 設定 Google 表單 API 與互動影片時間點</h3>
+    <p class="sub" style="margin-bottom:14px">修改主表單後，前台「🎬 DFC 表單」頁面將自動套用最新的影片路徑、時間點題目與 Google Form API 設定。</p>
+
+    <div class="grid-2">
+      <label class="field" style="margin-top:0">
+        <span class="lbl">表單名稱</span>
+        <input class="input" id="cfgFormTitle" placeholder="例如：DFC 沉浸式互動影片表單">
+      </label>
+      <label class="field" style="margin-top:0">
+        <span class="lbl">影片檔案路徑或網址</span>
+        <input class="input" id="cfgVideoUrl" placeholder="/assets/dfc.mp4 或 https://...">
+      </label>
+    </div>
+
+    <label class="field">
+      <span class="lbl">Google Form API / 提交網址 <span>支援 /viewform、/formResponse 或 Apps Script 網址</span></span>
+      <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/1FAIpQLS.../formResponse">
+    </label>
+
+    <label class="field">
+      <span class="lbl">Google 表單結果 CSV 連結（選填） <span>貼上 Google 試算表共用連結或「發佈到網路 CSV」網址即可直接拉取雲端結果</span></span>
+      <input class="input" id="cfgCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
+    </label>
+
+    <div class="grid-2">
+      <label class="field">
+        <span class="lbl">送出時機</span>
+        <select class="input" id="cfgSubmitMode">
+          <option value="end">全部時間點答完後統一送出 Google 表單</option>
+          <option value="each">每個時間點作答時立即送出</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="lbl">自動帶入登入者信箱之 Entry ID <span>選填</span></span>
+        <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.987654321">
+      </label>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+      <strong style="font-size:14px">⏱️ 影片時間點題目與 Google Form Entry 對應</strong>
+      <button type="button" class="btn ghost sm" id="addCheckpointBtn">➕ 新增時間點題目</button>
+    </div>
+    <div id="cfgCheckpointsWrap"></div>
+
+    <div class="actions" style="margin-top:22px">
+      <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消</button>
+      <button type="button" class="btn" id="saveFormCfgBtn">儲存設定並同步</button>
+    </div>
+  </div>
+</div>
+
+<!-- Super Admin 專屬：匯入 CSV 彈窗 -->
+<div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
+  <div class="modal modal-lg" style="max-width:560px">
+    <h3 id="importCsvTitle">📤 匯入 Google 表單結果 CSV</h3>
+    <p class="sub" style="margin-bottom:12px">可選擇從 Google 表單下載的 <code>.csv</code> 檔案，或直接貼上 CSV 內容。</p>
+    <label class="field" style="margin-top:0">
+      <span class="lbl">選擇 CSV 檔案</span>
+      <input type="file" id="csvFileInput" accept=".csv,text/csv" class="input" style="padding:8px">
+    </label>
+    <label class="field">
+      <span class="lbl">或直接貼上 CSV 內容</span>
+      <textarea class="input" id="csvTextInput" rows="6" placeholder="時間戳記,問題一,問題二&#10;2026/10/22 10:00,答案A,答案B"></textarea>
+    </label>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="cancelImportCsvBtn">取消</button>
+      <button type="button" class="btn" id="confirmImportCsvBtn">開始匯入數據</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
 
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingDeleteId = null;
-let lastRowsSig = "", lastUsersSig = "", isLoading = false;
+let currentRole = "super_admin", currentEmail = "";
+let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
+let adminAccounts = [], editingFormObj = null;
+let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", isLoading = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
+const isSuper = () => currentRole === "super_admin";
 
 function toast(msg, isErr = false) {
   const t = $("toast");
@@ -266,6 +517,36 @@ function openLightbox(src) {
   $("lightbox").classList.remove("hide");
 }
 $("lightbox").onclick = () => { $("lightbox").classList.add("hide"); $("lightboxImg").src = ""; };
+
+/* ---------- 權限介面套用（Super Admin 最高權限 vs 一般 Admin 唯讀） ---------- */
+function applyRoleUi(role, email) {
+  const changed = currentRole !== role || currentEmail !== email;
+  currentRole = role || "super_admin";
+  currentEmail = email || currentEmail;
+
+  const badge = $("adminRoleBadge");
+  if (isSuper()) {
+    badge.textContent = "👑 Super Admin";
+    badge.className = "role-tag";
+    $("readOnlyBanner").classList.add("hide");
+  } else {
+    badge.textContent = "👁️ 一般管理員 (唯讀)";
+    badge.className = "role-tag readonly";
+    $("readOnlyBanner").classList.remove("hide");
+  }
+
+  // 控制 Super Admin 專屬操作按鈕顯示
+  $("superFormActions").classList.toggle("hide", !isSuper());
+  $("openImportCsvBtn").classList.toggle("hide", !isSuper());
+  $("clearResponsesBtn").classList.toggle("hide", !isSuper());
+  $("addAdminCard").classList.toggle("hide", !isSuper());
+
+  if (changed) {
+    render();
+    renderDfcPanel();
+    renderAdminsPanel();
+  }
+}
 
 /* ---------- 卡片繪製：768x1024 米白圓角卡 + 黑色粗體字 ---------- */
 const FONT = '"Reggae One","Noto Serif TC",serif';
@@ -309,6 +590,7 @@ function applyAdminStatus(st) {
     $("adminWho").title = st.adminEmail;
     $("adminAv").textContent = st.adminEmail[0].toUpperCase();
   }
+  if (st.adminRole) applyRoleUi(st.adminRole, st.adminEmail);
   $("dbIco").classList.toggle("err", !st.ok);
   $("sysDot").className = "dot" + (st.ok ? "" : " warn");
   $("dbName").textContent = st.dbName || "Primary Database";
@@ -347,26 +629,45 @@ async function load(forceRender = false) {
   if (isLoading) return;
   isLoading = true;
   try {
-    const [rp, ru, rs] = await Promise.all([
+    const [rp, ru, rs, rf, ra] = await Promise.all([
       fetch("/api/admin/proverbs"),
       fetch("/api/admin/users"),
       fetch("/api/admin/status"),
+      fetch("/api/admin/dfc"),
+      fetch("/api/admin/accounts"),
     ]);
     if (rp.status === 404 || ru.status === 404) { location.reload(); return; }
     if (rp.ok) rows = await rp.json();
     if (ru.ok) users = await ru.json();
     if (rs.ok) applyAdminStatus(await rs.json());
+    if (rf.ok) {
+      const dfcData = await rf.json();
+      dfcForms = dfcData.forms || [];
+      dfcResponses = dfcData.responses || [];
+      if (!dfcForms.some(f => f.id === selectedFormId) && dfcForms[0]) {
+        selectedFormId = dfcForms[0].id;
+      }
+    }
+    if (ra.ok) {
+      const accData = await ra.json();
+      if (accData.me) applyRoleUi(accData.me.role, accData.me.email);
+      adminAccounts = accData.accounts || [];
+    }
 
     userMap = {};
     for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
 
     $("pCount").textContent = rows.length;
     $("uCount").textContent = users.length;
+    $("fCount").textContent = dfcResponses.length;
+    $("aCount").textContent = adminAccounts.length;
     const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
     $("syncText").textContent = `自動重整 · ${nowStr}`;
 
-    const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|");
-    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}:${u.geo ? u.geo.lat + "," + u.geo.lng : ""}`).join("|");
+    const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
+    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|");
+    const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, role: currentRole });
+    const adminsSig = JSON.stringify({ a: adminAccounts, role: currentRole });
 
     if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
       lastRowsSig = rowsSig;
@@ -375,6 +676,15 @@ async function load(forceRender = false) {
     if (forceRender || usersSig !== lastUsersSig) {
       lastUsersSig = usersSig;
       renderUsers();
+    }
+    if (forceRender || dfcSig !== lastDfcSig) {
+      lastDfcSig = dfcSig;
+      await loadAndRenderCsv(false);
+      renderDfcPanel();
+    }
+    if (forceRender || adminsSig !== lastAdminsSig) {
+      lastAdminsSig = adminsSig;
+      renderAdminsPanel();
     }
   } catch {} finally {
     isLoading = false;
@@ -417,7 +727,7 @@ function matchSearch(fields) {
   return fields.some(f => String(f || "").toLowerCase().includes(q));
 }
 
-/* 投稿管理：保持乾淨簡潔（收集的詳細資訊全部在「已登入帳號」分頁中顯示） */
+/* ---------- 分頁 1：投稿管理（Super Admin 可編輯儲存與刪除；一般 Admin 唯讀僅可查看與下載） ---------- */
 async function render() {
   const filtered = rows.map(unpackRow).filter(r => matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info]));
   $("pCount").textContent = searchQuery ? `${filtered.length}/${rows.length}` : rows.length;
@@ -427,8 +737,9 @@ async function render() {
     return;
   }
   await ensureFont(filtered.map(r => r.content + r.author).join(""));
+  const canEdit = isSuper();
   for (const r of filtered) {
-    const el = document.createElement("div"); el.className = "item";
+    const el = document.createElement("div"); el.className = "item"; el.dataset.fname = fname(r);
     el.innerHTML = `
       <div class="meta">
         <div class="meta-head">
@@ -438,29 +749,45 @@ async function render() {
         <div>📧 ${esc(r.user_email)}</div>
         <div>💻 裝置／瀏覽器：${esc(r.device_info)}</div>
       </div>
-      <canvas></canvas>
-      <textarea rows="2" aria-label="諺語內容"></textarea>
-      <input placeholder="來源" aria-label="來源人名">
+      <canvas class="card-cv"></canvas>
+      <textarea rows="2" aria-label="諺語內容" ${canEdit ? "" : "readonly"}></textarea>
+      <input placeholder="來源" aria-label="來源人名" ${canEdit ? "" : "readonly"}>
       <div class="row">
         <button type="button" class="btn sm dl">下載 PNG</button>
-        <button type="button" class="btn danger sm del">刪除</button>
+        ${canEdit ? `<button type="button" class="btn ghost sm save-edit">儲存修改</button><button type="button" class="btn danger sm del">刪除</button>` : ""}
       </div>`;
 
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
     ta.value = r.content; au.value = r.author;
     const redraw = async () => { await ensureFont(ta.value + au.value); drawCard(cv, ta.value, au.value); };
-    ta.oninput = au.oninput = redraw;
+    if (canEdit) ta.oninput = au.oninput = redraw;
     drawCard(cv, r.content, r.author);
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
-    el.querySelector(".del").onclick = () => {
-      pendingDeleteId = r.id;
-      $("confirmModal").classList.remove("hide");
-    };
+    if (canEdit) {
+      const saveBtn = el.querySelector(".save-edit");
+      saveBtn.onclick = async () => {
+        const content = ta.value.trim(), author = au.value.trim();
+        if (!content || !author) return toast("內容與來源不可為空", true);
+        saveBtn.disabled = true;
+        const resp = await fetch("/api/admin/proverbs/" + r.id, {
+          method: "PATCH",
+          headers: H,
+          body: JSON.stringify({ content, author }),
+        });
+        saveBtn.disabled = false;
+        if (resp.ok) { toast(`已儲存投稿 #${r.id} 修改`); load(true); }
+        else { const j = await resp.json().catch(() => ({})); toast(j.error || "儲存失敗", true); }
+      };
+      el.querySelector(".del").onclick = () => {
+        pendingDeleteId = r.id;
+        $("confirmModal").classList.remove("hide");
+      };
+    }
     grid.appendChild(el);
   }
 }
 
-/* 已登入帳號：集中顯示所有收集的資訊（Google 帳號原始資料 + 3 張相機核實照 + GPS 定位 + 硬體與環境資訊 + 登入/貼文統計） */
+/* ---------- 分頁 2：已登入帳號列表 ---------- */
 function renderUsers() {
   const filtered = users.filter(u => matchSearch([u.name, u.email, u.last_ip, u.last_device, u.google_sub]));
   $("uCount").textContent = searchQuery ? `${filtered.length}/${users.length}` : users.length;
@@ -539,6 +866,543 @@ function renderUsers() {
   }
 }
 
+/* ---------- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據檢視 ---------- */
+function getActiveForm() {
+  return dfcForms.find(f => f.id === selectedFormId) || dfcForms[0] || null;
+}
+
+async function loadAndRenderCsv(showToast = false) {
+  const form = getActiveForm();
+  if (!form) return;
+  try {
+    const r = await fetch(`/api/admin/dfc/csv?formId=${encodeURIComponent(form.id)}`);
+    if (!r.ok) return;
+    currentCsvData = await r.json();
+    renderDfcCsvTable();
+    if (showToast) toast("已同步最新 Google 表單 CSV 與回傳數據");
+  } catch {}
+}
+
+function renderDfcPanel() {
+  const tabWrap = $("formsTabList");
+  tabWrap.innerHTML = "";
+  const activeForm = getActiveForm();
+
+  for (const f of dfcForms) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    const count = dfcResponses.filter(r => r.formId === f.id).length;
+    btn.className = "form-tab-btn" + (activeForm && activeForm.id === f.id ? " active" : "");
+    btn.innerHTML = `<span>📋 ${esc(f.title)}</span><span class="dock-badge">${count} 筆</span>`;
+    btn.onclick = () => {
+      selectedFormId = f.id;
+      renderDfcPanel();
+      loadAndRenderCsv(false);
+    };
+    tabWrap.appendChild(btn);
+  }
+
+  if (!activeForm) return;
+  $("delActiveFormBtn").classList.toggle("hide", !isSuper() || activeForm.id === "default-dfc");
+
+  const isDemoUrl = !activeForm.googleFormUrl || activeForm.googleFormUrl.includes("YOUR_GOOGLE_FORM");
+  const apiStatusHtml = isDemoUrl
+    ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，填答將儲存於本站後台與 CSV）</span>`
+    : `<span style="color:var(--ok)">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
+
+  $("activeFormApiGrid").innerHTML = `
+    <div class="api-kv">
+      <small>表單名稱 / ID</small>
+      <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--muted)">(${esc(activeForm.id)})</span></div>
+    </div>
+    <div class="api-kv">
+      <small>Google Form API 提交網址 (formResponse / Apps Script)</small>
+      <div>${apiStatusHtml}</div>
+    </div>
+    <div class="api-kv">
+      <small>Google 試算表結果 CSV 同步網址</small>
+      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--muted)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
+    </div>
+    <div class="api-kv">
+      <small>互動影片路徑 & 送出模式</small>
+      <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code> · ${activeForm.submitMode === "each" ? "逐題即時送出" : "全數答完統一送出"}</div>
+    </div>
+  `;
+
+  const cpWrap = $("activeFormCpList");
+  cpWrap.innerHTML = "";
+  (activeForm.checkpoints || []).forEach((cp, i) => {
+    const typeMap = { radio: "單選題", checkbox: "多選題", text: "簡答題", textarea: "詳答題" };
+    const div = document.createElement("div");
+    div.className = "cp-item";
+    div.innerHTML = `
+      <div class="cp-item-top">
+        <span>⏱️ 第 ${Number(cp.time)} 秒 · 問題 ${i + 1} (${esc(typeMap[cp.type] || cp.type)})</span>
+        <span class="cp-entry">${esc(cp.entryId)}</span>
+      </div>
+      <div style="font-weight:600;margin-bottom:4px">${esc(cp.title)}</div>
+      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--muted)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
+    `;
+    cpWrap.appendChild(div);
+  });
+
+  renderDfcCsvTable();
+}
+
+function renderDfcCsvTable() {
+  const activeForm = getActiveForm();
+  if (!activeForm) return;
+
+  // 統計圖卡（依據各時間點題目統計回答分佈）
+  const statWrap = $("dfcStatBars");
+  statWrap.innerHTML = "";
+  const formResps = dfcResponses.filter(r => r.formId === activeForm.id);
+  for (const cp of (activeForm.checkpoints || [])) {
+    if ((cp.type === "radio" || cp.type === "checkbox") && Array.isArray(cp.options) && cp.options.length) {
+      const counts = {};
+      cp.options.forEach(o => { counts[o] = 0; });
+      let total = 0;
+      for (const r of formResps) {
+        const ans = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
+        if (Array.isArray(ans)) {
+          ans.forEach(a => { counts[a] = (counts[a] || 0) + 1; total++; });
+        } else if (ans) {
+          counts[ans] = (counts[ans] || 0) + 1; total++;
+        }
+      }
+      const box = document.createElement("div");
+      box.className = "stat-box";
+      box.innerHTML = `<h4>📊 ${esc(cp.title)} <small style="font-weight:400;color:var(--muted)">(共 ${formResps.length} 人作答)</small></h4>`;
+      for (const opt of cp.options) {
+        const c = counts[opt] || 0;
+        const pct = formResps.length > 0 ? Math.round((c / formResps.length) * 100) : 0;
+        box.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-lbl"><span>${esc(opt)}</span><b>${c} 票 (${pct}%)</b></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          </div>`;
+      }
+      statWrap.appendChild(box);
+    }
+  }
+
+  const errEl = $("remoteCsvErr");
+  if (currentCsvData?.remoteError) {
+    errEl.textContent = currentCsvData.remoteError;
+    errEl.classList.add("show");
+  } else {
+    errEl.classList.remove("show");
+  }
+
+  const isRemote = currentCsvData?.source === "google_remote";
+  $("csvSourceHint").textContent = isRemote
+    ? `🟢 目前顯示：從 Google 試算表即時拉取之遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
+    : `🔵 目前顯示：本站即時收集與匯入之 Google 表單回傳結果（共 ${formResps.length} 筆）`;
+
+  const thead = $("dfcCsvThead");
+  const tbody = $("dfcCsvTbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  if (isRemote && currentCsvData) {
+    const trH = document.createElement("tr");
+    currentCsvData.headers.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      trH.appendChild(th);
+    });
+    thead.appendChild(trH);
+
+    const filteredRows = currentCsvData.rows.filter(r => matchSearch(r));
+    if (!filteredRows.length) {
+      tbody.innerHTML = `<tr><td colspan="${currentCsvData.headers.length || 1}" style="text-align:center;color:var(--muted);padding:36px">目前尚無符合條件的 CSV 回傳資料</td></tr>`;
+      return;
+    }
+    filteredRows.forEach(r => {
+      const tr = document.createElement("tr");
+      currentCsvData.headers.forEach((_, idx) => {
+        const td = document.createElement("td");
+        td.textContent = r[idx] ?? "";
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    return;
+  }
+
+  // 顯示本地收集與匯入之完整表單回應（Super Admin 可單筆刪除，一般 Admin 僅可查看）
+  const cps = activeForm.checkpoints || [];
+  const trH = document.createElement("tr");
+  const cols = ["提交時間", "填答者帳號", "同步狀態", "裝置 / IP", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`)];
+  if (isSuper()) cols.push("管理操作");
+  cols.forEach(c => {
+    const th = document.createElement("th");
+    th.textContent = c;
+    trH.appendChild(th);
+  });
+  thead.appendChild(trH);
+
+  const filteredResps = formResps.filter(r => {
+    const ansVals = Object.values(r.answers || {}).map(v => Array.isArray(v) ? v.join(" ") : String(v));
+    return matchSearch([r.userEmail, r.userName, r.ip, r.device, ...ansVals]);
+  });
+
+  if (!filteredResps.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted);padding:38px">目前尚無表單回傳紀錄（可至前台「🎬 DFC 表單」測試作答，或點擊右上角「📤 匯入 CSV 數據」）</td></tr>`;
+    return;
+  }
+
+  for (const r of filteredResps) {
+    const tr = document.createElement("tr");
+    const timeStr = r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—";
+    const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名");
+    const syncBadge = r.syncedToGoogle
+      ? `<span class="u-badge">✓ 已送達 Google</span>`
+      : `<span class="u-badge warn">${r.demo ? "示範紀錄" : "本地保存"}</span>`;
+
+    let html = `
+      <td style="white-space:nowrap">${esc(timeStr)}</td>
+      <td><b>${esc(whoStr)}</b></td>
+      <td style="white-space:nowrap">${syncBadge}</td>
+      <td style="font-size:12px;color:var(--muted)">${esc(r.device || "—")}<br>${esc(r.ip || "")}</td>
+    `;
+    for (const cp of cps) {
+      const val = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
+      const text = Array.isArray(val) ? val.join("、") : String(val ?? "");
+      html += `<td>${esc(text || "—")}</td>`;
+    }
+    if (isSuper()) {
+      html += `<td style="white-space:nowrap"><button type="button" class="btn danger sm del-resp-btn" data-id="${esc(r.id)}">刪除</button></td>`;
+    }
+    tr.innerHTML = html;
+    if (isSuper()) {
+      const delBtn = tr.querySelector(".del-resp-btn");
+      if (delBtn) {
+        delBtn.onclick = async () => {
+          delBtn.disabled = true;
+          const resp = await fetch(`/api/admin/dfc/responses/${encodeURIComponent(r.id)}`, { method: "DELETE", headers: H });
+          if (resp.ok) { toast("已刪除該筆表單紀錄"); load(true); }
+          else { const j = await resp.json().catch(() => ({})); toast(j.error || "刪除失敗", true); delBtn.disabled = false; }
+        };
+      }
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+/* ---------- Super Admin 編輯 / 新增 Google 表單與時間點設定彈窗邏輯 ---------- */
+function openFormConfigModal(formObj) {
+  if (!isSuper()) return toast("一般管理員僅能查看數據，無法修改設定", true);
+  editingFormObj = JSON.parse(JSON.stringify(formObj));
+  $("cfgFormTitle").value = editingFormObj.title || "";
+  $("cfgVideoUrl").value = editingFormObj.videoUrl || "/assets/dfc.mp4";
+  $("cfgGoogleFormUrl").value = editingFormObj.googleFormUrl || "";
+  $("cfgCsvUrl").value = editingFormObj.csvUrl || "";
+  $("cfgSubmitMode").value = editingFormObj.submitMode || "end";
+  $("cfgEmailEntryId").value = editingFormObj.emailEntryId || "";
+  renderCheckpointEditors();
+  $("formConfigModal").classList.remove("hide");
+}
+
+function renderCheckpointEditors() {
+  const wrap = $("cfgCheckpointsWrap");
+  wrap.innerHTML = "";
+  (editingFormObj.checkpoints || []).forEach((cp, idx) => {
+    const card = document.createElement("div");
+    card.className = "cp-edit-card";
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b>時間點題目 #${idx + 1}</b>
+        <button type="button" class="btn danger sm rm-cp" style="padding:4px 10px;font-size:12px">移除此題</button>
+      </div>
+      <div class="grid-2">
+        <label class="field" style="margin-top:0">
+          <span class="lbl">觸發秒數 (秒)</span>
+          <input type="number" min="1" class="input cp-time" value="${Number(cp.time) || 5}">
+        </label>
+        <label class="field" style="margin-top:0">
+          <span class="lbl">Google Form Entry ID</span>
+          <input class="input cp-entry-inp" value="${esc(cp.entryId || "")}" placeholder="entry.123456789">
+        </label>
+      </div>
+      <div class="grid-2">
+        <label class="field">
+          <span class="lbl">題目類型</span>
+          <select class="input cp-type">
+            <option value="radio" ${cp.type === "radio" ? "selected" : ""}>單選題 (radio)</option>
+            <option value="checkbox" ${cp.type === "checkbox" ? "selected" : ""}>多選題 (checkbox)</option>
+            <option value="text" ${cp.type === "text" ? "selected" : ""}>簡答題 (text)</option>
+            <option value="textarea" ${cp.type === "textarea" ? "selected" : ""}>詳答題 (textarea)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="lbl">階段標籤</span>
+          <input class="input cp-step" value="${esc(cp.stepLabel || `階段 ${idx + 1}`)}">
+        </label>
+      </div>
+      <label class="field">
+        <span class="lbl">題目內容</span>
+        <input class="input cp-title" value="${esc(cp.title || "")}" placeholder="請輸入問題標題">
+      </label>
+      <label class="field">
+        <span class="lbl">選項清單 <span>單選／多選題請以「逗號」或「換行」分隔各選項</span></span>
+        <textarea class="input cp-opts" rows="2" placeholder="選項 A, 選項 B, 選項 C">${esc((cp.options || []).join("\n"))}</textarea>
+      </label>
+    `;
+    card.querySelector(".rm-cp").onclick = () => {
+      syncCheckpointsFromDom();
+      editingFormObj.checkpoints.splice(idx, 1);
+      renderCheckpointEditors();
+    };
+    wrap.appendChild(card);
+  });
+}
+
+function syncCheckpointsFromDom() {
+  if (!editingFormObj) return;
+  const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
+  editingFormObj.checkpoints = cards.map((c, idx) => {
+    const rawOpts = c.querySelector(".cp-opts").value;
+    const options = rawOpts.split(/[\r\n,，]+/).map(s => s.trim()).filter(Boolean);
+    return {
+      id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now()),
+      time: Math.max(1, Number(c.querySelector(".cp-time").value) || (idx + 1) * 5),
+      entryId: c.querySelector(".cp-entry-inp").value.trim() || `entry.${idx + 1}`,
+      type: c.querySelector(".cp-type").value,
+      stepLabel: c.querySelector(".cp-step").value.trim(),
+      title: c.querySelector(".cp-title").value.trim() || `問題 ${idx + 1}`,
+      options,
+      required: true,
+    };
+  });
+}
+
+$("addCheckpointBtn").onclick = () => {
+  syncCheckpointsFromDom();
+  const nextIdx = (editingFormObj.checkpoints || []).length + 1;
+  const lastTime = editingFormObj.checkpoints.length ? Number(editingFormObj.checkpoints[editingFormObj.checkpoints.length - 1].time) : 0;
+  editingFormObj.checkpoints.push({
+    id: "q" + nextIdx + "_" + Date.now(),
+    time: lastTime + 5,
+    entryId: `entry.${nextIdx}11111111`,
+    stepLabel: `階段 ${nextIdx}`,
+    title: `第 ${nextIdx} 階段問題`,
+    type: "radio",
+    options: ["選項一", "選項二", "選項三"],
+    required: true,
+  });
+  renderCheckpointEditors();
+};
+
+$("editActiveFormBtn").onclick = () => {
+  const f = getActiveForm();
+  if (f) openFormConfigModal(f);
+};
+
+$("addNewFormBtn").onclick = () => {
+  openFormConfigModal({
+    id: "form-" + Date.now(),
+    title: "新增 Google 表單 #" + (dfcForms.length + 1),
+    videoUrl: "/assets/dfc.mp4",
+    googleFormUrl: "",
+    csvUrl: "",
+    emailEntryId: "",
+    submitMode: "end",
+    checkpoints: [
+      { id: "q1", time: 5, entryId: "entry.111111111", stepLabel: "階段一", title: "問題一", type: "radio", options: ["選項 A", "選項 B"], required: true },
+    ],
+  });
+};
+
+$("cancelFormCfgBtn").onclick = () => $("formConfigModal").classList.add("hide");
+
+$("saveFormCfgBtn").onclick = async () => {
+  if (!editingFormObj) return;
+  syncCheckpointsFromDom();
+  editingFormObj.title = $("cfgFormTitle").value.trim() || "未命名 Google 表單";
+  editingFormObj.videoUrl = $("cfgVideoUrl").value.trim() || "/assets/dfc.mp4";
+  editingFormObj.googleFormUrl = $("cfgGoogleFormUrl").value.trim();
+  editingFormObj.csvUrl = $("cfgCsvUrl").value.trim();
+  editingFormObj.submitMode = $("cfgSubmitMode").value;
+  editingFormObj.emailEntryId = $("cfgEmailEntryId").value.trim();
+
+  $("saveFormCfgBtn").disabled = true;
+  const r = await fetch("/api/admin/dfc/forms", {
+    method: "POST",
+    headers: H,
+    body: JSON.stringify(editingFormObj),
+  });
+  $("saveFormCfgBtn").disabled = false;
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    return toast(j.error || "儲存失敗", true);
+  }
+  selectedFormId = editingFormObj.id;
+  $("formConfigModal").classList.add("hide");
+  toast("已儲存 Google 表單 API 與題目設定！");
+  load(true);
+};
+
+$("delActiveFormBtn").onclick = async () => {
+  const f = getActiveForm();
+  if (!f || f.id === "default-dfc") return;
+  const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
+  if (r.ok) {
+    selectedFormId = "default-dfc";
+    toast("已刪除該表單來源");
+    load(true);
+  } else {
+    const j = await r.json().catch(() => ({}));
+    toast(j.error || "刪除失敗", true);
+  }
+};
+
+$("syncCsvBtn").onclick = () => loadAndRenderCsv(true);
+
+$("exportCsvBtn").onclick = async () => {
+  const f = getActiveForm();
+  if (!f) return;
+  const r = await fetch(`/api/admin/dfc/csv?formId=${encodeURIComponent(f.id)}`);
+  if (!r.ok) return toast("匯出 CSV 失敗", true);
+  const data = await r.json();
+  const blob = new Blob([data.rawCsv || ""], { type: "text/csv;charset=utf-8" });
+  save(blob, `${f.title || f.id}_responses.csv`);
+  toast("已匯出下載 CSV 報表");
+};
+
+$("openImportCsvBtn").onclick = () => {
+  $("csvFileInput").value = "";
+  $("csvTextInput").value = "";
+  $("importCsvModal").classList.remove("hide");
+};
+$("cancelImportCsvBtn").onclick = () => $("importCsvModal").classList.add("hide");
+$("csvFileInput").onchange = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  $("csvTextInput").value = await file.text();
+};
+$("confirmImportCsvBtn").onclick = async () => {
+  const csvText = $("csvTextInput").value.trim();
+  if (!csvText) return toast("請選擇 CSV 檔案或貼上 CSV 內容", true);
+  const f = getActiveForm();
+  $("confirmImportCsvBtn").disabled = true;
+  const r = await fetch("/api/admin/dfc/import-csv", {
+    method: "POST",
+    headers: H,
+    body: JSON.stringify({ formId: f ? f.id : "default-dfc", csvText }),
+  });
+  $("confirmImportCsvBtn").disabled = false;
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return toast(j.error || "匯入失敗", true);
+  $("importCsvModal").classList.add("hide");
+  toast(`已成功匯入 ${j.importedCount || 0} 筆 Google 表單 CSV 數據！`);
+  load(true);
+};
+
+$("clearResponsesBtn").onclick = async () => {
+  if (!isSuper()) return toast("權限不足", true);
+  const f = getActiveForm();
+  if (!f) return;
+  const r = await fetch(`/api/admin/dfc/responses/all?formId=${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
+  if (r.ok) { toast("已清空本表單的回傳紀錄"); load(true); }
+  else toast("清空失敗", true);
+};
+
+/* ---------- 分頁 4：多種管理員權限設定（Super Admin 與一般唯讀 Admin） ---------- */
+function renderAdminsPanel() {
+  const wrap = $("adminsListWrap");
+  wrap.innerHTML = "";
+  for (const a of adminAccounts) {
+    const row = document.createElement("div");
+    row.className = "adm-row";
+    const isSup = a.role === "super_admin";
+    const roleBadge = isSup
+      ? `<span class="role-tag">👑 Super Admin（最高權限）</span>`
+      : `<span class="role-tag readonly">👁️ 一般管理員（唯讀僅供查看）</span>`;
+    const metaStr = a.isPrimary
+      ? "系統主帳號（sixstarculture.com 最高管理權限）"
+      : `建立於：${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"} · 最後登入：${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : "尚未登入"}（${a.loginCount || 0} 次）`;
+
+    let actionsHtml = "";
+    if (isSuper() && !a.isPrimary) {
+      actionsHtml = `
+        <div class="adm-actions">
+          <select class="select-sm role-sel" aria-label="切換管理員權限">
+            <option value="admin" ${!isSup ? "selected" : ""}>一般管理員 (唯讀)</option>
+            <option value="super_admin" ${isSup ? "selected" : ""}>Super Admin (最高權限)</option>
+          </select>
+          <button type="button" class="btn danger sm del-adm">移除帳號</button>
+        </div>`;
+    } else if (a.isPrimary) {
+      actionsHtml = `<span style="font-size:12px;font-weight:700;color:var(--muted)">🔒 系統保護主帳號</span>`;
+    }
+
+    row.innerHTML = `
+      <div class="adm-info">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+          <b>${esc(a.name || a.email)}</b>
+          ${roleBadge}
+        </div>
+        <span>📧 ${esc(a.email)} · ${esc(metaStr)}</span>
+      </div>
+      ${actionsHtml}
+    `;
+
+    if (isSuper() && !a.isPrimary) {
+      const sel = row.querySelector(".role-sel");
+      if (sel) {
+        sel.onchange = async () => {
+          sel.disabled = true;
+          const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, {
+            method: "PATCH",
+            headers: H,
+            body: JSON.stringify({ role: sel.value }),
+          });
+          sel.disabled = false;
+          if (r.ok) { toast(`已更新 ${a.email} 的權限角色`); load(true); }
+          else { const j = await r.json().catch(() => ({})); toast(j.error || "更新失敗", true); }
+        };
+      }
+      const delBtn = row.querySelector(".del-adm");
+      if (delBtn) {
+        delBtn.onclick = async () => {
+          delBtn.disabled = true;
+          const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, { method: "DELETE", headers: H });
+          if (r.ok) { toast(`已移除管理員 ${a.email}`); load(true); }
+          else { const j = await r.json().catch(() => ({})); toast(j.error || "移除失敗", true); delBtn.disabled = false; }
+        };
+      }
+    }
+    wrap.appendChild(row);
+  }
+}
+
+$("createAdminForm").onsubmit = async (ev) => {
+  ev.preventDefault();
+  if (!isSuper()) return toast("權限不足：一般管理員無法新增帳號", true);
+  const email = $("newAdminEmail").value.trim();
+  const name = $("newAdminName").value.trim();
+  const password = $("newAdminPw").value;
+  const role = $("newAdminRole").value;
+
+  $("createAdminBtn").disabled = true;
+  const r = await fetch("/api/admin/accounts", {
+    method: "POST",
+    headers: H,
+    body: JSON.stringify({ email, name, password, role }),
+  });
+  $("createAdminBtn").disabled = false;
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return toast(j.error || "建立管理員失敗", true);
+
+  $("newAdminEmail").value = "";
+  $("newAdminName").value = "";
+  $("newAdminPw").value = "";
+  $("newAdminRole").value = "admin";
+  toast(`已成功新增管理員：${email}`);
+  load(true);
+};
+
 // 統一委派處理帶有 data-zoom 的圖片放大
 document.addEventListener("click", ev => {
   const z = ev.target.closest?.("[data-zoom]");
@@ -550,18 +1414,26 @@ function switchAdminDock(tab) {
   activeTab = tab;
   $("dockPosts").classList.toggle("active", tab === "posts");
   $("dockUsers").classList.toggle("active", tab === "users");
+  $("dockForms").classList.toggle("active", tab === "forms");
+  $("dockAdmins").classList.toggle("active", tab === "admins");
   $("dockStatus").classList.toggle("active", tab === "status");
 
   $("grid").classList.toggle("hide", tab !== "posts");
   $("usersGrid").classList.toggle("hide", tab !== "users");
+  $("formsPanel").classList.toggle("hide", tab !== "forms");
+  $("adminsPanel").classList.toggle("hide", tab !== "admins");
   $("adminStatusBar").classList.toggle("hide", tab !== "status");
 
-  $("mainToolbar").classList.toggle("hide", tab === "status");
+  $("mainToolbar").classList.toggle("hide", tab === "status" || tab === "admins");
   $("szWrap").classList.toggle("hide", tab !== "posts");
   $("dlAll").classList.toggle("hide", tab !== "posts");
+
+  if (tab === "forms") loadAndRenderCsv(false);
 }
 $("dockPosts").onclick = () => switchAdminDock("posts");
 $("dockUsers").onclick = () => switchAdminDock("users");
+$("dockForms").onclick = () => switchAdminDock("forms");
+$("dockAdmins").onclick = () => switchAdminDock("admins");
 $("dockStatus").onclick = () => switchAdminDock("status");
 
 $("cancelDelBtn").onclick = () => { pendingDeleteId = null; $("confirmModal").classList.add("hide"); };
@@ -574,13 +1446,17 @@ $("confirmDelBtn").onclick = async () => {
   $("confirmModal").classList.add("hide");
   pendingDeleteId = null;
   if (r.ok) { toast("已刪除投稿 #" + id); load(true); }
-  else toast("刪除失敗", true);
+  else {
+    const j = await r.json().catch(() => ({}));
+    toast(j.error || "刪除失敗", true);
+  }
 };
 
 $("searchInput").oninput = ev => {
   searchQuery = ev.target.value.trim();
   render();
   renderUsers();
+  renderDfcCsvTable();
 };
 
 $("dlAll").onclick = async () => {
@@ -590,7 +1466,7 @@ $("dlAll").onclick = async () => {
   const zip = new JSZip();
   for (let i = 0; i < items.length; i++) {
     const blob = await new Promise(res => items[i].querySelector("canvas").toBlob(res));
-    zip.file(fname(rows[i]), blob);
+    zip.file(items[i].dataset.fname || fname(rows[i] || { id: i + 1 }), blob);
   }
   save(await zip.generateAsync({ type: "blob" }), "proverbs.zip");
   $("dlAll").disabled = false;

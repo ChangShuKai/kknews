@@ -14,12 +14,12 @@
     <div class="brand"><img src="/icon.svg" alt="">KKNEWS <small>ADMIN</small></div>
   </div>
   <h2>管理員登入</h2>
-  <p class="sub">請輸入管理員帳號與密碼以進入後台。</p>
+  <p class="sub">支援 Super Admin（最高權限）與一般管理員（唯讀檢視權限）帳號登入。</p>
 
   <form id="loginForm" autocomplete="off">
     <label class="field">
       <span class="lbl">管理員信箱</span>
-      <input class="input" id="email" type="email" placeholder="admin@example.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      <input class="input" id="email" type="email" placeholder="admin@sixstarculture.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
     </label>
     <label class="field">
       <span class="lbl">密碼</span>
@@ -54,8 +54,9 @@ $("loginForm").onsubmit = async ev => {
     location.replace("/adminusercontrol");
     return;
   }
+  const j = await r.json().catch(() => ({}));
   $("btn").disabled = false;
-  sayErr(r.status === 429 ? "嘗試次數過多，請稍後再試" : "帳號或密碼錯誤");
+  sayErr(r.status === 429 ? "嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
 };
 </script>
 </body>
