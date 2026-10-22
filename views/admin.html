@@ -565,6 +565,7 @@ const $ = id => document.getElementById(id);
 let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingConfirmFn = null;
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
+let googleApiKeyConfigured = false, googleApiKeyMasked = "";
 let adminAccounts = [], auditLogs = [], editingFormObj = null, editingAdminTarget = null;
 let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", lastAuditSig = "", isLoading = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
@@ -713,6 +714,10 @@ function isEditingCard() {
   const a = document.activeElement;
   return a && $("grid").contains(a) && (a.tagName === "TEXTAREA" || a.tagName === "INPUT");
 }
+function isInteractingAdminsList() {
+  const a = document.activeElement;
+  return a && $("adminsListWrap").contains(a) && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "BUTTON");
+}
 
 /* ---------- 資訊即時整理與自動重整（單一合併請求 /api/admin/sync，每 3 秒智慧同步） ---------- */
 async function load(forceRender = false) {
@@ -730,6 +735,8 @@ async function load(forceRender = false) {
     if (syncData.dfc) {
       dfcForms = syncData.dfc.forms || [];
       dfcResponses = syncData.dfc.responses || [];
+      googleApiKeyConfigured = Boolean(syncData.dfc.googleApiKeyConfigured);
+      googleApiKeyMasked = syncData.dfc.googleApiKeyMasked || "";
       if (!dfcForms.some(f => f.id === selectedFormId) && dfcForms[0]) {
         selectedFormId = dfcForms[0].id;
       }
@@ -738,6 +745,7 @@ async function load(forceRender = false) {
       if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
       adminAccounts = syncData.accounts.accounts || [];
     }
+    if (Array.isArray(syncData.auditLogs)) auditLogs = syncData.auditLogs;
 
     userMap = {};
     for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
@@ -749,10 +757,11 @@ async function load(forceRender = false) {
     const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
     $("syncText").textContent = `自動重整 · ${nowStr}`;
 
+    const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}`), role: currentRole });
     const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
-    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|");
+    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig;
     const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, role: currentRole });
-    const adminsSig = JSON.stringify({ a: adminAccounts, role: currentRole });
+    const auditSig = auditLogs.map(l => l.id).join(",");
 
     if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
       lastRowsSig = rowsSig;
@@ -761,15 +770,20 @@ async function load(forceRender = false) {
     if (forceRender || usersSig !== lastUsersSig) {
       lastUsersSig = usersSig;
       renderUsers();
+      populateQuickPickUsers();
     }
     if (forceRender || dfcSig !== lastDfcSig) {
       lastDfcSig = dfcSig;
       await loadAndRenderCsv(false);
       renderDfcPanel();
     }
-    if (forceRender || adminsSig !== lastAdminsSig) {
+    if (forceRender || (adminsSig !== lastAdminsSig && !isInteractingAdminsList())) {
       lastAdminsSig = adminsSig;
       renderAdminsPanel();
+    }
+    if (forceRender || auditSig !== lastAuditSig) {
+      lastAuditSig = auditSig;
+      renderAuditLogs();
     }
   } catch {} finally {
     isLoading = false;
@@ -979,6 +993,17 @@ function renderUsers() {
         <div>🌍 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
         ${u.last_ua ? `<div style="font-size:11.5px;margin-top:4px;opacity:.85">🧭 <strong>User-Agent：</strong>${esc(u.last_ua)}</div>` : ""}
       </div>`;
+    const setAdmBtn = el.querySelector(".u-set-admin");
+    if (setAdmBtn) {
+      setAdmBtn.onclick = () => {
+        openEditAdminModal({
+          id: matchedAdm?.id || null,
+          email: u.email,
+          name: matchedAdm?.name || displayName,
+          role: matchedAdm?.role || "admin",
+        });
+      };
+    }
     ug.appendChild(el);
   }
 }
@@ -1026,11 +1051,18 @@ function renderDfcPanel() {
   const apiStatusHtml = isDemoUrl
     ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，填答將儲存於本站後台與 CSV）</span>`
     : `<span style="color:var(--ok)">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
+  const apiKeyHtml = googleApiKeyConfigured
+    ? `<span style="color:var(--ok)">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
+    : `<span style="color:var(--muted)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
 
   $("activeFormApiGrid").innerHTML = `
     <div class="api-kv">
       <small>表單名稱 / ID</small>
       <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--muted)">(${esc(activeForm.id)})</span></div>
+    </div>
+    <div class="api-kv">
+      <small>Google Form API Key 狀態</small>
+      <div>${apiKeyHtml}</div>
     </div>
     <div class="api-kv">
       <small>Google Form API 提交網址 (formResponse / Apps Script)</small>
@@ -1360,18 +1392,25 @@ $("saveFormCfgBtn").onclick = async () => {
   load(true);
 };
 
-$("delActiveFormBtn").onclick = async () => {
+$("delActiveFormBtn").onclick = () => {
   const f = getActiveForm();
   if (!f || f.id === "default-dfc") return;
-  const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
-  if (r.ok) {
-    selectedFormId = "default-dfc";
-    toast("已刪除該表單來源");
-    load(true);
-  } else {
-    const j = await r.json().catch(() => ({}));
-    toast(j.error || "刪除失敗", true);
-  }
+  openConfirm({
+    title: `確定要刪除表單「${f.title}」？`,
+    desc: "刪除後此表單設定將移除，但主表單不受影響。",
+    confirmText: "確定刪除表單",
+    onConfirm: async () => {
+      const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
+      if (r.ok) {
+        selectedFormId = "default-dfc";
+        toast("已刪除該表單來源");
+        load(true);
+      } else {
+        const j = await r.json().catch(() => ({}));
+        toast(j.error || "刪除失敗", true);
+      }
+    },
+  });
 };
 
 $("syncCsvBtn").onclick = () => loadAndRenderCsv(true);
@@ -1416,16 +1455,139 @@ $("confirmImportCsvBtn").onclick = async () => {
   load(true);
 };
 
-$("clearResponsesBtn").onclick = async () => {
+$("clearResponsesBtn").onclick = () => {
   if (!isSuper()) return toast("權限不足", true);
   const f = getActiveForm();
   if (!f) return;
-  const r = await fetch(`/api/admin/dfc/responses/all?formId=${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
-  if (r.ok) { toast("已清空本表單的回傳紀錄"); load(true); }
-  else toast("清空失敗", true);
+  openConfirm({
+    title: `確定要清空「${f.title}」的回傳紀錄？`,
+    desc: "清空後本站保存的表單回應將無法復原（建議先匯出下載 CSV 報表）。",
+    confirmText: "確定清空紀錄",
+    onConfirm: async () => {
+      const r = await fetch(`/api/admin/dfc/responses/all?formId=${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
+      if (r.ok) { toast("已清空本表單的回傳紀錄"); load(true); }
+      else toast("清空失敗", true);
+    },
+  });
 };
 
 /* ---------- 分頁 4：多種管理員權限設定（Super Admin 與一般唯讀 Admin） ---------- */
+function populateQuickPickUsers() {
+  const sel = $("quickPickUserSel");
+  if (!sel) return;
+  const currentVal = sel.value;
+  sel.innerHTML = `<option value="">— 手動輸入信箱或選擇已登入帳號 —</option>`;
+  for (const u of users) {
+    if (!u.email) continue;
+    const opt = document.createElement("option");
+    opt.value = u.email;
+    opt.dataset.name = u.name || (u.email || "").split("@")[0];
+    opt.textContent = `${u.name ? u.name + " (" + u.email + ")" : u.email}`;
+    sel.appendChild(opt);
+  }
+  sel.value = currentVal;
+}
+
+if ($("quickPickUserSel")) {
+  $("quickPickUserSel").onchange = () => {
+    const sel = $("quickPickUserSel");
+    const opt = sel.options[sel.selectedIndex];
+    if (sel.value) {
+      $("newAdminEmail").value = sel.value;
+      $("newAdminName").value = opt?.dataset?.name || "";
+      $("newAdminRole").value = "admin";
+    }
+  };
+}
+
+if ($("genNewAdminPwBtn")) {
+  $("genNewAdminPwBtn").onclick = () => {
+    const pw = genRandomPw(10);
+    $("newAdminPw").value = pw;
+    $("newAdminPw").type = "text";
+    $("toggleNewAdminPwBtn").textContent = "隱藏";
+    navigator.clipboard?.writeText(pw).catch(() => {});
+    toast("已產生隨機密碼並複製到剪貼簿");
+  };
+}
+if ($("toggleNewAdminPwBtn")) {
+  $("toggleNewAdminPwBtn").onclick = () => {
+    const inp = $("newAdminPw");
+    const isPw = inp.type === "password";
+    inp.type = isPw ? "text" : "password";
+    $("toggleNewAdminPwBtn").textContent = isPw ? "隱藏" : "顯示";
+  };
+}
+
+function openEditAdminModal(acc) {
+  if (!isSuper()) return toast("一般管理員僅能查看數據，無法修改權限", true);
+  editingAdminTarget = acc;
+  const isExisting = Boolean(acc.id);
+  $("editAdminModalTitle").textContent = isExisting ? "⚙️ 編輯管理員權限與密碼" : "🛡️ 將帳號設為後台管理員";
+  $("editAdminModalSub").textContent = isExisting
+    ? "可隨時將此帳號切換為「一般管理員 Admin（唯讀）」或「Super Admin」，或重設其登入密碼。"
+    : "預設設為「一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）」，請為此帳號設定後台登入密碼。";
+  $("editAdminEmail").value = acc.email || "";
+  $("editAdminName").value = acc.name || "";
+  $("editAdminRole").value = acc.role === "super_admin" ? "super_admin" : "admin";
+  $("editAdminPw").value = isExisting ? "" : genRandomPw(10);
+  $("editAdminPw").required = !isExisting;
+  $("editAdminPw").placeholder = isExisting ? "留空代表不修改密碼（欲重設請輸入至少 6 碼）" : "請設定至少 6 碼登入密碼";
+  $("editAdminPwLbl").textContent = isExisting ? "重設登入密碼（選填，留空不變）" : "設定後台登入密碼（必填，至少 6 碼）";
+  $("editAdminModal").classList.remove("hide");
+}
+
+$("cancelEditAdminBtn").onclick = () => {
+  editingAdminTarget = null;
+  $("editAdminModal").classList.add("hide");
+};
+$("genEditAdminPwBtn").onclick = () => {
+  const pw = genRandomPw(10);
+  $("editAdminPw").value = pw;
+  navigator.clipboard?.writeText(pw).catch(() => {});
+  toast("已產生隨機密碼並複製到剪貼簿");
+};
+$("editAdminForm").onsubmit = async (ev) => {
+  ev.preventDefault();
+  if (!editingAdminTarget || !isSuper()) return;
+  const email = $("editAdminEmail").value.trim();
+  const name = $("editAdminName").value.trim();
+  const role = $("editAdminRole").value === "super_admin" ? "super_admin" : "admin";
+  const password = $("editAdminPw").value;
+
+  if (!editingAdminTarget.id && password.length < 6) {
+    return toast("首次設定管理員請輸入至少 6 個字元的密碼", true);
+  }
+  if (editingAdminTarget.id && password && password.length < 6) {
+    return toast("新密碼長度至少需 6 個字元", true);
+  }
+
+  $("saveEditAdminBtn").disabled = true;
+  let r;
+  if (editingAdminTarget.id) {
+    r = await fetch(`/api/admin/accounts/${encodeURIComponent(editingAdminTarget.id)}`, {
+      method: "PATCH",
+      headers: H,
+      body: JSON.stringify({ name, role, ...(password ? { password } : {}) }),
+    });
+  } else {
+    r = await fetch("/api/admin/accounts", {
+      method: "POST",
+      headers: H,
+      body: JSON.stringify({ email, name, role, password, upsert: true }),
+    });
+  }
+  $("saveEditAdminBtn").disabled = false;
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return toast(j.error || "儲存管理員設定失敗", true);
+
+  $("editAdminModal").classList.add("hide");
+  editingAdminTarget = null;
+  const roleText = role === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
+  toast(`已將 ${email} 設定為「${roleText}」`);
+  load(true);
+};
+
 function renderAdminsPanel() {
   const wrap = $("adminsListWrap");
   wrap.innerHTML = "";
@@ -1437,7 +1599,7 @@ function renderAdminsPanel() {
       ? `<span class="role-tag">👑 Super Admin（最高權限）</span>`
       : `<span class="role-tag readonly">👁️ 一般管理員（唯讀僅供查看）</span>`;
     const metaStr = a.isPrimary
-      ? "系統主帳號（sixstarculture.com 最高管理權限）"
+      ? "系統主帳號（最高管理權限）"
       : `建立於：${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"} · 最後登入：${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : "尚未登入"}（${a.loginCount || 0} 次）`;
 
     let actionsHtml = "";
@@ -1445,9 +1607,10 @@ function renderAdminsPanel() {
       actionsHtml = `
         <div class="adm-actions">
           <select class="select-sm role-sel" aria-label="切換管理員權限">
-            <option value="admin" ${!isSup ? "selected" : ""}>一般管理員 (唯讀)</option>
-            <option value="super_admin" ${isSup ? "selected" : ""}>Super Admin (最高權限)</option>
+            <option value="admin" ${!isSup ? "selected" : ""}>👁️ 一般管理員 (唯讀)</option>
+            <option value="super_admin" ${isSup ? "selected" : ""}>👑 Super Admin (最高權限)</option>
           </select>
+          <button type="button" class="btn ghost sm edit-adm">✏️ 編輯 / 改密</button>
           <button type="button" class="btn danger sm del-adm">移除帳號</button>
         </div>`;
     } else if (a.isPrimary) {
@@ -1469,29 +1632,83 @@ function renderAdminsPanel() {
       const sel = row.querySelector(".role-sel");
       if (sel) {
         sel.onchange = async () => {
+          const nextRole = sel.value === "super_admin" ? "super_admin" : "admin";
           sel.disabled = true;
           const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, {
             method: "PATCH",
             headers: H,
-            body: JSON.stringify({ role: sel.value }),
+            body: JSON.stringify({ role: nextRole }),
           });
           sel.disabled = false;
-          if (r.ok) { toast(`已更新 ${a.email} 的權限角色`); load(true); }
-          else { const j = await r.json().catch(() => ({})); toast(j.error || "更新失敗", true); }
+          if (r.ok) {
+            const label = nextRole === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
+            toast(`已將 ${a.email} 設定為「${label}」`);
+            load(true);
+          } else {
+            const j = await r.json().catch(() => ({}));
+            toast(j.error || "更新失敗", true);
+            load(true);
+          }
         };
+      }
+      const editBtn = row.querySelector(".edit-adm");
+      if (editBtn) {
+        editBtn.onclick = () => openEditAdminModal(a);
       }
       const delBtn = row.querySelector(".del-adm");
       if (delBtn) {
-        delBtn.onclick = async () => {
-          delBtn.disabled = true;
-          const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, { method: "DELETE", headers: H });
-          if (r.ok) { toast(`已移除管理員 ${a.email}`); load(true); }
-          else { const j = await r.json().catch(() => ({})); toast(j.error || "移除失敗", true); delBtn.disabled = false; }
+        delBtn.onclick = () => {
+          openConfirm({
+            title: `確定要移除管理員「${a.email}」？`,
+            desc: "移除後該帳號將立即失去後台登入與檢視權限。",
+            confirmText: "確定移除帳號",
+            onConfirm: async () => {
+              const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, { method: "DELETE", headers: H });
+              if (r.ok) { toast(`已移除管理員 ${a.email}`); load(true); }
+              else { const j = await r.json().catch(() => ({})); toast(j.error || "移除失敗", true); }
+            },
+          });
         };
       }
     }
     wrap.appendChild(row);
   }
+}
+
+function renderAuditLogs() {
+  const tbody = $("auditLogsTbody");
+  if (!tbody) return;
+  if (!auditLogs.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">目前尚無後台稽核紀錄</td></tr>`;
+    return;
+  }
+  const actionLabels = {
+    login_ok_super_admin: "👑 Super Admin 登入成功",
+    login_ok_admin: "👁️ 一般管理員 登入成功",
+    login_fail: "⚠️ 後台登入失敗",
+    create_admin: "➕ 新增後台管理員",
+    update_admin: "🛡️ 更新管理員權限/資料",
+    delete_admin: "🗑️ 移除後台管理員",
+    update_proverb: "✏️ 修改諺語投稿",
+    delete_proverb: "🗑️ 刪除諺語投稿",
+    save_dfc_form: "⚙️ 儲存 DFC 表單設定",
+    delete_dfc_form: "🗑️ 刪除 DFC 表單",
+    import_dfc_csv: "📤 匯入表單 CSV",
+    delete_dfc_response: "🗑️ 刪除表單回應紀錄",
+    view_photos: "📷 檢視實拍照片",
+  };
+  tbody.innerHTML = auditLogs.map(log => {
+    const tStr = log.created_at ? new Date(log.created_at).toLocaleString("zh-TW", { hour12: false }) : "—";
+    const actStr = actionLabels[log.action] || log.action;
+    return `
+      <tr>
+        <td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">${esc(tStr)}</td>
+        <td style="white-space:nowrap;font-weight:600">${esc(actStr)}</td>
+        <td>${esc(log.target || "—")}</td>
+        <td style="font-family:monospace;font-size:12.5px;color:var(--muted)">${esc(log.ip || "—")}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 $("createAdminForm").onsubmit = async (ev) => {
@@ -1500,13 +1717,13 @@ $("createAdminForm").onsubmit = async (ev) => {
   const email = $("newAdminEmail").value.trim();
   const name = $("newAdminName").value.trim();
   const password = $("newAdminPw").value;
-  const role = $("newAdminRole").value;
+  const role = $("newAdminRole").value === "super_admin" ? "super_admin" : "admin";
 
   $("createAdminBtn").disabled = true;
   const r = await fetch("/api/admin/accounts", {
     method: "POST",
     headers: H,
-    body: JSON.stringify({ email, name, password, role }),
+    body: JSON.stringify({ email, name, password, role, upsert: true }),
   });
   $("createAdminBtn").disabled = false;
   const j = await r.json().catch(() => ({}));
@@ -1516,7 +1733,9 @@ $("createAdminForm").onsubmit = async (ev) => {
   $("newAdminName").value = "";
   $("newAdminPw").value = "";
   $("newAdminRole").value = "admin";
-  toast(`已成功新增管理員：${email}`);
+  if ($("quickPickUserSel")) $("quickPickUserSel").value = "";
+  const roleLabel = role === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
+  toast(`已成功將 ${email} 設定為「${roleLabel}」`);
   load(true);
 };
 
@@ -1544,6 +1763,8 @@ function switchAdminDock(tab) {
   $("mainToolbar").classList.toggle("hide", tab === "status" || tab === "admins");
   $("szWrap").classList.toggle("hide", tab !== "posts");
   $("dlAll").classList.toggle("hide", tab !== "posts");
+  $("exportPostsCsvBtn").classList.toggle("hide", tab !== "posts");
+  $("exportUsersCsvBtn").classList.toggle("hide", tab !== "users");
 
   if (tab === "forms") loadAndRenderCsv(false);
 }
@@ -1553,19 +1774,63 @@ $("dockForms").onclick = () => switchAdminDock("forms");
 $("dockAdmins").onclick = () => switchAdminDock("admins");
 $("dockStatus").onclick = () => switchAdminDock("status");
 
-$("cancelDelBtn").onclick = () => { pendingDeleteId = null; $("confirmModal").classList.add("hide"); };
+function toCsvField(v) {
+  const s = String(v ?? "");
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+$("exportPostsCsvBtn").onclick = () => {
+  if (!rows.length) return toast("目前沒有可匯出的投稿", true);
+  const headers = ["ID", "投稿時間", "諺語內容", "署名作者", "投稿者姓名", "投稿者信箱", "裝置資訊", "IP位址"];
+  const lines = [
+    headers.map(toCsvField).join(","),
+    ...rows.map(unpackRow).map(r => [
+      r.id,
+      r.created_at ? new Date(r.created_at).toLocaleString("zh-TW", { hour12: false }) : "",
+      r.content,
+      r.author,
+      r.display_name,
+      r.user_email,
+      r.device_info,
+      r.ip_address,
+    ].map(toCsvField).join(",")),
+  ];
+  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "kknews_proverbs.csv");
+  toast("已匯出投稿 CSV 報表");
+};
+$("exportUsersCsvBtn").onclick = () => {
+  if (!users.length) return toast("目前沒有可匯出的帳號", true);
+  const headers = ["姓名", "電子郵件", "完成實拍核實", "累積登入次數", "累積貼文數", "最後登入時間", "首次註冊時間", "最後IP", "裝置資訊", "GPU", "CPU/RAM/電量"];
+  const lines = [
+    headers.map(toCsvField).join(","),
+    ...users.map(u => [
+      u.name || "",
+      u.email || "",
+      u.selfie ? "已完成" : "未完成",
+      u.login_count || 1,
+      u.post_count || 0,
+      u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("zh-TW", { hour12: false }) : "",
+      u.created_at ? new Date(u.created_at).toLocaleString("zh-TW", { hour12: false }) : "",
+      u.last_ip || "",
+      u.last_device || "",
+      u.gpu || "",
+      [u.cores, u.memory, u.battery].filter(Boolean).join(" / "),
+    ].map(toCsvField).join(",")),
+  ];
+  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "kknews_users.csv");
+  toast("已匯出已登入帳號 CSV 報表");
+};
+
+$("cancelDelBtn").onclick = () => { pendingConfirmFn = null; $("confirmModal").classList.add("hide"); };
 $("confirmDelBtn").onclick = async () => {
-  if (pendingDeleteId == null) return;
-  const id = pendingDeleteId;
+  if (typeof pendingConfirmFn !== "function") return;
+  const fn = pendingConfirmFn;
   $("confirmDelBtn").disabled = true;
-  const r = await fetch("/api/admin/proverbs/" + id, { method: "DELETE", headers: H });
-  $("confirmDelBtn").disabled = false;
-  $("confirmModal").classList.add("hide");
-  pendingDeleteId = null;
-  if (r.ok) { toast("已刪除投稿 #" + id); load(true); }
-  else {
-    const j = await r.json().catch(() => ({}));
-    toast(j.error || "刪除失敗", true);
+  try {
+    await fn();
+  } finally {
+    $("confirmDelBtn").disabled = false;
+    $("confirmModal").classList.add("hide");
+    pendingConfirmFn = null;
   }
 };
 

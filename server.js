@@ -627,6 +627,7 @@ app.post("/api/dfc/submit", async (req, res) => {
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
   const matchedForm = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0] || DEFAULT_DFC_STORE.forms[0];
   const targetUrl = String(formUrl || matchedForm?.googleFormUrl || process.env.GOOGLE_FORM_ACTION_URL || "").trim();
+  const activeApiKey = String(matchedForm?.googleApiKey || GOOGLE_FORM_API_KEY || "").trim();
   const isDemo = !targetUrl || targetUrl.includes("YOUR_GOOGLE_FORM");
 
   let syncedToGoogle = false;
@@ -634,9 +635,13 @@ app.post("/api/dfc/submit", async (req, res) => {
 
   if (!isDemo) {
     try {
+      const apiHeaders = activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {};
       if (/docs\.google\.com\/forms/i.test(targetUrl)) {
         // 自動將 /viewform 轉為 /formResponse
-        const actionUrl = targetUrl.replace(/\/viewform(\?.*)?$/i, "/formResponse");
+        let actionUrl = targetUrl.replace(/\/viewform(\?.*)?$/i, "/formResponse");
+        if (activeApiKey && !/[?&]key=/i.test(actionUrl)) {
+          actionUrl += (actionUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
+        }
         const params = new URLSearchParams();
         for (const [entryKey, val] of Object.entries(answers)) {
           if (!entryKey) continue;
@@ -654,28 +659,33 @@ app.post("/api/dfc/submit", async (req, res) => {
         }
         const gRes = await fetch(actionUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          headers: { "Content-Type": "application/x-www-form-urlencoded", ...apiHeaders },
           body: params.toString(),
           signal: AbortSignal.timeout(8000),
         });
         if (!gRes.ok && gRes.status >= 500) throw new Error("Google Form HTTP " + gRes.status);
         syncedToGoogle = true;
-      } else if (/^https:\/\/script\.google\.com\//i.test(targetUrl)) {
-        const gRes = await fetch(targetUrl, {
+      } else if (/^https:\/\/(?:script\.google\.com|(?:forms|sheets)\.googleapis\.com)\//i.test(targetUrl)) {
+        let reqUrl = targetUrl;
+        if (activeApiKey && !/[?&]key=/i.test(reqUrl)) {
+          reqUrl += (reqUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
+        }
+        const gRes = await fetch(reqUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...apiHeaders },
           body: JSON.stringify({
             formId: matchedForm?.id || formId,
+            apiKey: activeApiKey || undefined,
             answers,
             user: u ? { email: u.email, name: u.name } : null,
             submittedAt: new Date().toISOString(),
           }),
           signal: AbortSignal.timeout(8000),
         });
-        if (!gRes.ok) throw new Error("Apps Script HTTP " + gRes.status);
+        if (!gRes.ok) throw new Error("Google API HTTP " + gRes.status);
         syncedToGoogle = true;
       } else {
-        syncErr = "僅支援 Google Form 或 Google Apps Script 網址";
+        syncErr = "僅支援 Google Form、Google API 或 Google Apps Script 網址";
       }
     } catch (e) {
       syncErr = e.message || "Google 表單同步失敗";
@@ -926,10 +936,12 @@ app.get("/api/admin/dfc", async (req, res) => {
   res.json({
     forms: Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms,
     responses: Array.isArray(store.responses) ? store.responses : [],
+    googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
+    googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
   });
 });
 
-// 拉取並解析指定表單的 Google 表單 CSV 回傳數據（支援遠端 Google Sheets CSV 或本地收集紀錄轉 CSV）
+// 拉取並解析指定表單的 Google 表單 CSV 回傳數據（支援 Google Sheets API v4、遠端 Google Sheets CSV 或本地收集紀錄轉 CSV）
 app.get("/api/admin/dfc/csv", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
@@ -939,40 +951,71 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
   const form = forms.find(f => f.id === formId) || forms[0];
   const responses = (store.responses || []).filter(r => !formId || formId === "all" || r.formId === form.id);
 
-  // 1. 若有設定 Google 試算表 CSV 網址，嘗試即時抓取 Google 表單最新回傳數據
+  // 1. 若有設定 Google 試算表 CSV 網址，優先結合 GOOGLE_FORM_API_KEY 或直接抓取最新回傳數據
   let remoteCsv = null;
   let remoteError = "";
+  const activeApiKey = String(form?.googleApiKey || GOOGLE_FORM_API_KEY || "").trim();
   const normalizedCsvUrl = normalizeGoogleCsvUrl(form?.csvUrl || "");
   if (normalizedCsvUrl && /^https:\/\/docs\.google\.com\/spreadsheets\//i.test(normalizedCsvUrl)) {
-    try {
-      const gRes = await fetch(normalizedCsvUrl, { signal: AbortSignal.timeout(8000) });
-      if (!gRes.ok) throw new Error(`HTTP ${gRes.status}`);
-      const text = await gRes.text();
-      remoteCsv = parseCsvText(text);
-    } catch (e) {
-      remoteError = "無法從 Google 試算表拉取 CSV（請確認試算表已開啟「檔案 > 共用 > 發佈到網路 (CSV)」或權限為知道連結者可檢視）：" + (e.message || "");
+    const sheetId = extractGoogleSheetId(form?.csvUrl || normalizedCsvUrl);
+    // 若已設定 GOOGLE_FORM_API_KEY，優先嘗試使用 Google Sheets API v4 讀取，失敗時自動退回 CSV 匯出端點
+    if (sheetId && activeApiKey) {
+      try {
+        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/A1:ZZ2000?key=${encodeURIComponent(activeApiKey)}`;
+        const apiRes = await fetch(sheetsApiUrl, { signal: AbortSignal.timeout(8000) });
+        if (apiRes.ok) {
+          const sj = await apiRes.json();
+          if (Array.isArray(sj?.values) && sj.values.length) {
+            remoteCsv = { headers: sj.values[0] || [], rows: sj.values.slice(1) };
+          }
+        }
+      } catch {}
     }
-  } else if (normalizedCsvUrl && /^https:\/\/script\.google\.com\//i.test(normalizedCsvUrl)) {
+    if (!remoteCsv) {
+      try {
+        const gRes = await fetch(normalizedCsvUrl, {
+          headers: activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {},
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!gRes.ok) throw new Error(`HTTP ${gRes.status}`);
+        const text = await gRes.text();
+        remoteCsv = parseCsvText(text);
+      } catch (e) {
+        remoteError = "無法從 Google 試算表拉取 CSV（請確認試算表已開啟「檔案 > 共用 > 發佈到網路 (CSV)」或權限為知道連結者可檢視）：" + (e.message || "");
+      }
+    }
+  } else if (normalizedCsvUrl && /^https:\/\/(?:script\.google\.com|(?:sheets|forms)\.googleapis\.com)\//i.test(normalizedCsvUrl)) {
     try {
-      const gRes = await fetch(normalizedCsvUrl, { signal: AbortSignal.timeout(8000) });
+      let reqUrl = normalizedCsvUrl;
+      if (activeApiKey && !/[?&]key=/i.test(reqUrl)) {
+        reqUrl += (reqUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
+      }
+      const gRes = await fetch(reqUrl, {
+        headers: activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {},
+        signal: AbortSignal.timeout(8000),
+      });
       if (!gRes.ok) throw new Error(`HTTP ${gRes.status}`);
       const ct = gRes.headers.get("content-type") || "";
       const text = await gRes.text();
       if (ct.includes("json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
         const j = JSON.parse(text);
-        const arr = Array.isArray(j) ? j : (Array.isArray(j.rows) ? j.rows : []);
-        if (arr.length && typeof arr[0] === "object" && !Array.isArray(arr[0])) {
-          const headers = Object.keys(arr[0]);
-          const rows = arr.map(item => headers.map(h => String(item[h] ?? "")));
-          remoteCsv = { headers, rows };
-        } else if (Array.isArray(j.headers) && Array.isArray(j.rows)) {
-          remoteCsv = { headers: j.headers, rows: j.rows };
+        if (Array.isArray(j?.values) && j.values.length) {
+          remoteCsv = { headers: j.values[0] || [], rows: j.values.slice(1) };
+        } else {
+          const arr = Array.isArray(j) ? j : (Array.isArray(j.rows) ? j.rows : []);
+          if (arr.length && typeof arr[0] === "object" && !Array.isArray(arr[0])) {
+            const headers = Object.keys(arr[0]);
+            const rows = arr.map(item => headers.map(h => String(item[h] ?? "")));
+            remoteCsv = { headers, rows };
+          } else if (Array.isArray(j.headers) && Array.isArray(j.rows)) {
+            remoteCsv = { headers: j.headers, rows: j.rows };
+          }
         }
       } else {
         remoteCsv = parseCsvText(text);
       }
     } catch (e) {
-      remoteError = "無法從 Google Apps Script API 拉取數據：" + (e.message || "");
+      remoteError = "無法從 Google API / Apps Script 拉取數據：" + (e.message || "");
     }
   }
 
@@ -1529,6 +1572,8 @@ app.get("/api/admin/sync", async (req, res) => {
       dfc: {
         forms: Array.isArray(dfcStore.forms) && dfcStore.forms.length ? dfcStore.forms : DEFAULT_DFC_STORE.forms,
         responses: Array.isArray(dfcStore.responses) ? dfcStore.responses : [],
+        googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
+        googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
       },
       accounts: {
         me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },
