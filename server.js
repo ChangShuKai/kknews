@@ -18,7 +18,7 @@ for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, S
 }
 const SCHOOL = "@hlc.edu.tw";
 const SCHOOL_HD = "hlc.edu.tw";
-const SECURE = BASE_URL.startsWith("https");
+const SECURE = BASE_URL.startsWith("https") || process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
 /* 前端頁面：內嵌 <script> 抽成外部檔案，CSP 即可移除 script 的 'unsafe-inline' */
 function splitPage(html, name) {
@@ -43,6 +43,7 @@ const PAGES = {
 
 // 服務金鑰只存在於伺服器，瀏覽器永遠拿不到
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 
 /* ---------- 工具與管理員權限分級（Super Admin vs 一般 Admin） ---------- */
 const b64 = b => Buffer.from(b).toString("base64url");
@@ -412,7 +413,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin",
@@ -506,6 +507,7 @@ app.post("/api/verify-turnstile", async (req, res) => {
   // 若尚未在環境變數填寫 Secret Key，輸出提示並暫行放行（供本地測試）
   if (!secret) {
     console.warn("[Turnstile] 未偵測到 TURNSTILE_SECRET_KEY 環境變數，已暫行通過。請記得在 Vercel 設定 TURNSTILE_SECRET_KEY。");
+    setCookie(res, "cf_passed", "1", { maxAge: 86400 });
     return res.json({ ok: true, devMode: true });
   }
 
@@ -513,8 +515,7 @@ app.post("/api/verify-turnstile", async (req, res) => {
     const formData = new URLSearchParams();
     formData.append("secret", secret);
     formData.append("response", token);
-    const ip = clientIp(req);
-    if (ip) formData.append("remoteip", ip);
+    // 依 Cloudflare 官方建議：在反向代理 / Serverless 環境中不傳送 remoteip，以避免 IPv4/IPv6 與代理 IP 不一致造成 invalid-remoteip 誤判
 
     const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
@@ -524,6 +525,7 @@ app.post("/api/verify-turnstile", async (req, res) => {
 
     const cfData = await cfRes.json();
     if (cfData.success) {
+      setCookie(res, "cf_passed", "1", { maxAge: 86400 });
       return res.json({ ok: true });
     } else {
       console.warn("[Turnstile] 驗證失敗:", cfData["error-codes"]);
@@ -545,7 +547,7 @@ app.post("/api/auth/google", async (req, res) => {
   if (!String(claims.email || "").toLowerCase().endsWith(SCHOOL) || (claims.hd && claims.hd !== SCHOOL_HD) || claims.email_verified === false) {
     return res.status(403).json({ error: "domain" });
   }
-  const authClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+
   let { data, error } = await authClient.auth.signInWithIdToken({
     provider: "google",
     token: String(idToken),
@@ -563,9 +565,7 @@ app.post("/api/auth/google", async (req, res) => {
     return res.status(403).json({ error: "domain" });
   }
 
-  // 讀取 Supabase 現存最新完整 metadata，避免覆寫核實狀態
-  const { data: existingUser } = await db.auth.admin.getUserById(u.id).catch(() => ({}));
-  const md = { ...(u.user_metadata || {}), ...(existingUser?.user?.user_metadata || {}) };
+  const md = u.user_metadata || {};
   const cm = cleanMeta(clientMeta);
   const deviceInfo = parseUA(ua) + (cm.screen ? ` (${cm.screen})` : "");
 
@@ -581,7 +581,8 @@ app.post("/api/auth/google", async (req, res) => {
     locale: str(claims.locale || md.locale || cm.language, 20),
   };
 
-  await db.auth.admin.updateUserById(u.id, {
+  // 背景非同步更新 metadata 與快取清除，讓登入回應無延遲秒速返回給使用者
+  db.auth.admin.updateUserById(u.id, {
     user_metadata: {
       ...md, ...googleInfo,
       kk_login_count: (Number(md.kk_login_count) || 0) + 1,
@@ -590,13 +591,13 @@ app.post("/api/auth/google", async (req, res) => {
       kk_timezone: cm.timezone || md.kk_timezone || "",
       ...hardwarePatch(md, cm),
     },
-  }).catch(() => {});
-  invalidateQueryCache("users");
+  }).then(() => invalidateQueryCache("users")).catch(() => {});
 
   setCookie(res, "ks", makeToken({
     t: "u", id: u.id, email, name: googleInfo.name, picture: googleInfo.picture, sub: googleInfo.sub,
     given_name: googleInfo.given_name, family_name: googleInfo.family_name, hd: googleInfo.hd, locale: googleInfo.locale,
   }, 8 * 3600));
+  setCookie(res, "cf_passed", "1", { maxAge: 86400 });
   res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
 });
 
@@ -635,6 +636,14 @@ app.post("/api/proverbs", async (req, res) => {
     device_info: deviceInfo, user_agent: ua, ip_address: ip,
     platform: cm.platform || null, screen: cm.screen || null, timezone: cm.timezone || null, geo: cm.geo,
     gpu: cm.gpu || null, cores: cm.cores || null, memory: cm.memory || null, battery: cm.battery || null, network: cm.network || null,
+    cardStyle: (req.body?.cardStyle && typeof req.body.cardStyle === "object") ? {
+      layout: String(req.body.cardStyle.layout || "classic").slice(0, 24),
+      themeId: String(req.body.cardStyle.themeId || "ivory").slice(0, 24),
+      bg: String(req.body.cardStyle.bg || "#f4f2ee").slice(0, 24),
+      text: String(req.body.cardStyle.text || "#1c1917").slice(0, 24),
+      sub: String(req.body.cardStyle.sub || "#6b665d").slice(0, 24),
+      accent: String(req.body.cardStyle.accent || "#1868c7").slice(0, 24),
+    } : null,
   };
   // 先嘗試寫入完整擴充欄位，若 Supabase 尚未執行 ALTER TABLE 則自動儲存於基本欄位
   let { error } = await db.from("proverbs").insert({

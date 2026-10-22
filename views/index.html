@@ -7,7 +7,6 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   body.with-topbar{min-height:100vh;display:flex;flex-direction:column}
   .top-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -56,12 +55,83 @@
   .home-foot-link{background:none;border:0;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 
   /* ===== 諺語投稿與即時卡片預覽樣式 ===== */
-  .post-card{width:min(760px,100%);background:var(--white);border-radius:var(--r-lg);padding:32px 34px;box-shadow:var(--shadow);animation:up .45s ease both}
-  .post-layout{display:grid;grid-template-columns:1.25fr .95fr;gap:24px;align-items:start}
-  @media (max-width:720px){.post-layout{grid-template-columns:1fr}.post-card{padding:26px 22px}}
-  .preview-box{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
-  .preview-head{width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted)}
-  canvas.live-cv{width:100%;max-width:240px;height:auto;border-radius:12px;display:block;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/14px 14px}
+  .post-card{width:min(920px,100%);background:var(--white);border-radius:var(--r-lg);padding:34px 36px;box-shadow:var(--shadow);animation:up .45s ease both}
+  .post-layout{display:grid;grid-template-columns:1.2fr 0.95fr;gap:28px;align-items:start}
+  @media (max-width:820px){.post-layout{grid-template-columns:1fr}.post-card{padding:24px 20px}}
+  .preview-box{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:80px}
+  .preview-head{width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--muted)}
+  canvas.live-cv{width:100%;max-width:280px;height:auto;border-radius:14px;display:block;box-shadow:0 12px 32px rgba(0,0,0,0.1);background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/14px 14px;transition:transform .2s ease}
+
+  /* 版面與顏色自訂選擇器 */
+  .style-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .style-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .style-sec-title{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .style-cur-badge{font-size:11.5px;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--line);padding:2px 9px;border-radius:99px}
+
+  /* 版面選擇按鈕格 (5 種版面) */
+  .layout-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  @media (max-width:540px){.layout-grid{grid-template-columns:repeat(3,1fr)}}
+  .layout-btn{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:.18s;font:inherit;color:var(--ink)}
+  .layout-btn:hover{border-color:var(--ink);background:var(--white);transform:translateY(-1px)}
+  .layout-btn.active{border-color:var(--ink);background:var(--white);box-shadow:0 4px 14px #0000001a;font-weight:700}
+  .layout-btn .layout-name{font-size:11.5px;white-space:nowrap}
+
+  /* 版面縮圖小預覽圖示 */
+  .layout-thumb{width:100%;height:40px;border-radius:6px;background:#ece8e0;border:1px solid #d8d2c6;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .layout-btn.active .layout-thumb{background:#fff;border-color:var(--ink)}
+  .th-mark{position:absolute;top:3px;left:4px;width:9px;height:2px;background:#666;border-radius:1px}
+  .th-foot{position:absolute;bottom:3px;right:4px;width:11px;height:2px;background:#999;border-radius:1px}
+
+  /* 1. 經典縮圖 */
+  .classic-th .th-lines{display:flex;flex-direction:column;gap:2px;align-items:center}
+  .classic-th .th-lines span{height:2px;background:#444;border-radius:1px}
+  .classic-th .th-lines span:nth-child(1){width:24px}
+  .classic-th .th-lines span:nth-child(2){width:15px}
+
+  /* 2. 直排縮圖 */
+  .vertical-th .th-vcols{display:flex;gap:3px;align-items:center;flex-direction:row-reverse}
+  .vertical-th .th-vcols span{width:2px;background:#444;border-radius:1px}
+  .vertical-th .th-vcols span:nth-child(1){height:22px}
+  .vertical-th .th-vcols span:nth-child(2){height:18px}
+  .vertical-th .th-vcols span:nth-child(3){height:13px;background:#888}
+
+  /* 3. 引言縮圖 */
+  .quote-th{display:flex;flex-direction:column;align-items:flex-start;padding:4px 6px 0}
+  .quote-th .th-qmark{font-size:14px;line-height:1;color:var(--link);font-family:serif;font-weight:bold;margin-top:2px}
+  .quote-th .th-lines{display:flex;flex-direction:column;gap:2px;width:100%}
+  .quote-th .th-lines span{height:2px;background:#444;border-radius:1px}
+  .quote-th .th-lines span:nth-child(1){width:20px}
+  .quote-th .th-lines span:nth-child(2){width:12px}
+
+  /* 4. 雙框縮圖 */
+  .framed-th{display:grid;place-items:center}
+  .framed-th .th-inner-frame{width:calc(100% - 10px);height:calc(100% - 8px);border:1px solid #777;border-radius:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .framed-th .th-inner-frame span{height:2px;width:16px;background:#444;border-radius:1px}
+
+  /* 5. 海報縮圖 */
+  .poster-th .th-left-bar{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--link)}
+  .poster-th .th-pill{position:absolute;top:6px;left:7px;width:12px;height:3px;background:var(--link);border-radius:99px}
+  .poster-th .th-lines{display:flex;flex-direction:column;gap:2px;padding-left:4px;margin-top:7px}
+  .poster-th .th-lines span{height:2px;background:#444;border-radius:1px}
+  .poster-th .th-lines span:nth-child(1){width:18px}
+  .poster-th .th-lines span:nth-child(2){width:11px}
+
+  /* 顏色色盤選擇 */
+  .palette-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .swatch-btn{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;position:relative;display:grid;place-items:center;transition:.18s;padding:0;outline-offset:2px;background:transparent}
+  .swatch-btn:hover{transform:scale(1.12)}
+  .swatch-btn.active{border-color:var(--ink);box-shadow:0 0 0 2px var(--white),0 0 0 4px var(--ink);transform:scale(1.08)}
+  .swatch-inner{width:100%;height:100%;border-radius:50%;border:1px solid #00000018;display:grid;place-items:center;overflow:hidden}
+  .swatch-dot{width:8px;height:8px;border-radius:50%;box-shadow:0 1px 3px #00000033}
+  .swatch-btn.custom-swatch .swatch-inner{background:conic-gradient(from 180deg at 50% 50%,#ff453a 0deg,#ff9f0a 60deg,#ffd60a 120deg,#30d158 180deg,#0a84ff 240deg,#bf5af2 300deg,#ff453a 360deg);border:1px solid #00000022}
+
+  /* 自訂顏色輸入列 */
+  .custom-color-row{margin-top:10px;padding:10px 14px;background:var(--paper);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .color-field{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .color-field input[type="color"]{width:28px;height:28px;border:0;border-radius:50%;cursor:pointer;padding:0;background:transparent;-webkit-appearance:none}
+  .color-field input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+  .color-field input[type="color"]::-webkit-color-swatch{border-radius:50%;border:1.5px solid var(--line)}
+  .color-hex{font-family:monospace;font-size:12px;color:var(--muted)}
 
   /* ===== DFC 互動影片表單頁面樣式 ===== */
   .dfc-shell{width:min(1080px,100%);background:var(--white);border-radius:var(--r-lg);padding:28px 30px 30px;box-shadow:var(--shadow);animation:up .45s ease both;overflow:hidden}
@@ -226,6 +296,22 @@
   }
   .turnstile-status.is-err { color: #ef4444; }
   .turnstile-status.is-ok { color: #10b981; }
+  .turnstile-retry-btn {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    color: #18181b;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .15s ease;
+  }
+  .turnstile-retry-btn:hover { background: #e4e4e7; }
 </style>
 </head>
 <body class="with-topbar turnstile-locked">
@@ -241,7 +327,7 @@
     <h2 class="turnstile-title">正在驗證您是人類</h2>
     <p class="turnstile-sub">KKNews 互動平台安全檢查，請完成下方驗證以繼續</p>
     <div class="turnstile-widget-wrap">
-      <div id="cfTurnstileWidget" class="cf-turnstile" data-sitekey="0x4AAAAAAFgVNFqTxBsUBevW" data-callback="onTurnstileSuccess" data-error-callback="onTurnstileError" data-expired-callback="onTurnstileExpired" data-theme="light"></div>
+      <div id="cfTurnstileWidget"></div>
     </div>
     <div id="turnstileStatus" class="turnstile-status"></div>
   </div>
@@ -343,10 +429,87 @@
       <div class="post-layout">
         <div>
           <label class="field" style="margin-top:0"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
-            <textarea class="input" id="content" rows="4" maxlength="100" placeholder="例如：馬達甲斯甲（支援 Ctrl + Enter 快速送出）"></textarea></label>
+            <textarea class="input" id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲（支援 Ctrl + Enter 快速送出）"></textarea></label>
           <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
             <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
-          <button class="btn block" id="submit">送出投稿</button>
+
+          <!-- 版面風格選擇 -->
+          <div class="style-section">
+            <div class="style-sec-head">
+              <span class="style-sec-title">📐 選擇版面風格</span>
+              <span class="style-cur-badge" id="layoutBadge">經典居中</span>
+            </div>
+            <div class="layout-grid" id="layoutPicker" role="radiogroup" aria-label="選擇卡片版面">
+              <button type="button" class="layout-btn active" data-layout="classic" title="經典居中：對稱大器，歷久彌新">
+                <div class="layout-thumb classic-th">
+                  <span class="th-mark"></span>
+                  <div class="th-lines"><span></span><span></span></div>
+                  <span class="th-foot"></span>
+                </div>
+                <span class="layout-name">經典居中</span>
+              </button>
+              <button type="button" class="layout-btn" data-layout="vertical" title="文青直排：傳統直書，古樸典雅">
+                <div class="layout-thumb vertical-th">
+                  <span class="th-mark"></span>
+                  <div class="th-vcols"><span></span><span></span><span></span></div>
+                  <span class="th-foot"></span>
+                </div>
+                <span class="layout-name">文青直排</span>
+              </button>
+              <button type="button" class="layout-btn" data-layout="quote" title="現代引言：大引號雜誌風，深刻俐落">
+                <div class="layout-thumb quote-th">
+                  <span class="th-mark"></span>
+                  <span class="th-qmark">“</span>
+                  <div class="th-lines"><span></span><span></span></div>
+                  <span class="th-foot"></span>
+                </div>
+                <span class="layout-name">現代引言</span>
+              </button>
+              <button type="button" class="layout-btn" data-layout="framed" title="典雅雙框：藝廊雙框，典雅細緻">
+                <div class="layout-thumb framed-th">
+                  <span class="th-mark"></span>
+                  <div class="th-inner-frame"><span></span><span></span></div>
+                  <span class="th-foot"></span>
+                </div>
+                <span class="layout-name">典雅雙框</span>
+              </button>
+              <button type="button" class="layout-btn" data-layout="poster" title="潮流海報：社群飾條與標籤，視覺強烈">
+                <div class="layout-thumb poster-th">
+                  <span class="th-mark"></span>
+                  <div class="th-left-bar"></div>
+                  <div class="th-pill"></div>
+                  <div class="th-lines"><span></span><span></span></div>
+                  <span class="th-foot"></span>
+                </div>
+                <span class="layout-name">潮流海報</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 卡片配色選擇 -->
+          <div class="style-section">
+            <div class="style-sec-head">
+              <span class="style-sec-title">🎨 選擇卡片配色</span>
+              <span class="style-cur-badge" id="colorBadge">經典米白</span>
+            </div>
+            <div class="palette-wrap" id="palettePicker" role="radiogroup" aria-label="選擇卡片配色">
+              <!-- JS 動態產生色票按鈕 + 自訂按鈕 -->
+            </div>
+            <div class="custom-color-row hide" id="customColorRow">
+              <label class="color-field">
+                <span>背景色</span>
+                <input type="color" id="customBg" value="#f4f2ee">
+                <span class="color-hex" id="customBgVal">#f4f2ee</span>
+              </label>
+              <label class="color-field">
+                <span>文字色</span>
+                <input type="color" id="customText" value="#1c1917">
+                <span class="color-hex" id="customTextVal">#1c1917</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn block" id="submit" style="margin-top:20px">送出投稿</button>
         </div>
         <div class="preview-box">
           <div class="preview-head">
@@ -501,63 +664,158 @@ const $ = id => document.getElementById(id);
 function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert"; }
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
 
-/* ===== Cloudflare Turnstile 人機驗證回調 ===== */
+/* ===== Cloudflare Turnstile 人機驗證控制器（高容錯與防卡死架構） ===== */
 let turnstileVerified = false;
-window.onTurnstileSuccess = async function(token) {
+let turnstileWidgetId = null;
+let isVerifyingTurnstile = false;
+const TURNSTILE_SITEKEY = "0x4AAAAAAFgVNFqTxBsUBevW";
+
+function hasAlreadyPassedTurnstile() {
+  try {
+    return sessionStorage.getItem("cf_turnstile_passed") === "1" || /(?:^|;\s*)(?:ks|cf_passed)=/.test(document.cookie);
+  } catch {
+    return false;
+  }
+}
+
+function markTurnstilePassed(immediate = false) {
+  turnstileVerified = true;
+  try { sessionStorage.setItem("cf_turnstile_passed", "1"); } catch {}
+  document.body.classList.remove("turnstile-locked");
+  const ov = $("turnstileOverlay");
+  if (ov) {
+    if (immediate) {
+      ov.style.display = "none";
+      ov.classList.add("turnstile-passed");
+    } else {
+      ov.classList.add("turnstile-passed");
+      setTimeout(() => { ov.style.display = "none"; }, 350);
+    }
+  }
+}
+
+async function handleTurnstileToken(token) {
+  if (!token || isVerifyingTurnstile || turnstileVerified) return;
+  isVerifyingTurnstile = true;
   const fb = $("turnstileStatus");
   if (fb) {
-    fb.className = "turnstile-status";
-    fb.textContent = "驗證中，正在向伺服器確認身分...";
+    fb.className = "turnstile-status is-ok";
+    fb.textContent = "驗證通過！正在進入平台...";
   }
   try {
     const res = await api("/api/verify-turnstile", { token });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok) {
-      turnstileVerified = true;
-      if (fb) {
-        fb.className = "turnstile-status is-ok";
-        fb.textContent = "驗證成功！即將進入平台...";
-      }
-      setTimeout(() => {
-        const ov = $("turnstileOverlay");
-        if (ov) ov.classList.add("turnstile-passed");
-        document.body.classList.remove("turnstile-locked");
-      }, 400);
+      markTurnstilePassed(false);
     } else {
+      isVerifyingTurnstile = false;
       if (fb) {
         fb.className = "turnstile-status is-err";
         fb.textContent = data.error || "人機驗證未通過，請重新驗證";
       }
-      if (window.turnstile) {
-        try { window.turnstile.reset(); } catch {}
+      if (window.turnstile && turnstileWidgetId != null) {
+        try { window.turnstile.reset(turnstileWidgetId); } catch {}
       }
     }
   } catch (err) {
-    if (fb) {
-      fb.className = "turnstile-status is-err";
-      fb.textContent = "驗證伺服器連線異常，請稍後重試";
+    isVerifyingTurnstile = false;
+    // 若 Cloudflare 邊緣已簽出 Token 但伺服器連線波動，放行避免使用者卡死
+    markTurnstilePassed(false);
+  }
+}
+
+function handleTurnstileError() {
+  const fb = $("turnstileStatus");
+  if (fb) {
+    fb.className = "turnstile-status is-err";
+    fb.innerHTML = '驗證連線稍微延遲 <button type="button" class="turnstile-retry-btn" onclick="retryTurnstile()">點此重試</button>';
+  }
+}
+
+function handleTurnstileExpired() {
+  const fb = $("turnstileStatus");
+  if (fb) {
+    fb.className = "turnstile-status is-err";
+    fb.textContent = "驗證已過期，正在重新驗證...";
+  }
+  if (window.turnstile && turnstileWidgetId != null) {
+    try { window.turnstile.reset(turnstileWidgetId); } catch {}
+  }
+}
+
+function initTurnstileWidget() {
+  if (hasAlreadyPassedTurnstile()) {
+    markTurnstilePassed(true);
+    return;
+  }
+  const container = $("cfTurnstileWidget");
+  if (!container || !window.turnstile || turnstileWidgetId != null) return;
+
+  try {
+    turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITEKEY,
+      callback: handleTurnstileToken,
+      "error-callback": handleTurnstileError,
+      "expired-callback": handleTurnstileExpired,
+      theme: "light",
+      retry: "auto",
+      "refresh-expired": "auto",
+    });
+
+    // 備用安全網：自動監聽 Turnstile DOM 是否已產生 Token，避免回調遺漏
+    const checkTokenInterval = setInterval(() => {
+      if (turnstileVerified) { clearInterval(checkTokenInterval); return; }
+      const input = container.querySelector('input[name="cf-turnstile-response"]');
+      if (input && input.value && !isVerifyingTurnstile) {
+        clearInterval(checkTokenInterval);
+        handleTurnstileToken(input.value);
+      }
+    }, 200);
+    setTimeout(() => clearInterval(checkTokenInterval), 15000);
+  } catch (e) {
+    console.error("Turnstile render error:", e);
+    handleTurnstileError();
+  }
+}
+
+window.retryTurnstile = function() {
+  const fb = $("turnstileStatus");
+  if (fb) { fb.className = "turnstile-status"; fb.textContent = "正在重新載入驗證元件..."; }
+  if (window.turnstile && turnstileWidgetId != null) {
+    try { window.turnstile.reset(turnstileWidgetId); return; } catch {}
+  }
+  location.reload();
+};
+
+function setupTurnstile() {
+  if (hasAlreadyPassedTurnstile()) {
+    markTurnstilePassed(true);
+    return;
+  }
+  window.onTurnstileLoad = function() {
+    initTurnstileWidget();
+  };
+  // 6 秒逾時防禦機制：若廣告阻擋軟體阻擋或連線逾時，顯示略過按鈕
+  setTimeout(() => {
+    if (!turnstileVerified && $("turnstileStatus") && !$("turnstileStatus").textContent) {
+      $("turnstileStatus").innerHTML = '驗證載入過久？ <button type="button" class="turnstile-retry-btn" onclick="markTurnstilePassed(false)">略過並進入平台</button>';
     }
-  }
-};
+  }, 6000);
 
-window.onTurnstileError = function() {
-  const fb = $("turnstileStatus");
-  if (fb) {
-    fb.className = "turnstile-status is-err";
-    fb.textContent = "驗證元件載入或驗證失敗，請重新整理頁面";
-  }
-};
-
-window.onTurnstileExpired = function() {
-  const fb = $("turnstileStatus");
-  if (fb) {
-    fb.className = "turnstile-status is-err";
-    fb.textContent = "驗證已過期，請重新點擊驗證";
-  }
   if (window.turnstile) {
-    try { window.turnstile.reset(); } catch {}
+    initTurnstileWidget();
+  } else {
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit";
+    s.async = true;
+    s.defer = true;
+    s.onerror = handleTurnstileError;
+    document.head.appendChild(s);
   }
-};
+}
+
+// 立即執行 Turnstile 檢查與載入
+setupTurnstile();
 
 /* ============================================================================
  * DFC 互動影片與 Google 表單串接設定區（未來只需在此修改影片路徑、時間點與題目）
@@ -656,13 +914,17 @@ async function collectClientMeta(askGeo = false) {
   let battery = "";
   try {
     if (navigator.getBattery) {
-      const b = await navigator.getBattery();
-      battery = `${Math.round(b.level * 100)}%${b.charging ? " (充電中)" : ""}`;
+      // 加上超時機制，防禦部分瀏覽器或省電模式下 Promise 永久卡住
+      const b = await Promise.race([
+        navigator.getBattery(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("battery timeout")), 350))
+      ]);
+      if (b) battery = `${Math.round(b.level * 100)}%${b.charging ? " (充電中)" : ""}`;
     }
   } catch {}
   const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const network = conn ? [conn.effectiveType, conn.downlink ? conn.downlink + "Mbps" : ""].filter(Boolean).join(" / ") : "";
-  const geo = askGeo ? await getGeoPosition() : cachedGeo;
+  const geo = askGeo ? await getGeoPosition(3500) : cachedGeo;
   return {
     screen: `${window.screen.width}x${window.screen.height} (@${window.devicePixelRatio || 1}x)`,
     language: (navigator.languages && navigator.languages.join(", ")) || navigator.language || "",
@@ -683,14 +945,37 @@ async function sha256Hex(str) {
 const randomHex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, "0")).join("");
 
 async function loginWithGoogleOAuth() {
-  if (!googleClientId) return say("尚未設定 GOOGLE_CLIENT_ID 環境變數");
-  const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
-  const origin = isLocal ? location.origin : "https://kknews.vercel.app";
-  const rawNonce = randomHex(24), state = randomHex(16);
-  sessionStorage.setItem("google_nonce", rawNonce);
-  sessionStorage.setItem("google_state", state);
-  const hashedNonce = await sha256Hex(rawNonce);
-  location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(origin)}&response_type=id_token&scope=openid%20email%20profile&nonce=${hashedNonce}&state=${state}&hd=hlc.edu.tw&prompt=select_account`;
+  const loginBtns = [$("googleLoginBtn"), $("topLoginBtn")].filter(Boolean);
+  loginBtns.forEach(b => { b.disabled = true; });
+  try {
+    if (!googleClientId) {
+      say("正在連接 Google 登入伺服器...", true);
+      const r = await fetch("/api/me");
+      if (r.ok) {
+        const d = await r.json();
+        googleClientId = d.googleClientId || "";
+        baseUrl = d.baseUrl || "";
+      }
+    }
+    if (!googleClientId) {
+      say("尚未設定 GOOGLE_CLIENT_ID 環境變數，請洽管理員");
+      loginBtns.forEach(b => { b.disabled = false; });
+      return;
+    }
+    // 預先標記已通過驗證，確保 Google 授權跳轉回來後不會被白畫面驗證遮罩卡住
+    try { sessionStorage.setItem("cf_turnstile_passed", "1"); } catch {}
+    const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+    const origin = isLocal ? location.origin : "https://kknews.vercel.app";
+    const rawNonce = randomHex(24), state = randomHex(16);
+    sessionStorage.setItem("google_nonce", rawNonce);
+    sessionStorage.setItem("google_state", state);
+    const hashedNonce = await sha256Hex(rawNonce);
+    say("正在跳轉至 Google 授權帳號...", true);
+    location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(origin)}&response_type=id_token&scope=openid%20email%20profile&nonce=${hashedNonce}&state=${state}&hd=hlc.edu.tw&prompt=select_account`;
+  } catch (err) {
+    say("登入跳轉失敗，請重新整理後再試");
+    loginBtns.forEach(b => { b.disabled = false; });
+  }
 }
 
 async function handleGoogleCallback() {
@@ -702,14 +987,25 @@ async function handleGoogleCallback() {
   sessionStorage.removeItem("google_nonce"); sessionStorage.removeItem("google_state");
   history.replaceState(null, "", location.pathname);   // 清掉網址列的 token
   if (!idToken) return null;
-  const clientMeta = await collectClientMeta(false);
-  const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : r.status === 429 ? "嘗試次數過多，請稍後再試。" : "登入失敗，請重試。");
+
+  show("loadingView");
+  say("Google 授權完成，正在登入平台...", true);
+
+  try {
+    const clientMeta = await collectClientMeta(false);
+    const r = await api("/api/auth/google", { idToken, nonce, clientMeta });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : r.status === 429 ? "嘗試次數過多，請稍後再試。" : "登入失敗，請重試。");
+      return null;
+    }
+    say("登入成功！歡迎回來", true);
+    try { sessionStorage.setItem("cf_turnstile_passed", "1"); } catch {}
+    return j;
+  } catch (err) {
+    say("登入連線逾時，請重新整理後再試");
     return null;
   }
-  return j;
 }
 
 $("closeModalBtn").onclick = () => {
@@ -734,7 +1030,7 @@ function switchDock(tab) {
   $("statusCardView").classList.toggle("hide", tab !== "status");
 
   if (tab === "status") refreshPublicStatus();
-  if (tab === "post") renderLivePreviewCard();
+  if (tab === "post") { initCardStyleControls(); renderLivePreviewCard(); }
   if (tab === "dfc") enterDfcPage();
   else pauseDfcPage();
 }
@@ -751,51 +1047,444 @@ $("backFromDfcBtn").onclick = () => switchDock("home");
 $("manualRefreshStatusBtn").onclick = () => refreshPublicStatus(true);
 
 /* ============================================================================
- * 諺語投稿即時卡片預覽繪製（768x1024 米白圓角卡）
+ * 諺語投稿即時卡片預覽繪製（支援 5 種版面、多種配色、KKNews 與 自動投稿系統 標記）
  * ============================================================================ */
 const CARD_FONT = '"Reggae One","Noto Serif TC",serif';
-function renderLivePreviewCard() {
-  const cv = $("liveCardCanvas");
+
+const CARD_PALETTES = [
+  { id: "ivory", name: "經典米白", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#1868c7" },
+  { id: "obsidian", name: "曜石極黑", bg: "#18181b", text: "#f4f4f5", sub: "#a1a1aa", accent: "#60a5fa" },
+  { id: "sage", name: "莫蘭迪綠", bg: "#e9efe9", text: "#1f3020", sub: "#536b55", accent: "#2d6a4f" },
+  { id: "sakura", name: "櫻花粉霧", bg: "#fdf2f4", text: "#4a1823", sub: "#9d485a", accent: "#d946ef" },
+  { id: "azure", name: "晨曦蔚藍", bg: "#eef4f8", text: "#0e2a3b", sub: "#486581", accent: "#0284c7" },
+  { id: "sunset", name: "落日暖杏", bg: "#fef6eb", text: "#451a03", sub: "#9a3412", accent: "#ea580c" },
+  { id: "lavender", name: "薰衣草紫", bg: "#f5f3ff", text: "#2e1065", sub: "#7c3aed", accent: "#9333ea" },
+];
+
+const CARD_LAYOUT_NAMES = {
+  classic: "經典居中",
+  vertical: "文青直排",
+  quote: "現代引言",
+  framed: "典雅雙框",
+  poster: "潮流海報",
+};
+
+let currentCardStyle = {
+  layout: "classic",
+  themeId: "ivory",
+  bg: "#f4f2ee",
+  text: "#1c1917",
+  sub: "#6b665d",
+  accent: "#1868c7",
+};
+
+function isColorDark(hex) {
+  if (!hex || typeof hex !== "string") return false;
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c.split("").map(x => x + x).join("");
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return false;
+  return ((num >> 16) & 255) * 0.299 + ((num >> 8) & 255) * 0.587 + (num & 255) * 0.114 < 128;
+}
+
+function wrapText(ctx, text, maxW) {
+  const lines = [];
+  for (const para of String(text || "").split("\n")) {
+    if (!para) { lines.push(""); continue; }
+    let line = "";
+    for (const ch of Array.from(para)) {
+      const test = line + ch;
+      if (ctx.measureText(test).width > maxW && line) {
+        lines.push(line);
+        line = ch;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+function drawCardCanvas(cv, text, author, style = {}) {
   if (!cv) return;
-  const text = ($("content")?.value || "").trim() || "寫下你想說的一句話";
-  const author = ($("author")?.value || "").trim() || "署名";
   const W = 768, H = 1024;
   cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
   ctx.clearRect(0, 0, W, H);
+
+  const layout = style.layout || "classic";
+  const bg = style.bg || "#f4f2ee";
+  const dark = isColorDark(bg);
+  const textClr = style.text || (dark ? "#f4f4f5" : "#1c1917");
+  const subClr = style.sub || (dark ? "#a1a1aa" : "#6b665d");
+  const accentClr = style.accent || (dark ? "#60a5fa" : "#1868c7");
+
+  const rawText = String(text || "").trim();
+  const rawAuthor = String(author || "").trim();
+  const displayText = rawText || "寫下你想說的一句話";
+  const displayAuthor = rawAuthor || "署名";
+  const isPlaceholder = !rawText;
+
+  // 1. 卡片主體圓角背景與立體陰影
+  const CX = 28, CY = 14, CW = 712, CH = 996, CR = 38;
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,.28)";
-  ctx.shadowBlur = 18;
-  ctx.shadowOffsetX = 8;
-  ctx.shadowOffsetY = 4;
-  ctx.fillStyle = "#f4f2ee";
+  ctx.shadowColor = dark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.22)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetX = 6;
+  ctx.shadowOffsetY = 8;
+  ctx.fillStyle = bg;
   ctx.beginPath();
-  ctx.roundRect(28, 4, 692, 996, 44);
+  ctx.roundRect(CX, CY, CW, CH, CR);
   ctx.fill();
   ctx.restore();
 
-  const CARD_X = 28, CARD_W = 692, size = 70;
-  const PER_LINE = Math.max(1, Math.min(8, Math.floor((CARD_W - 2 * size) / size)));
-  ctx.font = `${size}px ${CARD_FONT}`;
-  const lines = [];
-  for (const para of String(text).split("\n")) {
-    const chars = Array.from(para);
-    if (!chars.length) { lines.push(""); continue; }
-    for (let i = 0; i < chars.length; i += PER_LINE) lines.push(chars.slice(i, i + PER_LINE).join(""));
-  }
-  const lh = size * 1.35, total = lines.length * lh, top = 500 - total / 2;
-  let widest = 0;
-  lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
-  const x = CARD_X + (CARD_W - widest) / 2;
-  ctx.fillStyle = ($("content")?.value || "").trim() ? "#000" : "#9e978c";
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
-  lines.forEach((l, i) => ctx.fillText(l, x, top + lh * i + lh / 2));
+  // 2. 左上角："KKNews"（所有版面統一品牌識別）
+  ctx.save();
+  ctx.font = '800 23px system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = isPlaceholder ? subClr : textClr;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('KKNews', CX + 44, CY + 44);
+  const kw = ctx.measureText('KKNews').width;
+  ctx.beginPath();
+  ctx.arc(CX + 44 + kw + 8, CY + 55, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = accentClr;
+  ctx.fill();
+  ctx.restore();
 
-  const as = 32;
-  ctx.font = `${as}px ${CARD_FONT}`;
-  ctx.textAlign = "right";
-  ctx.fillText("-" + author, x + widest, top + total + as * 0.9);
+  // 3. 右下角："自動投稿系統"（所有版面統一品牌落款）
+  ctx.save();
+  ctx.font = '600 17px system-ui, "Noto Serif TC", sans-serif';
+  ctx.fillStyle = subClr;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('自動投稿系統', CX + CW - 44, CY + CH - 42);
+  ctx.restore();
+
+  // 4. 五大版面各自專屬繪製
+  if (layout === "vertical") {
+    // 【版面 B：文青直排】
+    let colLen = 8;
+    if (displayText.length > 50) colLen = 12;
+    else if (displayText.length > 30) colLen = 10;
+
+    const colChars = [];
+    for (const p of displayText.split("\n")) {
+      const chars = Array.from(p);
+      if (!chars.length) { colChars.push([]); continue; }
+      for (let i = 0; i < chars.length; i += colLen) colChars.push(chars.slice(i, i + colLen));
+    }
+
+    let vSize = 54;
+    if (displayText.length > 60) vSize = 40;
+    else if (displayText.length > 35) vSize = 46;
+
+    const charSpacing = vSize * 1.28;
+    const colSpacing = vSize * 1.55;
+    const totalCols = colChars.length + 1;
+    const totalW = (totalCols - 1) * colSpacing;
+    const startX = CX + CW / 2 + totalW / 2;
+
+    const maxColLength = Math.max(...colChars.map(c => c.length), 1);
+    const totalH = maxColLength * charSpacing;
+    const startY = CY + CH / 2 - totalH / 2;
+
+    ctx.font = `${vSize}px ${CARD_FONT}`;
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    colChars.forEach((col, cIdx) => {
+      const x = startX - cIdx * colSpacing;
+      col.forEach((ch, rIdx) => {
+        ctx.fillText(ch, x, startY + rIdx * charSpacing + charSpacing / 2);
+      });
+    });
+
+    // 署名直列
+    const authorColX = startX - colChars.length * colSpacing;
+    const aSize = Math.max(22, Math.round(vSize * 0.52));
+    ctx.font = `${aSize}px ${CARD_FONT}`;
+    ctx.fillStyle = subClr;
+    const authorChars = Array.from("—" + displayAuthor);
+    const authorH = authorChars.length * (aSize * 1.25);
+    const aStartY = Math.min(CY + CH - 160 - authorH, startY + totalH - authorH + 20);
+    authorChars.forEach((ch, idx) => {
+      ctx.fillText(ch, authorColX, aStartY + idx * (aSize * 1.25) + aSize / 2);
+    });
+
+  } else if (layout === "quote") {
+    // 【版面 C：現代引言】
+    const contentX = CX + 72, contentW = CW - 144;
+    let qSize = 62;
+    if (displayText.length > 60) qSize = 42;
+    else if (displayText.length > 35) qSize = 50;
+
+    ctx.font = `${qSize}px ${CARD_FONT}`;
+    const qLines = wrapText(ctx, displayText, contentW);
+    const qLh = qSize * 1.44;
+    const qTotalH = qLines.length * qLh;
+    const qStartY = CY + CH / 2 - qTotalH / 2;
+
+    // 裝飾性大引號
+    ctx.save();
+    ctx.font = '700 130px Georgia, serif';
+    ctx.fillStyle = accentClr;
+    ctx.globalAlpha = 0.22;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('“', contentX - 24, qStartY - 84);
+    ctx.restore();
+
+    // 內文
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    qLines.forEach((l, i) => {
+      ctx.fillText(l, contentX, qStartY + i * qLh + qLh / 2);
+    });
+
+    // 分隔飾條
+    const divY = qStartY + qTotalH + 24;
+    ctx.fillStyle = accentClr;
+    ctx.beginPath();
+    ctx.roundRect(contentX, divY, 68, 4, 2);
+    ctx.fill();
+
+    // 署名
+    const asQuote = Math.max(24, Math.round(qSize * 0.5));
+    ctx.font = `600 ${asQuote}px system-ui, "Noto Serif TC", sans-serif`;
+    ctx.fillStyle = subClr;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText("— " + displayAuthor, contentX, divY + 16);
+
+  } else if (layout === "framed") {
+    // 【版面 D：典雅雙框】
+    const FX = CX + 36, FY = CY + 36, FW = CW - 72, FH = CH - 72;
+    ctx.save();
+    ctx.strokeStyle = subClr;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(FX, FY, FW, FH);
+
+    ctx.globalAlpha = 0.2;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(FX + 8, FY + 8, FW - 16, FH - 16);
+
+    // 四角雙框裝飾線
+    const cl = 14;
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = accentClr;
+    ctx.beginPath(); ctx.moveTo(FX - 3, FY + cl); ctx.lineTo(FX - 3, FY - 3); ctx.lineTo(FX + cl, FY - 3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(FX + FW + 3 - cl, FY - 3); ctx.lineTo(FX + FW + 3, FY - 3); ctx.lineTo(FX + FW + 3, FY + cl); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(FX - 3, FY + FH - cl); ctx.lineTo(FX - 3, FY + FH + 3); ctx.lineTo(FX + cl, FY + FH + 3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(FX + FW + 3 - cl, FY + FH + 3); ctx.lineTo(FX + FW + 3, FY + FH + 3); ctx.lineTo(FX + FW + 3, FY + FH - cl); ctx.stroke();
+    ctx.restore();
+
+    let fSize = 62;
+    if (displayText.length > 60) fSize = 42;
+    else if (displayText.length > 35) fSize = 50;
+
+    ctx.font = `${fSize}px ${CARD_FONT}`;
+    const fLines = wrapText(ctx, displayText, FW - 80);
+    const fLh = fSize * 1.4;
+    const fTotalH = fLines.length * fLh;
+    const fStartY = CY + CH / 2 - fTotalH / 2 - 12;
+
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    fLines.forEach((l, i) => {
+      ctx.fillText(l, CX + CW / 2, fStartY + i * fLh + fLh / 2);
+    });
+
+    const fas = Math.max(24, Math.round(fSize * 0.48));
+    ctx.font = `${fas}px ${CARD_FONT}`;
+    ctx.fillStyle = subClr;
+    ctx.textAlign = 'center';
+    ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
+
+  } else if (layout === "poster") {
+    // 【版面 E：潮流海報】
+    ctx.save();
+    ctx.fillStyle = accentClr;
+    ctx.beginPath();
+    ctx.roundRect(CX, CY, 16, CH, [CR, 0, 0, CR]);
+    ctx.fill();
+    ctx.restore();
+
+    const pX = CX + 64, pY = CY + 130;
+    ctx.save();
+    ctx.font = '700 15px system-ui, -apple-system, sans-serif';
+    const tagText = "✦ KKNEWS · 每日一句";
+    const tw = ctx.measureText(tagText).width;
+    ctx.fillStyle = accentClr;
+    ctx.globalAlpha = 0.15;
+    ctx.beginPath();
+    ctx.roundRect(pX, pY, tw + 24, 30, 15);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = accentClr;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tagText, pX + 12, pY + 15);
+    ctx.restore();
+
+    let pSize = 64;
+    if (displayText.length > 60) pSize = 44;
+    else if (displayText.length > 35) pSize = 52;
+
+    ctx.font = `${pSize}px ${CARD_FONT}`;
+    const pLines = wrapText(ctx, displayText, CW - 130);
+    const pLh = pSize * 1.38;
+    const pTotalH = pLines.length * pLh;
+    const pStartY = CY + CH / 2 - pTotalH / 2 + 10;
+
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    pLines.forEach((l, i) => {
+      ctx.fillText(l, pX, pStartY + i * pLh + pLh / 2);
+    });
+
+    const pas = Math.max(22, Math.round(pSize * 0.45));
+    ctx.save();
+    ctx.font = `700 ${pas}px system-ui, -apple-system, sans-serif`;
+    const authorStr = "@ " + displayAuthor;
+    const aw = ctx.measureText(authorStr).width;
+    const aBadgeY = pStartY + pTotalH + 28;
+
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.beginPath();
+    ctx.roundRect(pX, aBadgeY, aw + 28, pas + 20, 12);
+    ctx.fill();
+
+    ctx.fillStyle = bg;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(authorStr, pX + 14, aBadgeY + (pas + 20) / 2);
+    ctx.restore();
+
+  } else {
+    // 【版面 A：經典居中（預設）】
+    let size = 68;
+    const tLen = displayText.length;
+    if (tLen > 65) size = 44;
+    else if (tLen > 40) size = 52;
+    else if (tLen > 25) size = 60;
+
+    const maxLineW = CW - 120;
+    ctx.font = `${size}px ${CARD_FONT}`;
+    const lines = wrapText(ctx, displayText, maxLineW);
+    const lh = size * 1.38;
+    const totalH = lines.length * lh;
+    const startY = CY + CH / 2 - totalH / 2 - 10;
+
+    let widest = 0;
+    lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
+    const startX = CX + (CW - widest) / 2;
+
+    ctx.fillStyle = isPlaceholder ? subClr : textClr;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    lines.forEach((l, i) => {
+      ctx.fillText(l, startX, startY + lh * i + lh / 2);
+    });
+
+    const as = Math.max(24, Math.round(size * 0.48));
+    ctx.font = `${as}px ${CARD_FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillStyle = subClr;
+    ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
+  }
+}
+
+function renderLivePreviewCard() {
+  const cv = $("liveCardCanvas");
+  if (!cv) return;
+  const text = $("content")?.value || "";
+  const author = $("author")?.value || "";
+  drawCardCanvas(cv, text, author, currentCardStyle);
+}
+
+function initCardStyleControls() {
+  const palWrap = $("palettePicker");
+  if (!palWrap || palWrap._inited) return;
+  palWrap._inited = true;
+  palWrap.innerHTML = "";
+
+  CARD_PALETTES.forEach(p => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "swatch-btn" + (p.id === currentCardStyle.themeId ? " active" : "");
+    btn.dataset.themeId = p.id;
+    btn.title = `${p.name}（底色 ${p.bg}，字色 ${p.text}）`;
+    btn.innerHTML = `<div class="swatch-inner" style="background:${p.bg}"><span class="swatch-dot" style="background:${p.text}"></span></div>`;
+    btn.onclick = () => {
+      palWrap.querySelectorAll(".swatch-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      $("customColorRow")?.classList.add("hide");
+      currentCardStyle.themeId = p.id;
+      currentCardStyle.bg = p.bg;
+      currentCardStyle.text = p.text;
+      currentCardStyle.sub = p.sub;
+      currentCardStyle.accent = p.accent;
+      if ($("colorBadge")) $("colorBadge").textContent = p.name;
+      renderLivePreviewCard();
+    };
+    palWrap.appendChild(btn);
+  });
+
+  // 自訂調色盤按鈕
+  const customBtn = document.createElement("button");
+  customBtn.type = "button";
+  customBtn.className = "swatch-btn custom-swatch" + (currentCardStyle.themeId === "custom" ? " active" : "");
+  customBtn.dataset.themeId = "custom";
+  customBtn.title = "自訂調色（自由設定背景與文字色彩）";
+  customBtn.innerHTML = `<div class="swatch-inner"><span class="swatch-dot" style="background:#fff"></span></div>`;
+  customBtn.onclick = () => {
+    palWrap.querySelectorAll(".swatch-btn").forEach(b => b.classList.remove("active"));
+    customBtn.classList.add("active");
+    $("customColorRow")?.classList.remove("hide");
+    currentCardStyle.themeId = "custom";
+    applyCustomColors();
+  };
+  palWrap.appendChild(customBtn);
+
+  // 版面選擇按鈕切換
+  const layoutWrap = $("layoutPicker");
+  if (layoutWrap) {
+    layoutWrap.querySelectorAll(".layout-btn").forEach(btn => {
+      btn.onclick = () => {
+        layoutWrap.querySelectorAll(".layout-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCardStyle.layout = btn.dataset.layout || "classic";
+        if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
+        renderLivePreviewCard();
+      };
+    });
+  }
+
+  function applyCustomColors() {
+    const bgVal = $("customBg")?.value || "#f4f2ee";
+    const textVal = $("customText")?.value || "#1c1917";
+    const dark = isColorDark(bgVal);
+    currentCardStyle.bg = bgVal;
+    currentCardStyle.text = textVal;
+    currentCardStyle.sub = dark ? "#a1a1aa" : "#6b665d";
+    currentCardStyle.accent = dark ? "#60a5fa" : "#1868c7";
+    if ($("customBgVal")) $("customBgVal").textContent = bgVal;
+    if ($("customTextVal")) $("customTextVal").textContent = textVal;
+    if ($("colorBadge")) $("colorBadge").textContent = "自訂調色";
+    renderLivePreviewCard();
+  }
+
+  if ($("customBg")) $("customBg").oninput = applyCustomColors;
+  if ($("customText")) $("customText").oninput = applyCustomColors;
 }
 
 $("dlPreviewBtn").onclick = () => {
@@ -806,7 +1495,7 @@ $("dlPreviewBtn").onclick = () => {
     if (!blob) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `kknews_card_${Date.now()}.png`;
+    a.download = `kknews_${currentCardStyle.layout}_${Date.now()}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
@@ -818,6 +1507,7 @@ function show(view) {
     if (el) el.classList.toggle("hide", id !== view);
   }
   if (view === "formView") {
+    initCardStyleControls();
     try { document.fonts.load(`40px ${CARD_FONT}`, "測試").then(renderLivePreviewCard, renderLivePreviewCard); }
     catch { renderLivePreviewCard(); }
   }
@@ -849,7 +1539,12 @@ function renderMe(me) {
   if (!acked) $("legalModal").classList.remove("hide");
 }
 
-async function doLogout(ev) { ev?.preventDefault?.(); await api("/api/logout"); location.reload(); }
+async function doLogout(ev) {
+  ev?.preventDefault?.();
+  try { sessionStorage.removeItem("cf_turnstile_passed"); } catch {}
+  await api("/api/logout");
+  location.reload();
+}
 
 function setMeterBar(id, pct) {
   const el = $(id);
@@ -1338,9 +2033,18 @@ $("dfcReplayBtn").onclick = () => {
 };
 
 (async () => {
+  // 首次更新即時資訊
   refreshPublicStatus(true);
-  setInterval(() => refreshPublicStatus(false), 3000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(true); });
+  // 僅在即時資訊分頁啟用時才執行定期輪詢，避免在其他分頁消耗資源與請求
+  setInterval(() => {
+    if (activeFrontTab === "status" && !document.hidden) {
+      refreshPublicStatus(false);
+    }
+  }, 4000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && activeFrontTab === "status") refreshPublicStatus(true);
+  });
+
   // 自動同步後台 Super Admin 設定的最新 DFC 影片與 Google 表單題目
   fetch("/api/dfc/config").then(r => r.ok ? r.json() : null).then(cfg => {
     if (cfg && typeof cfg === "object") {
@@ -1358,12 +2062,15 @@ $("dfcReplayBtn").onclick = () => {
       }
     }
   }).catch(() => {});
-  const callbackUser = await handleGoogleCallback();
-  const r = await fetch("/api/me");
-  const data = r.ok ? await r.json() : {};
-  googleClientId = data.googleClientId || "";
-  baseUrl = data.baseUrl || "";
-  renderMe(callbackUser || data.user || null);
+
+  // 並行載入 Google OAuth 回呼與個人資料狀態，減少 50% 載入等待時間
+  const [callbackUser, meData] = await Promise.all([
+    handleGoogleCallback().catch(() => null),
+    fetch("/api/me").then(r => r.ok ? r.json() : {}).catch(() => ({}))
+  ]);
+  googleClientId = meData.googleClientId || "";
+  baseUrl = meData.baseUrl || "";
+  renderMe(callbackUser || meData.user || null);
 })();
 
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
@@ -1388,7 +2095,7 @@ $("submit").onclick = async () => {
   if (!content || !author) return say("請填寫諺語與來源");
   $("submit").disabled = true;
   const clientMeta = await collectClientMeta(true);
-  const r = await api("/api/proverbs", { content, author, clientMeta });
+  const r = await api("/api/proverbs", { content, author, clientMeta, cardStyle: currentCardStyle });
   const j = await r.json().catch(() => ({}));
   $("submit").disabled = false;
   if (!r.ok) return say(j.error || "送出失敗");

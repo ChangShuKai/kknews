@@ -57,18 +57,26 @@ $("loginForm").onsubmit = async ev => {
   ev.preventDefault();
   sayErr("");
   $("btn").disabled = true;
-  const r = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Requested-With": "fetch", "X-Access-Key": k },
-    body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }),
-  });
-  if (r.ok) {
-    location.replace("/adminusercontrol");
-    return;
+  $("btn").textContent = "登入中...";
+  try {
+    const r = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch", "X-Access-Key": k },
+      body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }),
+    });
+    if (r.ok) {
+      location.replace("/adminusercontrol");
+      return;
+    }
+    const j = await r.json().catch(() => ({}));
+    $("btn").disabled = false;
+    $("btn").textContent = "登入後台";
+    sayErr(r.status === 429 ? "嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
+  } catch (err) {
+    $("btn").disabled = false;
+    $("btn").textContent = "登入後台";
+    sayErr("伺服器連線逾時，請再試一次");
   }
-  const j = await r.json().catch(() => ({}));
-  $("btn").disabled = false;
-  sayErr(r.status === 429 ? "嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
 };
 </script>
 </body>
