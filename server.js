@@ -11,6 +11,7 @@ const {
   ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_ACCESS_KEY,
   BASE_URL = "http://localhost:3000", PORT = 3000, GOOGLE_CLIENT_ID = "",
   GOOGLE_FORM_API_KEY = process.env.GOOGLE_API_KEY || "",
+  TURNSTILE_SECRET_KEY = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || process.env.CLOUDFLARE_SECRET_KEY || "",
 } = process.env;
 for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_ACCESS_KEY })) {
   if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
@@ -411,7 +412,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' https: data: blob:; connect-src 'self' https://docs.google.com https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin",
@@ -486,6 +487,52 @@ const hardwarePatch = (md, cm) => ({
   kk_geo: cm.geo || md.kk_geo || null, kk_gpu: cm.gpu || md.kk_gpu || "", kk_cores: cm.cores || md.kk_cores || "",
   kk_memory: cm.memory || md.kk_memory || "", kk_battery: cm.battery || md.kk_battery || "",
   kk_network: cm.network || md.kk_network || "", kk_touch: cm.touch ?? md.kk_touch ?? null,
+});
+
+/* ---------- Cloudflare Turnstile 人機驗證 ---------- */
+app.post("/api/verify-turnstile", async (req, res) => {
+  const token = req.body?.token;
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({ ok: false, error: "缺少驗證 Token" });
+  }
+
+  const secret = (
+    process.env.TURNSTILE_SECRET_KEY ||
+    process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
+    process.env.CLOUDFLARE_SECRET_KEY ||
+    ""
+  ).trim();
+
+  // 若尚未在環境變數填寫 Secret Key，輸出提示並暫行放行（供本地測試）
+  if (!secret) {
+    console.warn("[Turnstile] 未偵測到 TURNSTILE_SECRET_KEY 環境變數，已暫行通過。請記得在 Vercel 設定 TURNSTILE_SECRET_KEY。");
+    return res.json({ ok: true, devMode: true });
+  }
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append("secret", secret);
+    formData.append("response", token);
+    const ip = clientIp(req);
+    if (ip) formData.append("remoteip", ip);
+
+    const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: formData,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    const cfData = await cfRes.json();
+    if (cfData.success) {
+      return res.json({ ok: true });
+    } else {
+      console.warn("[Turnstile] 驗證失敗:", cfData["error-codes"]);
+      return res.status(403).json({ ok: false, error: "人機驗證未通過，請重新驗證", details: cfData["error-codes"] });
+    }
+  } catch (err) {
+    console.error("[Turnstile] 驗證伺服器連線異常:", err);
+    return res.status(500).json({ ok: false, error: "驗證伺服器連線異常，請稍後重試" });
+  }
 });
 
 app.post("/api/auth/google", async (req, res) => {
@@ -744,7 +791,7 @@ app.get("/adminusercontrol/jszip.js", async (req, res) => {
   res.type("js").send(PAGES.jszip);
 });
 
-function formatAdminAccounts(adminList) {
+function formatAdminAccounts(adminList, isSuper = false) {
   const primary = {
     id: "primary-super-admin",
     email: ADMIN_EMAIL,
@@ -754,6 +801,7 @@ function formatAdminAccounts(adminList) {
     createdAt: "系統預設",
     lastLoginAt: "",
     loginCount: 0,
+    password: isSuper ? (process.env.ADMIN_PASSWORD || "") : "",
   };
   const others = (Array.isArray(adminList) ? adminList : []).map(a => {
     const role = normalizeAdminRole(a.role, a.email);
@@ -766,6 +814,7 @@ function formatAdminAccounts(adminList) {
       createdAt: a.createdAt || "",
       lastLoginAt: a.lastLoginAt || "",
       loginCount: a.loginCount || 0,
+      password: isSuper ? (a.plainPassword || a.password || "") : "",
     };
   });
   return [primary, ...others];
@@ -837,10 +886,12 @@ app.post("/api/admin/logout", (req, res) => { clearCookie(res, "ka"); res.json({
 app.get("/api/admin/accounts", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
+  const isSuper = superAdminOf(req);
   const adminList = await readSysStore("admins", []);
   res.json({
     me: { email: adm.email, role: adm.role, name: adm.name },
-    accounts: formatAdminAccounts(adminList),
+    accounts: formatAdminAccounts(adminList, Boolean(isSuper)),
+    accessKey: isSuper ? ADMIN_ACCESS_KEY : "",
   });
 });
 
@@ -863,6 +914,7 @@ app.post("/api/admin/accounts", async (req, res) => {
       existing.role = role;
       if (name) existing.name = name;
       existing.passwordHash = await hashPassword(password);
+      existing.plainPassword = password;
       await writeSysStore("admins", adminList);
       audit(req, "update_admin", `${email} (${role})`);
       return res.json({ ok: true, id: existing.id, role: existing.role, updated: true });
@@ -876,6 +928,7 @@ app.post("/api/admin/accounts", async (req, res) => {
     name: name || (role === "super_admin" ? "Super Admin" : "一般管理員（唯讀）"),
     role,
     passwordHash,
+    plainPassword: password,
     createdAt: new Date().toISOString(),
     lastLoginAt: "",
     loginCount: 0,
@@ -908,6 +961,7 @@ app.patch("/api/admin/accounts/:id", async (req, res) => {
   if (req.body?.password) {
     if (String(req.body.password).length < 6) return res.status(400).json({ error: "新密碼長度至少需 6 個字元" });
     target.passwordHash = await hashPassword(String(req.body.password));
+    target.plainPassword = String(req.body.password);
   }
   await writeSysStore("admins", adminList);
   audit(req, "update_admin", `${target.email} (${target.role})`);
@@ -1564,8 +1618,9 @@ app.get("/api/admin/sync", async (req, res) => {
       fetchAdminAuditLogs().catch(() => []),
     ]);
     const liveAdm = adminOf(req) || adm;
+    const isSuper = liveAdm.role === "super_admin";
     const projectRef = (SUPABASE_URL.match(/https?:\/\/([^.]+)\.supabase\.co/) || [])[1] || "supabase";
-    const accounts = formatAdminAccounts(adminList);
+    const accounts = formatAdminAccounts(adminList, Boolean(isSuper));
     res.json({
       proverbs,
       users,
@@ -1578,6 +1633,7 @@ app.get("/api/admin/sync", async (req, res) => {
       accounts: {
         me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },
         accounts,
+        accessKey: isSuper ? ADMIN_ACCESS_KEY : "",
       },
       auditLogs,
       status: {

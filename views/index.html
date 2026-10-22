@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   body.with-topbar{min-height:100vh;display:flex;flex-direction:column}
   .top-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -148,9 +149,103 @@
   .kpi-box small{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
   .kpi-box b{font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
   .sync-note{margin-top:14px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+  /* ===== Cloudflare Turnstile 白畫面驗證遮罩 ===== */
+  body.turnstile-locked { overflow: hidden !important; }
+  .turnstile-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #ffffff;
+    z-index: 99999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .4s ease, visibility .4s ease;
+  }
+  .turnstile-overlay.turnstile-passed {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .turnstile-modal {
+    width: min(440px, 100%);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 38px 30px 32px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: up .35s ease both;
+  }
+  .turnstile-shield-ico {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #f4f4f5;
+    color: #18181b;
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+  }
+  .turnstile-title {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #09090b;
+    letter-spacing: -.01em;
+  }
+  .turnstile-sub {
+    margin: 0 0 22px;
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.5;
+  }
+  .turnstile-widget-wrap {
+    min-height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .turnstile-status {
+    font-size: 13px;
+    min-height: 20px;
+    color: #71717a;
+    font-weight: 600;
+    transition: color .2s;
+  }
+  .turnstile-status.is-err { color: #ef4444; }
+  .turnstile-status.is-ok { color: #10b981; }
 </style>
 </head>
-<body class="with-topbar">
+<body class="with-topbar turnstile-locked">
+<!-- 全螢幕 Cloudflare Turnstile 白畫面驗證遮罩 -->
+<div id="turnstileOverlay" class="turnstile-overlay" aria-modal="true" role="dialog">
+  <div class="turnstile-modal">
+    <div class="turnstile-shield-ico">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+    </div>
+    <h2 class="turnstile-title">正在驗證您是人類</h2>
+    <p class="turnstile-sub">KKNews 互動平台安全檢查，請完成下方驗證以繼續</p>
+    <div class="turnstile-widget-wrap">
+      <div id="cfTurnstileWidget" class="cf-turnstile" data-sitekey="0x4AAAAAAFgVNFqTxBsUBevW" data-callback="onTurnstileSuccess" data-error-callback="onTurnstileError" data-expired-callback="onTurnstileExpired" data-theme="light"></div>
+    </div>
+    <div id="turnstileStatus" class="turnstile-status"></div>
+  </div>
+</div>
 <!-- 頂部導覽列：左側品牌、中間 Dock 欄（僅保留主頁與即時資訊）、右上角帳號區 -->
 <header class="top-header">
   <div class="brand" id="brandHomeBtn" title="返回主頁"><img src="/icon.svg" alt="">KKNEWS</div>
@@ -405,6 +500,64 @@
 const $ = id => document.getElementById(id);
 function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert"; }
 const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
+
+/* ===== Cloudflare Turnstile 人機驗證回調 ===== */
+let turnstileVerified = false;
+window.onTurnstileSuccess = async function(token) {
+  const fb = $("turnstileStatus");
+  if (fb) {
+    fb.className = "turnstile-status";
+    fb.textContent = "驗證中，正在向伺服器確認身分...";
+  }
+  try {
+    const res = await api("/api/verify-turnstile", { token });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      turnstileVerified = true;
+      if (fb) {
+        fb.className = "turnstile-status is-ok";
+        fb.textContent = "驗證成功！即將進入平台...";
+      }
+      setTimeout(() => {
+        const ov = $("turnstileOverlay");
+        if (ov) ov.classList.add("turnstile-passed");
+        document.body.classList.remove("turnstile-locked");
+      }, 400);
+    } else {
+      if (fb) {
+        fb.className = "turnstile-status is-err";
+        fb.textContent = data.error || "人機驗證未通過，請重新驗證";
+      }
+      if (window.turnstile) {
+        try { window.turnstile.reset(); } catch {}
+      }
+    }
+  } catch (err) {
+    if (fb) {
+      fb.className = "turnstile-status is-err";
+      fb.textContent = "驗證伺服器連線異常，請稍後重試";
+    }
+  }
+};
+
+window.onTurnstileError = function() {
+  const fb = $("turnstileStatus");
+  if (fb) {
+    fb.className = "turnstile-status is-err";
+    fb.textContent = "驗證元件載入或驗證失敗，請重新整理頁面";
+  }
+};
+
+window.onTurnstileExpired = function() {
+  const fb = $("turnstileStatus");
+  if (fb) {
+    fb.className = "turnstile-status is-err";
+    fb.textContent = "驗證已過期，請重新點擊驗證";
+  }
+  if (window.turnstile) {
+    try { window.turnstile.reset(); } catch {}
+  }
+};
 
 /* ============================================================================
  * DFC 互動影片與 Google 表單串接設定區（未來只需在此修改影片路徑、時間點與題目）
