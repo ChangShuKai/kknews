@@ -1155,6 +1155,13 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   const emailEntryId = str(body.emailEntryId || "", 60).trim();
   const submitMode = body.submitMode === "each" ? "each" : "end";
 
+  if (googleFormUrl && !googleFormUrl.includes("YOUR_GOOGLE_FORM") && !isAllowedGoogleUrl(googleFormUrl)) {
+    return res.status(400).json({ error: "不安全的 Google 表單網址：僅支援 Google 官方網域 (docs.google.com, forms.googleapis.com, script.google.com)" });
+  }
+  if (csvUrl && !isAllowedGoogleUrl(csvUrl, ["docs.google.com", "script.google.com", "sheets.googleapis.com"])) {
+    return res.status(400).json({ error: "不安全的 Google 試算表 CSV 網址：僅支援 Google 官方網域 (docs.google.com, script.google.com, sheets.googleapis.com)" });
+  }
+
   let checkpoints = [];
   if (Array.isArray(body.checkpoints)) {
     checkpoints = body.checkpoints.map((cp, idx) => ({

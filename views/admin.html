@@ -423,8 +423,9 @@
     </div>
   </div>
 
-  <!-- 頂部中央 Dock 導覽 -->
-  <nav class="dock-bar" aria-label="後台導覽">
+  <!-- 頂部中央 Apple 液態玻璃 Dock 導覽 -->
+  <nav class="dock-bar" id="adminDock" aria-label="後台導覽">
+    <div class="dock-glider" id="adminDockGlider"></div>
     <button type="button" class="dock-item active" id="dockPosts">
       <span>投稿管理</span>
       <span class="dock-badge" id="pCount">0</span>
@@ -903,16 +904,26 @@ function isColorDark(hex) {
   return ((num >> 16) & 255) * 0.299 + ((num >> 8) & 255) * 0.587 + (num & 255) * 0.114 < 128;
 }
 
+const NO_LINE_START = new Set("，。、！？；：）》」』】〕…,.!?:;)]}");
+
 function wrapText(ctx, text, maxW) {
   const lines = [];
   for (const para of String(text || "").split("\n")) {
     if (!para) { lines.push(""); continue; }
     let line = "";
-    for (const ch of Array.from(para)) {
+    const chars = Array.from(para);
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
       const test = line + ch;
       if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line);
-        line = ch;
+        if (NO_LINE_START.has(ch) && line.length > 1) {
+          const lastChar = line.slice(-1);
+          lines.push(line.slice(0, -1));
+          line = lastChar + ch;
+        } else {
+          lines.push(line);
+          line = ch;
+        }
       } else {
         line = test;
       }
@@ -1257,6 +1268,7 @@ async function load(forceRender = false) {
     $("uCount").textContent = users.length;
     $("fCount").textContent = dfcResponses.length;
     $("aCount").textContent = adminAccounts.length;
+    if (typeof updateAdminDockGlider === "function") updateAdminDockGlider(activeTab, false);
     const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
     $("syncText").textContent = `自動重整 · ${nowStr}`;
 
@@ -1332,6 +1344,7 @@ function matchSearch(fields) {
 async function render() {
   const filtered = rows.map(unpackRow).filter(r => matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info]));
   $("pCount").textContent = searchQuery ? `${filtered.length}/${rows.length}` : rows.length;
+  if (typeof updateAdminDockGlider === "function") updateAdminDockGlider(activeTab, false);
   const grid = $("grid"); grid.innerHTML = "";
   if (!filtered.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</div>`;
@@ -2132,6 +2145,37 @@ document.addEventListener("click", ev => {
   if (z) openLightbox(z.getAttribute("data-zoom"));
 });
 
+/* Apple 液態玻璃 Dock 滑塊控制器 */
+const DOCK_BTNS = {
+  posts: $("dockPosts"),
+  users: $("dockUsers"),
+  forms: $("dockForms"),
+  admins: $("dockAdmins"),
+  status: $("dockStatus")
+};
+
+function updateAdminDockGlider(tab, animate = true) {
+  const glider = $("adminDockGlider");
+  const container = $("adminDock");
+  const btn = DOCK_BTNS[tab] || $("dockPosts");
+  if (!glider || !container || !btn) return;
+  const cRect = container.getBoundingClientRect();
+  const bRect = btn.getBoundingClientRect();
+  if (bRect.width === 0) return;
+
+  const leftOffset = bRect.left - cRect.left - container.clientLeft;
+  const width = bRect.width;
+
+  if (!animate) {
+    glider.style.transition = "none";
+  } else {
+    glider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+  }
+  glider.style.transform = `translate3d(${leftOffset}px, 0, 0)`;
+  glider.style.width = `${width}px`;
+  glider.style.opacity = "1";
+}
+
 function switchAdminDock(tab) {
   activeTab = tab;
   $("dockPosts").classList.toggle("active", tab === "posts");
@@ -2139,6 +2183,8 @@ function switchAdminDock(tab) {
   $("dockForms").classList.toggle("active", tab === "forms");
   $("dockAdmins").classList.toggle("active", tab === "admins");
   $("dockStatus").classList.toggle("active", tab === "status");
+
+  updateAdminDockGlider(tab, true);
 
   $("grid").classList.toggle("hide", tab !== "posts");
   $("usersGrid").classList.toggle("hide", tab !== "users");
@@ -2230,6 +2276,13 @@ $("size").oninput = () => {
   });
 };
 $("logout").onclick = async () => { await fetch("/api/admin/logout", { method: "POST", headers: H }); location.replace("/"); };
+
+window.addEventListener("resize", () => updateAdminDockGlider(activeTab, false));
+requestAnimationFrame(() => updateAdminDockGlider(activeTab, false));
+if (document.fonts?.ready) {
+  document.fonts.ready.then(() => updateAdminDockGlider(activeTab, false));
+}
+
 load(true);
 </script>
 </body>

@@ -36,22 +36,50 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
-  /* 懸浮分段導覽 (Floating Segmented Nav) */
+  /* ===== 液態玻璃懸浮分段導覽 (Apple Liquid Glass Nav with Glider) ===== */
   .dock-container {
     position: relative;
     display: inline-flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(142, 142, 147, 0.14);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
     padding: 3.5px;
     border-radius: var(--r-pill);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+      0 4px 18px -2px rgba(0, 0, 0, 0.06),
+      inset 0 1px 2px rgba(0, 0, 0, 0.05),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.85);
+    user-select: none;
+  }
+  .dock-glider {
+    position: absolute;
+    top: 3.5px;
+    left: 0;
+    height: calc(100% - 7px);
+    background: #ffffff;
+    border-radius: var(--r-pill);
+    box-shadow:
+      0 3px 12px rgba(0, 0, 0, 0.12),
+      0 1px 3px rgba(0, 0, 0, 0.06),
+      0 0 0 0.5px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    will-change: transform, width, opacity;
+    transition:
+      transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+      width 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.2s ease;
   }
   .dock-nav-item {
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 6.5px 18px;
+    padding: 6.5px 20px;
     border: 0;
     border-radius: var(--r-pill);
     background: transparent;
@@ -61,15 +89,13 @@
     font-weight: 500;
     cursor: pointer;
     z-index: 2;
-    transition: color 0.24s ease, transform 0.2s var(--spring-smooth);
+    transition: color 0.22s ease, transform 0.18s var(--spring-smooth);
   }
   .dock-nav-item:hover { color: var(--ink); }
   .dock-nav-item:active { transform: scale(0.96); }
   .dock-nav-item.active {
     color: var(--ink);
     font-weight: 600;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0.5px 1.5px rgba(0, 0, 0, 0.04);
   }
 
   /* ===== 主頁面佈局與卡片 ===== */
@@ -893,8 +919,9 @@
     <span>KKNEWS</span>
   </div>
 
-  <!-- 懸浮分段導覽 (Floating Segmented Nav) -->
-  <nav class="dock-container" aria-label="主要導覽">
+  <!-- 懸浮分段導覽 (Floating Segmented Nav with Sliding Glider) -->
+  <nav class="dock-container" id="frontDock" aria-label="主要導覽">
+    <div class="dock-glider" id="dockGlider"></div>
     <button type="button" class="dock-nav-item active" id="dockHome" data-tab="home">
       <span>主頁</span>
     </button>
@@ -1413,6 +1440,28 @@ const PANES = {
 
 let currentTab = "home";
 
+/* Apple 滑動指示器控制器 (Apple Segmented Glider Controller) */
+function updateDockGlider(activeBtn, animate = true) {
+  const glider = $("dockGlider");
+  const container = $("frontDock");
+  if (!glider || !container || !activeBtn) return;
+  const cRect = container.getBoundingClientRect();
+  const bRect = activeBtn.getBoundingClientRect();
+  if (bRect.width === 0) return;
+
+  const leftOffset = bRect.left - cRect.left - container.clientLeft;
+  const width = bRect.width;
+
+  if (!animate) {
+    glider.style.transition = "none";
+  } else {
+    glider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+  }
+  glider.style.transform = `translate3d(${leftOffset}px, 0, 0)`;
+  glider.style.width = `${width}px`;
+  glider.style.opacity = "1";
+}
+
 function navigateToTab(tabName, updateHistory = true) {
   if (!PANES[tabName]) tabName = "home";
   if (currentTab === tabName) return;
@@ -1421,9 +1470,11 @@ function navigateToTab(tabName, updateHistory = true) {
   const nextPane = PANES[tabName];
   currentTab = tabName;
 
-  // 頂部導覽列按鈕狀態更新
-  $("dockHome")?.classList.toggle("active", tabName === "home");
+  // 頂部導覽列按鈕與滑動指示器更新
+  const activeDockBtn = tabName === "status" ? $("dockStatus") : $("dockHome");
+  $("dockHome")?.classList.toggle("active", tabName !== "status");
   $("dockStatus")?.classList.toggle("active", tabName === "status");
+  updateDockGlider(activeDockBtn, true);
 
   // 平滑切換視圖
   if (prevPane) prevPane.classList.remove("active-view");
@@ -1698,16 +1749,26 @@ function isColorDark(hex) {
   return ((num >> 16) & 255) * 0.299 + ((num >> 8) & 255) * 0.587 + (num & 255) * 0.114 < 128;
 }
 
+const NO_LINE_START = new Set("，。、！？；：）》」』】〕…,.!?:;)]}");
+
 function wrapText(ctx, text, maxW) {
   const lines = [];
   for (const para of String(text || "").split("\n")) {
     if (!para) { lines.push(""); continue; }
     let line = "";
-    for (const ch of Array.from(para)) {
+    const chars = Array.from(para);
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
       const test = line + ch;
       if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line);
-        line = ch;
+        if (NO_LINE_START.has(ch) && line.length > 1) {
+          const lastChar = line.slice(-1);
+          lines.push(line.slice(0, -1));
+          line = lastChar + ch;
+        } else {
+          lines.push(line);
+          line = ch;
+        }
       } else {
         line = test;
       }
@@ -2554,6 +2615,17 @@ $("dfcReplayBtn").onclick = () => {
   const initHash = window.location.hash.replace("#", "");
   if (["post", "dfc", "status"].includes(initHash)) {
     navigateToTab(initHash, false);
+  }
+
+  // 初始化 Apple 滑動指示器定位與響應式監聽
+  const syncDockGlider = (anim = false) => {
+    const activeBtn = currentTab === "status" ? $("dockStatus") : $("dockHome");
+    updateDockGlider(activeBtn, anim);
+  };
+  window.addEventListener("resize", () => syncDockGlider(false));
+  requestAnimationFrame(() => syncDockGlider(false));
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => syncDockGlider(false));
   }
 
   refreshPublicStatus(true);
