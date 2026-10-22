@@ -2200,11 +2200,96 @@ function switchAdminDock(tab) {
 
   if (tab === "forms") loadAndRenderCsv(false);
 }
-$("dockPosts").onclick = () => switchAdminDock("posts");
-$("dockUsers").onclick = () => switchAdminDock("users");
-$("dockForms").onclick = () => switchAdminDock("forms");
-$("dockAdmins").onclick = () => switchAdminDock("admins");
-$("dockStatus").onclick = () => switchAdminDock("status");
+
+let isAdminGliderDragging = false;
+let adminDockStartX = 0;
+let adminDockStartGliderX = 0;
+let adminDockDragMoved = false;
+
+const adminDock = $("adminDock");
+const adminDockGlider = $("adminDockGlider");
+
+if (adminDock && adminDockGlider) {
+  adminDock.addEventListener("pointerdown", (e) => {
+    const btn = DOCK_BTNS[activeTab] || $("dockPosts");
+    const container = adminDock;
+    const cRect = container.getBoundingClientRect();
+    const cLeft = cRect.left + container.clientLeft;
+    const bRect = btn.getBoundingClientRect();
+
+    try { adminDock.setPointerCapture(e.pointerId); } catch {}
+    isAdminGliderDragging = true;
+    adminDockStartX = e.clientX;
+    adminDockDragMoved = false;
+    adminDockGlider.classList.add("is-dragging");
+
+    adminDockStartGliderX = bRect.left - cLeft;
+    adminDockGlider.style.transition = "none";
+  });
+
+  adminDock.addEventListener("pointermove", (e) => {
+    if (!isAdminGliderDragging) return;
+    const dx = e.clientX - adminDockStartX;
+    if (Math.abs(dx) > 3) adminDockDragMoved = true;
+
+    const container = adminDock;
+    const cRect = container.getBoundingClientRect();
+    const cLeft = cRect.left + container.clientLeft;
+
+    let targetX = adminDockStartGliderX + dx;
+    adminDockGlider.style.transform = `translate3d(${targetX}px, 0, 0)`;
+
+    let closestBtn = DOCK_BTNS[activeTab];
+    let minDiff = Infinity;
+    for (const key of Object.keys(DOCK_BTNS)) {
+      const b = DOCK_BTNS[key];
+      const diff = Math.abs((b.getBoundingClientRect().left - cLeft) - targetX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestBtn = b;
+      }
+    }
+    if (closestBtn) {
+      adminDockGlider.style.width = `${closestBtn.offsetWidth}px`;
+    }
+  });
+
+  const finishAdminDockDrag = (e) => {
+    if (!isAdminGliderDragging) return;
+    isAdminGliderDragging = false;
+    adminDockGlider.classList.remove("is-dragging");
+    try { adminDock.releasePointerCapture(e.pointerId); } catch {}
+
+    if (!adminDockDragMoved) return;
+
+    adminDockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+
+    const container = adminDock;
+    const cRect = container.getBoundingClientRect();
+    const cLeft = cRect.left + container.clientLeft;
+    const curX = parseFloat(adminDockGlider.style.transform.replace(/[^0-9.-]/g, "")) || adminDockStartGliderX;
+
+    let closestTab = activeTab;
+    let minDiff = Infinity;
+    for (const [key, b] of Object.entries(DOCK_BTNS)) {
+      const diff = Math.abs((b.getBoundingClientRect().left - cLeft) - curX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestTab = key;
+      }
+    }
+    switchAdminDock(closestTab);
+  };
+
+  adminDock.addEventListener("pointerup", finishAdminDockDrag);
+  adminDock.addEventListener("pointercancel", finishAdminDockDrag);
+}
+
+$("dockPosts").onclick = () => { if (!adminDockDragMoved) switchAdminDock("posts"); };
+$("dockUsers").onclick = () => { if (!adminDockDragMoved) switchAdminDock("users"); };
+$("dockForms").onclick = () => { if (!adminDockDragMoved) switchAdminDock("forms"); };
+$("dockAdmins").onclick = () => { if (!adminDockDragMoved) switchAdminDock("admins"); };
+$("dockStatus").onclick = () => { if (!adminDockDragMoved) switchAdminDock("status"); };
 
 function toCsvField(v) {
   const s = String(v ?? "");

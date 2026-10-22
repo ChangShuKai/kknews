@@ -194,6 +194,9 @@ a:hover { opacity: 0.85; }
     inset 0 1px 2px rgba(0, 0, 0, 0.05),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.85);
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: pointer;
 }
 
 /* 液態玻璃滑塊 (Apple Gliding Indicator Pill) */
@@ -210,13 +213,22 @@ a:hover { opacity: 0.85; }
     0 0 0 0.5px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 1);
   z-index: 1;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: grab;
   opacity: 0;
   will-change: transform, width, opacity;
   transition:
     transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
     width 0.38s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.2s ease;
+}
+.dock-glider:active, .dock-glider.is-dragging {
+  cursor: grabbing;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .dock-item, .dock-nav-item {
@@ -321,48 +333,86 @@ a:hover { opacity: 0.85; }
 }
 
 /* ============================================================================
- * 網頁無縫切換系統 (Fluid View Transition Container)
- * 解決頁面切換死板生硬、跳動問題，做到像 iOS / macOS 視窗般滑順銜接
+ * 網頁無縫左右滑動切換系統 (Apple Horizontal Sliding Track & View Carousel)
+ * 徹底消除垂直彈跳與突兀切換，支援手勢拖拽左右滑動，做到像 iOS 原生視窗般平滑銜接
  * ============================================================================ */
 .view-stage {
   position: relative;
   width: 100%;
   min-height: calc(100vh - 72px);
+  padding: 30px 16px 48px;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 雙向滑動視窗 (Horizontal View Carousel) */
+.view-slider {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.42s var(--spring-smooth), opacity 0.35s ease;
+}
+.view-slider.in-subpage {
+  transform: translate3d(-18%, 0, 0) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.view-track {
+  display: flex;
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  align-items: flex-start;
+}
+
+.view-track .view-pane {
+  min-width: 100%;
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 32px 20px 48px;
-  overflow-x: hidden;
+  padding: 0 4px;
 }
 
-.view-pane {
+/* 次級獨立推展視圖 (iOS Push Detail Pages: Post & DFC) */
+.subview-pane {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 0 16px;
+  transform: translate3d(100%, 0, 0);
   opacity: 0;
-  transform: translateY(14px) scale(0.985);
   pointer-events: none;
-  position: absolute;
-  top: 32px;
-  left: 0;
-  right: 0;
   transition:
-    opacity 0.38s var(--spring-smooth),
-    transform 0.42s var(--spring-smooth),
-    filter 0.38s ease;
-  filter: blur(4px);
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.32s ease;
+  will-change: transform, opacity;
+  z-index: 10;
 }
-
-.view-pane.active-view {
+.subview-pane.active-subview {
+  transform: translate3d(0, 0, 0);
   opacity: 1;
-  transform: translateY(0) scale(1);
   pointer-events: auto;
   position: relative;
   top: 0;
-  filter: blur(0px);
+  padding: 0;
 }
 
 /* ============================================================================

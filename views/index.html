@@ -52,6 +52,9 @@
       inset 0 1px 2px rgba(0, 0, 0, 0.05),
       inset 0 0 0 0.5px rgba(255, 255, 255, 0.85);
     user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    cursor: pointer;
   }
   .dock-glider {
     position: absolute;
@@ -66,13 +69,22 @@
       0 0 0 0.5px rgba(0, 0, 0, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 1);
     z-index: 1;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: grab;
     opacity: 0;
     will-change: transform, width, opacity;
     transition:
       transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
       width 0.38s cubic-bezier(0.16, 1, 0.3, 1),
       opacity 0.2s ease;
+  }
+  .dock-glider:active, .dock-glider.is-dragging {
+    cursor: grabbing;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.18),
+      0 2px 4px rgba(0, 0, 0, 0.08),
+      0 0 0 0.5px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
   }
   .dock-nav-item {
     position: relative;
@@ -947,10 +959,14 @@
 </header>
 
 <!-- 無縫網頁切換舞台 (View Transition Stage) -->
-<div class="view-stage">
+<div class="view-stage" id="viewStage">
 
-  <!-- ==================== 頁面 0：主頁 (Home View) ==================== -->
-  <section class="view-pane active-view" id="paneHome" aria-label="KKNews 主頁">
+  <!-- 主頁與即時資訊雙向滑動視窗 (Horizontal Sliding Carousel) -->
+  <div class="view-slider" id="viewSlider">
+    <div class="view-track" id="viewTrack">
+
+      <!-- ==================== 頁面 0：主頁 (Home View) ==================== -->
+      <section class="view-pane active-view" id="paneHome" aria-label="KKNews 主頁">
     <div class="home-shell">
       <div class="home-header">
         <div class="home-badge">KKNEWS CAMPUS HUB</div>
@@ -1010,8 +1026,86 @@
     </div>
   </section>
 
+  <!-- ==================== 頁面 3：系統即時資訊 (System Status) ==================== -->
+  <section class="view-pane" id="paneStatus" aria-label="系統即時資訊">
+    <div class="status-shell">
+      <div class="subpage-nav">
+        <button type="button" class="back-pill" id="backFromStatusBtn">← 返回主頁</button>
+        <span class="subpage-tag">SYSTEM METRICS</span>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
+        <h2 style="margin:0;font-size:24px">系統即時資訊</h2>
+        <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">刷新連線</button>
+      </div>
+      <p class="sub" style="margin-bottom:18px">Supabase 雲端資料庫與平台服務指標，每 4 秒動態同步。</p>
+
+      <div class="status-db-hero">
+        <div class="db-head-flex">
+          <div class="db-icon-box" id="dbIco">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <b id="dbName" style="font-size:16px;display:block">Primary Database</b>
+            <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">Northeast Asia (Tokyo)</span>
+            <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">ap-northeast-1 · t3.nano</span>
+          </div>
+          <div class="jp-flag-badge" title="Tokyo (ap-northeast-1)"></div>
+        </div>
+
+        <div class="meters-row">
+          <div class="meter-card">
+            <div class="meter-lbl"><span>CPU 負載</span><strong id="stCpu">—%</strong></div>
+            <div class="meter-bar"><div class="meter-bar-fill" id="barCpu"></div></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-lbl"><span>RAM 記憶體</span><strong id="stRam">—%</strong></div>
+            <div class="meter-bar"><div class="meter-bar-fill" id="barRam"></div></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-lbl"><span>Disk 空間</span><strong id="stDisk">—%</strong></div>
+            <div class="meter-bar"><div class="meter-bar-fill" id="barDisk"></div></div>
+          </div>
+          <div class="meter-card">
+            <div class="meter-lbl"><span>資料庫連線</span><strong id="stConns">—/60</strong></div>
+            <div class="meter-bar"><div class="meter-bar-fill" id="barConns"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <small>API 延遲</small>
+          <b id="stLatency">— ms</b>
+        </div>
+        <div class="kpi-card">
+          <small>快取命中</small>
+          <b id="stCacheHit">—%</b>
+        </div>
+        <div class="kpi-card">
+          <small>累積諺語卡</small>
+          <b id="stProverbsCount">— 張</b>
+        </div>
+        <div class="kpi-card">
+          <small>問答紀錄</small>
+          <b id="stDfcCount">— 筆</b>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-tertiary);margin-top:20px">
+        <span id="sysText">● 雲端連線正常</span>
+        <span id="stUpdatedAt">更新時間：—</span>
+      </div>
+    </div>
+  </section>
+
+    </div><!-- /.view-track -->
+  </div><!-- /.view-slider -->
+
   <!-- ==================== 頁面 1：諺語卡片製作 (Proverb Card Studio) ==================== -->
-  <section class="view-pane" id="panePost" aria-label="諺語投稿專區">
+  <section class="view-pane subview-pane" id="panePost" aria-label="諺語投稿專區">
     <div class="post-shell">
       <div class="subpage-nav">
         <button type="button" class="back-pill" id="backFromPostBtn">← 返回主頁</button>
@@ -1128,7 +1222,7 @@
   </section>
 
   <!-- ==================== 頁面 2：DFC 沉浸式影音表單 (DFC Interactive Stage) ==================== -->
-  <section class="view-pane" id="paneDfc" aria-label="DFC 沉浸式影音表單">
+  <section class="view-pane subview-pane" id="paneDfc" aria-label="DFC 沉浸式影音表單">
     <div class="dfc-container">
       <div class="subpage-nav">
         <button type="button" class="back-pill" id="backFromDfcBtn">← 返回主頁</button>
@@ -1184,81 +1278,6 @@
           </div>
           <button type="button" class="btn ghost sm" id="dfcReplayBtn">重新觀看並作答</button>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== 頁面 3：系統即時資訊 (System Status) ==================== -->
-  <section class="view-pane" id="paneStatus" aria-label="系統即時資訊">
-    <div class="status-shell">
-      <div class="subpage-nav">
-        <button type="button" class="back-pill" id="backFromStatusBtn">← 返回主頁</button>
-        <span class="subpage-tag">SYSTEM METRICS</span>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
-        <h2 style="margin:0;font-size:24px">系統即時資訊</h2>
-        <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">刷新連線</button>
-      </div>
-      <p class="sub" style="margin-bottom:18px">Supabase 雲端資料庫與平台服務指標，每 4 秒動態同步。</p>
-
-      <div class="status-db-hero">
-        <div class="db-head-flex">
-          <div class="db-icon-box" id="dbIco">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-            </svg>
-          </div>
-          <div style="flex:1;min-width:0">
-            <b id="dbName" style="font-size:16px;display:block">Primary Database</b>
-            <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">Northeast Asia (Tokyo)</span>
-            <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">ap-northeast-1 · t3.nano</span>
-          </div>
-          <div class="jp-flag-badge" title="Tokyo (ap-northeast-1)"></div>
-        </div>
-
-        <div class="meters-row">
-          <div class="meter-card">
-            <div class="meter-lbl"><span>CPU 負載</span><strong id="stCpu">—%</strong></div>
-            <div class="meter-bar"><div class="meter-bar-fill" id="barCpu"></div></div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-lbl"><span>RAM 記憶體</span><strong id="stRam">—%</strong></div>
-            <div class="meter-bar"><div class="meter-bar-fill" id="barRam"></div></div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-lbl"><span>Disk 空間</span><strong id="stDisk">—%</strong></div>
-            <div class="meter-bar"><div class="meter-bar-fill" id="barDisk"></div></div>
-          </div>
-          <div class="meter-card">
-            <div class="meter-lbl"><span>資料庫連線</span><strong id="stConns">—/60</strong></div>
-            <div class="meter-bar"><div class="meter-bar-fill" id="barConns"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="kpi-row">
-        <div class="kpi-card">
-          <small>API 延遲</small>
-          <b id="stLatency">— ms</b>
-        </div>
-        <div class="kpi-card">
-          <small>快取命中</small>
-          <b id="stCacheHit">—%</b>
-        </div>
-        <div class="kpi-card">
-          <small>累積諺語卡</small>
-          <b id="stProverbsCount">— 張</b>
-        </div>
-        <div class="kpi-card">
-          <small>問答紀錄</small>
-          <b id="stDfcCount">— 筆</b>
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-tertiary);margin-top:20px">
-        <span id="sysText">● 雲端連線正常</span>
-        <span id="stUpdatedAt">更新時間：—</span>
       </div>
     </div>
   </section>
@@ -1439,6 +1458,25 @@ const PANES = {
 };
 
 let currentTab = "home";
+let dragJustEnded = false;
+
+function getDockMetrics() {
+  const container = $("frontDock");
+  const homeBtn = $("dockHome");
+  const statusBtn = $("dockStatus");
+  if (!container || !homeBtn || !statusBtn) return null;
+  const cRect = container.getBoundingClientRect();
+  const cLeft = cRect.left + container.clientLeft;
+  const hRect = homeBtn.getBoundingClientRect();
+  const sRect = statusBtn.getBoundingClientRect();
+  return {
+    x0: hRect.left - cLeft,
+    w0: hRect.width,
+    x1: sRect.left - cLeft,
+    w1: sRect.width,
+    totalDistance: (sRect.left - cLeft) - (hRect.left - cLeft)
+  };
+}
 
 /* Apple 滑動指示器控制器 (Apple Segmented Glider Controller) */
 function updateDockGlider(activeBtn, animate = true) {
@@ -1462,23 +1500,57 @@ function updateDockGlider(activeBtn, animate = true) {
   glider.style.opacity = "1";
 }
 
-function navigateToTab(tabName, updateHistory = true) {
+function navigateToTab(tabName, updateHistory = true, animate = true) {
   if (!PANES[tabName]) tabName = "home";
   if (currentTab === tabName) return;
 
-  const prevPane = PANES[currentTab];
-  const nextPane = PANES[tabName];
+  const prevTab = currentTab;
   currentTab = tabName;
+
+  const viewSlider = $("viewSlider");
+  const viewTrack = $("viewTrack");
+  const panePost = $("panePost");
+  const paneDfc = $("paneDfc");
+
+  const isMainTab = tabName === "home" || tabName === "status";
 
   // 頂部導覽列按鈕與滑動指示器更新
   const activeDockBtn = tabName === "status" ? $("dockStatus") : $("dockHome");
   $("dockHome")?.classList.toggle("active", tabName !== "status");
   $("dockStatus")?.classList.toggle("active", tabName === "status");
-  updateDockGlider(activeDockBtn, true);
+  updateDockGlider(activeDockBtn, animate);
 
-  // 平滑切換視圖
-  if (prevPane) prevPane.classList.remove("active-view");
-  if (nextPane) nextPane.classList.add("active-view");
+  if (viewTrack) {
+    viewTrack.style.transition = animate ? "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
+  }
+
+  // 處理主視圖軌道滑動與次級推展頁面切換（純水平滑動，杜絕垂直彈跳）
+  if (isMainTab) {
+    if (panePost) {
+      panePost.classList.remove("active-subview");
+      panePost.style.transform = "";
+    }
+    if (paneDfc) {
+      paneDfc.classList.remove("active-subview");
+      paneDfc.style.transform = "";
+    }
+    if (viewSlider) {
+      viewSlider.classList.remove("in-subpage");
+      viewSlider.style.transform = "";
+      viewSlider.style.opacity = "";
+    }
+
+    if (viewTrack) {
+      viewTrack.style.transform = tabName === "status" ? "translate3d(-100%, 0, 0)" : "translate3d(0%, 0, 0)";
+    }
+  } else {
+    // 進入次級推展頁面 (post 或 dfc)
+    if (viewSlider) {
+      viewSlider.classList.add("in-subpage");
+    }
+    if (panePost) panePost.classList.toggle("active-subview", tabName === "post");
+    if (paneDfc) paneDfc.classList.toggle("active-subview", tabName === "dfc");
+  }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -1503,10 +1575,251 @@ window.addEventListener("popstate", (e) => {
   navigateToTab(hash, false);
 });
 
-// 導覽點擊事件綁定
-$("brandHomeBtn").addEventListener("click", () => navigateToTab("home"));
-$("dockHome").addEventListener("click", () => navigateToTab("home"));
-$("dockStatus").addEventListener("click", () => navigateToTab("status"));
+/* ============================================================================
+ * Apple 分段導覽列手勢拖拽 (Apple Liquid Glass Dock Glider Drag Gesture)
+ * ============================================================================ */
+let isGliderDragging = false;
+let dockStartX = 0;
+let dockStartGliderX = 0;
+let dockDragMoved = false;
+
+const frontDock = $("frontDock");
+const dockGlider = $("dockGlider");
+
+if (frontDock && dockGlider) {
+  frontDock.addEventListener("pointerdown", (e) => {
+    if (currentTab === "post" || currentTab === "dfc") return;
+    const m = getDockMetrics();
+    if (!m || m.totalDistance <= 0) return;
+
+    try { frontDock.setPointerCapture(e.pointerId); } catch {}
+    isGliderDragging = true;
+    dockStartX = e.clientX;
+    dockDragMoved = false;
+    dockGlider.classList.add("is-dragging");
+
+    dockStartGliderX = (currentTab === "status") ? m.x1 : m.x0;
+
+    dockGlider.style.transition = "none";
+    const vt = $("viewTrack");
+    if (vt) vt.style.transition = "none";
+  });
+
+  frontDock.addEventListener("pointermove", (e) => {
+    if (!isGliderDragging) return;
+    const dx = e.clientX - dockStartX;
+    if (Math.abs(dx) > 3) dockDragMoved = true;
+
+    const m = getDockMetrics();
+    if (!m || m.totalDistance <= 0) return;
+
+    let targetX = dockStartGliderX + dx;
+    let progress;
+
+    if (targetX < m.x0) {
+      targetX = m.x0 + (targetX - m.x0) * 0.28;
+      progress = 0;
+    } else if (targetX > m.x1) {
+      targetX = m.x1 + (targetX - m.x1) * 0.28;
+      progress = 1;
+    } else {
+      progress = (targetX - m.x0) / m.totalDistance;
+    }
+
+    const currentW = m.w0 + (m.w1 - m.w0) * Math.max(0, Math.min(1, progress));
+    dockGlider.style.transform = `translate3d(${targetX}px, 0, 0)`;
+    dockGlider.style.width = `${currentW}px`;
+
+    // 底下內容同步左右滑動
+    const vs = $("viewSlider");
+    const vt = $("viewTrack");
+    if (vs && vt) {
+      const sliderWidth = vs.clientWidth || window.innerWidth;
+      const trackOffset = -progress * sliderWidth;
+      vt.style.transform = `translate3d(${trackOffset}px, 0, 0)`;
+    }
+  });
+
+  const finishDockDrag = (e) => {
+    if (!isGliderDragging) return;
+    isGliderDragging = false;
+    dockGlider.classList.remove("is-dragging");
+    try { frontDock.releasePointerCapture(e.pointerId); } catch {}
+
+    const m = getDockMetrics();
+    if (!m || m.totalDistance <= 0) return;
+
+    if (!dockDragMoved) return;
+
+    dragJustEnded = true;
+    setTimeout(() => { dragJustEnded = false; }, 80);
+
+    dockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+    const vt = $("viewTrack");
+    if (vt) vt.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)";
+
+    const curX = parseFloat(dockGlider.style.transform.replace(/[^0-9.-]/g, "")) || dockStartGliderX;
+    const progress = (curX - m.x0) / m.totalDistance;
+
+    const targetTab = progress > 0.5 ? "status" : "home";
+    navigateToTab(targetTab, true);
+  };
+
+  frontDock.addEventListener("pointerup", finishDockDrag);
+  frontDock.addEventListener("pointercancel", finishDockDrag);
+}
+
+/* ============================================================================
+ * 底下內容區域手勢左右滑動切換 (Bottom Content Swipe Navigation)
+ * ============================================================================ */
+let isContentSwiping = false;
+let contentStartX = 0;
+let contentStartY = 0;
+let contentSwipeState = "idle";
+
+const viewSliderEl = $("viewSlider");
+if (viewSliderEl) {
+  viewSliderEl.addEventListener("pointerdown", (e) => {
+    if (currentTab !== "home" && currentTab !== "status") return;
+    if (e.target.closest("button, a, input, textarea, select, .feature-tile")) return;
+
+    isContentSwiping = true;
+    contentStartX = e.clientX;
+    contentStartY = e.clientY;
+    contentSwipeState = "idle";
+    try { viewSliderEl.setPointerCapture(e.pointerId); } catch {}
+  });
+
+  viewSliderEl.addEventListener("pointermove", (e) => {
+    if (!isContentSwiping) return;
+    const dx = e.clientX - contentStartX;
+    const dy = e.clientY - contentStartY;
+
+    if (contentSwipeState === "idle") {
+      if (Math.abs(dx) > 7 || Math.abs(dy) > 7) {
+        if (Math.abs(dy) > Math.abs(dx)) {
+          contentSwipeState = "vertical";
+          isContentSwiping = false;
+          try { viewSliderEl.releasePointerCapture(e.pointerId); } catch {}
+          return;
+        } else {
+          contentSwipeState = "horizontal";
+          const vt = $("viewTrack");
+          if (vt) vt.style.transition = "none";
+          if (dockGlider) dockGlider.style.transition = "none";
+        }
+      }
+    }
+
+    if (contentSwipeState === "horizontal") {
+      e.preventDefault();
+      const sliderWidth = viewSliderEl.clientWidth || window.innerWidth;
+      const baseOffset = (currentTab === "status") ? -sliderWidth : 0;
+      let targetOffset = baseOffset + dx;
+
+      if (targetOffset > 0) targetOffset = targetOffset * 0.28;
+      if (targetOffset < -sliderWidth) targetOffset = -sliderWidth + (targetOffset + sliderWidth) * 0.28;
+
+      const vt = $("viewTrack");
+      if (vt) vt.style.transform = `translate3d(${targetOffset}px, 0, 0)`;
+
+      const progress = Math.max(0, Math.min(1, -targetOffset / sliderWidth));
+      const m = getDockMetrics();
+      if (m && m.totalDistance > 0 && dockGlider) {
+        const gX = m.x0 + m.totalDistance * progress;
+        const gW = m.w0 + (m.w1 - m.w0) * progress;
+        dockGlider.style.transform = `translate3d(${gX}px, 0, 0)`;
+        dockGlider.style.width = `${gW}px`;
+      }
+    }
+  });
+
+  const finishContentSwipe = (e) => {
+    if (!isContentSwiping) return;
+    isContentSwiping = false;
+    try { viewSliderEl.releasePointerCapture(e.pointerId); } catch {}
+
+    if (contentSwipeState !== "horizontal") return;
+
+    const dx = e.clientX - contentStartX;
+    const vt = $("viewTrack");
+    if (vt) vt.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)";
+    if (dockGlider) dockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+
+    let targetTab = currentTab;
+    if (currentTab === "home" && dx < -50) targetTab = "status";
+    else if (currentTab === "status" && dx > 50) targetTab = "home";
+
+    navigateToTab(targetTab, true);
+  };
+
+  viewSliderEl.addEventListener("pointerup", finishContentSwipe);
+  viewSliderEl.addEventListener("pointercancel", finishContentSwipe);
+}
+
+/* ============================================================================
+ * 次級頁面左緣右滑返回手勢 (iOS Swipe-to-Back for Subviews)
+ * ============================================================================ */
+for (const subPane of [ $("panePost"), $("paneDfc") ]) {
+  if (!subPane) continue;
+  let subDragStart = null;
+  let subMoved = false;
+
+  subPane.addEventListener("pointerdown", (e) => {
+    if (e.clientX > 60 && !e.target.closest(".subpage-nav")) return;
+    if (e.target.closest("input, textarea, select, button")) return;
+    subDragStart = { x: e.clientX, y: e.clientY };
+    subMoved = false;
+    try { subPane.setPointerCapture(e.pointerId); } catch {}
+  });
+
+  subPane.addEventListener("pointermove", (e) => {
+    if (!subDragStart) return;
+    const dx = e.clientX - subDragStart.x;
+    const dy = e.clientY - subDragStart.y;
+    if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
+      subMoved = true;
+      e.preventDefault();
+      subPane.style.transition = "none";
+      subPane.style.transform = `translate3d(${Math.max(0, dx)}px, 0, 0)`;
+      const vs = $("viewSlider");
+      if (vs) {
+        const ratio = Math.min(1, dx / 300);
+        vs.style.transition = "none";
+        vs.style.transform = `translate3d(${-18 + 18 * ratio}%, 0, 0) scale(${0.96 + 0.04 * ratio})`;
+        vs.style.opacity = `${ratio}`;
+      }
+    }
+  });
+
+  const endSubDrag = (e) => {
+    if (!subDragStart) return;
+    try { subPane.releasePointerCapture(e.pointerId); } catch {}
+    const dx = e.clientX - subDragStart.x;
+    subDragStart = null;
+
+    subPane.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease";
+    const vs = $("viewSlider");
+    if (vs) vs.style.transition = "transform 0.42s var(--spring-smooth), opacity 0.35s ease";
+
+    if (subMoved && dx > 80) {
+      navigateToTab("home", true);
+    } else {
+      subPane.style.transform = "translate3d(0, 0, 0)";
+      if (vs) {
+        vs.style.transform = "translate3d(-18%, 0, 0) scale(0.96)";
+        vs.style.opacity = "0";
+      }
+    }
+  };
+  subPane.addEventListener("pointerup", endSubDrag);
+  subPane.addEventListener("pointercancel", endSubDrag);
+}
+
+// 導覽點擊事件綁定（防抖並尊重拖拽完成狀態）
+$("brandHomeBtn").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("home"); });
+$("dockHome").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("home"); });
+$("dockStatus").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("status"); });
 $("goPostTile").addEventListener("click", () => navigateToTab("post"));
 $("goDfcTile").addEventListener("click", () => navigateToTab("dfc"));
 $("goStatusLink").addEventListener("click", () => navigateToTab("status"));
@@ -2621,6 +2934,11 @@ $("dfcReplayBtn").onclick = () => {
   const syncDockGlider = (anim = false) => {
     const activeBtn = currentTab === "status" ? $("dockStatus") : $("dockHome");
     updateDockGlider(activeBtn, anim);
+    const vt = $("viewTrack");
+    if (vt && (currentTab === "home" || currentTab === "status")) {
+      vt.style.transition = anim ? "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
+      vt.style.transform = currentTab === "status" ? "translate3d(-100%, 0, 0)" : "translate3d(0%, 0, 0)";
+    }
   };
   window.addEventListener("resize", () => syncDockGlider(false));
   requestAnimationFrame(() => syncDockGlider(false));
