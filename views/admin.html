@@ -2205,6 +2205,7 @@ let isAdminGliderDragging = false;
 let adminDockStartX = 0;
 let adminDockStartGliderX = 0;
 let adminDockDragMoved = false;
+let adminSuppressClickUntil = 0;
 
 const adminDock = $("adminDock");
 const adminDockGlider = $("adminDockGlider");
@@ -2217,20 +2218,26 @@ if (adminDock && adminDockGlider) {
     const cLeft = cRect.left + container.clientLeft;
     const bRect = btn.getBoundingClientRect();
 
-    try { adminDock.setPointerCapture(e.pointerId); } catch {}
     isAdminGliderDragging = true;
     adminDockStartX = e.clientX;
     adminDockDragMoved = false;
-    adminDockGlider.classList.add("is-dragging");
-
     adminDockStartGliderX = bRect.left - cLeft;
-    adminDockGlider.style.transition = "none";
   });
 
   adminDock.addEventListener("pointermove", (e) => {
     if (!isAdminGliderDragging) return;
     const dx = e.clientX - adminDockStartX;
-    if (Math.abs(dx) > 3) adminDockDragMoved = true;
+
+    if (!adminDockDragMoved) {
+      if (Math.abs(dx) > 4) {
+        adminDockDragMoved = true;
+        try { adminDock.setPointerCapture(e.pointerId); } catch {}
+        adminDockGlider.classList.add("is-dragging");
+        adminDockGlider.style.transition = "none";
+      } else {
+        return;
+      }
+    }
 
     const container = adminDock;
     const cRect = container.getBoundingClientRect();
@@ -2258,38 +2265,40 @@ if (adminDock && adminDockGlider) {
     if (!isAdminGliderDragging) return;
     isAdminGliderDragging = false;
     adminDockGlider.classList.remove("is-dragging");
-    try { adminDock.releasePointerCapture(e.pointerId); } catch {}
 
-    if (!adminDockDragMoved) return;
+    if (adminDockDragMoved) {
+      try { adminDock.releasePointerCapture(e.pointerId); } catch {}
+      adminSuppressClickUntil = Date.now() + 250;
 
-    adminDockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+      adminDockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
 
-    const container = adminDock;
-    const cRect = container.getBoundingClientRect();
-    const cLeft = cRect.left + container.clientLeft;
-    const curX = parseFloat(adminDockGlider.style.transform.replace(/[^0-9.-]/g, "")) || adminDockStartGliderX;
+      const container = adminDock;
+      const cRect = container.getBoundingClientRect();
+      const cLeft = cRect.left + container.clientLeft;
+      const curX = parseFloat(adminDockGlider.style.transform.replace(/[^0-9.-]/g, "")) || adminDockStartGliderX;
 
-    let closestTab = activeTab;
-    let minDiff = Infinity;
-    for (const [key, b] of Object.entries(DOCK_BTNS)) {
-      const diff = Math.abs((b.getBoundingClientRect().left - cLeft) - curX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestTab = key;
+      let closestTab = activeTab;
+      let minDiff = Infinity;
+      for (const [key, b] of Object.entries(DOCK_BTNS)) {
+        const diff = Math.abs((b.getBoundingClientRect().left - cLeft) - curX);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestTab = key;
+        }
       }
+      switchAdminDock(closestTab);
     }
-    switchAdminDock(closestTab);
   };
 
   adminDock.addEventListener("pointerup", finishAdminDockDrag);
   adminDock.addEventListener("pointercancel", finishAdminDockDrag);
 }
 
-$("dockPosts").onclick = () => { if (!adminDockDragMoved) switchAdminDock("posts"); };
-$("dockUsers").onclick = () => { if (!adminDockDragMoved) switchAdminDock("users"); };
-$("dockForms").onclick = () => { if (!adminDockDragMoved) switchAdminDock("forms"); };
-$("dockAdmins").onclick = () => { if (!adminDockDragMoved) switchAdminDock("admins"); };
-$("dockStatus").onclick = () => { if (!adminDockDragMoved) switchAdminDock("status"); };
+$("dockPosts").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("posts"); };
+$("dockUsers").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("users"); };
+$("dockForms").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("forms"); };
+$("dockAdmins").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("admins"); };
+$("dockStatus").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("status"); };
 
 function toCsvField(v) {
   const s = String(v ?? "");

@@ -1458,7 +1458,7 @@ const PANES = {
 };
 
 let currentTab = "home";
-let dragJustEnded = false;
+let suppressClickUntil = 0;
 
 function getDockMetrics() {
   const container = $("frontDock");
@@ -1502,7 +1502,20 @@ function updateDockGlider(activeBtn, animate = true) {
 
 function navigateToTab(tabName, updateHistory = true, animate = true) {
   if (!PANES[tabName]) tabName = "home";
-  if (currentTab === tabName) return;
+  const isMainTab = (tabName === "home" || tabName === "status");
+
+  if (currentTab === tabName) {
+    if (isMainTab) {
+      const activeDockBtn = tabName === "status" ? $("dockStatus") : $("dockHome");
+      updateDockGlider(activeDockBtn, animate);
+      const viewTrack = $("viewTrack");
+      if (viewTrack) {
+        viewTrack.style.transition = animate ? "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
+        viewTrack.style.transform = (tabName === "status") ? "translate3d(-50%, 0, 0)" : "translate3d(0%, 0, 0)";
+      }
+    }
+    return;
+  }
 
   const prevTab = currentTab;
   currentTab = tabName;
@@ -1511,8 +1524,6 @@ function navigateToTab(tabName, updateHistory = true, animate = true) {
   const viewTrack = $("viewTrack");
   const panePost = $("panePost");
   const paneDfc = $("paneDfc");
-
-  const isMainTab = tabName === "home" || tabName === "status";
 
   // 頂部導覽列按鈕與滑動指示器更新
   const activeDockBtn = tabName === "status" ? $("dockStatus") : $("dockHome");
@@ -1524,32 +1535,53 @@ function navigateToTab(tabName, updateHistory = true, animate = true) {
     viewTrack.style.transition = animate ? "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
   }
 
-  // 處理主視圖軌道滑動與次級推展頁面切換（純水平滑動，杜絕垂直彈跳）
+  // 主視圖軌道滑動與次級推展頁面切換（純水平滑動，杜絕垂直彈跳）
   if (isMainTab) {
     if (panePost) {
       panePost.classList.remove("active-subview");
       panePost.style.transform = "";
+      setTimeout(() => { if (currentTab !== "post") panePost.style.display = "none"; }, 420);
     }
     if (paneDfc) {
       paneDfc.classList.remove("active-subview");
       paneDfc.style.transform = "";
+      setTimeout(() => { if (currentTab !== "dfc") paneDfc.style.display = "none"; }, 420);
     }
     if (viewSlider) {
+      viewSlider.style.display = "";
       viewSlider.classList.remove("in-subpage");
       viewSlider.style.transform = "";
       viewSlider.style.opacity = "";
     }
 
+    // 主軌道滑動：home 為 0%，status 為 -50%（50% of 200% width = 100% viewport width）
     if (viewTrack) {
-      viewTrack.style.transform = tabName === "status" ? "translate3d(-100%, 0, 0)" : "translate3d(0%, 0, 0)";
+      viewTrack.style.transform = (tabName === "status") ? "translate3d(-50%, 0, 0)" : "translate3d(0%, 0, 0)";
     }
   } else {
     // 進入次級推展頁面 (post 或 dfc)
     if (viewSlider) {
       viewSlider.classList.add("in-subpage");
+      setTimeout(() => { if (currentTab === "post" || currentTab === "dfc") viewSlider.style.display = "none"; }, 420);
     }
-    if (panePost) panePost.classList.toggle("active-subview", tabName === "post");
-    if (paneDfc) paneDfc.classList.toggle("active-subview", tabName === "dfc");
+    if (panePost) {
+      if (tabName === "post") {
+        panePost.style.display = "flex";
+        requestAnimationFrame(() => panePost.classList.add("active-subview"));
+      } else {
+        panePost.classList.remove("active-subview");
+        setTimeout(() => { if (currentTab !== "post") panePost.style.display = "none"; }, 420);
+      }
+    }
+    if (paneDfc) {
+      if (tabName === "dfc") {
+        paneDfc.style.display = "flex";
+        requestAnimationFrame(() => paneDfc.classList.add("active-subview"));
+      } else {
+        paneDfc.classList.remove("active-subview");
+        setTimeout(() => { if (currentTab !== "dfc") paneDfc.style.display = "none"; }, 420);
+      }
+    }
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1592,23 +1624,30 @@ if (frontDock && dockGlider) {
     const m = getDockMetrics();
     if (!m || m.totalDistance <= 0) return;
 
-    try { frontDock.setPointerCapture(e.pointerId); } catch {}
+    // 不在按下瞬間捕獲指針，以保證原生 button 點擊事件能正常傳遞
     isGliderDragging = true;
     dockStartX = e.clientX;
     dockDragMoved = false;
-    dockGlider.classList.add("is-dragging");
-
     dockStartGliderX = (currentTab === "status") ? m.x1 : m.x0;
-
-    dockGlider.style.transition = "none";
-    const vt = $("viewTrack");
-    if (vt) vt.style.transition = "none";
   });
 
   frontDock.addEventListener("pointermove", (e) => {
     if (!isGliderDragging) return;
     const dx = e.clientX - dockStartX;
-    if (Math.abs(dx) > 3) dockDragMoved = true;
+
+    // 超過 4px 移動閾值才正式鎖定為拖拽
+    if (!dockDragMoved) {
+      if (Math.abs(dx) > 4) {
+        dockDragMoved = true;
+        try { frontDock.setPointerCapture(e.pointerId); } catch {}
+        dockGlider.classList.add("is-dragging");
+        dockGlider.style.transition = "none";
+        const vt = $("viewTrack");
+        if (vt) vt.style.transition = "none";
+      } else {
+        return;
+      }
+    }
 
     const m = getDockMetrics();
     if (!m || m.totalDistance <= 0) return;
@@ -1617,10 +1656,10 @@ if (frontDock && dockGlider) {
     let progress;
 
     if (targetX < m.x0) {
-      targetX = m.x0 + (targetX - m.x0) * 0.28;
+      targetX = m.x0 + (targetX - m.x0) * 0.25;
       progress = 0;
     } else if (targetX > m.x1) {
-      targetX = m.x1 + (targetX - m.x1) * 0.28;
+      targetX = m.x1 + (targetX - m.x1) * 0.25;
       progress = 1;
     } else {
       progress = (targetX - m.x0) / m.totalDistance;
@@ -1630,13 +1669,10 @@ if (frontDock && dockGlider) {
     dockGlider.style.transform = `translate3d(${targetX}px, 0, 0)`;
     dockGlider.style.width = `${currentW}px`;
 
-    // 底下內容同步左右滑動
-    const vs = $("viewSlider");
+    // 底下內容同步左右滑動 (0% ~ -50%)
     const vt = $("viewTrack");
-    if (vs && vt) {
-      const sliderWidth = vs.clientWidth || window.innerWidth;
-      const trackOffset = -progress * sliderWidth;
-      vt.style.transform = `translate3d(${trackOffset}px, 0, 0)`;
+    if (vt) {
+      vt.style.transform = `translate3d(${-progress * 50}%, 0, 0)`;
     }
   });
 
@@ -1644,25 +1680,23 @@ if (frontDock && dockGlider) {
     if (!isGliderDragging) return;
     isGliderDragging = false;
     dockGlider.classList.remove("is-dragging");
-    try { frontDock.releasePointerCapture(e.pointerId); } catch {}
 
-    const m = getDockMetrics();
-    if (!m || m.totalDistance <= 0) return;
+    if (dockDragMoved) {
+      try { frontDock.releasePointerCapture(e.pointerId); } catch {}
+      suppressClickUntil = Date.now() + 250;
 
-    if (!dockDragMoved) return;
+      dockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
+      const vt = $("viewTrack");
+      if (vt) vt.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)";
 
-    dragJustEnded = true;
-    setTimeout(() => { dragJustEnded = false; }, 80);
-
-    dockGlider.style.transition = "transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), width 0.38s cubic-bezier(0.16, 1, 0.3, 1)";
-    const vt = $("viewTrack");
-    if (vt) vt.style.transition = "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)";
-
-    const curX = parseFloat(dockGlider.style.transform.replace(/[^0-9.-]/g, "")) || dockStartGliderX;
-    const progress = (curX - m.x0) / m.totalDistance;
-
-    const targetTab = progress > 0.5 ? "status" : "home";
-    navigateToTab(targetTab, true);
+      const m = getDockMetrics();
+      if (m && m.totalDistance > 0) {
+        const curX = parseFloat(dockGlider.style.transform.replace(/[^0-9.-]/g, "")) || dockStartGliderX;
+        const progress = (curX - m.x0) / m.totalDistance;
+        const targetTab = progress > 0.5 ? "status" : "home";
+        navigateToTab(targetTab, true);
+      }
+    }
   };
 
   frontDock.addEventListener("pointerup", finishDockDrag);
@@ -1687,7 +1721,6 @@ if (viewSliderEl) {
     contentStartX = e.clientX;
     contentStartY = e.clientY;
     contentSwipeState = "idle";
-    try { viewSliderEl.setPointerCapture(e.pointerId); } catch {}
   });
 
   viewSliderEl.addEventListener("pointermove", (e) => {
@@ -1696,14 +1729,14 @@ if (viewSliderEl) {
     const dy = e.clientY - contentStartY;
 
     if (contentSwipeState === "idle") {
-      if (Math.abs(dx) > 7 || Math.abs(dy) > 7) {
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
         if (Math.abs(dy) > Math.abs(dx)) {
           contentSwipeState = "vertical";
           isContentSwiping = false;
-          try { viewSliderEl.releasePointerCapture(e.pointerId); } catch {}
           return;
         } else {
           contentSwipeState = "horizontal";
+          try { viewSliderEl.setPointerCapture(e.pointerId); } catch {}
           const vt = $("viewTrack");
           if (vt) vt.style.transition = "none";
           if (dockGlider) dockGlider.style.transition = "none";
@@ -1714,20 +1747,17 @@ if (viewSliderEl) {
     if (contentSwipeState === "horizontal") {
       e.preventDefault();
       const sliderWidth = viewSliderEl.clientWidth || window.innerWidth;
-      const baseOffset = (currentTab === "status") ? -sliderWidth : 0;
-      let targetOffset = baseOffset + dx;
-
-      if (targetOffset > 0) targetOffset = targetOffset * 0.28;
-      if (targetOffset < -sliderWidth) targetOffset = -sliderWidth + (targetOffset + sliderWidth) * 0.28;
+      const baseProgress = (currentTab === "status") ? 1 : 0;
+      let currentProgress = baseProgress - (dx / sliderWidth);
+      currentProgress = Math.max(0, Math.min(1, currentProgress));
 
       const vt = $("viewTrack");
-      if (vt) vt.style.transform = `translate3d(${targetOffset}px, 0, 0)`;
+      if (vt) vt.style.transform = `translate3d(${-currentProgress * 50}%, 0, 0)`;
 
-      const progress = Math.max(0, Math.min(1, -targetOffset / sliderWidth));
       const m = getDockMetrics();
       if (m && m.totalDistance > 0 && dockGlider) {
-        const gX = m.x0 + m.totalDistance * progress;
-        const gW = m.w0 + (m.w1 - m.w0) * progress;
+        const gX = m.x0 + m.totalDistance * currentProgress;
+        const gW = m.w0 + (m.w1 - m.w0) * currentProgress;
         dockGlider.style.transform = `translate3d(${gX}px, 0, 0)`;
         dockGlider.style.width = `${gW}px`;
       }
@@ -1770,7 +1800,6 @@ for (const subPane of [ $("panePost"), $("paneDfc") ]) {
     if (e.target.closest("input, textarea, select, button")) return;
     subDragStart = { x: e.clientX, y: e.clientY };
     subMoved = false;
-    try { subPane.setPointerCapture(e.pointerId); } catch {}
   });
 
   subPane.addEventListener("pointermove", (e) => {
@@ -1778,13 +1807,17 @@ for (const subPane of [ $("panePost"), $("paneDfc") ]) {
     const dx = e.clientX - subDragStart.x;
     const dy = e.clientY - subDragStart.y;
     if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
-      subMoved = true;
+      if (!subMoved) {
+        subMoved = true;
+        try { subPane.setPointerCapture(e.pointerId); } catch {}
+      }
       e.preventDefault();
       subPane.style.transition = "none";
       subPane.style.transform = `translate3d(${Math.max(0, dx)}px, 0, 0)`;
       const vs = $("viewSlider");
       if (vs) {
         const ratio = Math.min(1, dx / 300);
+        vs.style.display = "";
         vs.style.transition = "none";
         vs.style.transform = `translate3d(${-18 + 18 * ratio}%, 0, 0) scale(${0.96 + 0.04 * ratio})`;
         vs.style.opacity = `${ratio}`;
@@ -1809,6 +1842,7 @@ for (const subPane of [ $("panePost"), $("paneDfc") ]) {
       if (vs) {
         vs.style.transform = "translate3d(-18%, 0, 0) scale(0.96)";
         vs.style.opacity = "0";
+        setTimeout(() => { if (currentTab === "post" || currentTab === "dfc") vs.style.display = "none"; }, 420);
       }
     }
   };
@@ -1817,9 +1851,9 @@ for (const subPane of [ $("panePost"), $("paneDfc") ]) {
 }
 
 // 導覽點擊事件綁定（防抖並尊重拖拽完成狀態）
-$("brandHomeBtn").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("home"); });
-$("dockHome").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("home"); });
-$("dockStatus").addEventListener("click", () => { if (!dragJustEnded) navigateToTab("status"); });
+$("brandHomeBtn").addEventListener("click", () => { if (Date.now() >= suppressClickUntil) navigateToTab("home"); });
+$("dockHome").addEventListener("click", () => { if (Date.now() >= suppressClickUntil) navigateToTab("home"); });
+$("dockStatus").addEventListener("click", () => { if (Date.now() >= suppressClickUntil) navigateToTab("status"); });
 $("goPostTile").addEventListener("click", () => navigateToTab("post"));
 $("goDfcTile").addEventListener("click", () => navigateToTab("dfc"));
 $("goStatusLink").addEventListener("click", () => navigateToTab("status"));
@@ -2937,7 +2971,7 @@ $("dfcReplayBtn").onclick = () => {
     const vt = $("viewTrack");
     if (vt && (currentTab === "home" || currentTab === "status")) {
       vt.style.transition = anim ? "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
-      vt.style.transform = currentTab === "status" ? "translate3d(-100%, 0, 0)" : "translate3d(0%, 0, 0)";
+      vt.style.transform = currentTab === "status" ? "translate3d(-50%, 0, 0)" : "translate3d(0%, 0, 0)";
     }
   };
   window.addEventListener("resize", () => syncDockGlider(false));
