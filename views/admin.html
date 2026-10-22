@@ -2,272 +2,526 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>KKNews 後台管理</title>
+<title>KKNews · 後台管理系統</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
-<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap" rel="stylesheet">
 <style>
-  header{position:sticky;top:0;z-index:20;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 24px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-  .head-left{display:flex;align-items:center;gap:12px}
-  .brand{margin:0}
-  .sync-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:11.5px;color:var(--muted);font-weight:600}
-  .sync-dot{width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px #10b98128;animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  /* ===== Apple-grade 管理控制台介面 ===== */
+  header.admin-header {
+    height: 64px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: rgba(245, 245, 247, 0.78);
+    backdrop-filter: blur(24px) saturate(190%);
+    -webkit-backdrop-filter: blur(24px) saturate(190%);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+  .brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sync-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--r-pill);
+    background: rgba(0, 0, 0, 0.04);
+    font-size: 11.5px;
+    color: var(--ink-secondary);
+    font-weight: 500;
+  }
+  .sync-pulse {
+    width: 6.5px;
+    height: 6.5px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: gentlePulse 2.4s infinite;
+  }
+  @keyframes gentlePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.9); }
+  }
 
-  /* 頂部中央 Dock 欄 */
-  .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008;flex-wrap:wrap}
-  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
-  .dock-item:hover{color:var(--ink)}
-  .dock-item.active{background:var(--ink);color:#fff;box-shadow:0 2px 8px #00000022}
-  .dock-badge{background:#00000014;color:inherit;border-radius:99px;padding:1px 8px;font-size:11.5px;font-weight:700}
-  .dock-item.active .dock-badge{background:#ffffff2e;color:#fff}
+  /* 權限識別標籤 */
+  .role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2.5px 9px;
+    border-radius: var(--r-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    background: var(--blue-soft);
+    color: var(--blue);
+    border: 1px solid rgba(0, 113, 227, 0.2);
+  }
+  .role-chip.readonly {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--ink-secondary);
+    border-color: var(--line);
+  }
 
-  /* 右上角帳號與權限區 */
-  .acct-zone{display:flex;align-items:center;gap:10px}
-  .acct-pill{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;background:var(--paper);border:1px solid var(--line);border-radius:99px;font-size:13px}
-  .acct-av{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
-  .role-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-  .role-tag.readonly{background:#e0f2fe;color:#075985;border-color:#bae6fd}
-  .acct-info{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
-  .acct-logout{background:none;border:0;border-left:1px solid var(--line);padding-left:9px;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
-  .acct-logout:hover{color:var(--err)}
+  main.admin-main {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
 
-  main{padding:22px 24px;max-width:1500px;margin:0 auto}
-  .ro-banner{background:#f0f9ff;border:1px solid #bae6fd;color:#0c4a6e;padding:11px 16px;border-radius:12px;font-size:13.5px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
-  .search-input{flex:1;min-width:220px;max-width:380px;padding:9px 14px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;background:#fff}
-  .search-input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
-  .sz{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:5px 10px}
-  .sz input{width:68px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font:inherit;font-size:13.5px}
+  .banner-notice {
+    background: #ffffff;
+    border: 1px solid rgba(0, 113, 227, 0.2);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
+    padding: 12px 18px;
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
 
-  /* 點進「即時系統數據」分頁才顯示的全開放狀態面板 */
-  .status-panel{display:flex;flex-direction:column;gap:18px}
-  .status-bar{display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
-  .db-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 22px;min-width:min(340px,100%);box-shadow:0 6px 20px #0000000a;display:flex;flex-direction:column;justify-content:space-between}
-  .db-top{display:flex;align-items:flex-start;gap:14px}
-  .db-ico{width:44px;height:44px;border-radius:11px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
-  .db-ico.err{background:#ef4444;color:#fff}
-  .db-ico svg{width:22px;height:22px}
-  .db-title{flex:1;min-width:0}
-  .db-title b{font-size:16px;display:block;color:var(--ink);margin-bottom:2px}
-  .db-title span{font-size:13px;color:var(--muted);display:block;line-height:1.4}
-  .jp-flag{width:34px;height:24px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
-  .jp-flag::after{content:"";width:11px;height:11px;border-radius:50%;background:#bc002d}
-  .db-foot{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted);gap:8px;flex-wrap:wrap}
-  .db-foot strong{color:var(--ink);font-weight:600}
-  .api-card{flex:1;min-width:min(340px,100%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 6px 20px #0000000a;display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;align-items:stretch}
-  .api-metric{padding:10px 14px;background:var(--paper);border-radius:12px;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}
-  .api-metric small{font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px}
-  .api-metric b{font-size:16px;color:var(--ink);display:block;word-break:break-all}
-  .api-metric span{font-size:11.5px;color:var(--ok);font-weight:600;margin-top:2px}
+  /* 頂部操作工具列 */
+  .action-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 240px;
+    max-width: 420px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    font: inherit;
+    font-size: 13.5px;
+    background: #ffffff;
+    box-shadow: var(--shadow-subtle);
+    transition: 0.2s;
+  }
+  .search-box:focus {
+    outline: 0;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-soft);
+  }
 
-  /* 投稿卡片網格 */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:20px}
-  .item{background:#fff;border-radius:18px;padding:16px;border:1px solid var(--line);box-shadow:0 8px 28px #0000000a;transition:.2s;display:flex;flex-direction:column}
-  .item:hover{box-shadow:0 14px 36px #00000016}
-  .meta{font-size:12.5px;color:var(--muted);margin-bottom:10px;word-break:break-all;line-height:1.6}
-  .meta-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
-  .meta-head b{color:var(--ink);font-size:14px}
-  canvas.card-cv{width:100%;height:auto;display:block;border-radius:12px;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/16px 16px}
-  .item textarea,.item input{width:100%;padding:9px 12px;margin-top:8px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:14px;resize:vertical;background:#fff}
-  .item textarea[readonly],.item input[readonly]{background:var(--paper);color:var(--muted);cursor:not-allowed}
-  .item textarea:focus,.item input:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1912}
-  .row{display:flex;gap:8px;margin-top:12px}
-  .row .btn{flex:1}
+  .font-size-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    padding: 4px 12px;
+  }
+  .font-size-control input {
+    width: 60px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 3px 6px;
+    font: inherit;
+    font-size: 13px;
+  }
 
-  /* 已登入帳號網格 */
-  .u-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(400px,100%),1fr));gap:18px}
-  .u-card{background:#fff;border-radius:18px;padding:18px 20px;border:1px solid var(--line);box-shadow:0 8px 28px #0000000a;display:flex;flex-direction:column;gap:12px}
-  .u-head{display:flex;align-items:center;gap:14px}
-  .u-av{width:48px;height:48px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;flex:none;object-fit:cover;border:2px solid var(--line);cursor:zoom-in}
-  .u-title{flex:1;min-width:0}
-  .u-title b{font-size:15.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .u-title span{font-size:12.5px;color:var(--muted)}
-  .u-badge{font-size:11.5px;padding:3px 9px;border-radius:99px;font-weight:700;background:#e8f6ee;color:#067647;border:1px solid #a6e0c2;white-space:nowrap}
-  .u-badge.warn{background:#fef3c7;color:#b45309;border-color:#fde68a}
-  .u-photos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--paper);padding:12px 10px;border-radius:14px;border:1px solid var(--line)}
-  .u-pbox{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
-  .u-pbox small{font-size:11px;font-weight:700;color:var(--muted)}
-  .u-pbox img{width:76px;height:76px;border-radius:10px;object-fit:cover;border:1.5px solid var(--line);background:#eee;cursor:zoom-in}
-  .u-pbox .no-pic{width:76px;height:76px;border-radius:10px;border:1.5px dashed var(--line);display:grid;place-items:center;font-size:11px;color:var(--muted);background:#fff;padding:4px}
-  .u-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--paper);padding:10px 14px;border-radius:12px;text-align:center}
-  .u-stat b{font-size:19px;display:block;color:var(--ink)}
-  .u-stat small{font-size:12px;color:var(--muted)}
-  .u-sec{font-size:12.5px;color:var(--muted);line-height:1.65;word-break:break-all;border-top:1px solid var(--line);padding-top:10px}
-  .u-sec-title{font-size:11.5px;font-weight:700;color:var(--ink);background:var(--paper);border:1px solid var(--line);display:inline-block;padding:2px 8px;border-radius:6px;margin-bottom:6px}
-  .u-sec strong{color:var(--ink)}
-  .lightbox-img{max-width:min(90vw,540px);max-height:80vh;border-radius:16px;display:block;box-shadow:0 24px 70px #0008}
+  /* 投稿卡片格線 */
+  .submissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: 22px;
+  }
+  .post-item-card {
+    background: #ffffff;
+    border-radius: var(--r-lg);
+    padding: 18px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s var(--spring-smooth), box-shadow 0.25s;
+  }
+  .post-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .post-item-meta {
+    font-size: 12.5px;
+    color: var(--ink-tertiary);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .post-item-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .post-item-meta-top b {
+    color: var(--ink);
+    font-size: 14px;
+  }
+  canvas.admin-card-cv {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 14px;
+    background: #fbfbfd;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    margin-bottom: 12px;
+  }
+  .post-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .post-item-actions .btn { flex: 1; }
 
-  /* ===== 分頁 3：Google 表單 API 與 CSV 數據面板 ===== */
-  .panel-wrap{display:flex;flex-direction:column;gap:20px}
-  .panel-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 8px 28px #00000008}
-  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .panel-head h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}
-  .panel-head p{margin:3px 0 0;font-size:13px;color:var(--muted)}
+  /* 帳號格線 */
+  .users-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+    gap: 20px;
+  }
+  .user-item-card {
+    background: #ffffff;
+    border-radius: var(--r-lg);
+    padding: 20px 22px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .user-card-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .user-avatar-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 18px;
+    flex: none;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: zoom-in;
+  }
+  .user-photos-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: var(--bg);
+    padding: 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+  }
+  .user-photo-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .user-photo-box small {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-tertiary);
+  }
+  .user-photo-box img {
+    width: 72px;
+    height: 72px;
+    border-radius: 9px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    background: #edeae3;
+    cursor: zoom-in;
+    transition: transform 0.2s;
+  }
+  .user-photo-box img:hover { transform: scale(1.05); }
+  .user-photo-box .placeholder-pic {
+    width: 72px;
+    height: 72px;
+    border-radius: 9px;
+    border: 1px dashed var(--line);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    color: var(--ink-tertiary);
+    background: #ffffff;
+  }
+  .user-stats-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: var(--bg);
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    text-align: center;
+  }
+  .user-stats-bar b {
+    font-size: 18px;
+    display: block;
+    color: var(--ink);
+  }
+  .user-stats-bar small {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+  }
+  .user-detail-section {
+    font-size: 12.5px;
+    color: var(--ink-secondary);
+    line-height: 1.65;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    word-break: break-all;
+  }
+  .section-badge-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    margin-bottom: 6px;
+  }
 
-  .forms-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-  .form-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:.18s}
-  .form-tab-btn:hover{border-color:var(--ink)}
-  .form-tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* 表單與 CSV 數據面板 */
+  .panel-surface {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 26px 28px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 22px;
+  }
+  .panel-surface-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .panel-surface-head h3 {
+    margin: 0;
+    font-size: 19px;
+  }
+  .panel-surface-head p {
+    margin: 3px 0 0;
+    font-size: 13.5px;
+    color: var(--ink-secondary);
+  }
+  .form-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    border: 1px solid var(--line);
+    background: var(--bg);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: 0.18s;
+  }
+  .form-tab-btn:hover { border-color: var(--line-strong); background: #ffffff; }
+  .form-tab-btn.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
 
-  .api-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:var(--paper);padding:16px;border-radius:14px;border:1px solid var(--line)}
-  .api-kv small{font-size:11.5px;color:var(--muted);font-weight:600;display:block;margin-bottom:3px}
-  .api-kv div{font-size:13.5px;font-weight:600;color:var(--ink);word-break:break-all}
+  .table-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: #ffffff;
+  }
+  table.data-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    text-align: left;
+  }
+  table.data-tbl th {
+    background: var(--bg);
+    color: var(--ink);
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.data-tbl td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    max-width: 320px;
+    word-break: break-word;
+  }
+  table.data-tbl tr:last-child td { border-bottom: 0; }
+  table.data-tbl tr:hover td { background: rgba(0, 0, 0, 0.015); }
 
-  .cp-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
-  .cp-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px}
-  .cp-item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700}
-  .cp-entry{font-family:monospace;font-size:12px;background:var(--paper);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
-
-  .table-scroll{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
-  table.data-tbl{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left}
-  table.data-tbl th{background:var(--paper);color:var(--ink);font-weight:700;padding:11px 14px;border-bottom:1.5px solid var(--line);white-space:nowrap}
-  table.data-tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;max-width:340px;word-break:break-word}
-  table.data-tbl tr:last-child td{border-bottom:0}
-  table.data-tbl tr:hover td{background:#faf8f5}
-
-  .stat-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
-  .stat-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-  .stat-box h4{margin:0 0 10px;font-size:14px;line-height:1.4}
-  .bar-row{margin-bottom:8px;font-size:12.5px}
-  .bar-lbl{display:flex;justify-content:space-between;margin-bottom:3px;gap:8px}
-  .bar-track{height:7px;background:#e4dfd6;border-radius:99px;overflow:hidden}
-  .bar-fill{height:100%;background:var(--ink);border-radius:99px}
-
-  /* ===== 分頁 4：多重管理員權限設定面板 ===== */
-  .admin-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
-  @media (max-width:960px){.admin-layout{grid-template-columns:1fr}}
-  .adm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin-bottom:10px;flex-wrap:wrap}
-  .adm-info b{font-size:15px;display:block}
-  .adm-info span{font-size:12.5px;color:var(--muted)}
-  .adm-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .select-sm{padding:7px 10px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:13px;background:#fff}
-
-  /* 表單設定彈窗 */
-  .modal-lg{width:min(760px,100%);max-height:88vh;overflow-y:auto;text-align:left}
-  .modal-lg h3{text-align:left;margin-bottom:6px}
-  .cp-edit-card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px}
-  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media (max-width:600px){.grid-2{grid-template-columns:1fr}}
+  /* 管理員權限區塊 */
+  .admin-account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="head-left">
-    <div class="brand"><img src="/icon.svg" alt="">KKNEWS <small>ADMIN</small></div>
-    <div class="sync-pill" title="系統每 3 秒自動同步最新投稿、帳號資訊、Google 表單與 Supabase 即時狀態">
-      <span class="sync-dot" id="syncDot"></span>
-      <span id="syncText">即時自動同步中</span>
+
+<!-- 頂部導覽列 -->
+<header class="admin-header">
+  <div class="brand-wrap">
+    <div class="brand" style="cursor:default">
+      <img src="/icon.svg" alt="">
+      <span>KKNEWS</span>
+      <small>CONSOLE</small>
+    </div>
+    <div class="sync-indicator">
+      <span class="sync-pulse"></span>
+      <span id="syncText">即時同步中</span>
     </div>
   </div>
 
-  <!-- 頂部中央 Dock 欄 -->
-  <nav class="dock-bar" aria-label="後台功能切換">
+  <!-- 頂部中央 Dock 導覽 -->
+  <nav class="dock-bar" aria-label="後台導覽">
     <button type="button" class="dock-item active" id="dockPosts">
-      <span>🗂️ 投稿管理</span>
+      <span>投稿管理</span>
       <span class="dock-badge" id="pCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockUsers">
-      <span>👥 已登入帳號</span>
+      <span>已登入帳號</span>
       <span class="dock-badge" id="uCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockForms">
-      <span>📋 Google 表單 / CSV</span>
+      <span>Google 表單</span>
       <span class="dock-badge" id="fCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockAdmins">
-      <span>🛡️ 管理員權限</span>
+      <span>管理員權限</span>
       <span class="dock-badge" id="aCount">1</span>
     </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>即時資訊</span>
+      <span>即時數據</span>
     </button>
   </nav>
 
-  <!-- 右上角帳號與權限區 -->
+  <!-- 右上角管理員帳號資訊 -->
   <div class="acct-zone">
     <div class="acct-pill">
       <div class="acct-av" id="adminAv">A</div>
-      <span class="role-tag" id="adminRoleBadge">👑 Super Admin</span>
+      <span class="role-chip" id="adminRoleBadge">Super Admin</span>
       <span class="acct-info" id="adminWho">管理員</span>
       <button type="button" class="acct-logout" id="logout">登出</button>
     </div>
   </div>
 </header>
 
-<main>
-  <!-- 一般管理員（唯讀）提示橫幅 -->
-  <div id="readOnlyBanner" class="ro-banner hide">
-    <span>👁️ 您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號、Google 表單 API 與 CSV 回傳結果，但無法執行修改或刪除。</span>
-    <span>最高權限由 Super Admin 管理</span>
+<main class="admin-main">
+  <!-- 唯讀權限提示橫幅 -->
+  <div id="readOnlyBanner" class="banner-notice hide">
+    <span>您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號資料與表單 CSV 回傳結果，但無法修改或刪除。</span>
+    <span style="font-size:12.5px;color:var(--ink-secondary)">系統設定由 Super Admin 管理</span>
   </div>
 
-  <!-- 搜尋與操作工具列 -->
-  <div class="toolbar" id="mainToolbar">
-    <input type="search" id="searchInput" class="search-input" placeholder="搜尋諺語、作者、姓名、信箱、表單回答或 IP…">
-    <label class="sz" id="szWrap">卡片字級 <input id="size" type="number" min="24" max="200" step="2"></label>
+  <!-- 工具列 -->
+  <div class="action-toolbar" id="mainToolbar">
+    <input type="search" id="searchInput" class="search-box" placeholder="搜尋諺語、作者、姓名、信箱、回答或 IP...">
+    <label class="font-size-control" id="szWrap">
+      <span>卡片字級</span>
+      <input id="size" type="number" min="24" max="200" step="2">
+    </label>
     <button type="button" id="reload" class="btn ghost sm">立即重整</button>
-    <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">📥 匯出投稿 CSV</button>
-    <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">📥 匯出帳號 CSV</button>
-    <button type="button" id="dlAll" class="btn sm">全部下載 ZIP</button>
+    <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">匯出投稿 CSV</button>
+    <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">匯出帳號 CSV</button>
+    <button type="button" id="dlAll" class="btn primary sm">打包下載 ZIP</button>
   </div>
 
-  <!-- 分頁 1：投稿管理卡片網格 -->
-  <div id="grid" class="grid"></div>
+  <!-- 分頁 1：投稿管理網格 -->
+  <div id="grid" class="submissions-grid"></div>
 
   <!-- 分頁 2：已登入帳號列表 -->
-  <div id="usersGrid" class="u-grid hide"></div>
+  <div id="usersGrid" class="users-list-grid hide"></div>
 
-  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
-  <section id="formsPanel" class="panel-wrap hide" aria-label="Google 表單 API 與 CSV 數據">
-    <div class="panel-card">
-      <div class="panel-head">
+  <!-- 分頁 3：Google 表單 API 與 CSV 數據 -->
+  <section id="formsPanel" class="hide" aria-label="Google 表單數據">
+    <div class="panel-surface">
+      <div class="panel-surface-head">
         <div>
-          <h3>📋 全部 Google 表單與 API 串接資訊</h3>
-          <p>檢視所有互動表單的 Google Form API 端點、試算表 CSV 連結與各時間點題目設定（Super Admin 可新增或修改設定，一般 Admin 僅供查看）。</p>
+          <h3>Google 表單與 API 串接管理</h3>
+          <p>檢視全部互動表單的 API 端點、試算表 CSV 連結與時間點題目。</p>
         </div>
-        <div class="adm-actions" id="superFormActions">
-          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增表單來源</button>
-          <button type="button" class="btn sm" id="editActiveFormBtn">⚙️ 編輯目前表單 API 與題目</button>
-          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
+        <div style="display:flex;gap:8px" id="superFormActions">
+          <button type="button" class="btn ghost sm" id="addNewFormBtn">+ 新增表單來源</button>
+          <button type="button" class="btn primary sm" id="editActiveFormBtn">編輯目前表單 API</button>
+          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">刪除此表單</button>
         </div>
       </div>
 
-      <!-- 表單切換列 -->
-      <div class="forms-tabs" id="formsTabList"></div>
-
-      <!-- 當前選中表單的 API 詳細資訊 -->
-      <div class="api-info-grid" id="activeFormApiGrid"></div>
-
-      <!-- 當前選中表單的指定時間點與題目對應表 -->
-      <div class="cp-list" id="activeFormCpList"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="formsTabList"></div>
+      <div id="activeFormApiGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:var(--bg);padding:16px;border-radius:var(--r-md);margin-bottom:14px"></div>
+      <div id="activeFormCpList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px"></div>
     </div>
 
-    <!-- 結果 CSV 與 Google 表單回傳數據表 -->
-    <div class="panel-card">
-      <div class="panel-head">
+    <div class="panel-surface">
+      <div class="panel-surface-head">
         <div>
-          <h3>📊 Google 表單回傳結果與 CSV 數據檢視</h3>
-          <p id="csvSourceHint">整合顯示網站即時收集之表單回應與 Google 試算表 CSV 回傳結果。</p>
+          <h3>回傳結果與 CSV 數據檢視</h3>
+          <p id="csvSourceHint">顯示收集之表單回應與 Google 試算表 CSV 回傳結果。</p>
         </div>
-        <div class="adm-actions">
-          <button type="button" class="btn ghost sm" id="syncCsvBtn">🔄 同步最新 CSV 結果</button>
-          <button type="button" class="btn sm" id="exportCsvBtn">📥 匯出下載 CSV 報表</button>
-          <button type="button" class="btn ghost sm" id="openImportCsvBtn">📤 匯入 CSV 數據</button>
-          <button type="button" class="btn danger sm" id="clearResponsesBtn">🗑️ 清空本表單紀錄</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn ghost sm" id="syncCsvBtn">同步最新 CSV</button>
+          <button type="button" class="btn primary sm" id="exportCsvBtn">匯出下載 CSV</button>
+          <button type="button" class="btn ghost sm" id="openImportCsvBtn">匯入 CSV 數據</button>
+          <button type="button" class="btn danger sm" id="clearResponsesBtn">清空本表單紀錄</button>
         </div>
       </div>
 
       <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
+      <div id="dfcStatBars" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px"></div>
 
-      <!-- 各題選項統計分佈 -->
-      <div id="dfcStatBars" class="stat-bars"></div>
-
-      <!-- CSV / 回傳結果完整資料表 -->
-      <div class="table-scroll">
+      <div class="table-scroll-container">
         <table class="data-tbl" id="dfcCsvTable">
           <thead id="dfcCsvThead"></thead>
           <tbody id="dfcCsvTbody"></tbody>
@@ -276,176 +530,136 @@
     </div>
   </section>
 
-  <!-- 分頁 4：多種管理員權限設定（Super Admin vs 一般唯讀 Admin） -->
-  <section id="adminsPanel" class="panel-wrap hide" aria-label="管理員權限管理">
-    <div class="admin-layout">
-      <div style="display:flex;flex-direction:column;gap:20px">
-        <!-- Super Admin 專屬：後台專屬入口密鑰 (ADMIN_ACCESS_KEY) 與快速登入連結卡片 -->
-        <div class="panel-card hide" id="accessKeyCard" style="border-left:4px solid var(--primary)">
-          <div class="panel-head" style="margin-bottom:8px">
+  <!-- 分頁 4：管理員權限設定 -->
+  <section id="adminsPanel" class="hide" aria-label="管理員權限管理">
+    <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <!-- 後台密鑰卡片 (僅 Super Admin 可見) -->
+        <div class="panel-surface hide" id="accessKeyCard" style="border-left:4px solid var(--blue)">
+          <div class="panel-surface-head" style="margin-bottom:8px">
             <div>
-              <h3>🔑 後台專屬入口密鑰 (ADMIN_ACCESS_KEY)</h3>
-              <p>後台需攜帶專屬通行碼 <code>k</code> 才能看見登入頁面，避免後台路徑遭掃描探測。Super Admin 可一鍵查看密鑰或直接複製專屬登入連結分享給其他管理員。</p>
+              <h3>後台專屬入口密鑰 (ADMIN_ACCESS_KEY)</h3>
+              <p>後台訪問需攜帶通行碼 <code>k</code> 避免路徑遭公開探測。</p>
             </div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <span style="font-weight:700;font-size:13px;color:var(--muted)">後台密鑰：</span>
-              <span id="accessKeyVal" style="font-family:monospace;font-size:14px;font-weight:700;letter-spacing:1px">••••••••••••</span>
-              <button type="button" class="btn ghost sm" id="toggleAccessKeyBtn" title="一鍵查看或隱藏密鑰">👁️ 一鍵查看</button>
-              <button type="button" class="btn ghost sm" id="copyAccessKeyBtn" title="複製密鑰字串">📋 複製密鑰</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);padding:12px 16px;border-radius:var(--r-md)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:13px;font-weight:600;color:var(--ink-secondary)">入口密鑰：</span>
+              <span id="accessKeyVal" style="font-family:monospace;font-size:14px;font-weight:700">••••••••••••</span>
+              <button type="button" class="btn ghost sm" id="toggleAccessKeyBtn" style="padding:4px 10px;font-size:12px">顯示密鑰</button>
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <button type="button" class="btn sm" id="copyAdminLinkBtn">🔗 複製管理員登入連結</button>
-            </div>
+            <button type="button" class="btn ghost sm" id="copyAdminLinkBtn">複製專屬登入連結</button>
           </div>
         </div>
 
-        <div class="panel-card">
-          <div class="panel-head">
+        <div class="panel-surface">
+          <div class="panel-surface-head">
             <div>
-              <h3>🛡️ 後台管理員帳號清單</h3>
-              <p>系統預設主帳號擁有最高權限（Super Admin）；新增之帳號可自由設定為「一般管理員 Admin（唯讀，僅能查看數據）」或「Super Admin（完整權限）」。Super Admin 可隨時一鍵查看各帳號密碼或一鍵複製。</p>
+              <h3>後台管理員清單</h3>
+              <p>可自由配置「一般管理員 (唯讀)」或「Super Admin (最高權限)」。</p>
             </div>
           </div>
           <div id="adminsListWrap"></div>
         </div>
 
-        <div class="panel-card">
-          <div class="panel-head">
+        <div class="panel-surface">
+          <div class="panel-surface-head">
             <div>
-              <h3>📜 後台操作與登入稽核紀錄</h3>
-              <p>即時記錄管理員登入、新增或調整管理員權限、編輯與刪除等操作。</p>
+              <h3>操作與稽核紀錄</h3>
+              <p>即時紀錄管理員登入、權限變更與刪除等動作。</p>
             </div>
           </div>
-          <div class="table-scroll" style="max-height:320px;overflow-y:auto">
+          <div class="table-scroll-container" style="max-height:300px;overflow-y:auto">
             <table class="data-tbl">
               <thead>
-                <tr>
-                  <th>時間</th>
-                  <th>動作類型</th>
-                  <th>目標對象 / 詳情</th>
-                  <th>來源 IP</th>
-                </tr>
+                <tr><th>時間</th><th>動作</th><th>目標詳情</th><th>來源 IP</th></tr>
               </thead>
               <tbody id="auditLogsTbody">
-                <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">載入稽核紀錄中…</td></tr>
+                <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">載入中...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- Super Admin 專屬：新增管理員表單 -->
-      <div class="panel-card" id="addAdminCard">
-        <div class="panel-head">
+      <!-- 新增管理員表單 -->
+      <div class="panel-surface" id="addAdminCard">
+        <div class="panel-surface-head">
           <div>
-            <h3>➕ 新增後台管理員</h3>
-            <p>可手動輸入任何電子郵件或從已登入帳號快速帶入，預設權限為「一般管理員 Admin（唯讀）」。</p>
+            <h3>新增後台管理員</h3>
+            <p>可手動輸入信箱或從已登入帳號快速帶入。</p>
           </div>
         </div>
         <form id="createAdminForm" autocomplete="off">
           <label class="field" style="margin-top:0">
             <span class="lbl">從已登入帳號快速帶入 <span>選填</span></span>
             <select class="input" id="quickPickUserSel">
-              <option value="">— 手動輸入信箱或選擇已登入帳號 —</option>
+              <option value="">— 手動輸入或選擇已登入帳號 —</option>
             </select>
           </label>
           <label class="field">
-            <span class="lbl">管理員登入信箱 <span>必填（不限網域）</span></span>
-            <input class="input" id="newAdminEmail" type="email" placeholder="例如：staff@example.com" required>
+            <span class="lbl">管理員信箱 <span>必填</span></span>
+            <input class="input" id="newAdminEmail" type="email" placeholder="staff@example.com" required>
           </label>
           <label class="field">
-            <span class="lbl">顯示名稱／備註 <span>選填</span></span>
-            <input class="input" id="newAdminName" placeholder="例如：活動組檢視人員">
+            <span class="lbl">備註名稱 <span>選填</span></span>
+            <input class="input" id="newAdminName" placeholder="例如：活動組助理">
           </label>
           <label class="field">
             <span class="lbl">
-              <span>登入密碼 <span style="font-weight:400;color:var(--muted)">(至少 6 碼)</span></span>
-              <span style="display:inline-flex;gap:8px">
-                <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
-                <button type="button" id="toggleNewAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">👁️ 一鍵查看</button>
-                <button type="button" id="copyNewAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">📋 複製</button>
+              <span>登入密碼 <span>(至少 6 碼)</span></span>
+              <span style="display:inline-flex;gap:6px">
+                <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">隨機密碼</button>
               </span>
             </span>
-            <input class="input" id="newAdminPw" type="password" placeholder="設定此管理員的登入密碼" minlength="6" required>
+            <input class="input" id="newAdminPw" type="password" placeholder="請設定登入密碼" minlength="6" required>
           </label>
           <label class="field">
-            <span class="lbl">權限等級 <span>預設為一般管理員</span></span>
+            <span class="lbl">權限等級</span>
             <select class="input" id="newAdminRole">
-              <option value="admin" selected>👁️ 一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）</option>
-              <option value="super_admin">👑 最高管理員 Super Admin（完整權限：可修改、刪除與管理帳號）</option>
+              <option value="admin" selected>一般管理員 Admin（唯讀：僅能查看數據）</option>
+              <option value="super_admin">最高管理員 Super Admin（完整修改管理權限）</option>
             </select>
           </label>
-          <button type="submit" class="btn block" id="createAdminBtn">建立管理員帳號</button>
+          <button type="submit" class="btn primary block" id="createAdminBtn" style="margin-top:20px">建立管理員帳號</button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- 分頁 5：點進頂部 Dock「即時系統數據」才顯示的全開放 Supabase 真實數據面板 -->
-  <section id="adminStatusBar" class="status-panel hide" aria-label="Supabase 即時系統數據">
-    <div class="status-bar">
-      <div class="db-card">
-        <div class="db-top">
-          <div class="db-ico" id="dbIco">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+  <!-- 分頁 5：即時系統數據 -->
+  <section id="adminStatusBar" class="hide" aria-label="系統即時數據">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+      <div class="panel-surface">
+        <h3 style="margin:0 0 14px">雲端資料庫狀態</h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div class="db-icon-box" id="dbIco" style="width:40px;height:40px;border-radius:10px;background:var(--green-soft);color:var(--green);display:grid;place-items:center">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           </div>
-          <div class="db-title">
+          <div>
             <b id="dbName">Primary Database</b>
-            <span id="dbRegion">Northeast Asia (Tokyo)</span>
-            <span id="dbSpec">ap-northeast-1 · t3.nano</span>
+            <div id="dbRegion" style="font-size:12.5px;color:var(--ink-secondary)">Northeast Asia (Tokyo)</div>
           </div>
-          <div class="jp-flag" title="Tokyo (ap-northeast-1)"></div>
         </div>
-        <div class="db-foot">
-          <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
-          <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
-          <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
-          <span><span id="stConns">—/60</span> conns</span>
+        <div style="font-size:13px;color:var(--ink-secondary);line-height:1.8">
+          <div>專案代號：<strong id="stRef">—</strong></div>
+          <div>CPU 負載：<strong id="stCpu">—%</strong></div>
+          <div>RAM 記憶體：<strong id="stRam">—%</strong> (<span id="stRealRam">—</span>)</div>
+          <div>Disk 儲存空間：<strong id="stDisk">—%</strong> (<span id="stRealDisk">—</span>)</div>
+          <div>連線數：<strong id="stConns">—/60</strong></div>
         </div>
       </div>
 
-      <div class="api-card">
-        <div class="api-metric">
-          <small>Supabase 專案與狀態</small>
-          <b id="stRef">—</b>
-          <span id="stHealth">● REST & Auth 正常</span>
-        </div>
-        <div class="api-metric">
-          <small>API 延遲 / 快取命中</small>
-          <b id="stLatency">— ms</b>
-          <span id="stCache">快取命中 —%</span>
-        </div>
-        <div class="api-metric">
-          <small>真實 RAM / Disk 用量</small>
-          <b id="stRealRam">— / — MB</b>
-          <span id="stRealDisk">Disk — MB / — GB</span>
-        </div>
-        <div class="api-metric">
-          <small>DB 大小 / WAL 日誌</small>
-          <b id="stDbSize">— MB</b>
-          <span id="stWalSize">WAL — MB</span>
-        </div>
-        <div class="api-metric">
-          <small>SQL 查詢 / 交易 Commit</small>
-          <b id="stQueries">— 次</b>
-          <span id="stXact">Commit — / Rollback —</span>
-        </div>
-        <div class="api-metric">
-          <small>資料列讀寫 / 網路流量</small>
-          <b id="stTuples">寫入 — 筆</b>
-          <span id="stNet">⬇ — MB / ⬆ — MB</span>
-        </div>
-        <div class="api-metric">
-          <small>系統負載 (1m/5m/15m)</small>
-          <b id="stLoad">— / — / —</b>
-          <span id="stCounts">貼文 — 篇 · 帳號 — 人</span>
-        </div>
-        <div class="api-metric">
-          <small>Node 伺服器記憶體 / 同步</small>
-          <b id="stNodeMem">RSS — MB</b>
-          <span id="stCheckedAt">最後同步 —</span>
+      <div class="panel-surface">
+        <h3 style="margin:0 0 14px">效能指標與流量</h3>
+        <div style="font-size:13px;color:var(--ink-secondary);line-height:1.8">
+          <div>API 響應延遲：<strong id="stLatency">— ms</strong></div>
+          <div>快取命中率：<strong id="stCache">—</strong></div>
+          <div>資料庫容量：<strong id="stDbSize">—</strong> (WAL: <span id="stWalSize">—</span>)</div>
+          <div>SQL 執行次數：<strong id="stQueries">—</strong></div>
+          <div>交易統計：<span id="stXact">—</span></div>
+          <div>網路流量：<span id="stNet">—</span></div>
+          <div>Node 記憶體：<strong id="stNodeMem">—</strong></div>
         </div>
       </div>
     </div>
@@ -454,131 +668,127 @@
 
 <!-- 照片放大燈箱 -->
 <div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
-  <img id="lightboxImg" class="lightbox-img" alt="放大預覽">
+  <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽">
 </div>
 
 <!-- 刪除確認彈窗 -->
 <div id="confirmModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="modal" style="max-width:380px">
-    <h3 id="confirmTitle">確定要執行此刪除操作？</h3>
-    <p id="confirmDesc" class="sub" style="text-align:center;margin-bottom:10px">刪除後將無法復原。</p>
-    <div class="actions">
-      <button type="button" class="btn ghost" id="cancelDelBtn">取消</button>
-      <button type="button" class="btn danger" id="confirmDelBtn">確定刪除</button>
+    <h3 id="confirmTitle" style="margin:0 0 8px;font-size:19px;text-align:center">確定要執行刪除？</h3>
+    <p id="confirmDesc" class="sub" style="text-align:center;margin-bottom:16px;font-size:13.5px">刪除後將無法復原。</p>
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn ghost" id="cancelDelBtn" style="flex:1">取消</button>
+      <button type="button" class="btn danger" id="confirmDelBtn" style="flex:1">確定刪除</button>
     </div>
   </div>
 </div>
 
-<!-- Super Admin 專屬：設定 / 編輯後台管理員帳號彈窗（支援從「已登入帳號」一鍵設為一般管理員） -->
+<!-- 管理員權限編輯彈窗 -->
 <div id="editAdminModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="editAdminModalTitle">
-  <div class="modal" style="max-width:440px;text-align:left">
-    <h3 id="editAdminModalTitle" style="text-align:left;margin-bottom:6px">🛡️ 設定管理員帳號權限</h3>
-    <p id="editAdminModalSub" class="sub" style="margin-bottom:14px">可將此帳號設為「一般管理員 Admin（唯讀）」或「Super Admin」，並設定後台登入密碼。</p>
+  <div class="modal" style="max-width:440px">
+    <h3 id="editAdminModalTitle" style="margin:0 0 6px;font-size:19px">編輯管理員權限</h3>
+    <p id="editAdminModalSub" class="sub" style="margin-bottom:16px;font-size:13.5px">設定該帳號之管理權限或重設密碼。</p>
     <form id="editAdminForm" autocomplete="off">
       <label class="field" style="margin-top:0">
-        <span class="lbl">管理員信箱</span>
-        <input class="input" id="editAdminEmail" type="email" readonly style="background:var(--paper);color:var(--muted)">
+        <span class="lbl">電子郵件信箱</span>
+        <input class="input" id="editAdminEmail" type="email" readonly style="background:var(--bg);color:var(--ink-secondary)">
       </label>
       <label class="field">
-        <span class="lbl">顯示名稱／備註</span>
-        <input class="input" id="editAdminName" placeholder="例如：一般管理員（唯讀）">
+        <span class="lbl">備註名稱</span>
+        <input class="input" id="editAdminName" placeholder="例如：審核組員">
       </label>
       <label class="field">
         <span class="lbl">權限角色</span>
         <select class="input" id="editAdminRole">
-          <option value="admin">👁️ 一般管理員 Admin（唯讀：僅能查看數據）</option>
-          <option value="super_admin">👑 最高管理員 Super Admin（完整管理權限）</option>
+          <option value="admin">一般管理員 Admin（唯讀：僅能查看數據）</option>
+          <option value="super_admin">最高管理員 Super Admin（完整管理權限）</option>
         </select>
       </label>
       <label class="field">
         <span class="lbl">
-          <span id="editAdminPwLbl">登入密碼（至少 6 碼）</span>
-          <span style="display:inline-flex;gap:8px">
-            <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
-            <button type="button" id="toggleEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">👁️ 一鍵查看</button>
-            <button type="button" id="copyEditAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">📋 複製</button>
-          </span>
+          <span id="editAdminPwLbl">重設密碼 (留空代表不變)</span>
+          <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">隨機密碼</button>
         </span>
-        <input class="input" id="editAdminPw" type="password" placeholder="請輸入新密碼">
+        <input class="input" id="editAdminPw" type="password" placeholder="請輸入至少 6 碼新密碼">
       </label>
-      <div class="actions" style="margin-top:20px">
-        <button type="button" class="btn ghost" id="cancelEditAdminBtn">取消</button>
-        <button type="submit" class="btn" id="saveEditAdminBtn">儲存設定</button>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button type="button" class="btn ghost" id="cancelEditAdminBtn" style="flex:1">取消</button>
+        <button type="submit" class="btn primary" id="saveEditAdminBtn" style="flex:1">儲存設定</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Super Admin 專屬：編輯 / 新增 Google 表單 API 與題目設定彈窗 -->
+<!-- Google 表單設定彈窗 -->
 <div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
-  <div class="modal modal-lg">
-    <h3 id="formConfigModalTitle">⚙️ 設定 Google 表單 API 與互動影片時間點</h3>
-    <p class="sub" style="margin-bottom:14px">修改主表單後，前台「🎬 DFC 表單」頁面將自動套用最新的影片路徑、時間點題目與 Google Form API 設定。</p>
+  <div class="modal" style="max-width:760px;max-height:88vh;overflow-y:auto">
+    <h3 id="formConfigModalTitle" style="margin:0 0 6px;font-size:20px">設定 Google 表單 API 與題目</h3>
+    <p class="sub" style="margin-bottom:14px;font-size:13.5px">修改主表單後，前台互動影片問答將自動套用最新設定。</p>
 
-    <div class="grid-2">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <label class="field" style="margin-top:0">
         <span class="lbl">表單名稱</span>
-        <input class="input" id="cfgFormTitle" placeholder="例如：DFC 沉浸式互動影片表單">
+        <input class="input" id="cfgFormTitle" placeholder="例如：DFC 互動影片表單">
       </label>
       <label class="field" style="margin-top:0">
-        <span class="lbl">影片檔案路徑或網址</span>
+        <span class="lbl">影片路徑或網址</span>
         <input class="input" id="cfgVideoUrl" placeholder="/assets/dfc.mp4 或 https://...">
       </label>
     </div>
 
     <label class="field">
-      <span class="lbl">Google Form API / 提交網址 <span>支援 /viewform、/formResponse 或 Apps Script 網址</span></span>
-      <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/1FAIpQLS.../formResponse">
+      <span class="lbl">Google Form API / 提交網址 <span>支援 /viewform, /formResponse, Apps Script</span></span>
+      <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/.../formResponse">
     </label>
 
     <label class="field">
-      <span class="lbl">Google 表單結果 CSV 連結（選填） <span>貼上 Google 試算表共用連結或「發佈到網路 CSV」網址即可直接拉取雲端結果</span></span>
+      <span class="lbl">Google 試算表 CSV 結果連結 <span>選填</span></span>
       <input class="input" id="cfgCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
     </label>
 
-    <div class="grid-2">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <label class="field">
         <span class="lbl">送出時機</span>
         <select class="input" id="cfgSubmitMode">
-          <option value="end">全部時間點答完後統一送出 Google 表單</option>
+          <option value="end">全部時間點答完後統一送出</option>
           <option value="each">每個時間點作答時立即送出</option>
         </select>
       </label>
       <label class="field">
-        <span class="lbl">自動帶入登入者信箱之 Entry ID <span>選填</span></span>
-        <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.987654321">
+        <span class="lbl">信箱對應 Entry ID <span>選填</span></span>
+        <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.12345678">
       </label>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
-      <strong style="font-size:14px">⏱️ 影片時間點題目與 Google Form Entry 對應</strong>
-      <button type="button" class="btn ghost sm" id="addCheckpointBtn">➕ 新增時間點題目</button>
+      <strong style="font-size:14px">影片時間點題目與 Google Form Entry 對應</strong>
+      <button type="button" class="btn ghost sm" id="addCheckpointBtn">+ 新增時間點題目</button>
     </div>
     <div id="cfgCheckpointsWrap"></div>
 
-    <div class="actions" style="margin-top:22px">
-      <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消</button>
-      <button type="button" class="btn" id="saveFormCfgBtn">儲存設定並同步</button>
+    <div style="display:flex;gap:10px;margin-top:22px">
+      <button type="button" class="btn ghost" id="cancelFormCfgBtn" style="flex:1">取消</button>
+      <button type="button" class="btn primary" id="saveFormCfgBtn" style="flex:1">儲存設定並同步</button>
     </div>
   </div>
 </div>
 
-<!-- Super Admin 專屬：匯入 CSV 彈窗 -->
+<!-- 匯入 CSV 彈窗 -->
 <div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
-  <div class="modal modal-lg" style="max-width:560px">
-    <h3 id="importCsvTitle">📤 匯入 Google 表單結果 CSV</h3>
-    <p class="sub" style="margin-bottom:12px">可選擇從 Google 表單下載的 <code>.csv</code> 檔案，或直接貼上 CSV 內容。</p>
+  <div class="modal" style="max-width:540px">
+    <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入 Google 表單結果 CSV</h3>
+    <p class="sub" style="margin-bottom:12px;font-size:13.5px">選擇 <code>.csv</code> 檔案或直接貼上 CSV 內容。</p>
     <label class="field" style="margin-top:0">
       <span class="lbl">選擇 CSV 檔案</span>
       <input type="file" id="csvFileInput" accept=".csv,text/csv" class="input" style="padding:8px">
     </label>
     <label class="field">
-      <span class="lbl">或直接貼上 CSV 內容</span>
-      <textarea class="input" id="csvTextInput" rows="6" placeholder="時間戳記,問題一,問題二&#10;2026/10/22 10:00,答案A,答案B"></textarea>
+      <span class="lbl">或貼上 CSV 內容</span>
+      <textarea class="input" id="csvTextInput" rows="5" placeholder="時間戳記,問題一,問題二&#10;2026/10/22,答案A,答案B"></textarea>
     </label>
-    <div class="actions">
-      <button type="button" class="btn ghost" id="cancelImportCsvBtn">取消</button>
-      <button type="button" class="btn" id="confirmImportCsvBtn">開始匯入數據</button>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button type="button" class="btn ghost" id="cancelImportCsvBtn" style="flex:1">取消</button>
+      <button type="button" class="btn primary" id="confirmImportCsvBtn" style="flex:1">開始匯入</button>
     </div>
   </div>
 </div>
@@ -619,7 +829,6 @@ function toast(msg, isErr = false) {
   toast._t = setTimeout(() => t.classList.add("hide"), 2800);
 }
 
-/* 安全網址檢查：只允許 https:// 與 data:image/ */
 function safeImgSrc(url) {
   const s = String(url || "").trim();
   if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/i.test(s)) return s;
@@ -635,7 +844,6 @@ function openLightbox(src) {
 }
 $("lightbox").onclick = () => { $("lightbox").classList.add("hide"); $("lightboxImg").src = ""; };
 
-/* ---------- 權限介面套用（Super Admin 最高權限 vs 一般 Admin 唯讀） ---------- */
 function applyRoleUi(role, email) {
   const changed = currentRole !== role || currentEmail !== email;
   currentRole = role || "super_admin";
@@ -643,16 +851,15 @@ function applyRoleUi(role, email) {
 
   const badge = $("adminRoleBadge");
   if (isSuper()) {
-    badge.textContent = "👑 Super Admin";
-    badge.className = "role-tag";
+    badge.textContent = "Super Admin";
+    badge.className = "role-chip";
     $("readOnlyBanner").classList.add("hide");
   } else {
-    badge.textContent = "👁️ 一般管理員 (唯讀)";
-    badge.className = "role-tag readonly";
+    badge.textContent = "一般管理員 (唯讀)";
+    badge.className = "role-chip readonly";
     $("readOnlyBanner").classList.remove("hide");
   }
 
-  // 控制 Super Admin 專屬操作按鈕顯示
   $("superFormActions").classList.toggle("hide", !isSuper());
   $("openImportCsvBtn").classList.toggle("hide", !isSuper());
   $("clearResponsesBtn").classList.toggle("hide", !isSuper());
@@ -665,7 +872,6 @@ function applyRoleUi(role, email) {
   }
 }
 
-/* ---------- 卡片繪製：支援 5 種版面、自選配色、KKNews 與 自動投稿系統 標記 ---------- */
 const FONT = '"Reggae One","Noto Serif TC",serif';
 let FONT_SIZE = parseInt(localStorage.getItem("cardFontSize")) || 70;
 
@@ -726,7 +932,7 @@ function drawCard(canvas, text, author, style = {}) {
   const dark = isColorDark(bg);
   const textClr = style?.text || (dark ? "#f4f4f5" : "#1c1917");
   const subClr = style?.sub || (dark ? "#a1a1aa" : "#6b665d");
-  const accentClr = style?.accent || (dark ? "#60a5fa" : "#1868c7");
+  const accentClr = style?.accent || (dark ? "#38bdf8" : "#0071e3");
 
   const rawText = String(text || "").trim();
   const rawAuthor = String(author || "").trim();
@@ -734,55 +940,47 @@ function drawCard(canvas, text, author, style = {}) {
   const displayAuthor = rawAuthor || "署名";
   const isPlaceholder = !rawText;
 
-  // 1. 卡片主體圓角背景與立體陰影
-  const CX = 28, CY = 14, CW = 712, CH = 996, CR = 38;
+  const CX = 32, CY = 18, CW = 704, CH = 988, CR = 36;
   ctx.save();
-  ctx.shadowColor = dark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.22)";
+  ctx.shadowColor = dark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.18)";
   ctx.shadowBlur = 24;
-  ctx.shadowOffsetX = 6;
-  ctx.shadowOffsetY = 8;
+  ctx.shadowOffsetX = 4;
+  ctx.shadowOffsetY = 10;
   ctx.fillStyle = bg;
   ctx.beginPath();
   ctx.roundRect(CX, CY, CW, CH, CR);
   ctx.fill();
   ctx.restore();
 
-  // 2. 左上角："KKNews"
   ctx.save();
-  ctx.font = '800 23px system-ui, -apple-system, sans-serif';
+  ctx.font = '700 22px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = isPlaceholder ? subClr : textClr;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('KKNews', CX + 44, CY + 44);
   const kw = ctx.measureText('KKNews').width;
   ctx.beginPath();
-  ctx.arc(CX + 44 + kw + 8, CY + 55, 3.5, 0, Math.PI * 2);
+  ctx.arc(CX + 44 + kw + 8, CY + 54, 3.5, 0, Math.PI * 2);
   ctx.fillStyle = accentClr;
   ctx.fill();
   ctx.restore();
 
-  // 3. 右下角："自動投稿系統"
   ctx.save();
-  ctx.font = '600 17px system-ui, "Noto Serif TC", sans-serif';
+  ctx.font = '600 16px -apple-system, system-ui, "Noto Serif TC", sans-serif';
   ctx.fillStyle = subClr;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
   ctx.fillText('自動投稿系統', CX + CW - 44, CY + CH - 42);
   ctx.restore();
 
-  // 4. 五大版面繪製
   if (layout === "vertical") {
-    let colLen = 8;
-    if (displayText.length > 50) colLen = 12;
-    else if (displayText.length > 30) colLen = 10;
-
+    let colLen = displayText.length > 50 ? 12 : displayText.length > 30 ? 10 : 8;
     const colChars = [];
     for (const p of displayText.split("\n")) {
       const chars = Array.from(p);
       if (!chars.length) { colChars.push([]); continue; }
       for (let i = 0; i < chars.length; i += colLen) colChars.push(chars.slice(i, i + colLen));
     }
-
     let vSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.78) : 54;
     if (displayText.length > 60) vSize = Math.round(vSize * 0.75);
     else if (displayText.length > 35) vSize = Math.round(vSize * 0.86);
@@ -792,7 +990,6 @@ function drawCard(canvas, text, author, style = {}) {
     const totalCols = colChars.length + 1;
     const totalW = (totalCols - 1) * colSpacing;
     const startX = CX + CW / 2 + totalW / 2;
-
     const maxColLength = Math.max(...colChars.map(c => c.length), 1);
     const totalH = maxColLength * charSpacing;
     const startY = CY + CH / 2 - totalH / 2;
@@ -868,19 +1065,9 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.globalAlpha = 0.35;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(FX, FY, FW, FH);
-
     ctx.globalAlpha = 0.2;
     ctx.lineWidth = 1;
     ctx.strokeRect(FX + 8, FY + 8, FW - 16, FH - 16);
-
-    const cl = 14;
-    ctx.globalAlpha = 0.7;
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = accentClr;
-    ctx.beginPath(); ctx.moveTo(FX - 3, FY + cl); ctx.lineTo(FX - 3, FY - 3); ctx.lineTo(FX + cl, FY - 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(FX + FW + 3 - cl, FY - 3); ctx.lineTo(FX + FW + 3, FY - 3); ctx.lineTo(FX + FW + 3, FY + cl); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(FX - 3, FY + FH - cl); ctx.lineTo(FX - 3, FY + FH + 3); ctx.lineTo(FX + cl, FY + FH + 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(FX + FW + 3 - cl, FY + FH + 3); ctx.lineTo(FX + FW + 3, FY + FH + 3); ctx.lineTo(FX + FW + 3, FY + FH - cl); ctx.stroke();
     ctx.restore();
 
     let fSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.88) : 62;
@@ -924,7 +1111,6 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.beginPath();
     ctx.roundRect(pX, pY, tw + 24, 30, 15);
     ctx.fill();
-
     ctx.globalAlpha = 1;
     ctx.fillStyle = accentClr;
     ctx.textAlign = 'left';
@@ -955,12 +1141,10 @@ function drawCard(canvas, text, author, style = {}) {
     const authorStr = "@ " + displayAuthor;
     const aw = ctx.measureText(authorStr).width;
     const aBadgeY = pStartY + pTotalH + 28;
-
     ctx.fillStyle = isPlaceholder ? subClr : textClr;
     ctx.beginPath();
     ctx.roundRect(pX, aBadgeY, aw + 28, pas + 20, 12);
     ctx.fill();
-
     ctx.fillStyle = bg;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -968,7 +1152,6 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.restore();
 
   } else {
-    // classic
     let size = FONT_SIZE || 70;
     const tLen = displayText.length;
     if (tLen > 65) size = Math.round(size * 0.64);
@@ -981,7 +1164,6 @@ function drawCard(canvas, text, author, style = {}) {
     const lh = size * 1.38;
     const totalH = lines.length * lh;
     const startY = CY + CH / 2 - totalH / 2 - 10;
-
     let widest = 0;
     lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
     const startX = CX + (CW - widest) / 2;
@@ -1002,7 +1184,6 @@ function drawCard(canvas, text, author, style = {}) {
 }
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
 
-/* ---------- 即時系統狀態套用 ---------- */
 function applyAdminStatus(st) {
   if (!st) return;
   if (st.adminEmail) {
@@ -1011,18 +1192,15 @@ function applyAdminStatus(st) {
     $("adminAv").textContent = st.adminEmail[0].toUpperCase();
   }
   if (st.adminRole) applyRoleUi(st.adminRole, st.adminEmail);
-  $("dbIco").classList.toggle("err", !st.ok);
+  $("dbIco")?.classList.toggle("err", !st.ok);
   $("sysDot").className = "dot" + (st.ok ? "" : " warn");
   $("dbName").textContent = st.dbName || "Primary Database";
   $("dbRegion").textContent = st.regionName || "Northeast Asia (Tokyo)";
-  $("dbSpec").textContent = `${st.regionCode || "ap-northeast-1"} · ${st.instanceType || "t3.nano"}`;
   $("stCpu").textContent = (st.cpuPct ?? "—") + "%";
   $("stDisk").textContent = (st.diskPct ?? "—") + "%";
   $("stRam").textContent = (st.ramPct ?? "—") + "%";
   $("stConns").textContent = `${st.conns ?? "—"}/${st.maxConns ?? 60}`;
   $("stRef").textContent = st.projectRef || "—";
-  $("stHealth").textContent = st.ok ? "● PostgreSQL 100% 即時連線" : "● 連線異常";
-  $("stHealth").style.color = st.ok ? "var(--ok)" : "var(--err)";
   $("stLatency").textContent = (st.latencyMs ?? "—") + " ms";
   $("stCache").textContent = `快取命中 ${st.cacheHitPct ?? "—"}%`;
   $("stRealRam").textContent = `${st.memUsedMb ?? "—"} / ${st.memTotalMb ?? "—"} MB`;
@@ -1031,12 +1209,8 @@ function applyAdminStatus(st) {
   $("stWalSize").textContent = `WAL ${st.walSizeMb ?? "—"} MB`;
   $("stQueries").textContent = `${st.totalQueries ?? "—"} 條查詢`;
   $("stXact").textContent = `Commit ${st.xactCommit ?? "—"} · Rollback ${st.xactRollback ?? "—"}`;
-  $("stTuples").textContent = `+${st.tupInserted ?? 0} / 改${st.tupUpdated ?? 0} / 刪${st.tupDeleted ?? 0}`;
   $("stNet").textContent = `⬇ ${st.netRxMb ?? "—"} MB · ⬆ ${st.netTxMb ?? "—"} MB`;
-  $("stLoad").textContent = `${st.load1 ?? "—"} / ${st.load5 ?? "—"} / ${st.load15 ?? "—"}`;
-  $("stCounts").textContent = `貼文 ${st.proverbsCount ?? rows.length} 篇 · 帳號 ${st.usersCount ?? users.length} 人`;
   $("stNodeMem").textContent = `RSS ${st.nodeRssMb ?? "—"} MB`;
-  $("stCheckedAt").textContent = "同步於 " + new Date().toLocaleTimeString("zh-TW", { hour12: false });
 }
 
 function isEditingCard() {
@@ -1048,7 +1222,6 @@ function isInteractingAdminsList() {
   return a && $("adminsListWrap").contains(a) && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "BUTTON");
 }
 
-/* ---------- 資訊即時整理與自動重整（單一合併請求 /api/admin/sync，每 3 秒智慧同步） ---------- */
 async function load(forceRender = false) {
   if (!forceRender && document.hidden) return;
   if (isLoading) return;
@@ -1087,7 +1260,7 @@ async function load(forceRender = false) {
     const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
     $("syncText").textContent = `自動重整 · ${nowStr}`;
 
-    const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}:${a.password || ""}`), role: currentRole, key: adminAccessKey });
+    const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}`), role: currentRole, key: adminAccessKey });
     const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
     const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig;
     const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, role: currentRole });
@@ -1130,9 +1303,9 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 function fmtGeo(g) {
-  if (!g || typeof g.lat !== "number" || typeof g.lng !== "number") return "未授權或未提供位置";
+  if (!g || typeof g.lat !== "number" || typeof g.lng !== "number") return "未提供位置";
   const url = `https://www.google.com/maps?q=${encodeURIComponent(g.lat + "," + g.lng)}`;
-  return `<a href="${url}" target="_blank" rel="noopener">${esc(g.lat)}, ${esc(g.lng)}</a>（精準度 ±${esc(g.accuracy || 0)}m）`;
+  return `<a href="${url}" target="_blank" rel="noopener">${esc(g.lat)}, ${esc(g.lng)}</a>`;
 }
 
 function unpackRow(r) {
@@ -1156,13 +1329,12 @@ function matchSearch(fields) {
   return fields.some(f => String(f || "").toLowerCase().includes(q));
 }
 
-/* ---------- 分頁 1：投稿管理（Super Admin 可編輯儲存與刪除；一般 Admin 唯讀僅可查看與下載） ---------- */
 async function render() {
   const filtered = rows.map(unpackRow).filter(r => matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info]));
   $("pCount").textContent = searchQuery ? `${filtered.length}/${rows.length}` : rows.length;
   const grid = $("grid"); grid.innerHTML = "";
   if (!filtered.length) {
-    grid.innerHTML = `<div class="empty">${searchQuery ? "找不到符合搜尋條件的投稿" : "目前還沒有投稿"}</div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</div>`;
     return;
   }
   await ensureFont(filtered.map(r => r.content + r.author).join(""));
@@ -1172,29 +1344,25 @@ async function render() {
     if (typeof metaObj === "string") {
       try { metaObj = JSON.parse(metaObj); } catch {}
     }
-    const cardStyle = metaObj?.cardStyle || { layout: "classic", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#1868c7" };
+    const cardStyle = metaObj?.cardStyle || { layout: "classic", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
 
-    const el = document.createElement("div"); el.className = "item"; el.dataset.fname = fname(r);
+    const el = document.createElement("div"); el.className = "post-item-card"; el.dataset.fname = fname(r);
     el._cardStyle = cardStyle;
     el.innerHTML = `
-      <div class="meta">
-        <div class="meta-head">
+      <div class="post-item-meta">
+        <div class="post-item-meta-top">
           <b>#${r.id} · ${esc(r.display_name)}</b>
           <span>${new Date(r.created_at).toLocaleString()}</span>
         </div>
         <div>📧 ${esc(r.user_email)}</div>
-        <div>💻 裝置／瀏覽器：${esc(r.device_info)}</div>
-        <div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span class="pill" style="font-size:11px;padding:2px 8px">📐 ${CARD_LAYOUT_NAMES[cardStyle.layout] || "經典居中"}</span>
-          <span class="pill" style="font-size:11px;padding:2px 8px">🎨 ${THEME_NAMES[cardStyle.themeId] || (cardStyle.bg ? "自選色" : "經典米白")}</span>
-        </div>
+        <div>💻 ${esc(r.device_info)}</div>
       </div>
-      <canvas class="card-cv"></canvas>
-      <textarea rows="2" aria-label="諺語內容" ${canEdit ? "" : "readonly"}></textarea>
-      <input placeholder="來源" aria-label="來源人名" ${canEdit ? "" : "readonly"}>
-      <div class="row">
-        <button type="button" class="btn sm dl">下載 PNG</button>
-        ${canEdit ? `<button type="button" class="btn ghost sm save-edit">儲存修改</button><button type="button" class="btn danger sm del">刪除</button>` : ""}
+      <canvas class="admin-card-cv"></canvas>
+      <textarea rows="2" class="input" aria-label="內容" ${canEdit ? "" : "readonly"} style="margin-top:6px"></textarea>
+      <input class="input" placeholder="署名" aria-label="署名" ${canEdit ? "" : "readonly"} style="margin-top:6px">
+      <div class="post-item-actions">
+        <button type="button" class="btn ghost sm dl">下載 PNG</button>
+        ${canEdit ? `<button type="button" class="btn ghost sm save-edit">儲存</button><button type="button" class="btn danger sm del">刪除</button>` : ""}
       </div>`;
 
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
@@ -1215,7 +1383,7 @@ async function render() {
           body: JSON.stringify({ content, author }),
         });
         saveBtn.disabled = false;
-        if (resp.ok) { toast(`已儲存投稿 #${r.id} 修改`); load(true); }
+        if (resp.ok) { toast(`已儲存投稿 #${r.id}`); load(true); }
         else { const j = await resp.json().catch(() => ({})); toast(j.error || "儲存失敗", true); }
       };
       el.querySelector(".del").onclick = () => {
@@ -1226,10 +1394,7 @@ async function render() {
           onConfirm: async () => {
             const resp = await fetch("/api/admin/proverbs/" + r.id, { method: "DELETE", headers: H });
             if (resp.ok) { toast("已刪除投稿 #" + r.id); load(true); }
-            else {
-              const j = await resp.json().catch(() => ({}));
-              toast(j.error || "刪除失敗", true);
-            }
+            else { const j = await resp.json().catch(() => ({})); toast(j.error || "刪除失敗", true); }
           },
         });
       };
@@ -1238,102 +1403,83 @@ async function render() {
   }
 }
 
-/* ---------- 分頁 2：已登入帳號列表（Super Admin 可直接將任一帳號設為一般管理員 Admin） ---------- */
 function renderUsers() {
   const filtered = users.filter(u => matchSearch([u.name, u.email, u.last_ip, u.last_device, u.google_sub]));
   $("uCount").textContent = searchQuery ? `${filtered.length}/${users.length}` : users.length;
   const ug = $("usersGrid"); ug.innerHTML = "";
   if (!filtered.length) {
-    ug.innerHTML = `<div class="empty">${searchQuery ? "找不到符合搜尋條件的帳號" : "目前還沒有任何登入過的帳號"}</div>`;
+    ug.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery ? "找不到符合條件的帳號" : "目前尚無任何登入帳號"}</div>`;
     return;
   }
   const adminByEmail = Object.fromEntries(adminAccounts.map(a => [String(a.email || "").toLowerCase(), a]));
   for (const u of filtered) {
-    const el = document.createElement("div"); el.className = "u-card";
+    const el = document.createElement("div"); el.className = "user-item-card";
     const displayName = u.name || (u.email || "").split("@")[0] || "未命名";
     const pic = safeImgSrc(u.picture);
     const sFront = safeImgSrc(u.selfie);
     const sRight = safeImgSrc(u.selfie_right);
     const sLeft = safeImgSrc(u.selfie_left);
     const avHtml = pic
-      ? `<img class="u-av" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
-      : `<div class="u-av">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
+      ? `<img class="user-avatar-circle" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
+      : `<div class="user-avatar-circle">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
-    const selfieAt = u.selfie_at ? new Date(u.selfie_at).toLocaleString() : "";
-    const verifiedBadge = sFront
-      ? `<span class="u-badge">✓ 已完成 3 角度實拍核實</span>`
-      : `<span class="u-badge warn">尚未完成實拍</span>`;
 
     const matchedAdm = adminByEmail[String(u.email || "").toLowerCase()];
     const admRoleBadge = matchedAdm
       ? (matchedAdm.role === "super_admin"
-          ? `<span class="role-tag">👑 Super Admin</span>`
-          : `<span class="role-tag readonly">👁️ 一般管理員 (唯讀)</span>`)
+          ? `<span class="role-chip">Super Admin</span>`
+          : `<span class="role-chip readonly">一般管理員 (唯讀)</span>`)
       : "";
     const setAdminBtnHtml = isSuper()
       ? (matchedAdm && !matchedAdm.isPrimary
-          ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:5px 10px;font-size:12px">⚙️ 調整管理員權限</button>`
+          ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:4px 10px;font-size:12px">調整權限</button>`
           : !matchedAdm
-            ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:5px 10px;font-size:12px">🛡️ 設為一般管理員</button>`
+            ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:4px 10px;font-size:12px">設為管理員</button>`
             : "")
       : "";
 
     el.innerHTML = `
-      <div class="u-head">
+      <div class="user-card-head">
         ${avHtml}
-        <div class="u-title">
+        <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <b>${esc(displayName)}</b>
+            <b style="font-size:15.5px">${esc(displayName)}</b>
             ${admRoleBadge}
           </div>
-          <span>${esc(u.email)}</span>
+          <span style="font-size:13px;color:var(--ink-secondary)">${esc(u.email)}</span>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          ${verifiedBadge}
-          ${setAdminBtnHtml}
+        <div>${setAdminBtnHtml}</div>
+      </div>
+      <div class="user-photos-strip">
+        <div class="user-photo-box">
+          <small>Google 頭貼</small>
+          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer">` : `<div class="placeholder-pic">無</div>`}
+        </div>
+        <div class="user-photo-box">
+          <small>實拍：正面</small>
+          ${sFront ? `<img data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面">` : `<div class="placeholder-pic">未拍</div>`}
+        </div>
+        <div class="user-photo-box">
+          <small>實拍：向右</small>
+          ${sRight ? `<img data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右">` : `<div class="placeholder-pic">未拍</div>`}
+        </div>
+        <div class="user-photo-box">
+          <small>實拍：向左</small>
+          ${sLeft ? `<img data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左">` : `<div class="placeholder-pic">未拍</div>`}
         </div>
       </div>
-      <div class="u-photos">
-        <div class="u-pbox">
-          <small>🔹 Google 頭貼</small>
-          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google 頭貼" title="點擊放大" referrerpolicy="no-referrer">` : `<div class="no-pic">無頭貼</div>`}
-        </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：正面</small>
-          ${sFront ? `<img data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面" title="正面（${esc(selfieAt)}）點擊放大">` : `<div class="no-pic">未拍攝</div>`}
-        </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：向右</small>
-          ${sRight ? `<img data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右" title="向右（${esc(selfieAt)}）點擊放大">` : `<div class="no-pic">未拍攝</div>`}
-        </div>
-        <div class="u-pbox">
-          <small>🔸 實拍：向左</small>
-          ${sLeft ? `<img data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左" title="向左（${esc(selfieAt)}）點擊放大">` : `<div class="no-pic">未拍攝</div>`}
-        </div>
+      <div class="user-stats-bar">
+        <div><b>${u.login_count}</b><small>登入次數</small></div>
+        <div><b>${u.post_count}</b><small>貼文次數</small></div>
       </div>
-      <div class="u-stats">
-        <div class="u-stat"><b>${u.login_count}</b><small>累積登入次數</small></div>
-        <div class="u-stat"><b>${u.post_count}</b><small>累積貼文留言次數</small></div>
-      </div>
-      <div class="u-sec">
-        <div class="u-sec-title">🔹 Google 帳號資訊（OAuth 提供）</div>
-        <div>👤 <strong>全名：</strong>${esc(displayName)}（姓氏：${esc(u.family_name || "—")} / 名字：${esc(u.given_name || "—")}）</div>
-        <div>📧 <strong>電子郵件：</strong>${esc(u.email)}（${u.email_verified ? "已驗證" : "未驗證"}）</div>
-        <div>🏫 <strong>學校網域 (hd)：</strong>${esc(u.hd || "—")} · 🔑 <strong>Google ID：</strong>${esc(u.google_sub || "—")}</div>
-      </div>
-      <div class="u-sec">
-        <div class="u-sec-title">🔸 我們收集的資訊（相機核實／定位／裝置硬體環境）</div>
-        <div>🕒 <strong>最後登入時間：</strong>${esc(lastLogin)}</div>
-        <div>📅 <strong>首次註冊時間：</strong>${esc(createdAt)}${selfieAt ? `（實拍核實：${esc(selfieAt)}）` : ""}</div>
-        <div>📍 <strong>GPS 定位座標：</strong>${fmtGeo(u.geo)}</div>
-        <div>🌐 <strong>最後登入 IP：</strong>${esc(u.last_ip || "—")} · <strong>網路：</strong>${esc(u.network || "—")}</div>
-        <div>💻 <strong>裝置／瀏覽器：</strong>${esc(u.last_device)}</div>
-        <div>🖥️ <strong>顯示晶片 (GPU)：</strong>${esc(u.gpu || "—")}</div>
-        <div>⚙️ <strong>CPU / 記憶體 / 電量：</strong>${esc(u.cores || "—")} / ${esc(u.memory || "—")} / ${esc(u.battery || "—")}</div>
-        <div>🌍 <strong>語系 / 時區：</strong>${esc(u.locale || "—")} / ${esc(u.timezone || "—")}</div>
-        ${u.last_ua ? `<div style="font-size:11.5px;margin-top:4px;opacity:.85">🧭 <strong>User-Agent：</strong>${esc(u.last_ua)}</div>` : ""}
+      <div class="user-detail-section">
+        <div class="section-badge-title">帳號與環境資訊</div>
+        <div>最後登入：${esc(lastLogin)} · 首次註冊：${esc(createdAt)}</div>
+        <div>IP位址：${esc(u.last_ip || "—")} · GPS：${fmtGeo(u.geo)}</div>
+        <div>裝置：${esc(u.last_device)}</div>
       </div>`;
+
     const setAdmBtn = el.querySelector(".u-set-admin");
     if (setAdmBtn) {
       setAdmBtn.onclick = () => {
@@ -1349,7 +1495,6 @@ function renderUsers() {
   }
 }
 
-/* ---------- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據檢視 ---------- */
 function getActiveForm() {
   return dfcForms.find(f => f.id === selectedFormId) || dfcForms[0] || null;
 }
@@ -1376,7 +1521,7 @@ function renderDfcPanel() {
     btn.type = "button";
     const count = dfcResponses.filter(r => r.formId === f.id).length;
     btn.className = "form-tab-btn" + (activeForm && activeForm.id === f.id ? " active" : "");
-    btn.innerHTML = `<span>📋 ${esc(f.title)}</span><span class="dock-badge">${count} 筆</span>`;
+    btn.innerHTML = `<span>${esc(f.title)}</span><span class="dock-badge">${count}</span>`;
     btn.onclick = () => {
       selectedFormId = f.id;
       renderDfcPanel();
@@ -1390,48 +1535,29 @@ function renderDfcPanel() {
 
   const isDemoUrl = !activeForm.googleFormUrl || activeForm.googleFormUrl.includes("YOUR_GOOGLE_FORM");
   const apiStatusHtml = isDemoUrl
-    ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，填答將儲存於本站後台與 CSV）</span>`
-    : `<span style="color:var(--ok)">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
-  const apiKeyHtml = googleApiKeyConfigured
-    ? `<span style="color:var(--ok)">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
-    : `<span style="color:var(--muted)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
+    ? `<span style="color:var(--orange)">● 示範模式（尚未填入實際 Google Form 網址）</span>`
+    : `<span style="color:var(--green)">● 已串接 Google Form API</span>`;
 
   $("activeFormApiGrid").innerHTML = `
-    <div class="api-kv">
-      <small>表單名稱 / ID</small>
-      <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--muted)">(${esc(activeForm.id)})</span></div>
-    </div>
-    <div class="api-kv">
-      <small>Google Form API Key 狀態</small>
-      <div>${apiKeyHtml}</div>
-    </div>
-    <div class="api-kv">
-      <small>Google Form API 提交網址 (formResponse / Apps Script)</small>
-      <div>${apiStatusHtml}</div>
-    </div>
-    <div class="api-kv">
-      <small>Google 試算表結果 CSV 同步網址</small>
-      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--muted)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
-    </div>
-    <div class="api-kv">
-      <small>互動影片路徑 & 送出模式</small>
-      <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code> · ${activeForm.submitMode === "each" ? "逐題即時送出" : "全數答完統一送出"}</div>
-    </div>
+    <div><small style="color:var(--ink-tertiary)">表單名稱 / ID</small><div style="font-weight:600">${esc(activeForm.title)} (${esc(activeForm.id)})</div></div>
+    <div><small style="color:var(--ink-tertiary)">Google Form 狀態</small><div style="font-weight:600">${apiStatusHtml}</div></div>
+    <div><small style="color:var(--ink-tertiary)">影片路徑</small><div style="font-weight:600">${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</div></div>
   `;
 
   const cpWrap = $("activeFormCpList");
   cpWrap.innerHTML = "";
   (activeForm.checkpoints || []).forEach((cp, i) => {
-    const typeMap = { radio: "單選題", checkbox: "多選題", text: "簡答題", textarea: "詳答題" };
     const div = document.createElement("div");
-    div.className = "cp-item";
+    div.style.background = "var(--bg)";
+    div.style.padding = "10px 14px";
+    div.style.borderRadius = "var(--r-md)";
+    div.style.fontSize = "13px";
     div.innerHTML = `
-      <div class="cp-item-top">
-        <span>⏱️ 第 ${Number(cp.time)} 秒 · 問題 ${i + 1} (${esc(typeMap[cp.type] || cp.type)})</span>
-        <span class="cp-entry">${esc(cp.entryId)}</span>
+      <div style="display:flex;justify-content:space-between;font-weight:600;margin-bottom:4px">
+        <span>第 ${Number(cp.time)} 秒 · 題目 ${i + 1}</span>
+        <code style="font-size:12px">${esc(cp.entryId)}</code>
       </div>
-      <div style="font-weight:600;margin-bottom:4px">${esc(cp.title)}</div>
-      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--muted)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
+      <div>${esc(cp.title)}</div>
     `;
     cpWrap.appendChild(div);
   });
@@ -1443,7 +1569,6 @@ function renderDfcCsvTable() {
   const activeForm = getActiveForm();
   if (!activeForm) return;
 
-  // 統計圖卡（依據各時間點題目統計回答分佈）
   const statWrap = $("dfcStatBars");
   statWrap.innerHTML = "";
   const formResps = dfcResponses.filter(r => r.formId === activeForm.id);
@@ -1451,43 +1576,37 @@ function renderDfcCsvTable() {
     if ((cp.type === "radio" || cp.type === "checkbox") && Array.isArray(cp.options) && cp.options.length) {
       const counts = {};
       cp.options.forEach(o => { counts[o] = 0; });
-      let total = 0;
       for (const r of formResps) {
         const ans = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
         if (Array.isArray(ans)) {
-          ans.forEach(a => { counts[a] = (counts[a] || 0) + 1; total++; });
+          ans.forEach(a => { counts[a] = (counts[a] || 0) + 1; });
         } else if (ans) {
-          counts[ans] = (counts[ans] || 0) + 1; total++;
+          counts[ans] = (counts[ans] || 0) + 1;
         }
       }
       const box = document.createElement("div");
-      box.className = "stat-box";
-      box.innerHTML = `<h4>📊 ${esc(cp.title)} <small style="font-weight:400;color:var(--muted)">(共 ${formResps.length} 人作答)</small></h4>`;
+      box.style.background = "var(--bg)";
+      box.style.border = "1px solid var(--line)";
+      box.style.borderRadius = "var(--r-md)";
+      box.style.padding = "14px";
+      box.innerHTML = `<h4 style="margin:0 0 10px;font-size:13.5px">${esc(cp.title)} <small style="font-weight:400;color:var(--ink-tertiary)">(${formResps.length} 人填答)</small></h4>`;
       for (const opt of cp.options) {
         const c = counts[opt] || 0;
         const pct = formResps.length > 0 ? Math.round((c / formResps.length) * 100) : 0;
         box.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-lbl"><span>${esc(opt)}</span><b>${c} 票 (${pct}%)</b></div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div style="margin-bottom:8px;font-size:12.5px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${esc(opt)}</span><b>${c} 票 (${pct}%)</b></div>
+            <div style="height:6px;background:rgba(0,0,0,0.06);border-radius:var(--r-pill);overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--blue)"></div></div>
           </div>`;
       }
       statWrap.appendChild(box);
     }
   }
 
-  const errEl = $("remoteCsvErr");
-  if (currentCsvData?.remoteError) {
-    errEl.textContent = currentCsvData.remoteError;
-    errEl.classList.add("show");
-  } else {
-    errEl.classList.remove("show");
-  }
-
   const isRemote = currentCsvData?.source === "google_remote";
   $("csvSourceHint").textContent = isRemote
-    ? `🟢 目前顯示：從 Google 試算表即時拉取之遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
-    : `🔵 目前顯示：本站即時收集與匯入之 Google 表單回傳結果（共 ${formResps.length} 筆）`;
+    ? `目前顯示：Google 試算表遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
+    : `目前顯示：本站收集之表單回應（共 ${formResps.length} 筆）`;
 
   const thead = $("dfcCsvThead");
   const tbody = $("dfcCsvTbody");
@@ -1497,38 +1616,31 @@ function renderDfcCsvTable() {
   if (isRemote && currentCsvData) {
     const trH = document.createElement("tr");
     currentCsvData.headers.forEach(h => {
-      const th = document.createElement("th");
-      th.textContent = h;
-      trH.appendChild(th);
+      const th = document.createElement("th"); th.textContent = h; trH.appendChild(th);
     });
     thead.appendChild(trH);
 
     const filteredRows = currentCsvData.rows.filter(r => matchSearch(r));
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="${currentCsvData.headers.length || 1}" style="text-align:center;color:var(--muted);padding:36px">目前尚無符合條件的 CSV 回傳資料</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${currentCsvData.headers.length || 1}" style="text-align:center;color:var(--ink-tertiary);padding:30px">尚無相符數據</td></tr>`;
       return;
     }
     filteredRows.forEach(r => {
       const tr = document.createElement("tr");
       currentCsvData.headers.forEach((_, idx) => {
-        const td = document.createElement("td");
-        td.textContent = r[idx] ?? "";
-        tr.appendChild(td);
+        const td = document.createElement("td"); td.textContent = r[idx] ?? ""; tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
     return;
   }
 
-  // 顯示本地收集與匯入之完整表單回應（Super Admin 可單筆刪除，一般 Admin 僅可查看）
   const cps = activeForm.checkpoints || [];
   const trH = document.createElement("tr");
-  const cols = ["提交時間", "填答者帳號", "同步狀態", "裝置 / IP", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`)];
-  if (isSuper()) cols.push("管理操作");
+  const cols = ["提交時間", "填答帳號", "狀態", "裝置", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`)];
+  if (isSuper()) cols.push("管理");
   cols.forEach(c => {
-    const th = document.createElement("th");
-    th.textContent = c;
-    trH.appendChild(th);
+    const th = document.createElement("th"); th.textContent = c; trH.appendChild(th);
   });
   thead.appendChild(trH);
 
@@ -1538,7 +1650,7 @@ function renderDfcCsvTable() {
   });
 
   if (!filteredResps.length) {
-    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted);padding:38px">目前尚無表單回傳紀錄（可至前台「🎬 DFC 表單」測試作答，或點擊右上角「📤 匯入 CSV 數據」）</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--ink-tertiary);padding:30px">目前尚無表單回傳紀錄</td></tr>`;
     return;
   }
 
@@ -1546,15 +1658,11 @@ function renderDfcCsvTable() {
     const tr = document.createElement("tr");
     const timeStr = r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—";
     const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名");
-    const syncBadge = r.syncedToGoogle
-      ? `<span class="u-badge">✓ 已送達 Google</span>`
-      : `<span class="u-badge warn">${r.demo ? "示範紀錄" : "本地保存"}</span>`;
-
     let html = `
       <td style="white-space:nowrap">${esc(timeStr)}</td>
       <td><b>${esc(whoStr)}</b></td>
-      <td style="white-space:nowrap">${syncBadge}</td>
-      <td style="font-size:12px;color:var(--muted)">${esc(r.device || "—")}<br>${esc(r.ip || "")}</td>
+      <td style="white-space:nowrap"><span class="role-chip">${r.syncedToGoogle ? "已送達" : "本地保存"}</span></td>
+      <td style="font-size:12px;color:var(--ink-tertiary)">${esc(r.device || "—")}</td>
     `;
     for (const cp of cps) {
       const val = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
@@ -1571,8 +1679,8 @@ function renderDfcCsvTable() {
         delBtn.onclick = async () => {
           delBtn.disabled = true;
           const resp = await fetch(`/api/admin/dfc/responses/${encodeURIComponent(r.id)}`, { method: "DELETE", headers: H });
-          if (resp.ok) { toast("已刪除該筆表單紀錄"); load(true); }
-          else { const j = await resp.json().catch(() => ({})); toast(j.error || "刪除失敗", true); delBtn.disabled = false; }
+          if (resp.ok) { toast("已刪除該筆紀錄"); load(true); }
+          else { toast("刪除失敗", true); delBtn.disabled = false; }
         };
       }
     }
@@ -1580,9 +1688,8 @@ function renderDfcCsvTable() {
   }
 }
 
-/* ---------- Super Admin 編輯 / 新增 Google 表單與時間點設定彈窗邏輯 ---------- */
 function openFormConfigModal(formObj) {
-  if (!isSuper()) return toast("一般管理員僅能查看數據，無法修改設定", true);
+  if (!isSuper()) return toast("一般管理員僅能查看數據", true);
   editingFormObj = JSON.parse(JSON.stringify(formObj));
   $("cfgFormTitle").value = editingFormObj.title || "";
   $("cfgVideoUrl").value = editingFormObj.videoUrl || "/assets/dfc.mp4";
@@ -1599,45 +1706,23 @@ function renderCheckpointEditors() {
   wrap.innerHTML = "";
   (editingFormObj.checkpoints || []).forEach((cp, idx) => {
     const card = document.createElement("div");
+    card.style.background = "var(--bg)";
+    card.style.border = "1px solid var(--line)";
+    card.style.borderRadius = "var(--r-md)";
+    card.style.padding = "14px";
+    card.style.marginTop = "10px";
     card.className = "cp-edit-card";
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <b>時間點題目 #${idx + 1}</b>
-        <button type="button" class="btn danger sm rm-cp" style="padding:4px 10px;font-size:12px">移除此題</button>
+        <b>題目 #${idx + 1}</b>
+        <button type="button" class="btn danger sm rm-cp" style="padding:4px 10px;font-size:12px">移除</button>
       </div>
-      <div class="grid-2">
-        <label class="field" style="margin-top:0">
-          <span class="lbl">觸發秒數 (秒)</span>
-          <input type="number" min="1" class="input cp-time" value="${Number(cp.time) || 5}">
-        </label>
-        <label class="field" style="margin-top:0">
-          <span class="lbl">Google Form Entry ID</span>
-          <input class="input cp-entry-inp" value="${esc(cp.entryId || "")}" placeholder="entry.123456789">
-        </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label class="field" style="margin-top:0"><span class="lbl">觸發秒數</span><input type="number" min="1" class="input cp-time" value="${Number(cp.time) || 5}"></label>
+        <label class="field" style="margin-top:0"><span class="lbl">Entry ID</span><input class="input cp-entry-inp" value="${esc(cp.entryId || "")}"></label>
       </div>
-      <div class="grid-2">
-        <label class="field">
-          <span class="lbl">題目類型</span>
-          <select class="input cp-type">
-            <option value="radio" ${cp.type === "radio" ? "selected" : ""}>單選題 (radio)</option>
-            <option value="checkbox" ${cp.type === "checkbox" ? "selected" : ""}>多選題 (checkbox)</option>
-            <option value="text" ${cp.type === "text" ? "selected" : ""}>簡答題 (text)</option>
-            <option value="textarea" ${cp.type === "textarea" ? "selected" : ""}>詳答題 (textarea)</option>
-          </select>
-        </label>
-        <label class="field">
-          <span class="lbl">階段標籤</span>
-          <input class="input cp-step" value="${esc(cp.stepLabel || `階段 ${idx + 1}`)}">
-        </label>
-      </div>
-      <label class="field">
-        <span class="lbl">題目內容</span>
-        <input class="input cp-title" value="${esc(cp.title || "")}" placeholder="請輸入問題標題">
-      </label>
-      <label class="field">
-        <span class="lbl">選項清單 <span>單選／多選題請以「逗號」或「換行」分隔各選項</span></span>
-        <textarea class="input cp-opts" rows="2" placeholder="選項 A, 選項 B, 選項 C">${esc((cp.options || []).join("\n"))}</textarea>
-      </label>
+      <label class="field"><span class="lbl">問題標題</span><input class="input cp-title" value="${esc(cp.title || "")}"></label>
+      <label class="field"><span class="lbl">選項 (以換行或逗號分隔)</span><textarea class="input cp-opts" rows="2">${esc((cp.options || []).join("\n"))}</textarea></label>
     `;
     card.querySelector(".rm-cp").onclick = () => {
       syncCheckpointsFromDom();
@@ -1658,8 +1743,8 @@ function syncCheckpointsFromDom() {
       id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now()),
       time: Math.max(1, Number(c.querySelector(".cp-time").value) || (idx + 1) * 5),
       entryId: c.querySelector(".cp-entry-inp").value.trim() || `entry.${idx + 1}`,
-      type: c.querySelector(".cp-type").value,
-      stepLabel: c.querySelector(".cp-step").value.trim(),
+      type: "radio",
+      stepLabel: `階段 ${idx + 1}`,
       title: c.querySelector(".cp-title").value.trim() || `問題 ${idx + 1}`,
       options,
       required: true,
@@ -1674,11 +1759,11 @@ $("addCheckpointBtn").onclick = () => {
   editingFormObj.checkpoints.push({
     id: "q" + nextIdx + "_" + Date.now(),
     time: lastTime + 5,
-    entryId: `entry.${nextIdx}11111111`,
+    entryId: `entry.${nextIdx}00000000`,
     stepLabel: `階段 ${nextIdx}`,
     title: `第 ${nextIdx} 階段問題`,
     type: "radio",
-    options: ["選項一", "選項二", "選項三"],
+    options: ["選項一", "選項二"],
     required: true,
   });
   renderCheckpointEditors();
@@ -1698,9 +1783,7 @@ $("addNewFormBtn").onclick = () => {
     csvUrl: "",
     emailEntryId: "",
     submitMode: "end",
-    checkpoints: [
-      { id: "q1", time: 5, entryId: "entry.111111111", stepLabel: "階段一", title: "問題一", type: "radio", options: ["選項 A", "選項 B"], required: true },
-    ],
+    checkpoints: [{ id: "q1", time: 5, entryId: "entry.11111111", stepLabel: "階段一", title: "問題一", type: "radio", options: ["選項 A", "選項 B"], required: true }],
   });
 };
 
@@ -1729,7 +1812,7 @@ $("saveFormCfgBtn").onclick = async () => {
   }
   selectedFormId = editingFormObj.id;
   $("formConfigModal").classList.add("hide");
-  toast("已儲存 Google 表單 API 與題目設定！");
+  toast("已儲存 Google 表單與題目設定");
   load(true);
 };
 
@@ -1738,18 +1821,12 @@ $("delActiveFormBtn").onclick = () => {
   if (!f || f.id === "default-dfc") return;
   openConfirm({
     title: `確定要刪除表單「${f.title}」？`,
-    desc: "刪除後此表單設定將移除，但主表單不受影響。",
-    confirmText: "確定刪除表單",
+    desc: "刪除後此表單設定將移除。",
+    confirmText: "確定刪除",
     onConfirm: async () => {
       const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
-      if (r.ok) {
-        selectedFormId = "default-dfc";
-        toast("已刪除該表單來源");
-        load(true);
-      } else {
-        const j = await r.json().catch(() => ({}));
-        toast(j.error || "刪除失敗", true);
-      }
+      if (r.ok) { selectedFormId = "default-dfc"; toast("已刪除表單"); load(true); }
+      else toast("刪除失敗", true);
     },
   });
 };
@@ -1760,11 +1837,11 @@ $("exportCsvBtn").onclick = async () => {
   const f = getActiveForm();
   if (!f) return;
   const r = await fetch(`/api/admin/dfc/csv?formId=${encodeURIComponent(f.id)}`);
-  if (!r.ok) return toast("匯出 CSV 失敗", true);
+  if (!r.ok) return toast("匯出失敗", true);
   const data = await r.json();
   const blob = new Blob([data.rawCsv || ""], { type: "text/csv;charset=utf-8" });
   save(blob, `${f.title || f.id}_responses.csv`);
-  toast("已匯出下載 CSV 報表");
+  toast("已匯出 CSV 報表");
 };
 
 $("openImportCsvBtn").onclick = () => {
@@ -1780,7 +1857,7 @@ $("csvFileInput").onchange = async (e) => {
 };
 $("confirmImportCsvBtn").onclick = async () => {
   const csvText = $("csvTextInput").value.trim();
-  if (!csvText) return toast("請選擇 CSV 檔案或貼上 CSV 內容", true);
+  if (!csvText) return toast("請選擇或貼上 CSV 內容", true);
   const f = getActiveForm();
   $("confirmImportCsvBtn").disabled = true;
   const r = await fetch("/api/admin/dfc/import-csv", {
@@ -1792,7 +1869,7 @@ $("confirmImportCsvBtn").onclick = async () => {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return toast(j.error || "匯入失敗", true);
   $("importCsvModal").classList.add("hide");
-  toast(`已成功匯入 ${j.importedCount || 0} 筆 Google 表單 CSV 數據！`);
+  toast(`已成功匯入 ${j.importedCount || 0} 筆數據`);
   load(true);
 };
 
@@ -1802,22 +1879,21 @@ $("clearResponsesBtn").onclick = () => {
   if (!f) return;
   openConfirm({
     title: `確定要清空「${f.title}」的回傳紀錄？`,
-    desc: "清空後本站保存的表單回應將無法復原（建議先匯出下載 CSV 報表）。",
-    confirmText: "確定清空紀錄",
+    desc: "清空後本表單回應將無法復原。",
+    confirmText: "確定清空",
     onConfirm: async () => {
       const r = await fetch(`/api/admin/dfc/responses/all?formId=${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
-      if (r.ok) { toast("已清空本表單的回傳紀錄"); load(true); }
+      if (r.ok) { toast("已清空本表單紀錄"); load(true); }
       else toast("清空失敗", true);
     },
   });
 };
 
-/* ---------- 分頁 4：多種管理員權限設定（Super Admin 與一般唯讀 Admin） ---------- */
 function populateQuickPickUsers() {
   const sel = $("quickPickUserSel");
   if (!sel) return;
   const currentVal = sel.value;
-  sel.innerHTML = `<option value="">— 手動輸入信箱或選擇已登入帳號 —</option>`;
+  sel.innerHTML = `<option value="">— 手動輸入或選擇已登入帳號 —</option>`;
   for (const u of users) {
     if (!u.email) continue;
     const opt = document.createElement("option");
@@ -1846,50 +1922,20 @@ if ($("genNewAdminPwBtn")) {
     const pw = genRandomPw(10);
     $("newAdminPw").value = pw;
     $("newAdminPw").type = "text";
-    $("toggleNewAdminPwBtn").textContent = "🙈 隱藏";
     navigator.clipboard?.writeText(pw).catch(() => {});
-    toast("已產生隨機密碼並複製到剪貼簿");
-  };
-}
-if ($("toggleNewAdminPwBtn")) {
-  $("toggleNewAdminPwBtn").onclick = () => {
-    const inp = $("newAdminPw");
-    const isPw = inp.type === "password";
-    inp.type = isPw ? "text" : "password";
-    $("toggleNewAdminPwBtn").textContent = isPw ? "🙈 隱藏" : "👁️ 一鍵查看";
-  };
-}
-if ($("copyNewAdminPwBtn")) {
-  $("copyNewAdminPwBtn").onclick = () => {
-    const pw = $("newAdminPw").value;
-    if (pw) {
-      navigator.clipboard?.writeText(pw).catch(() => {});
-      toast("已複製密碼到剪貼簿");
-    } else {
-      toast("尚未輸入密碼", true);
-    }
+    toast("已產生隨機密碼並複製至剪貼簿");
   };
 }
 
 function openEditAdminModal(acc) {
-  if (!isSuper()) return toast("一般管理員僅能查看數據，無法修改權限", true);
+  if (!isSuper()) return toast("一般管理員無法修改權限", true);
   editingAdminTarget = acc;
   const isExisting = Boolean(acc.id);
-  $("editAdminModalTitle").textContent = isExisting ? "⚙️ 編輯管理員權限與密碼" : "🛡️ 將帳號設為後台管理員";
-  $("editAdminModalSub").textContent = isExisting
-    ? "可隨時將此帳號切換為「一般管理員 Admin（唯讀）」或「Super Admin」，並可一鍵查看或重設其登入密碼。"
-    : "預設設為「一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）」，請為此帳號設定後台登入密碼。";
   $("editAdminEmail").value = acc.email || "";
   $("editAdminName").value = acc.name || "";
   $("editAdminRole").value = acc.role === "super_admin" ? "super_admin" : "admin";
-  $("editAdminPw").value = isExisting ? (acc.password || "") : genRandomPw(10);
-  $("editAdminPw").type = "password";
-  if ($("toggleEditAdminPwBtn")) $("toggleEditAdminPwBtn").textContent = "👁️ 一鍵查看";
+  $("editAdminPw").value = "";
   $("editAdminPw").required = !isExisting;
-  $("editAdminPw").placeholder = isExisting ? "留空代表不修改密碼（欲重設請輸入至少 6 碼）" : "請設定至少 6 碼登入密碼";
-  $("editAdminPwLbl").textContent = isExisting
-    ? (acc.password ? "登入密碼（可一鍵查看或修改重設）" : "重設登入密碼（選填，留空不變）")
-    : "設定後台登入密碼（必填，至少 6 碼）";
   $("editAdminModal").classList.remove("hide");
 }
 
@@ -1901,29 +1947,10 @@ $("genEditAdminPwBtn").onclick = () => {
   const pw = genRandomPw(10);
   $("editAdminPw").value = pw;
   $("editAdminPw").type = "text";
-  if ($("toggleEditAdminPwBtn")) $("toggleEditAdminPwBtn").textContent = "🙈 隱藏";
   navigator.clipboard?.writeText(pw).catch(() => {});
-  toast("已產生隨機密碼並複製到剪貼簿");
+  toast("已產生隨機密碼並複製");
 };
-if ($("toggleEditAdminPwBtn")) {
-  $("toggleEditAdminPwBtn").onclick = () => {
-    const inp = $("editAdminPw");
-    const isPw = inp.type === "password";
-    inp.type = isPw ? "text" : "password";
-    $("toggleEditAdminPwBtn").textContent = isPw ? "🙈 隱藏" : "👁️ 一鍵查看";
-  };
-}
-if ($("copyEditAdminPwBtn")) {
-  $("copyEditAdminPwBtn").onclick = () => {
-    const pw = $("editAdminPw").value;
-    if (pw) {
-      navigator.clipboard?.writeText(pw).catch(() => {});
-      toast("已複製密碼到剪貼簿");
-    } else {
-      toast("密碼欄位為空", true);
-    }
-  };
-}
+
 $("editAdminForm").onsubmit = async (ev) => {
   ev.preventDefault();
   if (!editingAdminTarget || !isSuper()) return;
@@ -1932,12 +1959,8 @@ $("editAdminForm").onsubmit = async (ev) => {
   const role = $("editAdminRole").value === "super_admin" ? "super_admin" : "admin";
   const password = $("editAdminPw").value;
 
-  if (!editingAdminTarget.id && password.length < 6) {
-    return toast("首次設定管理員請輸入至少 6 個字元的密碼", true);
-  }
-  if (editingAdminTarget.id && password && password.length < 6) {
-    return toast("新密碼長度至少需 6 個字元", true);
-  }
+  if (!editingAdminTarget.id && password.length < 6) return toast("密碼長度需至少 6 個字元", true);
+  if (editingAdminTarget.id && password && password.length < 6) return toast("新密碼需至少 6 個字元", true);
 
   $("saveEditAdminBtn").disabled = true;
   let r;
@@ -1956,12 +1979,11 @@ $("editAdminForm").onsubmit = async (ev) => {
   }
   $("saveEditAdminBtn").disabled = false;
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) return toast(j.error || "儲存管理員設定失敗", true);
+  if (!r.ok) return toast(j.error || "儲存失敗", true);
 
   $("editAdminModal").classList.add("hide");
   editingAdminTarget = null;
-  const roleText = role === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
-  toast(`已將 ${email} 設定為「${roleText}」`);
+  toast("已儲存管理員設定");
   load(true);
 };
 
@@ -1969,18 +1991,8 @@ if ($("toggleAccessKeyBtn")) {
   $("toggleAccessKeyBtn").onclick = () => {
     const el = $("accessKeyVal");
     const isMasked = el.textContent.includes("•");
-    el.textContent = isMasked ? (adminAccessKey || "（未設定）") : "••••••••••••";
-    $("toggleAccessKeyBtn").textContent = isMasked ? "🙈 隱藏" : "👁️ 一鍵查看";
-  };
-}
-if ($("copyAccessKeyBtn")) {
-  $("copyAccessKeyBtn").onclick = () => {
-    if (adminAccessKey) {
-      navigator.clipboard?.writeText(adminAccessKey).catch(() => {});
-      toast("已複製後台專屬入口密鑰 (ADMIN_ACCESS_KEY)");
-    } else {
-      toast("尚未設定密鑰", true);
-    }
+    el.textContent = isMasked ? (adminAccessKey || "未設定") : "••••••••••••";
+    $("toggleAccessKeyBtn").textContent = isMasked ? "隱藏密碼" : "顯示密鑰";
   };
 }
 if ($("copyAdminLinkBtn")) {
@@ -1989,105 +2001,51 @@ if ($("copyAdminLinkBtn")) {
       ? `${location.origin}/adminusercontrol?k=${encodeURIComponent(adminAccessKey)}`
       : `${location.origin}/adminusercontrol`;
     navigator.clipboard?.writeText(link).catch(() => {});
-    toast("已複製管理員登入專屬連結到剪貼簿");
+    toast("已複製管理員登入連結");
   };
 }
 
 function renderAdminsPanel() {
   const accessKeyCard = $("accessKeyCard");
   if (accessKeyCard) {
-    if (isSuper() && adminAccessKey) {
-      accessKeyCard.classList.remove("hide");
-    } else {
-      accessKeyCard.classList.add("hide");
-    }
+    accessKeyCard.classList.toggle("hide", !isSuper() || !adminAccessKey);
   }
 
   const wrap = $("adminsListWrap");
   wrap.innerHTML = "";
   for (const a of adminAccounts) {
     const row = document.createElement("div");
-    row.className = "adm-row";
+    row.className = "admin-account-row";
     const isSup = a.role === "super_admin";
     const roleBadge = isSup
-      ? `<span class="role-tag">👑 Super Admin（最高權限）</span>`
-      : `<span class="role-tag readonly">👁️ 一般管理員（唯讀僅供查看）</span>`;
-    const metaStr = a.isPrimary
-      ? "系統主帳號（最高管理權限）"
-      : `建立於：${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"} · 最後登入：${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : "尚未登入"}（${a.loginCount || 0} 次）`;
+      ? `<span class="role-chip">Super Admin</span>`
+      : `<span class="role-chip readonly">一般管理員 (唯讀)</span>`;
 
     let actionsHtml = "";
     if (isSuper() && !a.isPrimary) {
       actionsHtml = `
-        <div class="adm-actions">
-          <select class="select-sm role-sel" aria-label="切換管理員權限">
-            <option value="admin" ${!isSup ? "selected" : ""}>👁️ 一般管理員 (唯讀)</option>
-            <option value="super_admin" ${isSup ? "selected" : ""}>👑 Super Admin (最高權限)</option>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select class="input role-sel" style="width:auto;padding:5px 8px;font-size:12.5px">
+            <option value="admin" ${!isSup ? "selected" : ""}>一般管理員</option>
+            <option value="super_admin" ${isSup ? "selected" : ""}>Super Admin</option>
           </select>
-          <button type="button" class="btn ghost sm edit-adm">✏️ 編輯 / 改密</button>
-          <button type="button" class="btn danger sm del-adm">移除帳號</button>
+          <button type="button" class="btn ghost sm edit-adm">編輯 / 改密</button>
+          <button type="button" class="btn danger sm del-adm">移除</button>
         </div>`;
     } else if (a.isPrimary) {
-      actionsHtml = `<span style="font-size:12px;font-weight:700;color:var(--muted)">🔒 系統保護主帳號</span>`;
-    }
-
-    let pwHtml = "";
-    if (isSuper()) {
-      const hasPw = Boolean(a.password);
-      const isPri = Boolean(a.isPrimary);
-      const pwDisplay = hasPw ? "••••••••" : (isPri ? "•••••••• (主環境變數保護)" : "已加密保存");
-      pwHtml = `
-        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
-          <div class="field-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12px">
-            <span style="color:var(--muted);font-weight:600">🔑 登入密碼：</span>
-            <span class="adm-pw-text" data-pw="${esc(a.password || '')}" style="font-family:monospace;font-size:13px;letter-spacing:1px;font-weight:700">${pwDisplay}</span>
-            ${hasPw ? `<button type="button" class="btn ghost sm toggle-row-pw-btn" style="padding:2px 8px;font-size:11px" title="一鍵查看或隱藏密碼">👁️ 一鍵查看</button>` : ''}
-            ${hasPw ? `<button type="button" class="btn ghost sm copy-row-pw-btn" style="padding:2px 8px;font-size:11px" title="複製密碼">📋 複製</button>` : ''}
-            ${!hasPw && !isPri ? `<button type="button" class="btn ghost sm set-row-pw-btn" style="padding:2px 8px;font-size:11px" title="重設新密碼">✏️ 重設新密碼</button>` : ''}
-          </div>
-        </div>
-      `;
+      actionsHtml = `<span style="font-size:12px;color:var(--ink-tertiary)">系統主帳號</span>`;
     }
 
     row.innerHTML = `
-      <div class="adm-info">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
           <b>${esc(a.name || a.email)}</b>
           ${roleBadge}
         </div>
-        <div style="color:var(--muted);font-size:12.5px;margin-bottom:2px">📧 ${esc(a.email)} · ${esc(metaStr)}</div>
-        ${pwHtml}
+        <div style="color:var(--ink-secondary);font-size:12.5px">${esc(a.email)}</div>
       </div>
       ${actionsHtml}
     `;
-
-    if (isSuper()) {
-      const togglePwBtn = row.querySelector(".toggle-row-pw-btn");
-      const pwText = row.querySelector(".adm-pw-text");
-      if (togglePwBtn && pwText) {
-        let shown = false;
-        togglePwBtn.onclick = () => {
-          shown = !shown;
-          const raw = pwText.dataset.pw || "";
-          pwText.textContent = shown ? raw : "••••••••";
-          togglePwBtn.textContent = shown ? "🙈 隱藏" : "👁️ 一鍵查看";
-        };
-      }
-      const copyPwBtn = row.querySelector(".copy-row-pw-btn");
-      if (copyPwBtn && pwText) {
-        copyPwBtn.onclick = () => {
-          const raw = pwText.dataset.pw || "";
-          if (raw) {
-            navigator.clipboard?.writeText(raw).catch(() => {});
-            toast("已複製管理員密碼到剪貼簿");
-          }
-        };
-      }
-      const setPwBtn = row.querySelector(".set-row-pw-btn");
-      if (setPwBtn) {
-        setPwBtn.onclick = () => openEditAdminModal(a);
-      }
-    }
 
     if (isSuper() && !a.isPrimary) {
       const sel = row.querySelector(".role-sel");
@@ -2101,32 +2059,23 @@ function renderAdminsPanel() {
             body: JSON.stringify({ role: nextRole }),
           });
           sel.disabled = false;
-          if (r.ok) {
-            const label = nextRole === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
-            toast(`已將 ${a.email} 設定為「${label}」`);
-            load(true);
-          } else {
-            const j = await r.json().catch(() => ({}));
-            toast(j.error || "更新失敗", true);
-            load(true);
-          }
+          if (r.ok) { toast("已更新權限"); load(true); }
+          else toast("更新失敗", true);
         };
       }
       const editBtn = row.querySelector(".edit-adm");
-      if (editBtn) {
-        editBtn.onclick = () => openEditAdminModal(a);
-      }
+      if (editBtn) editBtn.onclick = () => openEditAdminModal(a);
       const delBtn = row.querySelector(".del-adm");
       if (delBtn) {
         delBtn.onclick = () => {
           openConfirm({
-            title: `確定要移除管理員「${a.email}」？`,
-            desc: "移除後該帳號將立即失去後台登入與檢視權限。",
-            confirmText: "確定移除帳號",
+            title: `確定要移除「${a.email}」？`,
+            desc: "移除後該帳號將失去後台權限。",
+            confirmText: "確定移除",
             onConfirm: async () => {
               const r = await fetch(`/api/admin/accounts/${encodeURIComponent(a.id)}`, { method: "DELETE", headers: H });
-              if (r.ok) { toast(`已移除管理員 ${a.email}`); load(true); }
-              else { const j = await r.json().catch(() => ({})); toast(j.error || "移除失敗", true); }
+              if (r.ok) { toast("已移除管理員"); load(true); }
+              else toast("移除失敗", true);
             },
           });
         };
@@ -2140,41 +2089,22 @@ function renderAuditLogs() {
   const tbody = $("auditLogsTbody");
   if (!tbody) return;
   if (!auditLogs.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">目前尚無後台稽核紀錄</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">尚無紀錄</td></tr>`;
     return;
   }
-  const actionLabels = {
-    login_ok_super_admin: "👑 Super Admin 登入成功",
-    login_ok_admin: "👁️ 一般管理員 登入成功",
-    login_fail: "⚠️ 後台登入失敗",
-    create_admin: "➕ 新增後台管理員",
-    update_admin: "🛡️ 更新管理員權限/資料",
-    delete_admin: "🗑️ 移除後台管理員",
-    update_proverb: "✏️ 修改諺語投稿",
-    delete_proverb: "🗑️ 刪除諺語投稿",
-    save_dfc_form: "⚙️ 儲存 DFC 表單設定",
-    delete_dfc_form: "🗑️ 刪除 DFC 表單",
-    import_dfc_csv: "📤 匯入表單 CSV",
-    delete_dfc_response: "🗑️ 刪除表單回應紀錄",
-    view_photos: "📷 檢視實拍照片",
-  };
-  tbody.innerHTML = auditLogs.map(log => {
-    const tStr = log.created_at ? new Date(log.created_at).toLocaleString("zh-TW", { hour12: false }) : "—";
-    const actStr = actionLabels[log.action] || log.action;
-    return `
-      <tr>
-        <td style="white-space:nowrap;font-size:12.5px;color:var(--muted)">${esc(tStr)}</td>
-        <td style="white-space:nowrap;font-weight:600">${esc(actStr)}</td>
-        <td>${esc(log.target || "—")}</td>
-        <td style="font-family:monospace;font-size:12.5px;color:var(--muted)">${esc(log.ip || "—")}</td>
-      </tr>
-    `;
-  }).join("");
+  tbody.innerHTML = auditLogs.map(log => `
+    <tr>
+      <td style="white-space:nowrap;font-size:12.5px;color:var(--ink-tertiary)">${esc(log.created_at ? new Date(log.created_at).toLocaleTimeString() : "—")}</td>
+      <td style="white-space:nowrap;font-weight:600">${esc(log.action)}</td>
+      <td>${esc(log.target || "—")}</td>
+      <td style="font-family:monospace;font-size:12px">${esc(log.ip || "—")}</td>
+    </tr>
+  `).join("");
 }
 
 $("createAdminForm").onsubmit = async (ev) => {
   ev.preventDefault();
-  if (!isSuper()) return toast("權限不足：一般管理員無法新增帳號", true);
+  if (!isSuper()) return toast("權限不足", true);
   const email = $("newAdminEmail").value.trim();
   const name = $("newAdminName").value.trim();
   const password = $("newAdminPw").value;
@@ -2188,25 +2118,20 @@ $("createAdminForm").onsubmit = async (ev) => {
   });
   $("createAdminBtn").disabled = false;
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) return toast(j.error || "建立管理員失敗", true);
+  if (!r.ok) return toast(j.error || "建立失敗", true);
 
   $("newAdminEmail").value = "";
   $("newAdminName").value = "";
   $("newAdminPw").value = "";
-  $("newAdminRole").value = "admin";
-  if ($("quickPickUserSel")) $("quickPickUserSel").value = "";
-  const roleLabel = role === "super_admin" ? "Super Admin（最高權限）" : "一般管理員 Admin（唯讀）";
-  toast(`已成功將 ${email} 設定為「${roleLabel}」`);
+  toast("已成功建立管理員帳號");
   load(true);
 };
 
-// 統一委派處理帶有 data-zoom 的圖片放大
 document.addEventListener("click", ev => {
   const z = ev.target.closest?.("[data-zoom]");
   if (z) openLightbox(z.getAttribute("data-zoom"));
 });
 
-/* ---------- 頂部 Dock 分頁切換 ---------- */
 function switchAdminDock(tab) {
   activeTab = tab;
   $("dockPosts").classList.toggle("active", tab === "posts");
@@ -2240,45 +2165,24 @@ function toCsvField(v) {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 $("exportPostsCsvBtn").onclick = () => {
-  if (!rows.length) return toast("目前沒有可匯出的投稿", true);
-  const headers = ["ID", "投稿時間", "諺語內容", "署名作者", "投稿者姓名", "投稿者信箱", "裝置資訊", "IP位址"];
+  if (!rows.length) return toast("尚無資料", true);
+  const headers = ["ID", "時間", "內容", "作者", "姓名", "信箱", "裝置", "IP"];
   const lines = [
     headers.map(toCsvField).join(","),
-    ...rows.map(unpackRow).map(r => [
-      r.id,
-      r.created_at ? new Date(r.created_at).toLocaleString("zh-TW", { hour12: false }) : "",
-      r.content,
-      r.author,
-      r.display_name,
-      r.user_email,
-      r.device_info,
-      r.ip_address,
-    ].map(toCsvField).join(",")),
+    ...rows.map(unpackRow).map(r => [r.id, r.created_at, r.content, r.author, r.display_name, r.user_email, r.device_info, r.ip_address].map(toCsvField).join(",")),
   ];
-  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "kknews_proverbs.csv");
-  toast("已匯出投稿 CSV 報表");
+  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "proverbs.csv");
+  toast("已匯出投稿 CSV");
 };
 $("exportUsersCsvBtn").onclick = () => {
-  if (!users.length) return toast("目前沒有可匯出的帳號", true);
-  const headers = ["姓名", "電子郵件", "完成實拍核實", "累積登入次數", "累積貼文數", "最後登入時間", "首次註冊時間", "最後IP", "裝置資訊", "GPU", "CPU/RAM/電量"];
+  if (!users.length) return toast("尚無資料", true);
+  const headers = ["姓名", "信箱", "登入次數", "貼文次數", "最後登入", "最後IP", "裝置"];
   const lines = [
     headers.map(toCsvField).join(","),
-    ...users.map(u => [
-      u.name || "",
-      u.email || "",
-      u.selfie ? "已完成" : "未完成",
-      u.login_count || 1,
-      u.post_count || 0,
-      u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("zh-TW", { hour12: false }) : "",
-      u.created_at ? new Date(u.created_at).toLocaleString("zh-TW", { hour12: false }) : "",
-      u.last_ip || "",
-      u.last_device || "",
-      u.gpu || "",
-      [u.cores, u.memory, u.battery].filter(Boolean).join(" / "),
-    ].map(toCsvField).join(",")),
+    ...users.map(u => [u.name, u.email, u.login_count, u.post_count, u.last_sign_in_at, u.last_ip, u.last_device].map(toCsvField).join(",")),
   ];
-  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "kknews_users.csv");
-  toast("已匯出已登入帳號 CSV 報表");
+  save(new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }), "users.csv");
+  toast("已匯出帳號 CSV");
 };
 
 $("cancelDelBtn").onclick = () => { pendingConfirmFn = null; $("confirmModal").classList.add("hide"); };
@@ -2286,9 +2190,8 @@ $("confirmDelBtn").onclick = async () => {
   if (typeof pendingConfirmFn !== "function") return;
   const fn = pendingConfirmFn;
   $("confirmDelBtn").disabled = true;
-  try {
-    await fn();
-  } finally {
+  try { await fn(); }
+  finally {
     $("confirmDelBtn").disabled = false;
     $("confirmModal").classList.add("hide");
     pendingConfirmFn = null;
@@ -2303,8 +2206,8 @@ $("searchInput").oninput = ev => {
 };
 
 $("dlAll").onclick = async () => {
-  const items = [...document.querySelectorAll(".item")];
-  if (!items.length) return toast("目前沒有可下載的卡片", true);
+  const items = [...document.querySelectorAll(".post-item-card")];
+  if (!items.length) return toast("目前沒有卡片", true);
   $("dlAll").disabled = true;
   const zip = new JSZip();
   for (let i = 0; i < items.length; i++) {
@@ -2315,12 +2218,13 @@ $("dlAll").onclick = async () => {
   $("dlAll").disabled = false;
   toast(`已打包下載 ${items.length} 張卡片`);
 };
-$("reload").onclick = () => { load(true); toast("已立即同步最新資料"); };
+
+$("reload").onclick = () => { load(true); toast("已同步最新資料"); };
 $("size").value = FONT_SIZE;
 $("size").oninput = () => {
   const v = Math.min(200, Math.max(24, parseInt($("size").value) || 70));
   FONT_SIZE = v; localStorage.setItem("cardFontSize", v);
-  document.querySelectorAll(".item").forEach(el => {
+  document.querySelectorAll(".post-item-card").forEach(el => {
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
     drawCard(cv, ta.value, au.value, el._cardStyle);
   });

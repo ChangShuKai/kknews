@@ -384,6 +384,7 @@ function extractGoogleSheetId(url = "") {
 function normalizeGoogleCsvUrl(url = "") {
   const s = String(url || "").trim();
   if (!s) return "";
+  if (!isAllowedGoogleUrl(s, ["docs.google.com", "script.google.com", "sheets.googleapis.com"])) return "";
   const m = s.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)\/(?:edit|view)(?:\?[^#]*)?(?:#gid=(\d+))?/i);
   if (m) {
     const gid = m[2] ? `&gid=${m[2]}` : "";
@@ -392,7 +393,18 @@ function normalizeGoogleCsvUrl(url = "") {
   return s;
 }
 
-/* ---------- 輸入清理 ---------- */
+/* ---------- URL 安全檢查：防範 SSRF（只允許合法的 Google 服務網域） ---------- */
+function isAllowedGoogleUrl(urlStr, allowedHosts = ["docs.google.com", "script.google.com", "sheets.googleapis.com", "forms.googleapis.com"]) {
+  try {
+    const u = new URL(urlStr);
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    return allowedHosts.some(allowed => host === allowed || host.endsWith("." + allowed));
+  } catch {
+    return false;
+  }
+}
+
 const str = (v, n = 120) => typeof v === "string" ? v.slice(0, n) : "";
 function cleanMeta(cm) {
   cm = cm && typeof cm === "object" ? cm : {};
@@ -690,9 +702,13 @@ app.post("/api/dfc/submit", async (req, res) => {
   let syncErr = "";
 
   if (!isDemo) {
+    if (!isAllowedGoogleUrl(targetUrl)) {
+      return res.status(400).json({ error: "不安全的目標網址：僅支援 Google 官方網域 (docs.google.com, script.google.com, sheets.googleapis.com)" });
+    }
     try {
       const apiHeaders = activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {};
-      if (/docs\.google\.com\/forms/i.test(targetUrl)) {
+      const parsedUrl = new URL(targetUrl);
+      if (parsedUrl.hostname === "docs.google.com" && parsedUrl.pathname.includes("/forms")) {
         // 自動將 /viewform 轉為 /formResponse
         let actionUrl = targetUrl.replace(/\/viewform(\?.*)?$/i, "/formResponse");
         if (activeApiKey && !/[?&]key=/i.test(actionUrl)) {
@@ -810,7 +826,7 @@ function formatAdminAccounts(adminList, isSuper = false) {
     createdAt: "系統預設",
     lastLoginAt: "",
     loginCount: 0,
-    password: isSuper ? (process.env.ADMIN_PASSWORD || "") : "",
+    hasPassword: true,
   };
   const others = (Array.isArray(adminList) ? adminList : []).map(a => {
     const role = normalizeAdminRole(a.role, a.email);
@@ -823,7 +839,7 @@ function formatAdminAccounts(adminList, isSuper = false) {
       createdAt: a.createdAt || "",
       lastLoginAt: a.lastLoginAt || "",
       loginCount: a.loginCount || 0,
-      password: isSuper ? (a.plainPassword || a.password || "") : "",
+      hasPassword: Boolean(a.passwordHash),
     };
   });
   return [primary, ...others];
@@ -923,7 +939,7 @@ app.post("/api/admin/accounts", async (req, res) => {
       existing.role = role;
       if (name) existing.name = name;
       existing.passwordHash = await hashPassword(password);
-      existing.plainPassword = password;
+      delete existing.plainPassword;
       await writeSysStore("admins", adminList);
       audit(req, "update_admin", `${email} (${role})`);
       return res.json({ ok: true, id: existing.id, role: existing.role, updated: true });
@@ -937,7 +953,6 @@ app.post("/api/admin/accounts", async (req, res) => {
     name: name || (role === "super_admin" ? "Super Admin" : "一般管理員（唯讀）"),
     role,
     passwordHash,
-    plainPassword: password,
     createdAt: new Date().toISOString(),
     lastLoginAt: "",
     loginCount: 0,
@@ -970,7 +985,7 @@ app.patch("/api/admin/accounts/:id", async (req, res) => {
   if (req.body?.password) {
     if (String(req.body.password).length < 6) return res.status(400).json({ error: "新密碼長度至少需 6 個字元" });
     target.passwordHash = await hashPassword(String(req.body.password));
-    target.plainPassword = String(req.body.password);
+    delete target.plainPassword;
   }
   await writeSysStore("admins", adminList);
   audit(req, "update_admin", `${target.email} (${target.role})`);

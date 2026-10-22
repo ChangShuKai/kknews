@@ -2,36 +2,79 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>KKNews 後台登入</title>
+<title>KKNews · 後台管理登入</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
+<style>
+  .login-card {
+    width: min(400px, 100%);
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 44px 38px 40px;
+    box-shadow: var(--shadow-lg);
+    animation: applePop 0.38s var(--spring-smooth) both;
+  }
+  .login-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--ink);
+  }
+  .login-brand img {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+  }
+  .login-brand small {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    background: var(--ink);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+  }
+</style>
 </head>
-<body class="center-page">
-<main class="card" style="width:min(390px,100%)">
-  <div class="brand-row">
-    <div class="brand"><img src="/icon.svg" alt="">KKNEWS <small>ADMIN</small></div>
+<body style="min-height:100vh;display:grid;place-items:center;padding:24px;background-color:var(--bg)">
+
+<main class="login-card">
+  <div class="login-brand">
+    <img src="/icon.svg" alt="KKNews Logo">
+    <span>KKNEWS</span>
+    <small>CONSOLE</small>
   </div>
-  <h2>管理員登入</h2>
-  <p class="sub">支援 Super Admin（最高權限）與一般管理員（唯讀檢視權限）帳號登入。</p>
+
+  <h1 style="margin:0 0 8px;font-size:24px;font-weight:700">管理員登入</h1>
+  <p class="sub" style="margin-bottom:24px;font-size:14px">請輸入你的管理員信箱與密碼以進入後台主控台。</p>
 
   <form id="loginForm" autocomplete="off">
-    <label class="field">
-      <span class="lbl">管理員信箱</span>
-      <input class="input" id="email" type="email" placeholder="admin@sixstarculture.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+    <label class="field" style="margin-top:0">
+      <span class="lbl">電子郵件信箱</span>
+      <input class="input" id="email" type="email" placeholder="admin@example.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
     </label>
+
     <label class="field">
       <span class="lbl">
         <span>密碼</span>
-        <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">👁️ 一鍵查看密碼</button>
+        <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">顯示密碼</button>
       </span>
-      <input class="input" id="pw" type="password" placeholder="請輸入密碼" autocomplete="current-password" required>
+      <input class="input" id="pw" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
     </label>
-    <button type="submit" class="btn block" id="btn">登入後台</button>
+
+    <button type="submit" class="btn primary block" id="btn" style="margin-top:24px">登入主控台</button>
   </form>
-  <div id="err" class="alert" role="alert" aria-live="polite"></div>
+
+  <div id="err" class="alert err" role="alert" aria-live="polite"></div>
 </main>
+
 <script>
 const $ = id => document.getElementById(id);
 const urlK = new URLSearchParams(location.search).get("k") || "";
@@ -44,20 +87,20 @@ const k = urlK || (() => { try { return sessionStorage.getItem("kk_admin_k") || 
 $("togglePwBtn").onclick = () => {
   const isPw = $("pw").type === "password";
   $("pw").type = isPw ? "text" : "password";
-  $("togglePwBtn").textContent = isPw ? "🙈 隱藏密碼" : "👁️ 一鍵查看密碼";
+  $("togglePwBtn").textContent = isPw ? "隱藏密碼" : "顯示密碼";
 };
 
 function sayErr(t) {
   const m = $("err");
   m.textContent = t;
-  m.className = t ? "alert show err" : "alert";
+  m.className = t ? "alert show err" : "alert err";
 }
 
 $("loginForm").onsubmit = async ev => {
   ev.preventDefault();
   sayErr("");
   $("btn").disabled = true;
-  $("btn").textContent = "登入中...";
+  $("btn").textContent = "正在安全驗證...";
   try {
     const r = await fetch("/api/admin/login", {
       method: "POST",
@@ -70,12 +113,12 @@ $("loginForm").onsubmit = async ev => {
     }
     const j = await r.json().catch(() => ({}));
     $("btn").disabled = false;
-    $("btn").textContent = "登入後台";
-    sayErr(r.status === 429 ? "嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
-  } catch (err) {
+    $("btn").textContent = "登入主控台";
+    sayErr(r.status === 429 ? "登入嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
+  } catch {
     $("btn").disabled = false;
-    $("btn").textContent = "登入後台";
-    sayErr("伺服器連線逾時，請再試一次");
+    $("btn").textContent = "登入主控台";
+    sayErr("伺服器連線逾時，請重試");
   }
 };
 </script>
