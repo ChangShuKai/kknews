@@ -280,11 +280,32 @@
   <section id="adminsPanel" class="panel-wrap hide" aria-label="管理員權限管理">
     <div class="admin-layout">
       <div style="display:flex;flex-direction:column;gap:20px">
+        <!-- Super Admin 專屬：後台專屬入口密鑰 (ADMIN_ACCESS_KEY) 與快速登入連結卡片 -->
+        <div class="panel-card hide" id="accessKeyCard" style="border-left:4px solid var(--primary)">
+          <div class="panel-head" style="margin-bottom:8px">
+            <div>
+              <h3>🔑 後台專屬入口密鑰 (ADMIN_ACCESS_KEY)</h3>
+              <p>後台需攜帶專屬通行碼 <code>k</code> 才能看見登入頁面，避免後台路徑遭掃描探測。Super Admin 可一鍵查看密鑰或直接複製專屬登入連結分享給其他管理員。</p>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-weight:700;font-size:13px;color:var(--muted)">後台密鑰：</span>
+              <span id="accessKeyVal" style="font-family:monospace;font-size:14px;font-weight:700;letter-spacing:1px">••••••••••••</span>
+              <button type="button" class="btn ghost sm" id="toggleAccessKeyBtn" title="一鍵查看或隱藏密鑰">👁️ 一鍵查看</button>
+              <button type="button" class="btn ghost sm" id="copyAccessKeyBtn" title="複製密鑰字串">📋 複製密鑰</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button type="button" class="btn sm" id="copyAdminLinkBtn">🔗 複製管理員登入連結</button>
+            </div>
+          </div>
+        </div>
+
         <div class="panel-card">
           <div class="panel-head">
             <div>
               <h3>🛡️ 後台管理員帳號清單</h3>
-              <p>系統預設主帳號擁有最高權限（Super Admin）；新增之帳號可自由設定為「一般管理員 Admin（唯讀，僅能查看數據）」或「Super Admin（完整權限）」。</p>
+              <p>系統預設主帳號擁有最高權限（Super Admin）；新增之帳號可自由設定為「一般管理員 Admin（唯讀，僅能查看數據）」或「Super Admin（完整權限）」。Super Admin 可隨時一鍵查看各帳號密碼或一鍵複製。</p>
             </div>
           </div>
           <div id="adminsListWrap"></div>
@@ -343,7 +364,8 @@
               <span>登入密碼 <span style="font-weight:400;color:var(--muted)">(至少 6 碼)</span></span>
               <span style="display:inline-flex;gap:8px">
                 <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
-                <button type="button" id="toggleNewAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">顯示</button>
+                <button type="button" id="toggleNewAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">👁️ 一鍵查看</button>
+                <button type="button" id="copyNewAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">📋 複製</button>
               </span>
             </span>
             <input class="input" id="newAdminPw" type="password" placeholder="設定此管理員的登入密碼" minlength="6" required>
@@ -471,9 +493,13 @@
       <label class="field">
         <span class="lbl">
           <span id="editAdminPwLbl">登入密碼（至少 6 碼）</span>
-          <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
+          <span style="display:inline-flex;gap:8px">
+            <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
+            <button type="button" id="toggleEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">👁️ 一鍵查看</button>
+            <button type="button" id="copyEditAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">📋 複製</button>
+          </span>
         </span>
-        <input class="input" id="editAdminPw" type="text" placeholder="請輸入新密碼">
+        <input class="input" id="editAdminPw" type="password" placeholder="請輸入新密碼">
       </label>
       <div class="actions" style="margin-top:20px">
         <button type="button" class="btn ghost" id="cancelEditAdminBtn">取消</button>
@@ -566,7 +592,7 @@ let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", 
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
 let googleApiKeyConfigured = false, googleApiKeyMasked = "";
-let adminAccounts = [], auditLogs = [], editingFormObj = null, editingAdminTarget = null;
+let adminAccounts = [], adminAccessKey = "", auditLogs = [], editingFormObj = null, editingAdminTarget = null;
 let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", lastAuditSig = "", isLoading = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
 const isSuper = () => currentRole === "super_admin";
@@ -744,6 +770,7 @@ async function load(forceRender = false) {
     if (syncData.accounts) {
       if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
       adminAccounts = syncData.accounts.accounts || [];
+      adminAccessKey = syncData.accounts.accessKey || "";
     }
     if (Array.isArray(syncData.auditLogs)) auditLogs = syncData.auditLogs;
 
@@ -757,7 +784,7 @@ async function load(forceRender = false) {
     const nowStr = new Date().toLocaleTimeString("zh-TW", { hour12: false });
     $("syncText").textContent = `自動重整 · ${nowStr}`;
 
-    const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}`), role: currentRole });
+    const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}:${a.password || ""}`), role: currentRole, key: adminAccessKey });
     const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
     const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig;
     const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, role: currentRole });
@@ -1505,7 +1532,7 @@ if ($("genNewAdminPwBtn")) {
     const pw = genRandomPw(10);
     $("newAdminPw").value = pw;
     $("newAdminPw").type = "text";
-    $("toggleNewAdminPwBtn").textContent = "隱藏";
+    $("toggleNewAdminPwBtn").textContent = "🙈 隱藏";
     navigator.clipboard?.writeText(pw).catch(() => {});
     toast("已產生隨機密碼並複製到剪貼簿");
   };
@@ -1515,7 +1542,18 @@ if ($("toggleNewAdminPwBtn")) {
     const inp = $("newAdminPw");
     const isPw = inp.type === "password";
     inp.type = isPw ? "text" : "password";
-    $("toggleNewAdminPwBtn").textContent = isPw ? "隱藏" : "顯示";
+    $("toggleNewAdminPwBtn").textContent = isPw ? "🙈 隱藏" : "👁️ 一鍵查看";
+  };
+}
+if ($("copyNewAdminPwBtn")) {
+  $("copyNewAdminPwBtn").onclick = () => {
+    const pw = $("newAdminPw").value;
+    if (pw) {
+      navigator.clipboard?.writeText(pw).catch(() => {});
+      toast("已複製密碼到剪貼簿");
+    } else {
+      toast("尚未輸入密碼", true);
+    }
   };
 }
 
@@ -1525,15 +1563,19 @@ function openEditAdminModal(acc) {
   const isExisting = Boolean(acc.id);
   $("editAdminModalTitle").textContent = isExisting ? "⚙️ 編輯管理員權限與密碼" : "🛡️ 將帳號設為後台管理員";
   $("editAdminModalSub").textContent = isExisting
-    ? "可隨時將此帳號切換為「一般管理員 Admin（唯讀）」或「Super Admin」，或重設其登入密碼。"
+    ? "可隨時將此帳號切換為「一般管理員 Admin（唯讀）」或「Super Admin」，並可一鍵查看或重設其登入密碼。"
     : "預設設為「一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）」，請為此帳號設定後台登入密碼。";
   $("editAdminEmail").value = acc.email || "";
   $("editAdminName").value = acc.name || "";
   $("editAdminRole").value = acc.role === "super_admin" ? "super_admin" : "admin";
-  $("editAdminPw").value = isExisting ? "" : genRandomPw(10);
+  $("editAdminPw").value = isExisting ? (acc.password || "") : genRandomPw(10);
+  $("editAdminPw").type = "password";
+  if ($("toggleEditAdminPwBtn")) $("toggleEditAdminPwBtn").textContent = "👁️ 一鍵查看";
   $("editAdminPw").required = !isExisting;
   $("editAdminPw").placeholder = isExisting ? "留空代表不修改密碼（欲重設請輸入至少 6 碼）" : "請設定至少 6 碼登入密碼";
-  $("editAdminPwLbl").textContent = isExisting ? "重設登入密碼（選填，留空不變）" : "設定後台登入密碼（必填，至少 6 碼）";
+  $("editAdminPwLbl").textContent = isExisting
+    ? (acc.password ? "登入密碼（可一鍵查看或修改重設）" : "重設登入密碼（選填，留空不變）")
+    : "設定後台登入密碼（必填，至少 6 碼）";
   $("editAdminModal").classList.remove("hide");
 }
 
@@ -1544,9 +1586,30 @@ $("cancelEditAdminBtn").onclick = () => {
 $("genEditAdminPwBtn").onclick = () => {
   const pw = genRandomPw(10);
   $("editAdminPw").value = pw;
+  $("editAdminPw").type = "text";
+  if ($("toggleEditAdminPwBtn")) $("toggleEditAdminPwBtn").textContent = "🙈 隱藏";
   navigator.clipboard?.writeText(pw).catch(() => {});
   toast("已產生隨機密碼並複製到剪貼簿");
 };
+if ($("toggleEditAdminPwBtn")) {
+  $("toggleEditAdminPwBtn").onclick = () => {
+    const inp = $("editAdminPw");
+    const isPw = inp.type === "password";
+    inp.type = isPw ? "text" : "password";
+    $("toggleEditAdminPwBtn").textContent = isPw ? "🙈 隱藏" : "👁️ 一鍵查看";
+  };
+}
+if ($("copyEditAdminPwBtn")) {
+  $("copyEditAdminPwBtn").onclick = () => {
+    const pw = $("editAdminPw").value;
+    if (pw) {
+      navigator.clipboard?.writeText(pw).catch(() => {});
+      toast("已複製密碼到剪貼簿");
+    } else {
+      toast("密碼欄位為空", true);
+    }
+  };
+}
 $("editAdminForm").onsubmit = async (ev) => {
   ev.preventDefault();
   if (!editingAdminTarget || !isSuper()) return;
@@ -1588,7 +1651,44 @@ $("editAdminForm").onsubmit = async (ev) => {
   load(true);
 };
 
+if ($("toggleAccessKeyBtn")) {
+  $("toggleAccessKeyBtn").onclick = () => {
+    const el = $("accessKeyVal");
+    const isMasked = el.textContent.includes("•");
+    el.textContent = isMasked ? (adminAccessKey || "（未設定）") : "••••••••••••";
+    $("toggleAccessKeyBtn").textContent = isMasked ? "🙈 隱藏" : "👁️ 一鍵查看";
+  };
+}
+if ($("copyAccessKeyBtn")) {
+  $("copyAccessKeyBtn").onclick = () => {
+    if (adminAccessKey) {
+      navigator.clipboard?.writeText(adminAccessKey).catch(() => {});
+      toast("已複製後台專屬入口密鑰 (ADMIN_ACCESS_KEY)");
+    } else {
+      toast("尚未設定密鑰", true);
+    }
+  };
+}
+if ($("copyAdminLinkBtn")) {
+  $("copyAdminLinkBtn").onclick = () => {
+    const link = adminAccessKey
+      ? `${location.origin}/adminusercontrol?k=${encodeURIComponent(adminAccessKey)}`
+      : `${location.origin}/adminusercontrol`;
+    navigator.clipboard?.writeText(link).catch(() => {});
+    toast("已複製管理員登入專屬連結到剪貼簿");
+  };
+}
+
 function renderAdminsPanel() {
+  const accessKeyCard = $("accessKeyCard");
+  if (accessKeyCard) {
+    if (isSuper() && adminAccessKey) {
+      accessKeyCard.classList.remove("hide");
+    } else {
+      accessKeyCard.classList.add("hide");
+    }
+  }
+
   const wrap = $("adminsListWrap");
   wrap.innerHTML = "";
   for (const a of adminAccounts) {
@@ -1617,16 +1717,63 @@ function renderAdminsPanel() {
       actionsHtml = `<span style="font-size:12px;font-weight:700;color:var(--muted)">🔒 系統保護主帳號</span>`;
     }
 
+    let pwHtml = "";
+    if (isSuper()) {
+      const hasPw = Boolean(a.password);
+      const isPri = Boolean(a.isPrimary);
+      const pwDisplay = hasPw ? "••••••••" : (isPri ? "•••••••• (主環境變數保護)" : "已加密保存");
+      pwHtml = `
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <div class="field-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12px">
+            <span style="color:var(--muted);font-weight:600">🔑 登入密碼：</span>
+            <span class="adm-pw-text" data-pw="${esc(a.password || '')}" style="font-family:monospace;font-size:13px;letter-spacing:1px;font-weight:700">${pwDisplay}</span>
+            ${hasPw ? `<button type="button" class="btn ghost sm toggle-row-pw-btn" style="padding:2px 8px;font-size:11px" title="一鍵查看或隱藏密碼">👁️ 一鍵查看</button>` : ''}
+            ${hasPw ? `<button type="button" class="btn ghost sm copy-row-pw-btn" style="padding:2px 8px;font-size:11px" title="複製密碼">📋 複製</button>` : ''}
+            ${!hasPw && !isPri ? `<button type="button" class="btn ghost sm set-row-pw-btn" style="padding:2px 8px;font-size:11px" title="重設新密碼">✏️ 重設新密碼</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
     row.innerHTML = `
       <div class="adm-info">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
           <b>${esc(a.name || a.email)}</b>
           ${roleBadge}
         </div>
-        <span>📧 ${esc(a.email)} · ${esc(metaStr)}</span>
+        <div style="color:var(--muted);font-size:12.5px;margin-bottom:2px">📧 ${esc(a.email)} · ${esc(metaStr)}</div>
+        ${pwHtml}
       </div>
       ${actionsHtml}
     `;
+
+    if (isSuper()) {
+      const togglePwBtn = row.querySelector(".toggle-row-pw-btn");
+      const pwText = row.querySelector(".adm-pw-text");
+      if (togglePwBtn && pwText) {
+        let shown = false;
+        togglePwBtn.onclick = () => {
+          shown = !shown;
+          const raw = pwText.dataset.pw || "";
+          pwText.textContent = shown ? raw : "••••••••";
+          togglePwBtn.textContent = shown ? "🙈 隱藏" : "👁️ 一鍵查看";
+        };
+      }
+      const copyPwBtn = row.querySelector(".copy-row-pw-btn");
+      if (copyPwBtn && pwText) {
+        copyPwBtn.onclick = () => {
+          const raw = pwText.dataset.pw || "";
+          if (raw) {
+            navigator.clipboard?.writeText(raw).catch(() => {});
+            toast("已複製管理員密碼到剪貼簿");
+          }
+        };
+      }
+      const setPwBtn = row.querySelector(".set-row-pw-btn");
+      if (setPwBtn) {
+        setPwBtn.onclick = () => openEditAdminModal(a);
+      }
+    }
 
     if (isSuper() && !a.isPrimary) {
       const sel = row.querySelector(".role-sel");
