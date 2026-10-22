@@ -22,7 +22,7 @@
       <input class="input" id="email" type="email" placeholder="admin@sixstarculture.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
     </label>
     <label class="field">
-      <span class="lbl">密碼</span>
+      <span class="lbl">密碼 <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">顯示密碼</button></span>
       <input class="input" id="pw" type="password" placeholder="請輸入密碼" autocomplete="current-password" required>
     </label>
     <button type="submit" class="btn block" id="btn">登入後台</button>
@@ -31,9 +31,18 @@
 </main>
 <script>
 const $ = id => document.getElementById(id);
-const k = new URLSearchParams(location.search).get("k") || "";
-// 將網址列上的存取金鑰移除，避免留在瀏覽器歷史紀錄
-if (k) history.replaceState(null, "", location.pathname);
+const urlK = new URLSearchParams(location.search).get("k") || "";
+if (urlK) {
+  try { sessionStorage.setItem("kk_admin_k", urlK); } catch {}
+  history.replaceState(null, "", location.pathname);
+}
+const k = urlK || (() => { try { return sessionStorage.getItem("kk_admin_k") || ""; } catch { return ""; } })();
+
+$("togglePwBtn").onclick = () => {
+  const isPw = $("pw").type === "password";
+  $("pw").type = isPw ? "text" : "password";
+  $("togglePwBtn").textContent = isPw ? "隱藏密碼" : "顯示密碼";
+};
 
 function sayErr(t) {
   const m = $("err");

@@ -6,13 +6,14 @@
 <title>KKNews 互動平台</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css">
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
 <style>
   body.with-topbar{min-height:100vh;display:flex;flex-direction:column}
   .top-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
   .brand{margin:0;cursor:pointer;user-select:none}
-  /* 頂部 Dock 欄 */
+  /* 頂部 Dock 欄（精簡為「主頁」與「即時資訊」兩項） */
   .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008;flex-wrap:wrap}
-  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 18px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
   .dock-item:hover{color:var(--ink)}
   .dock-item.active{background:var(--ink);color:#fff;box-shadow:0 2px 8px #00000022}
   /* 右上角帳號區 */
@@ -27,6 +28,12 @@
   .hint b{color:var(--ink)}
   .skel-block{height:52px;margin-top:12px}
 
+  /* 子頁面頂部返回導覽列 */
+  .subpage-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .back-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .back-pill:hover{border-color:var(--ink);background:var(--white);transform:translateX(-2px)}
+  .subpage-tag{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);background:var(--paper);border:1px solid var(--line);padding:4px 10px;border-radius:99px}
+
   /* ===== 主頁（首頁導覽）樣式 ===== */
   .home-card{width:min(760px,100%);background:var(--white);border-radius:var(--r-lg);padding:40px 36px;box-shadow:var(--shadow);animation:up .45s ease both}
   .home-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--ink);margin-bottom:14px}
@@ -40,10 +47,20 @@
   .nav-tile-tag{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--muted);background:var(--white);border:1px solid var(--line);padding:3px 9px;border-radius:99px}
   .nav-tile h3{margin:0 0 6px;font-size:18px;line-height:1.35}
   .nav-tile p{margin:0 0 18px;font-size:13.5px;color:var(--muted);line-height:1.55}
+  .nav-tile-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
   .nav-tile-cta{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;color:var(--ink)}
   .nav-tile:hover .nav-tile-cta{transform:translateX(3px);transition:transform .2s}
+  .nav-tile-stat{font-size:12px;font-weight:600;color:var(--muted)}
   .home-foot{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
   .home-foot-link{background:none;border:0;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+
+  /* ===== 諺語投稿與即時卡片預覽樣式 ===== */
+  .post-card{width:min(760px,100%);background:var(--white);border-radius:var(--r-lg);padding:32px 34px;box-shadow:var(--shadow);animation:up .45s ease both}
+  .post-layout{display:grid;grid-template-columns:1.25fr .95fr;gap:24px;align-items:start}
+  @media (max-width:720px){.post-layout{grid-template-columns:1fr}.post-card{padding:26px 22px}}
+  .preview-box{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .preview-head{width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted)}
+  canvas.live-cv{width:100%;max-width:240px;height:auto;border-radius:12px;display:block;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/14px 14px}
 
   /* ===== DFC 互動影片表單頁面樣式 ===== */
   .dfc-shell{width:min(1080px,100%);background:var(--white);border-radius:var(--r-lg);padding:28px 30px 30px;box-shadow:var(--shadow);animation:up .45s ease both;overflow:hidden}
@@ -104,34 +121,45 @@
     .dfc-stage.split-active .dfc-q-col{width:100%}
   }
 
-  /* 點進「即時數據」才顯示的系統狀態卡（國家、ap-northeast-1、CPU/Disk/RAM/conns 即時自動重整） */
-  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:6px}
+  /* ===== 點進頂部「即時資訊」顯示的升級版即時系統資訊面板 ===== */
+  .status-shell{width:min(620px,100%);background:var(--white);border-radius:var(--r-lg);padding:32px 30px;box-shadow:var(--shadow);animation:up .45s ease both}
+  .db-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-top:6px}
   .db-top{display:flex;align-items:center;gap:12px}
-  .db-ico{width:40px;height:40px;border-radius:10px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
+  .db-ico{width:42px;height:42px;border-radius:11px;background:#10b981;color:#052e16;display:grid;place-items:center;flex:none}
   .db-ico.err{background:#ef4444;color:#fff}
   .db-ico svg{width:21px;height:21px}
   .db-title{flex:1;min-width:0}
-  .db-title b{font-size:15px;display:block;color:var(--ink)}
+  .db-title b{font-size:15.5px;display:block;color:var(--ink)}
   .db-title span{font-size:12.5px;color:#64748b;display:block;line-height:1.4}
   .jp-flag{width:32px;height:22px;border-radius:4px;border:1px solid #e2e8f0;background:#fff;display:grid;place-items:center;flex:none}
   .jp-flag::after{content:"";width:10px;height:10px;border-radius:50%;background:#bc002d}
-  .db-foot{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#64748b;gap:6px;flex-wrap:wrap}
-  .db-foot strong{color:var(--ink);font-weight:600}
-  .sync-note{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between}
+  .res-meters{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+  @media (max-width:520px){.res-meters{grid-template-columns:1fr}}
+  .res-item{background:var(--white);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+  .res-lbl{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:6px;color:var(--muted)}
+  .res-lbl strong{color:var(--ink);font-weight:700}
+  .res-bar{height:6px;background:#e4dfd6;border-radius:99px;overflow:hidden}
+  .res-fill{height:100%;width:0%;background:#10b981;border-radius:99px;transition:width .35s ease,background .3s}
+  .res-fill.warn{background:#f59e0b}
+  .res-fill.high{background:#ef4444}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  @media (max-width:560px){.kpi-grid{grid-template-columns:1fr 1fr}}
+  .kpi-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center}
+  .kpi-box small{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+  .kpi-box b{font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .sync-note{margin-top:14px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body class="with-topbar">
-<!-- 頂部導覽列：左側品牌、中間 Dock 欄、右上角帳號區 -->
+<!-- 頂部導覽列：左側品牌、中間 Dock 欄（僅保留主頁與即時資訊）、右上角帳號區 -->
 <header class="top-header">
   <div class="brand" id="brandHomeBtn" title="返回主頁"><img src="/icon.svg" alt="">KKNEWS</div>
 
-  <nav class="dock-bar" aria-label="功能切換">
+  <nav class="dock-bar" aria-label="頂部導覽">
     <button type="button" class="dock-item active" id="dockHome">🏠 主頁</button>
-    <button type="button" class="dock-item" id="dockPost">✍️ 諺語投稿</button>
-    <button type="button" class="dock-item" id="dockDfc">🎬 DFC 表單</button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>即時系統數據</span>
+      <span>即時資訊</span>
     </button>
   </nav>
 
@@ -151,11 +179,11 @@
 </header>
 
 <div class="page-wrap">
-  <!-- 分頁 0：新增主頁（預設顯示，引導前往「諺語頁面」與「DFC 互動影片表單」） -->
+  <!-- 分頁 0：主頁（預設顯示，引導前往「諺語投稿專區」與「DFC 互動影片表單」） -->
   <section class="home-card" id="homeCardView" aria-label="KKNews 主頁">
     <div class="home-badge">✦ KKNEWS CAMPUS HUB</div>
     <h1>歡迎來到 KKNews 校園互動平台</h1>
-    <p class="sub">透過上方頂部 Dock 欄或下方功能卡片，隨時切換至「諺語卡片投稿」或體驗「DFC 沉浸式影片問答表單」。</p>
+    <p class="sub">請點選下方功能專區，前往「諺語卡片投稿」製作你的一句話紀念卡，或進入「DFC 沉浸式影片問答表單」。</p>
 
     <div class="home-grid">
       <button type="button" class="nav-tile" id="goPostTile">
@@ -165,9 +193,12 @@
             <span class="nav-tile-tag">PROVERB CARD</span>
           </div>
           <h3>諺語投稿專區</h3>
-          <p>寫下你想說的一句諺語與署名，系統將為你製作成專屬的一句話紀念卡片。</p>
+          <p>寫下你想說的一句諺語與署名，即時預覽並由系統為你製作成專屬的一句話紀念卡片。</p>
         </div>
-        <span class="nav-tile-cta">前往諺語頁面 →</span>
+        <div class="nav-tile-foot">
+          <span class="nav-tile-cta">前往諺語頁面 →</span>
+          <span class="nav-tile-stat" id="homeProverbStat">即時製卡</span>
+        </div>
       </button>
 
       <button type="button" class="nav-tile" id="goDfcTile">
@@ -179,19 +210,26 @@
           <h3>DFC 互動影片表單</h3>
           <p>進入頁面後自動播放導引影片，抵達指定時間點時畫面將華麗左移縮小，並於右側彈出 Google 表單問題。</p>
         </div>
-        <span class="nav-tile-cta">進入 DFC 表單 →</span>
+        <div class="nav-tile-foot">
+          <span class="nav-tile-cta">進入 DFC 表單 →</span>
+          <span class="nav-tile-stat" id="homeDfcStat">互動影音問答</span>
+        </div>
       </button>
     </div>
 
     <div class="home-foot">
       <span>學校專屬認證網域：<b>@hlc.edu.tw</b></span>
-      <button type="button" class="home-foot-link" id="goStatusLink">查看即時系統數據 →</button>
+      <button type="button" class="home-foot-link" id="goStatusLink">查看系統即時資訊 →</button>
     </div>
   </section>
 
-  <!-- 分頁 1：原諺語投稿與核實主卡片（保持原樣不動，透過頂部 Dock 按鈕切換顯示） -->
-  <main class="card hide" id="mainCardView">
-    <h1>寫下你想說的一句話</h1>
+  <!-- 分頁 1：諺語投稿與即時卡片預覽（由主頁進入） -->
+  <main class="post-card hide" id="mainCardView">
+    <div class="subpage-nav">
+      <button type="button" class="back-pill" id="backFromPostBtn">← 返回主頁</button>
+      <span class="subpage-tag">✍️ PROVERB CARD</span>
+    </div>
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.3">寫下你想說的一句話</h1>
     <p class="sub">一句諺語、一個名字，我們會把它做成屬於你的卡片。</p>
 
     <div id="loadingView">
@@ -207,20 +245,35 @@
     </div>
 
     <div id="formView" class="hide">
-      <label class="field" style="margin-top:0"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
-        <textarea class="input" id="content" rows="3" maxlength="100" placeholder="例如：馬達甲斯甲"></textarea></label>
-      <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
-        <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
-      <button class="btn block" id="submit">送出投稿</button>
+      <div class="post-layout">
+        <div>
+          <label class="field" style="margin-top:0"><span class="lbl">諺語／你想說的話 <span id="cc">0/100</span></span>
+            <textarea class="input" id="content" rows="4" maxlength="100" placeholder="例如：馬達甲斯甲（支援 Ctrl + Enter 快速送出）"></textarea></label>
+          <label class="field"><span class="lbl">來源（人名） <span id="ac">0/30</span></span>
+            <input class="input" id="author" maxlength="30" placeholder="例如：阿昕"></label>
+          <button class="btn block" id="submit">送出投稿</button>
+        </div>
+        <div class="preview-box">
+          <div class="preview-head">
+            <span>即時卡片預覽</span>
+            <button type="button" class="home-foot-link" id="dlPreviewBtn" style="font-size:12px">下載預覽 PNG</button>
+          </div>
+          <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
+        </div>
+      </div>
     </div>
     <div id="msg" class="alert" role="status" aria-live="polite"></div>
   </main>
 
-  <!-- 分頁 2：DFC 互動影片表單頁面 -->
+  <!-- 分頁 2：DFC 互動影片表單頁面（由主頁進入） -->
   <section class="dfc-shell hide" id="dfcCardView" aria-label="DFC 互動影片表單">
+    <div class="subpage-nav">
+      <button type="button" class="back-pill" id="backFromDfcBtn">← 返回主頁</button>
+      <span class="subpage-tag">🎬 DFC INTERACTIVE FORM</span>
+    </div>
     <div class="dfc-head">
       <div>
-        <h2>🎬 DFC 沉浸式互動影片表單</h2>
+        <h2 id="dfcTitle">🎬 DFC 沉浸式互動影片表單</h2>
         <p id="dfcSubtitle">影片已自動開始播放，到達時間標記時將自動左移並於右側彈出問題。</p>
       </div>
       <div class="dfc-steps" id="dfcStepPills"></div>
@@ -236,7 +289,7 @@
         </div>
 
         <div class="video-controls">
-          <button type="button" class="vc-btn" id="dfcPlayBtn" title="播放 / 暫停">❚❚</button>
+          <button type="button" class="vc-btn" id="dfcPlayBtn" title="播放 / 暫停 (Space)">❚❚</button>
           <div class="vc-track-wrap" id="dfcTrackWrap" title="影片進度與問題時間點">
             <div class="vc-fill" id="dfcTrackFill"></div>
             <div id="dfcMarkers"></div>
@@ -268,10 +321,13 @@
     </div>
   </section>
 
-  <!-- 分頁 3：點進頂部 Dock「即時系統數據」才顯示的保守版即時數據卡 -->
-  <section class="card hide" id="statusCardView" aria-label="即時系統數據">
-    <h2>系統即時運行狀態</h2>
-    <p class="sub" style="margin-bottom:16px">以下為 Supabase 雲端資料庫真實 API 即時監測數據（每 3 秒自動同步）。</p>
+  <!-- 分頁 3：點進頂部 Dock「即時資訊」顯示的即時系統資訊面板 -->
+  <section class="status-shell hide" id="statusCardView" aria-label="即時資訊">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+      <h2 style="margin:0;font-size:23px">系統即時資訊</h2>
+      <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">🔄 立即刷新</button>
+    </div>
+    <p class="sub" style="margin-bottom:16px">以下為 Supabase 雲端資料庫與平台即時監測指標（每 3 秒自動同步）。</p>
     <div class="db-card">
       <div class="db-top">
         <div class="db-ico" id="dbIco">
@@ -284,13 +340,46 @@
         </div>
         <div class="jp-flag" title="Japan (ap-northeast-1)"></div>
       </div>
-      <div class="db-foot">
-        <span><strong>CPU</strong> <span id="stCpu">—%</span></span> ·
-        <span><strong>Disk</strong> <span id="stDisk">—%</span></span> ·
-        <span><strong>RAM</strong> <span id="stRam">—%</span></span> ·
-        <span><span id="stConns">—/60</span> conns</span>
+
+      <div class="res-meters">
+        <div class="res-item">
+          <div class="res-lbl"><span>CPU 負載</span><strong id="stCpu">—%</strong></div>
+          <div class="res-bar"><div class="res-fill" id="barCpu"></div></div>
+        </div>
+        <div class="res-item">
+          <div class="res-lbl"><span>RAM 記憶體</span><strong id="stRam">—%</strong></div>
+          <div class="res-bar"><div class="res-fill" id="barRam"></div></div>
+        </div>
+        <div class="res-item">
+          <div class="res-lbl"><span>Disk 儲存空間</span><strong id="stDisk">—%</strong></div>
+          <div class="res-bar"><div class="res-fill" id="barDisk"></div></div>
+        </div>
+        <div class="res-item">
+          <div class="res-lbl"><span>資料庫連線 (Conns)</span><strong id="stConns">—/60</strong></div>
+          <div class="res-bar"><div class="res-fill" id="barConns"></div></div>
+        </div>
       </div>
     </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <small>API 響應延遲</small>
+        <b id="stLatency">— ms</b>
+      </div>
+      <div class="kpi-box">
+        <small>快取命中率</small>
+        <b id="stCacheHit">—%</b>
+      </div>
+      <div class="kpi-box">
+        <small>累積諺語卡片</small>
+        <b id="stProverbsCount">— 張</b>
+      </div>
+      <div class="kpi-box">
+        <small>DFC 問答紀錄</small>
+        <b id="stDfcCount">— 筆</b>
+      </div>
+    </div>
+
     <div class="sync-note">
       <span id="sysText">● 即時連線正常</span>
       <span id="stUpdatedAt">更新時間：—</span>
@@ -476,12 +565,14 @@ $("closeModalBtn").onclick = () => {
 };
 
 /* ============================================================================
- * 頂部 Dock 欄與四個分頁切換（主頁 / 諺語投稿 / DFC 表單 / 即時系統數據）
+ * 頂部 Dock 欄（僅「主頁」與「即時資訊」）與子頁面切換邏輯
  * ============================================================================ */
+let activeFrontTab = "home";
+
 function switchDock(tab) {
-  $("dockHome").classList.toggle("active", tab === "home");
-  $("dockPost").classList.toggle("active", tab === "post");
-  $("dockDfc").classList.toggle("active", tab === "dfc");
+  activeFrontTab = tab;
+  // 頂部僅保留「主頁」與「即時資訊」兩個按鈕；在主頁或子功能頁面時「主頁」呈現選中狀態
+  $("dockHome").classList.toggle("active", tab !== "status");
   $("dockStatus").classList.toggle("active", tab === "status");
 
   $("homeCardView").classList.toggle("hide", tab !== "home");
@@ -490,24 +581,92 @@ function switchDock(tab) {
   $("statusCardView").classList.toggle("hide", tab !== "status");
 
   if (tab === "status") refreshPublicStatus();
+  if (tab === "post") renderLivePreviewCard();
   if (tab === "dfc") enterDfcPage();
   else pauseDfcPage();
 }
 
 $("brandHomeBtn").onclick = () => switchDock("home");
 $("dockHome").onclick = () => switchDock("home");
-$("dockPost").onclick = () => switchDock("post");
-$("dockDfc").onclick = () => switchDock("dfc");
 $("dockStatus").onclick = () => switchDock("status");
 $("goPostTile").onclick = () => switchDock("post");
 $("goDfcTile").onclick = () => switchDock("dfc");
 $("goStatusLink").onclick = () => switchDock("status");
 $("backToPostBtn").onclick = () => switchDock("home");
+$("backFromPostBtn").onclick = () => switchDock("home");
+$("backFromDfcBtn").onclick = () => switchDock("home");
+$("manualRefreshStatusBtn").onclick = () => refreshPublicStatus(true);
+
+/* ============================================================================
+ * 諺語投稿即時卡片預覽繪製（768x1024 米白圓角卡）
+ * ============================================================================ */
+const CARD_FONT = '"Reggae One","Noto Serif TC",serif';
+function renderLivePreviewCard() {
+  const cv = $("liveCardCanvas");
+  if (!cv) return;
+  const text = ($("content")?.value || "").trim() || "寫下你想說的一句話";
+  const author = ($("author")?.value || "").trim() || "署名";
+  const W = 768, H = 1024;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.28)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetX = 8;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = "#f4f2ee";
+  ctx.beginPath();
+  ctx.roundRect(28, 4, 692, 996, 44);
+  ctx.fill();
+  ctx.restore();
+
+  const CARD_X = 28, CARD_W = 692, size = 70;
+  const PER_LINE = Math.max(1, Math.min(8, Math.floor((CARD_W - 2 * size) / size)));
+  ctx.font = `${size}px ${CARD_FONT}`;
+  const lines = [];
+  for (const para of String(text).split("\n")) {
+    const chars = Array.from(para);
+    if (!chars.length) { lines.push(""); continue; }
+    for (let i = 0; i < chars.length; i += PER_LINE) lines.push(chars.slice(i, i + PER_LINE).join(""));
+  }
+  const lh = size * 1.35, total = lines.length * lh, top = 500 - total / 2;
+  let widest = 0;
+  lines.forEach(l => { widest = Math.max(widest, ctx.measureText(l).width); });
+  const x = CARD_X + (CARD_W - widest) / 2;
+  ctx.fillStyle = ($("content")?.value || "").trim() ? "#000" : "#9e978c";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  lines.forEach((l, i) => ctx.fillText(l, x, top + lh * i + lh / 2));
+
+  const as = 32;
+  ctx.font = `${as}px ${CARD_FONT}`;
+  ctx.textAlign = "right";
+  ctx.fillText("-" + author, x + widest, top + total + as * 0.9);
+}
+
+$("dlPreviewBtn").onclick = () => {
+  renderLivePreviewCard();
+  const cv = $("liveCardCanvas");
+  if (!cv) return;
+  cv.toBlob(blob => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kknews_card_${Date.now()}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+};
 
 function show(view) {
   for (const id of ["loadingView", "loginView", "formView"]) {
     const el = $(id);
     if (el) el.classList.toggle("hide", id !== view);
+  }
+  if (view === "formView") {
+    try { document.fonts.load(`40px ${CARD_FONT}`, "測試").then(renderLivePreviewCard, renderLivePreviewCard); }
+    catch { renderLivePreviewCard(); }
   }
 }
 
@@ -539,18 +698,40 @@ function renderMe(me) {
 
 async function doLogout(ev) { ev?.preventDefault?.(); await api("/api/logout"); location.reload(); }
 
-async function refreshPublicStatus() {
+function setMeterBar(id, pct) {
+  const el = $(id);
+  if (!el) return;
+  const v = Math.max(0, Math.min(100, Number(pct) || 0));
+  el.style.width = v + "%";
+  el.className = "res-fill" + (v >= 85 ? " high" : v >= 65 ? " warn" : "");
+}
+
+async function refreshPublicStatus(manual = false) {
+  if (!manual && document.hidden) return;
   try {
     const r = await fetch("/api/status");
     if (!r.ok) return;
     const s = await r.json();
     $("dbIco").classList.toggle("err", !s.ok);
     $("sysDot").className = "dot" + (s.ok ? "" : " warn");
-    $("sysText").textContent = s.ok ? "● PostgreSQL 即時連線正常" : "● 系統維護中";
+    $("sysText").textContent = s.ok ? "● PostgreSQL 雲端即時連線正常" : "● 系統維護中";
     $("stCpu").textContent = (s.cpuPct ?? "—") + "%";
     $("stDisk").textContent = (s.diskPct ?? "—") + "%";
     $("stRam").textContent = (s.ramPct ?? "—") + "%";
-    $("stConns").textContent = `${s.conns ?? "—"}/${s.maxConns ?? 60}`;
+    const maxC = s.maxConns ?? 60;
+    const curC = s.conns ?? 0;
+    $("stConns").textContent = `${s.conns ?? "—"}/${maxC}`;
+    setMeterBar("barCpu", s.cpuPct);
+    setMeterBar("barRam", s.ramPct);
+    setMeterBar("barDisk", s.diskPct);
+    setMeterBar("barConns", maxC > 0 ? Math.round((curC / maxC) * 100) : 0);
+
+    $("stLatency").textContent = s.latencyMs != null ? `${s.latencyMs} ms` : "— ms";
+    $("stCacheHit").textContent = s.cacheHitPct != null ? `${s.cacheHitPct}%` : "—%";
+    $("stProverbsCount").textContent = s.proverbsCount != null ? `${s.proverbsCount} 張` : "— 張";
+    $("stDfcCount").textContent = s.dfcResponsesCount != null ? `${s.dfcResponsesCount} 筆` : "— 筆";
+    if (s.proverbsCount != null) $("homeProverbStat").textContent = `已累積 ${s.proverbsCount} 張卡片`;
+    if (s.dfcResponsesCount != null) $("homeDfcStat").textContent = `已收集 ${s.dfcResponsesCount} 筆問答`;
     $("stUpdatedAt").textContent = "更新時間：" + new Date().toLocaleTimeString("zh-TW", { hour12: false });
   } catch {
     $("sysDot").className = "dot warn";
@@ -1004,15 +1185,20 @@ $("dfcReplayBtn").onclick = () => {
 };
 
 (async () => {
-  refreshPublicStatus();
-  setInterval(refreshPublicStatus, 3000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(); });
+  refreshPublicStatus(true);
+  setInterval(() => refreshPublicStatus(false), 3000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(true); });
   // 自動同步後台 Super Admin 設定的最新 DFC 影片與 Google 表單題目
   fetch("/api/dfc/config").then(r => r.ok ? r.json() : null).then(cfg => {
     if (cfg && typeof cfg === "object") {
+      const prevVideoUrl = DFC_CONFIG.videoUrl;
       Object.assign(DFC_CONFIG, cfg);
+      if (cfg.title && $("dfcTitle")) $("dfcTitle").textContent = "🎬 " + cfg.title;
       if (!dfcState.useRealVideo && cfg.fallbackDuration) dfcState.duration = cfg.fallbackDuration;
       if (dfcState.inited) {
+        if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl && $("dfcVideo")) {
+          $("dfcVideo").src = cfg.videoUrl;
+        }
         renderDfcStepPills();
         renderDfcMarkers();
         updateDfcUiProgress();
@@ -1030,8 +1216,20 @@ $("dfcReplayBtn").onclick = () => {
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
 $("topLoginBtn").onclick = loginWithGoogleOAuth;
 $("topLogoutBtn").onclick = doLogout;
-$("content").oninput = () => $("cc").textContent = $("content").value.length + "/100";
-$("author").oninput = () => $("ac").textContent = $("author").value.length + "/30";
+$("content").oninput = () => {
+  $("cc").textContent = $("content").value.length + "/100";
+  renderLivePreviewCard();
+};
+$("author").oninput = () => {
+  $("ac").textContent = $("author").value.length + "/30";
+  renderLivePreviewCard();
+};
+$("content").onkeydown = $("author").onkeydown = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    $("submit").click();
+  }
+};
 $("submit").onclick = async () => {
   const content = $("content").value.trim(), author = $("author").value.trim();
   if (!content || !author) return say("請填寫諺語與來源");
@@ -1042,6 +1240,8 @@ $("submit").onclick = async () => {
   $("submit").disabled = false;
   if (!r.ok) return say(j.error || "送出失敗");
   $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
+  renderLivePreviewCard();
+  refreshPublicStatus(true);
   say("已送出，謝謝投稿！（可繼續上傳下一張卡片）", true);
 };
 </script>

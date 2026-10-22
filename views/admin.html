@@ -183,7 +183,7 @@
     </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>即時系統數據</span>
+      <span>即時資訊</span>
     </button>
   </nav>
 
@@ -210,6 +210,8 @@
     <input type="search" id="searchInput" class="search-input" placeholder="搜尋諺語、作者、姓名、信箱、表單回答或 IP…">
     <label class="sz" id="szWrap">卡片字級 <input id="size" type="number" min="24" max="200" step="2"></label>
     <button type="button" id="reload" class="btn ghost sm">立即重整</button>
+    <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">📥 匯出投稿 CSV</button>
+    <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">📥 匯出帳號 CSV</button>
     <button type="button" id="dlAll" class="btn sm">全部下載 ZIP</button>
   </div>
 
@@ -277,14 +279,40 @@
   <!-- 分頁 4：多種管理員權限設定（Super Admin vs 一般唯讀 Admin） -->
   <section id="adminsPanel" class="panel-wrap hide" aria-label="管理員權限管理">
     <div class="admin-layout">
-      <div class="panel-card">
-        <div class="panel-head">
-          <div>
-            <h3>🛡️ 後台管理員帳號清單</h3>
-            <p>原 <b>sixstarculture.com</b> 主帳號擁有最高權限（Super Admin）；一般管理員（Admin）登入後僅能查看數據，無法刪除或修改任何資料。</p>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <h3>🛡️ 後台管理員帳號清單</h3>
+              <p>系統預設主帳號擁有最高權限（Super Admin）；新增之帳號可自由設定為「一般管理員 Admin（唯讀，僅能查看數據）」或「Super Admin（完整權限）」。</p>
+            </div>
+          </div>
+          <div id="adminsListWrap"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <h3>📜 後台操作與登入稽核紀錄</h3>
+              <p>即時記錄管理員登入、新增或調整管理員權限、編輯與刪除等操作。</p>
+            </div>
+          </div>
+          <div class="table-scroll" style="max-height:320px;overflow-y:auto">
+            <table class="data-tbl">
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>動作類型</th>
+                  <th>目標對象 / 詳情</th>
+                  <th>來源 IP</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogsTbody">
+                <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">載入稽核紀錄中…</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div id="adminsListWrap"></div>
       </div>
 
       <!-- Super Admin 專屬：新增管理員表單 -->
@@ -292,12 +320,18 @@
         <div class="panel-head">
           <div>
             <h3>➕ 新增後台管理員</h3>
-            <p>僅限 Super Admin 可新增管理員帳號並指定權限等級。</p>
+            <p>可手動輸入任何電子郵件或從已登入帳號快速帶入，預設權限為「一般管理員 Admin（唯讀）」。</p>
           </div>
         </div>
         <form id="createAdminForm" autocomplete="off">
           <label class="field" style="margin-top:0">
-            <span class="lbl">管理員登入信箱 <span>必填</span></span>
+            <span class="lbl">從已登入帳號快速帶入 <span>選填</span></span>
+            <select class="input" id="quickPickUserSel">
+              <option value="">— 手動輸入信箱或選擇已登入帳號 —</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="lbl">管理員登入信箱 <span>必填（不限網域）</span></span>
             <input class="input" id="newAdminEmail" type="email" placeholder="例如：staff@example.com" required>
           </label>
           <label class="field">
@@ -305,13 +339,19 @@
             <input class="input" id="newAdminName" placeholder="例如：活動組檢視人員">
           </label>
           <label class="field">
-            <span class="lbl">登入密碼 <span>至少 6 碼</span></span>
+            <span class="lbl">
+              <span>登入密碼 <span style="font-weight:400;color:var(--muted)">(至少 6 碼)</span></span>
+              <span style="display:inline-flex;gap:8px">
+                <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
+                <button type="button" id="toggleNewAdminPwBtn" style="background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:0">顯示</button>
+              </span>
+            </span>
             <input class="input" id="newAdminPw" type="password" placeholder="設定此管理員的登入密碼" minlength="6" required>
           </label>
           <label class="field">
-            <span class="lbl">權限等級</span>
+            <span class="lbl">權限等級 <span>預設為一般管理員</span></span>
             <select class="input" id="newAdminRole">
-              <option value="admin">👁️ 一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）</option>
+              <option value="admin" selected>👁️ 一般管理員 Admin（唯讀：僅能查看數據，無法刪除或修改）</option>
               <option value="super_admin">👑 最高管理員 Super Admin（完整權限：可修改、刪除與管理帳號）</option>
             </select>
           </label>
@@ -397,13 +437,49 @@
 
 <!-- 刪除確認彈窗 -->
 <div id="confirmModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-  <div class="modal" style="max-width:360px">
-    <h3 id="confirmTitle">確定要刪除這筆投稿？</h3>
-    <p class="sub" style="text-align:center;margin-bottom:10px">刪除後將無法復原。</p>
+  <div class="modal" style="max-width:380px">
+    <h3 id="confirmTitle">確定要執行此刪除操作？</h3>
+    <p id="confirmDesc" class="sub" style="text-align:center;margin-bottom:10px">刪除後將無法復原。</p>
     <div class="actions">
       <button type="button" class="btn ghost" id="cancelDelBtn">取消</button>
       <button type="button" class="btn danger" id="confirmDelBtn">確定刪除</button>
     </div>
+  </div>
+</div>
+
+<!-- Super Admin 專屬：設定 / 編輯後台管理員帳號彈窗（支援從「已登入帳號」一鍵設為一般管理員） -->
+<div id="editAdminModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="editAdminModalTitle">
+  <div class="modal" style="max-width:440px;text-align:left">
+    <h3 id="editAdminModalTitle" style="text-align:left;margin-bottom:6px">🛡️ 設定管理員帳號權限</h3>
+    <p id="editAdminModalSub" class="sub" style="margin-bottom:14px">可將此帳號設為「一般管理員 Admin（唯讀）」或「Super Admin」，並設定後台登入密碼。</p>
+    <form id="editAdminForm" autocomplete="off">
+      <label class="field" style="margin-top:0">
+        <span class="lbl">管理員信箱</span>
+        <input class="input" id="editAdminEmail" type="email" readonly style="background:var(--paper);color:var(--muted)">
+      </label>
+      <label class="field">
+        <span class="lbl">顯示名稱／備註</span>
+        <input class="input" id="editAdminName" placeholder="例如：一般管理員（唯讀）">
+      </label>
+      <label class="field">
+        <span class="lbl">權限角色</span>
+        <select class="input" id="editAdminRole">
+          <option value="admin">👁️ 一般管理員 Admin（唯讀：僅能查看數據）</option>
+          <option value="super_admin">👑 最高管理員 Super Admin（完整管理權限）</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="lbl">
+          <span id="editAdminPwLbl">登入密碼（至少 6 碼）</span>
+          <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--link);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">🎲 產生隨機密碼</button>
+        </span>
+        <input class="input" id="editAdminPw" type="text" placeholder="請輸入新密碼">
+      </label>
+      <div class="actions" style="margin-top:20px">
+        <button type="button" class="btn ghost" id="cancelEditAdminBtn">取消</button>
+        <button type="submit" class="btn" id="saveEditAdminBtn">儲存設定</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -486,13 +562,27 @@
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingDeleteId = null;
+let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingConfirmFn = null;
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
-let adminAccounts = [], editingFormObj = null;
-let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", isLoading = false;
+let adminAccounts = [], auditLogs = [], editingFormObj = null, editingAdminTarget = null;
+let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", lastAuditSig = "", isLoading = false;
 const H = { "Content-Type": "application/json", "X-Requested-With": "fetch" };
 const isSuper = () => currentRole === "super_admin";
+
+function openConfirm({ title = "確定要執行此操作？", desc = "此操作執行後將無法復原。", confirmText = "確定刪除", onConfirm }) {
+  $("confirmTitle").textContent = title;
+  $("confirmDesc").textContent = desc;
+  $("confirmDelBtn").textContent = confirmText;
+  pendingConfirmFn = onConfirm;
+  $("confirmModal").classList.remove("hide");
+}
+
+function genRandomPw(len = 10) {
+  const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$";
+  const arr = crypto.getRandomValues(new Uint8Array(len));
+  return Array.from(arr, b => chars[b % chars.length]).join("");
+}
 
 function toast(msg, isErr = false) {
   const t = $("toast");
@@ -624,34 +714,29 @@ function isEditingCard() {
   return a && $("grid").contains(a) && (a.tagName === "TEXTAREA" || a.tagName === "INPUT");
 }
 
-/* ---------- 資訊即時整理與自動重整（每 3 秒） ---------- */
+/* ---------- 資訊即時整理與自動重整（單一合併請求 /api/admin/sync，每 3 秒智慧同步） ---------- */
 async function load(forceRender = false) {
+  if (!forceRender && document.hidden) return;
   if (isLoading) return;
   isLoading = true;
   try {
-    const [rp, ru, rs, rf, ra] = await Promise.all([
-      fetch("/api/admin/proverbs"),
-      fetch("/api/admin/users"),
-      fetch("/api/admin/status"),
-      fetch("/api/admin/dfc"),
-      fetch("/api/admin/accounts"),
-    ]);
-    if (rp.status === 404 || ru.status === 404) { location.reload(); return; }
-    if (rp.ok) rows = await rp.json();
-    if (ru.ok) users = await ru.json();
-    if (rs.ok) applyAdminStatus(await rs.json());
-    if (rf.ok) {
-      const dfcData = await rf.json();
-      dfcForms = dfcData.forms || [];
-      dfcResponses = dfcData.responses || [];
+    const rSync = await fetch("/api/admin/sync");
+    if (rSync.status === 404) { location.reload(); return; }
+    if (!rSync.ok) return;
+    const syncData = await rSync.json();
+    if (Array.isArray(syncData.proverbs)) rows = syncData.proverbs;
+    if (Array.isArray(syncData.users)) users = syncData.users;
+    if (syncData.status) applyAdminStatus(syncData.status);
+    if (syncData.dfc) {
+      dfcForms = syncData.dfc.forms || [];
+      dfcResponses = syncData.dfc.responses || [];
       if (!dfcForms.some(f => f.id === selectedFormId) && dfcForms[0]) {
         selectedFormId = dfcForms[0].id;
       }
     }
-    if (ra.ok) {
-      const accData = await ra.json();
-      if (accData.me) applyRoleUi(accData.me.role, accData.me.email);
-      adminAccounts = accData.accounts || [];
+    if (syncData.accounts) {
+      if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
+      adminAccounts = syncData.accounts.accounts || [];
     }
 
     userMap = {};
@@ -779,15 +864,26 @@ async function render() {
         else { const j = await resp.json().catch(() => ({})); toast(j.error || "儲存失敗", true); }
       };
       el.querySelector(".del").onclick = () => {
-        pendingDeleteId = r.id;
-        $("confirmModal").classList.remove("hide");
+        openConfirm({
+          title: `確定要刪除投稿 #${r.id}？`,
+          desc: `刪除「${r.content.slice(0, 24)}」後將無法復原。`,
+          confirmText: "確定刪除",
+          onConfirm: async () => {
+            const resp = await fetch("/api/admin/proverbs/" + r.id, { method: "DELETE", headers: H });
+            if (resp.ok) { toast("已刪除投稿 #" + r.id); load(true); }
+            else {
+              const j = await resp.json().catch(() => ({}));
+              toast(j.error || "刪除失敗", true);
+            }
+          },
+        });
       };
     }
     grid.appendChild(el);
   }
 }
 
-/* ---------- 分頁 2：已登入帳號列表 ---------- */
+/* ---------- 分頁 2：已登入帳號列表（Super Admin 可直接將任一帳號設為一般管理員 Admin） ---------- */
 function renderUsers() {
   const filtered = users.filter(u => matchSearch([u.name, u.email, u.last_ip, u.last_device, u.google_sub]));
   $("uCount").textContent = searchQuery ? `${filtered.length}/${users.length}` : users.length;
@@ -796,6 +892,7 @@ function renderUsers() {
     ug.innerHTML = `<div class="empty">${searchQuery ? "找不到符合搜尋條件的帳號" : "目前還沒有任何登入過的帳號"}</div>`;
     return;
   }
+  const adminByEmail = Object.fromEntries(adminAccounts.map(a => [String(a.email || "").toLowerCase(), a]));
   for (const u of filtered) {
     const el = document.createElement("div"); el.className = "u-card";
     const displayName = u.name || (u.email || "").split("@")[0] || "未命名";
@@ -813,14 +910,34 @@ function renderUsers() {
       ? `<span class="u-badge">✓ 已完成 3 角度實拍核實</span>`
       : `<span class="u-badge warn">尚未完成實拍</span>`;
 
+    const matchedAdm = adminByEmail[String(u.email || "").toLowerCase()];
+    const admRoleBadge = matchedAdm
+      ? (matchedAdm.role === "super_admin"
+          ? `<span class="role-tag">👑 Super Admin</span>`
+          : `<span class="role-tag readonly">👁️ 一般管理員 (唯讀)</span>`)
+      : "";
+    const setAdminBtnHtml = isSuper()
+      ? (matchedAdm && !matchedAdm.isPrimary
+          ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:5px 10px;font-size:12px">⚙️ 調整管理員權限</button>`
+          : !matchedAdm
+            ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:5px 10px;font-size:12px">🛡️ 設為一般管理員</button>`
+            : "")
+      : "";
+
     el.innerHTML = `
       <div class="u-head">
         ${avHtml}
         <div class="u-title">
-          <b>${esc(displayName)}</b>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <b>${esc(displayName)}</b>
+            ${admRoleBadge}
+          </div>
           <span>${esc(u.email)}</span>
         </div>
-        ${verifiedBadge}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          ${verifiedBadge}
+          ${setAdminBtnHtml}
+        </div>
       </div>
       <div class="u-photos">
         <div class="u-pbox">
