@@ -336,83 +336,34 @@ a:hover { opacity: 0.85; }
  * 網頁無縫左右滑動切換系統 (Apple Horizontal Sliding Track & View Carousel)
  * 徹底消除垂直彈跳與突兀切換，支援手勢拖拽左右滑動，做到像 iOS 原生視窗般平滑銜接
  * ============================================================================ */
-.view-stage {
+.view-stage, .page-shell {
   position: relative;
   width: 100%;
   min-height: calc(100vh - 72px);
   padding: 30px 16px 48px;
   overflow-x: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* 雙向滑動視窗 (Horizontal View Carousel) */
-.view-slider {
+/* 高度整合視圖分頁 (Unified View Panes with Apple Ease) */
+.view-pane {
+  display: none;
   width: 100%;
-  overflow: hidden;
-  position: relative;
-  touch-action: pan-y;
-  transition: transform 0.42s var(--spring-smooth), opacity 0.35s ease;
-}
-.view-slider.in-subpage {
-  transform: translate3d(-18%, 0, 0) scale(0.96);
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  top: 30px;
-  left: 0;
-  right: 0;
-}
-
-.view-track {
-  display: flex;
-  width: 200%;
-  will-change: transform;
-  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
-  align-items: flex-start;
-}
-
-.view-track .view-pane {
-  width: 50%;
-  min-width: 50%;
-  max-width: 50%;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 0 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 次級獨立推展視圖 (iOS Push Detail Pages: Post & DFC) */
-.subview-pane {
-  display: none;
-  position: absolute;
-  top: 30px;
-  left: 0;
-  right: 0;
-  width: 100%;
-  flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
-  padding: 0 16px;
-  transform: translate3d(100%, 0, 0);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.32s ease;
-  will-change: transform, opacity;
-  z-index: 10;
-}
-.subview-pane.active-subview {
+.view-pane.active-view {
   display: flex;
-  transform: translate3d(0, 0, 0);
   opacity: 1;
-  pointer-events: auto;
-  position: relative;
-  top: 0;
-  padding: 0;
+  transform: translateY(0);
 }
 
 /* ============================================================================

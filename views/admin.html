@@ -2293,10 +2293,20 @@ function initStudioPlayer() {
     studioCanvasEl.classList.add("hide");
     $("studioBadgeText").textContent = "▶ Google Drive 雲端影片";
     const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
+    studioVideoEl.preload = "auto";
     if (studioVideoEl.getAttribute("src") !== streamSrc) {
       studioVideoEl.src = streamSrc;
       studioVideoEl.load();
     }
+    studioVideoEl.onerror = () => {
+      console.warn("Studio video stream error, switching to preview iframe fallback");
+      if (studioIframe) {
+        studioIframe.src = `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/preview`;
+        studioIframe.classList.remove("hide");
+      }
+      studioVideoEl.classList.add("hide");
+      $("studioBadgeText").textContent = "▶ Google Drive 預覽模式";
+    };
     studioVideoEl.onloadedmetadata = () => {
       if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
         studioDuration = studioVideoEl.duration;

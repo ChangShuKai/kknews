@@ -483,17 +483,35 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.params.fileId);
   if (!fileId) return notFound(res);
 
-  const cachedMeta = driveVideoMetaCache.get(fileId);
-  if (req.method === "HEAD" && cachedMeta?.totalSize) {
+  // 1. HEAD 請求快速就緒回傳，加速瀏覽器 metadata 定位
+  if (req.method === "HEAD") {
+    const cachedMeta = driveVideoMetaCache.get(fileId);
     res.set({
-      "Content-Type": cachedMeta.contentType || "video/mp4",
-      "Content-Length": String(cachedMeta.totalSize),
+      "Content-Type": cachedMeta?.contentType || "video/mp4",
+      ...(cachedMeta?.totalSize ? { "Content-Length": String(cachedMeta.totalSize) } : {}),
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=86400",
+      "Access-Control-Allow-Origin": "*",
     });
     return res.status(200).end();
   }
+
+  const directCdnUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+
+  // 2. 核心加速機制：預設以 HTTP 307 重導向將瀏覽器原生導向 Google 雲端高速邊緣 CDN
+  // 徹底避免 Node.js / Vercel Serverless 中繼 4.5MB 與 3MB 人工切塊造成的「一直顯示緩衝載入」卡頓
+  // 瀏覽器遵循 307 時會完整保留 Range 標頭並享有 Google 滿速頻寬與原生自動緩衝
+  if (req.query.proxy !== "1") {
+    res.set({
+      "Cache-Control": "public, max-age=86400",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    });
+    return res.redirect(307, directCdnUrl);
+  }
+
+  const cachedMeta = driveVideoMetaCache.get(fileId);
 
   const INITIAL_PROBE_CHUNK = 1024 * 1024;      // 首次載入標頭探測區塊 1 MB，加速 moov metadata 定位
   const STREAM_CHUNK = 3 * 1024 * 1024;         // 單次串流分塊上限 3 MB（相容 Vercel Serverless 4.5MB 限制並支援高速拖曳）
