@@ -886,6 +886,48 @@
             <span style="font-size:13.5px;font-weight:600">將此問卷設為前台預設發布問卷 (Active)</span>
           </label>
         </div>
+
+        <!-- 自訂播放器控制與防快轉設定 -->
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span>🎛️ 自訂播放器控制與防快轉學習設定</span>
+            <span style="font-size:11.5px;background:var(--blue-soft);color:var(--blue);padding:2px 8px;border-radius:var(--r-pill);font-weight:600">自訂播放器核心</span>
+          </div>
+          <p style="font-size:12.5px;color:var(--ink-secondary);margin:0 0 14px">
+            本平台已將 Google Drive 影片完整串接至自訂播放器。您可以自由設定學生的進度控制權限，杜絕任意跳轉與外掛跳過。
+          </p>
+
+          <div class="grid-2">
+            <label class="field" style="margin-top:0">
+              <span class="lbl">進度條拖曳控制權限</span>
+              <select class="input" id="cfgAllowSeek">
+                <option value="watched">🔒 防快轉學習模式（預設推薦：僅可回看已播放片段，禁止快轉跳過）</option>
+                <option value="locked">⛔ 嚴格鎖定模式（完全鎖定進度條拖曳，僅能使用「-10s」倒退重看）</option>
+                <option value="free">🎬 自由探索模式（允許自由拖曳進度條，但遇未答問題仍會自動暫停）</option>
+              </select>
+            </label>
+
+            <label class="field" style="margin-top:0">
+              <span class="lbl">倍速播放功能</span>
+              <select class="input" id="cfgAllowSpeed">
+                <option value="false">🔒 固定 1.0x 原速播放（禁止切換倍速，防外掛加速）</option>
+                <option value="true">⚡ 開放調整倍速（可切換 0.75x / 1.0x / 1.25x / 1.5x）</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2" style="margin-top:10px">
+            <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer">
+              <input type="checkbox" id="cfgAllowRewind" checked style="transform:scale(1.2);accent-color:var(--blue)">
+              <span style="font-size:13px;font-weight:600">提供「↺ 10s」倒退按鈕（方便學生重聽題目關聯片段）</span>
+            </label>
+
+            <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer">
+              <input type="checkbox" id="cfgPauseOnBlur" checked style="transform:scale(1.2);accent-color:var(--blue)">
+              <span style="font-size:13px;font-weight:600">防掛機：切換視窗或離開分頁時自動暫停影片</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2192,6 +2234,10 @@ function openFormConfigModal(formObj) {
   $("cfgSubmitMode").value = editingFormObj.submitMode || "end";
   $("cfgEmailEntryId").value = editingFormObj.emailEntryId || "";
   $("cfgIsDefault").checked = editingFormObj.id === activeDfcFormId;
+  $("cfgAllowSeek").value = editingFormObj.allowSeek || "watched";
+  $("cfgAllowSpeed").value = String(Boolean(editingFormObj.allowSpeed));
+  $("cfgAllowRewind").checked = editingFormObj.allowRewind !== false;
+  $("cfgPauseOnBlur").checked = editingFormObj.pauseOnBlur !== false;
 
   setupStudioTabs();
   $("tabStudioTimeline").click();
@@ -2202,16 +2248,22 @@ function openFormConfigModal(formObj) {
   $("formConfigModal").classList.remove("hide");
 }
 
+function extractGoogleDriveId(url) {
+  if (!url || typeof url !== "string") return "";
+  const s = url.trim();
+  const m1 = s.match(/\/file\/d\/([a-zA-Z0-9_-]{12,80})/);
+  if (m1) return m1[1];
+  const m2 = s.match(/\/api\/dfc\/drive-video\/([a-zA-Z0-9_-]{12,80})/);
+  if (m2) return m2[1];
+  if (/(?:drive\.google\.com|drive\.usercontent\.google\.com|docs\.google\.com)/i.test(s)) {
+    const m3 = s.match(/[?&]id=([a-zA-Z0-9_-]{12,80})/);
+    if (m3) return m3[1];
+  }
+  return "";
+}
+
 function parseEmbedVideo(url) {
   if (!url || typeof url !== "string") return null;
-  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (url.includes("drive.google.com") && url.match(/[?&]id=([a-zA-Z0-9_-]+)/));
-  if (driveMatch) {
-    return {
-      type: "drive",
-      id: driveMatch[1],
-      embedUrl: `https://drive.google.com/file/d/${driveMatch[1]}/preview`
-    };
-  }
   const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
   if (ytMatch) {
     return {
@@ -2232,38 +2284,68 @@ function initStudioPlayer() {
   setStudioPlaying(false);
 
   const videoUrl = $("cfgVideoUrl").value.trim();
-  const embed = parseEmbedVideo(videoUrl);
+  const driveId = extractGoogleDriveId(videoUrl);
 
-  if (embed) {
-    if (studioIframe) {
-      if (studioIframe.src !== embed.embedUrl) studioIframe.src = embed.embedUrl;
-      studioIframe.classList.remove("hide");
-    }
-    studioVideoEl.classList.add("hide");
+  if (driveId) {
+    // Google Drive 影片：直接轉為代理串流並使用真實 <video> 播放器，解鎖精確秒數抓取與預覽！
+    if (studioIframe) { studioIframe.classList.add("hide"); studioIframe.src = ""; }
+    studioVideoEl.classList.remove("hide");
     studioCanvasEl.classList.add("hide");
-    $("studioBadgeText").textContent = embed.type === "drive" ? "▶ Google Drive 雲端預覽" : "▶ YouTube 預覽";
-  } else {
-    if (studioIframe) {
-      studioIframe.classList.add("hide");
-      studioIframe.src = "";
+    $("studioBadgeText").textContent = "▶ Google Drive 雲端影片";
+    const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
+    if (studioVideoEl.getAttribute("src") !== streamSrc) {
+      studioVideoEl.src = streamSrc;
+      studioVideoEl.load();
     }
-    if (videoUrl && !videoUrl.includes("YOUR_")) {
-      studioVideoEl.src = videoUrl;
-      studioVideoEl.onloadedmetadata = () => {
-        if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
-          studioDuration = studioVideoEl.duration;
-          updateStudioProgressUi();
+    studioVideoEl.onloadedmetadata = () => {
+      if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
+        studioDuration = studioVideoEl.duration;
+        if (Number($("cfgFallbackDuration").value) <= 18) {
+          $("cfgFallbackDuration").value = Math.round(studioVideoEl.duration);
         }
-      };
-      studioVideoEl.classList.remove("hide");
-      studioCanvasEl.classList.add("hide");
-      $("studioBadgeText").textContent = "▶ 影片預覽";
-    } else {
+        updateStudioProgressUi();
+        renderStudioPins();
+      }
+    };
+  } else {
+    const embed = parseEmbedVideo(videoUrl);
+    if (embed) {
+      if (studioIframe) {
+        if (studioIframe.src !== embed.embedUrl) studioIframe.src = embed.embedUrl;
+        studioIframe.classList.remove("hide");
+      }
       studioVideoEl.classList.add("hide");
-      studioCanvasEl.classList.remove("hide");
-      $("studioBadgeText").textContent = "▶ 示範動畫";
+      studioCanvasEl.classList.add("hide");
+      $("studioBadgeText").textContent = "▶ YouTube 外部預覽";
+    } else {
+      if (studioIframe) {
+        studioIframe.classList.add("hide");
+        studioIframe.src = "";
+      }
+      if (videoUrl && !videoUrl.includes("YOUR_")) {
+        studioVideoEl.src = videoUrl;
+        studioVideoEl.onloadedmetadata = () => {
+          if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
+            studioDuration = studioVideoEl.duration;
+            updateStudioProgressUi();
+            renderStudioPins();
+          }
+        };
+        studioVideoEl.classList.remove("hide");
+        studioCanvasEl.classList.add("hide");
+        $("studioBadgeText").textContent = "▶ 影片預覽";
+      } else {
+        studioVideoEl.classList.add("hide");
+        studioCanvasEl.classList.remove("hide");
+        $("studioBadgeText").textContent = "▶ 示範動畫";
+      }
     }
   }
+
+  // 當使用者在基本設定修改影片網址時，即時響應切換
+  $("cfgVideoUrl").onchange = () => {
+    initStudioPlayer();
+  };
 
   $("studioPlayBtn").onclick = () => setStudioPlaying(!studioPlaying);
   $("studioRwBtn").onclick = () => seekStudioTime(Math.max(0, studioCurTime - 3));
@@ -2775,6 +2857,10 @@ $("saveFormCfgBtn").onclick = async () => {
   editingFormObj.submitMode = $("cfgSubmitMode").value;
   editingFormObj.emailEntryId = $("cfgEmailEntryId").value.trim();
   editingFormObj.isDefault = $("cfgIsDefault").checked;
+  editingFormObj.allowSeek = $("cfgAllowSeek").value;
+  editingFormObj.allowSpeed = $("cfgAllowSpeed").value === "true";
+  editingFormObj.allowRewind = $("cfgAllowRewind").checked;
+  editingFormObj.pauseOnBlur = $("cfgPauseOnBlur").checked;
 
   $("saveFormCfgBtn").disabled = true;
   const r = await fetch("/api/admin/dfc/forms", {

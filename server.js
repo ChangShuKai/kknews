@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const { Readable } = require("stream");
 try { process.loadEnvFile(path.join(__dirname, ".env")); } catch {}
 const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
@@ -285,11 +286,15 @@ const DEFAULT_DFC_STORE = {
       title: "DFC 互動影片探究問卷",
       description: "DFC 四步驟互動影片探究與反思問卷",
       videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
-      fallbackDuration: 18,
+      fallbackDuration: 363,
       googleFormUrl: process.env.GOOGLE_FORM_ACTION_URL || "YOUR_GOOGLE_FORM_URL",
       csvUrl: process.env.GOOGLE_FORM_CSV_URL || "",
       emailEntryId: "",
       submitMode: "end",
+      allowSeek: "watched",
+      allowRewind: true,
+      allowSpeed: false,
+      pauseOnBlur: true,
       isDefault: true,
       updatedAt: new Date().toISOString(),
       checkpoints: [],
@@ -418,7 +423,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "250kb" }));
 // 所有寫入操作必須帶自訂標頭（簡易 CSRF 防護，搭配 SameSite cookie）
 app.use((req, res, next) => {
-  if (req.method !== "GET" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
+  if (req.method !== "GET" && req.method !== "HEAD" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
   next();
 });
 
@@ -455,6 +460,166 @@ app.get("/assets/dfc.mp4", (req, res) => {
     if (fs.existsSync(p)) return res.sendFile(p);
   }
   return notFound(res);
+});
+
+/* --- Google Drive 雲端影片原生串流代理：將 Google Drive 影片轉為支援 HTTP 206 Range 的原生 MP4 串流供自訂播放器使用 --- */
+const driveVideoMetaCache = new Map();
+function extractGoogleDriveFileId(input = "") {
+  const s = String(input || "").trim();
+  if (!s) return "";
+  if (/^[a-zA-Z0-9_-]{12,80}$/.test(s)) return s;
+  const m1 = s.match(/\/file\/d\/([a-zA-Z0-9_-]{12,80})/);
+  if (m1) return m1[1];
+  const m2 = s.match(/\/api\/dfc\/drive-video\/([a-zA-Z0-9_-]{12,80})/);
+  if (m2) return m2[1];
+  if (/(?:drive\.google\.com|drive\.usercontent\.google\.com|docs\.google\.com)/i.test(s)) {
+    const m3 = s.match(/[?&]id=([a-zA-Z0-9_-]{12,80})/);
+    if (m3) return m3[1];
+  }
+  return "";
+}
+
+app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
+  const fileId = extractGoogleDriveFileId(req.params.fileId);
+  if (!fileId) return notFound(res);
+
+  const cachedMeta = driveVideoMetaCache.get(fileId);
+  if (req.method === "HEAD" && cachedMeta?.totalSize) {
+    res.set({
+      "Content-Type": cachedMeta.contentType || "video/mp4",
+      "Content-Length": String(cachedMeta.totalSize),
+      "Accept-Ranges": "bytes",
+      "Content-Disposition": "inline",
+      "Cache-Control": "public, max-age=3600",
+    });
+    return res.status(200).end();
+  }
+
+  const INITIAL_PROBE_CHUNK = 1024 * 1024;      // 首次載入標頭探測區塊 1 MB，加速 moov metadata 定位
+  const STREAM_CHUNK = 3 * 1024 * 1024;         // 單次串流分塊上限 3 MB（相容 Vercel Serverless 4.5MB 限制並支援高速拖曳）
+
+  const rangeHeader = String(req.headers.range || "");
+  let start = 0;
+  let end = null;
+  if (rangeHeader) {
+    const m = rangeHeader.match(/bytes=(\d*)-(\d*)/i);
+    if (m) {
+      if (m[1] === "" && m[2] !== "" && cachedMeta?.totalSize) {
+        start = Math.max(0, cachedMeta.totalSize - parseInt(m[2], 10));
+        end = cachedMeta.totalSize - 1;
+      } else {
+        start = m[1] !== "" ? parseInt(m[1], 10) : 0;
+        end = m[2] !== "" ? parseInt(m[2], 10) : null;
+      }
+    }
+  }
+  if (!Number.isFinite(start) || start < 0) start = 0;
+  if (end === null || !Number.isFinite(end) || end < start) {
+    end = start + (start === 0 ? INITIAL_PROBE_CHUNK : STREAM_CHUNK) - 1;
+  } else if (end - start + 1 > STREAM_CHUNK) {
+    end = start + STREAM_CHUNK - 1;
+  }
+
+  if (cachedMeta?.totalSize) {
+    if (start >= cachedMeta.totalSize) {
+      res.set("Content-Range", `bytes */${cachedMeta.totalSize}`);
+      return res.status(416).end();
+    }
+    end = Math.min(end, cachedMeta.totalSize - 1);
+  }
+
+  const ac = new AbortController();
+  const onClose = () => {
+    if (!res.writableEnded) ac.abort();
+  };
+  req.on("close", onClose);
+
+  const reqHeaders = {
+    "Range": `bytes=${start}-${end}`,
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+  };
+
+  try {
+    let baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+    let upstream = await fetch(baseUrl, {
+      method: "GET",
+      headers: reqHeaders,
+      redirect: "follow",
+      signal: ac.signal,
+    });
+
+    // 若遇到 Google Drive 大檔案病毒掃描 HTML 確認頁，自動擷取 uuid 再次請求
+    const ct0 = (upstream.headers.get("content-type") || "").toLowerCase();
+    if (ct0.includes("text/html")) {
+      const html = await upstream.text();
+      const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/i) || html.match(/[?&]uuid=([a-zA-Z0-9_-]+)/i);
+      if (uuidMatch) {
+        const retryUrl = `${baseUrl}&uuid=${encodeURIComponent(uuidMatch[1])}`;
+        upstream = await fetch(retryUrl, {
+          method: "GET",
+          headers: reqHeaders,
+          redirect: "follow",
+          signal: ac.signal,
+        });
+      } else if (GOOGLE_FORM_API_KEY) {
+        const apiStreamUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(GOOGLE_FORM_API_KEY)}`;
+        upstream = await fetch(apiStreamUrl, {
+          method: "GET",
+          headers: reqHeaders,
+          redirect: "follow",
+          signal: ac.signal,
+        });
+      }
+    }
+
+    if (!upstream.ok && upstream.status !== 206) {
+      return res.status(upstream.status === 404 ? 404 : 502).json({ error: "無法從 Google Drive 載入影片（請確認檔案權限已設為「知道連結的任何人皆可檢視」）" });
+    }
+
+    const upstreamCt = upstream.headers.get("content-type") || "video/mp4";
+    const finalCt = upstreamCt.includes("video/") ? upstreamCt : "video/mp4";
+    const contentRange = upstream.headers.get("content-range") || "";
+    const contentLength = upstream.headers.get("content-length") || "";
+
+    if (contentRange) {
+      const sizeMatch = contentRange.match(/\/(\d+)$/);
+      if (sizeMatch) {
+        driveVideoMetaCache.set(fileId, {
+          totalSize: parseInt(sizeMatch[1], 10),
+          contentType: finalCt,
+          ts: Date.now(),
+        });
+      }
+    }
+
+    const outHeaders = {
+      "Content-Type": finalCt,
+      "Accept-Ranges": "bytes",
+      "Content-Disposition": "inline",
+      "Cache-Control": "public, max-age=3600",
+      "Cross-Origin-Resource-Policy": "same-origin",
+    };
+    if (contentRange) outHeaders["Content-Range"] = contentRange;
+    if (contentLength) outHeaders["Content-Length"] = contentLength;
+
+    res.status(contentRange ? 206 : 200).set(outHeaders);
+    if (req.method === "HEAD" || !upstream.body) {
+      return res.end();
+    }
+
+    const nodeStream = Readable.fromWeb(upstream.body);
+    nodeStream.on("error", () => {
+      if (!res.headersSent) res.status(502).end();
+      else res.end();
+    });
+    nodeStream.pipe(res);
+  } catch (err) {
+    if (err?.name === "AbortError") return;
+    if (!res.headersSent) res.status(502).json({ error: "Google Drive 影片串流連線中斷" });
+    else res.end();
+  } finally {
+    req.off("close", onClose);
+  }
 });
 
 function parseUA(ua = "") {
@@ -1275,6 +1440,10 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   const csvUrl = str(body.csvUrl || "", 400).trim();
   const emailEntryId = str(body.emailEntryId || "", 60).trim();
   const submitMode = body.submitMode === "each" ? "each" : "end";
+  const allowSeek = ["watched", "locked", "free"].includes(body.allowSeek) ? body.allowSeek : "watched";
+  const allowRewind = body.allowRewind !== false;
+  const allowSpeed = Boolean(body.allowSpeed);
+  const pauseOnBlur = body.pauseOnBlur !== false;
 
   if (googleFormUrl && !googleFormUrl.includes("YOUR_GOOGLE_FORM") && !isAllowedGoogleUrl(googleFormUrl)) {
     return res.status(400).json({ error: "不安全的 Google 表單網址：僅支援 Google 官方網域 (docs.google.com, forms.googleapis.com, script.google.com)" });
@@ -1307,6 +1476,7 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   const existingIdx = store.forms.findIndex(f => f.id === id);
   const formObj = {
     id, title, description, videoUrl, fallbackDuration, googleFormUrl, csvUrl, emailEntryId, submitMode,
+    allowSeek, allowRewind, allowSpeed, pauseOnBlur,
     checkpoints: Array.isArray(body.checkpoints) ? checkpoints : (existingIdx >= 0 ? (store.forms[existingIdx].checkpoints || []) : []),
     updatedAt: new Date().toISOString(),
   };

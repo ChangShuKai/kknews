@@ -836,9 +836,19 @@
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    .video-cinema-box video,
+    .video-cinema-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      display: block;
+      cursor: pointer;
+    }
+
     .video-cinema-box canvas,
     .video-cinema-box iframe {
       width: 100%;
@@ -858,29 +868,176 @@
       border-radius: var(--r-pill);
       background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       color: #fff;
       font-size: 12px;
       font-weight: 600;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      z-index: 4;
+      z-index: 6;
+      pointer-events: none;
     }
 
     .video-floating-badge.question-stop {
-      background: rgba(255, 149, 0, 0.9);
+      background: rgba(255, 149, 0, 0.92);
       border-color: #ffd60a;
       color: #1c1917;
     }
 
-    /* 影片時間進度列 */
+    .video-mode-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: var(--r-pill);
+      background: rgba(15, 23, 42, 0.68);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    /* 畫面中央大播放鈕與載入緩衝遮罩 */
+    .video-center-play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.08) 70%);
+      z-index: 4;
+      cursor: pointer;
+      opacity: 1;
+      transition: opacity 0.25s ease, transform 0.25s var(--spring-smooth);
+    }
+
+    .video-center-play.hide-overlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .video-center-play-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      padding-left: 4px;
+      transition: transform 0.22s var(--spring-bounce), background 0.2s;
+    }
+
+    .video-center-play:hover .video-center-play-circle {
+      transform: scale(1.1);
+      background: rgba(0, 113, 227, 0.9);
+    }
+
+    .video-loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(9, 13, 22, 0.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 5;
+      transition: opacity 0.25s ease;
+    }
+
+    .video-spinner {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #38bdf8;
+      animation: dfcSpin 0.85s linear infinite;
+    }
+
+    @keyframes dfcSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .video-lock-toast {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: var(--r-pill);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      z-index: 7;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.25s ease, transform 0.25s var(--spring-smooth);
+    }
+
+    .video-lock-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 全螢幕劇院支援（包含右側互動題目卡同步全螢幕） */
+    .dfc-stage-wrap:fullscreen,
+    .dfc-stage-wrap:-webkit-full-screen {
+      background: #0b0f19;
+      padding: 28px;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dfc-stage-wrap:fullscreen .dfc-video-pane,
+    .dfc-stage-wrap:-webkit-full-screen .dfc-video-pane {
+      width: min(1120px, 95vw);
+    }
+
+    .dfc-stage-wrap.split-active:fullscreen .dfc-video-pane,
+    .dfc-stage-wrap.split-active:-webkit-full-screen .dfc-video-pane {
+      width: 54%;
+    }
+
+    .dfc-stage-wrap.split-active:fullscreen .dfc-q-pane,
+    .dfc-stage-wrap.split-active:-webkit-full-screen .dfc-q-pane {
+      width: 44%;
+    }
+
+    /* 影片自訂控制列 */
     .cinema-controls {
       margin-top: 14px;
       background: var(--bg);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      padding: 10px 16px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .cinema-play-btn {
@@ -912,21 +1069,127 @@
       cursor: not-allowed;
     }
 
+    .cinema-icon-btn {
+      background: #ffffff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      flex: none;
+      transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    }
+
+    .cinema-icon-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: var(--line-strong);
+      transform: translateY(-1px);
+    }
+
+    .cinema-icon-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     .cinema-track {
       position: relative;
       flex: 1;
-      height: 8px;
-      background: rgba(0, 0, 0, 0.08);
+      min-width: 140px;
+      height: 9px;
+      background: rgba(0, 0, 0, 0.09);
       border-radius: var(--r-pill);
       cursor: pointer;
+      touch-action: none;
+      transition: height 0.15s ease;
+    }
+
+    .cinema-track:hover {
+      height: 11px;
+    }
+
+    .cinema-track.locked-track {
+      cursor: not-allowed;
+    }
+
+    .cinema-track-buffered {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: var(--r-pill);
+      pointer-events: none;
+      transition: width 0.2s ease;
+    }
+
+    .cinema-track-watched {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: rgba(0, 113, 227, 0.25);
+      border-radius: var(--r-pill);
+      pointer-events: none;
     }
 
     .cinema-track-fill {
+      position: relative;
       height: 100%;
       width: 0%;
       background: var(--blue);
       border-radius: var(--r-pill);
-      transition: width 0.1s linear;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .cinema-track-fill::after {
+      content: "";
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%) scale(0.85);
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2.5px solid var(--blue);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+      transition: transform 0.18s var(--spring-bounce);
+    }
+
+    .cinema-track:hover .cinema-track-fill::after {
+      transform: translateY(-50%) scale(1.12);
+    }
+
+    .cinema-track-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      padding: 3px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 5;
+    }
+
+    .cinema-track:hover .cinema-track-tooltip {
+      opacity: 1;
     }
 
     .cinema-marker {
@@ -957,8 +1220,27 @@
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       color: var(--ink-secondary);
-      min-width: 86px;
+      min-width: 84px;
       text-align: right;
+    }
+
+    .cinema-vol-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cinema-vol-slider {
+      width: 62px;
+      height: 5px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      .cinema-vol-slider {
+        display: none;
+      }
     }
 
     /* 問題卡片 */
@@ -2006,22 +2288,41 @@
         <div class="dfc-stage-wrap" id="dfcStage">
           <!-- 影片劇院區塊 -->
           <div class="dfc-video-pane">
-            <div class="video-cinema-box">
-              <div class="video-floating-badge" id="dfcVideoBadge">播放中</div>
+            <div class="video-cinema-box" id="dfcCinemaBox">
+              <div class="video-floating-badge" id="dfcVideoBadge">準備播放</div>
+              <div class="video-mode-badge" id="dfcModeBadge">🔒 防快轉學習模式</div>
+              <div class="video-loading-overlay hide" id="dfcVideoLoading">
+                <div class="video-spinner"></div>
+                <span id="dfcLoadingText">正在從 Google Drive 載入雲端影片串流...</span>
+              </div>
+              <div class="video-center-play" id="dfcCenterPlay" title="點擊播放 / 暫停">
+                <div class="video-center-play-circle">▶</div>
+              </div>
+              <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
               <iframe id="dfcIframe" class="hide" allow="autoplay; fullscreen" frameborder="0"></iframe>
-              <video id="dfcVideo" playsinline preload="metadata" class="hide"></video>
+              <video id="dfcVideo" playsinline preload="metadata" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide"></video>
               <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
             </div>
 
             <div class="cinema-controls">
-              <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停 (Space)">❚❚</button>
+              <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停">▶</button>
+              <button type="button" class="cinema-icon-btn" id="dfcRewindBtn" title="倒退 10 秒重看片段">↺ 10s</button>
               <div class="cinema-track" id="dfcTrackWrap">
+                <div class="cinema-track-buffered" id="dfcTrackBuffered"></div>
+                <div class="cinema-track-watched" id="dfcTrackWatched"></div>
                 <div class="cinema-track-fill" id="dfcTrackFill"></div>
+                <div class="cinema-track-tooltip" id="dfcTrackTooltip">00:00</div>
                 <div id="dfcMarkers"></div>
               </div>
               <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 00:18</span>
+              <div class="cinema-vol-wrap">
+                <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
+                <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
+              </div>
+              <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="切換播放速度">1.0x</button>
+              <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕劇院模式" style="padding:0 8px">⛶</button>
               <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
-                style="white-space:nowrap;margin-left:8px;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
+                style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
                 填寫問卷</button>
             </div>
           </div>
@@ -2684,10 +2985,14 @@
      * ============================================================================ */
     const DFC_CONFIG = {
       videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
-      fallbackDuration: 18,
+      fallbackDuration: 363,
       googleFormUrl: "YOUR_GOOGLE_FORM_URL",
       emailEntryId: "",
       submitMode: "end",
+      allowSeek: "watched",
+      allowRewind: true,
+      allowSpeed: false,
+      pauseOnBlur: true,
       checkpoints: [],
     };
 
@@ -3329,13 +3634,16 @@
     }
 
     /* ============================================================================
-     * DFC 互動影片播放器與狀態機
+     * DFC 互動影片播放器與狀態機（支援 Google Drive 雲端串流直連自訂播放器與防快轉控制）
      * ============================================================================ */
     const dfcState = {
       inited: false,
       useRealVideo: false,
+      isDriveStream: false,
+      isEmbed: false,
       playing: false,
       currentTime: 0,
+      maxWatchedTime: 0,
       duration: DFC_CONFIG.fallbackDuration,
       activeCheckpointIndex: -1,
       answeredIds: new Set(),
@@ -3343,27 +3651,84 @@
       submitted: false,
       rafId: null,
       lastTickTs: 0,
+      lockToastTimer: null,
+      playbackSpeedIdx: 1,
     };
+    const SPEED_STEPS = [0.75, 1.0, 1.25, 1.5];
+
+    function showDfcLockToast(msg) {
+      const el = $("dfcLockToast");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.add("show");
+      if (dfcState.lockToastTimer) clearTimeout(dfcState.lockToastTimer);
+      dfcState.lockToastTimer = setTimeout(() => {
+        el.classList.remove("show");
+      }, 2800);
+    }
+
+    function updateDfcPlayerControlUi() {
+      const seekMode = DFC_CONFIG.allowSeek || "watched";
+      const modeBadge = $("dfcModeBadge");
+      const track = $("dfcTrackWrap");
+      const rwBtn = $("dfcRewindBtn");
+      const speedBtn = $("dfcSpeedBtn");
+      const v = $("dfcVideo");
+
+      if (modeBadge) {
+        if (seekMode === "locked") {
+          modeBadge.textContent = "🔒 嚴格鎖定進度模式";
+        } else if (seekMode === "free") {
+          modeBadge.textContent = "🎬 互動問答播放模式";
+        } else {
+          modeBadge.textContent = "🔒 防快轉學習模式";
+        }
+      }
+      if (track) {
+        track.classList.toggle("locked-track", seekMode === "locked");
+      }
+      if (rwBtn) {
+        rwBtn.classList.toggle("hide", DFC_CONFIG.allowRewind === false);
+      }
+      if (speedBtn) {
+        const allowSpd = Boolean(DFC_CONFIG.allowSpeed);
+        speedBtn.classList.toggle("hide", !allowSpd);
+        if (!allowSpd && v) {
+          v.playbackRate = 1.0;
+          dfcState.playbackSpeedIdx = 1;
+          speedBtn.textContent = "1.0x";
+        }
+      }
+    }
 
     function renderDfcStepPills() {
       const wrap = $("dfcStepPills");
       if (!wrap) return;
       wrap.innerHTML = "";
+      const seekMode = DFC_CONFIG.allowSeek || "watched";
       DFC_CONFIG.checkpoints.forEach((cp, idx) => {
         const pill = document.createElement("span");
         const isDone = dfcState.answeredIds.has(cp.id);
         const isAct = dfcState.activeCheckpointIndex === idx;
+        const canJump = isDone || isAct || seekMode === "free" || dfcState.maxWatchedTime + 0.5 >= cp.time;
         pill.className = "dfc-step-pill" + (isAct ? " active" : isDone ? " done" : "");
-        pill.textContent = `${isDone ? "✓" : "●"} 問題 ${idx + 1} (${fmtSec(cp.time)})`;
+        pill.textContent = `${isDone ? "✓" : (canJump ? "●" : "🔒")} 問題 ${idx + 1} (${fmtSec(cp.time)})`;
         pill.style.cursor = "pointer";
-        pill.title = "點擊直接開啟此題問答";
-        pill.onclick = () => triggerCheckpointQuestion(idx);
+        pill.title = canJump ? "點擊開啟此題問答" : `請先觀看影片至 ${fmtSec(cp.time)} 解鎖此題`;
+        pill.onclick = () => {
+          if (!canJump) {
+            showDfcLockToast(`🔒 請依序觀看影片至 ${fmtSec(cp.time)}，系統將自動展開本題問答`);
+            return;
+          }
+          triggerCheckpointQuestion(idx);
+        };
         wrap.appendChild(pill);
       });
     }
 
     function renderDfcMarkers() {
       const wrap = $("dfcMarkers");
+      if (!wrap) return;
       wrap.innerHTML = "";
       const dur = dfcState.duration || DFC_CONFIG.fallbackDuration;
       DFC_CONFIG.checkpoints.forEach((cp, idx) => {
@@ -3436,11 +3801,27 @@
     }
 
     function updateDfcUiProgress() {
-      const dur = dfcState.duration || DFC_CONFIG.fallbackDuration;
+      const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration);
       const pct = Math.min(100, Math.max(0, (dfcState.currentTime / dur) * 100));
+      const watchedPct = Math.min(100, Math.max(pct, (dfcState.maxWatchedTime / dur) * 100));
       $("dfcTrackFill").style.width = pct + "%";
+      if ($("dfcTrackWatched")) {
+        $("dfcTrackWatched").style.width = watchedPct + "%";
+      }
+      if (dfcState.useRealVideo) {
+        const v = $("dfcVideo");
+        if (v && v.buffered && v.buffered.length > 0 && $("dfcTrackBuffered")) {
+          const bufEnd = v.buffered.end(v.buffered.length - 1);
+          $("dfcTrackBuffered").style.width = Math.min(100, (bufEnd / dur) * 100) + "%";
+        }
+      }
       $("dfcTimeLabel").textContent = `${fmtSec(dfcState.currentTime)} / ${fmtSec(dur)}`;
       $("dfcPlayBtn").textContent = dfcState.playing ? "❚❚" : "▶";
+      const centerPlay = $("dfcCenterPlay");
+      if (centerPlay) {
+        const hideCenter = dfcState.playing || dfcState.activeCheckpointIndex !== -1 || dfcState.isEmbed;
+        centerPlay.classList.toggle("hide-overlay", hideCenter);
+      }
       drawDemoCanvas(dfcState.currentTime);
     }
 
@@ -3742,6 +4123,10 @@
         const cp = DFC_CONFIG.checkpoints[i];
         if (!dfcState.answeredIds.has(cp.id) && dfcState.currentTime >= cp.time) {
           dfcState.currentTime = cp.time;
+          if (dfcState.useRealVideo) {
+            const v = $("dfcVideo");
+            if (v) v.currentTime = cp.time;
+          }
           updateDfcUiProgress();
           triggerCheckpointQuestion(i);
           return;
@@ -3756,10 +4141,26 @@
 
       if (dfcState.useRealVideo) {
         const v = $("dfcVideo");
-        dfcState.currentTime = v.currentTime || 0;
+        const cur = v.currentTime || 0;
+        const seekMode = DFC_CONFIG.allowSeek || "watched";
+        // 防外掛或鍵盤快捷鍵強制快轉檢查
+        if (seekMode !== "free" && cur > dfcState.maxWatchedTime + 1.8) {
+          v.currentTime = dfcState.maxWatchedTime;
+          dfcState.currentTime = dfcState.maxWatchedTime;
+          showDfcLockToast("🔒 系統已攔截跳過未觀看片段的操作");
+        } else {
+          dfcState.currentTime = cur;
+          if (cur > dfcState.maxWatchedTime) {
+            dfcState.maxWatchedTime = cur;
+            renderDfcStepPills();
+          }
+        }
         if (v.duration && Number.isFinite(v.duration)) dfcState.duration = v.duration;
       } else {
         dfcState.currentTime = Math.min(dfcState.duration, dfcState.currentTime + dt);
+        if (dfcState.currentTime > dfcState.maxWatchedTime) {
+          dfcState.maxWatchedTime = dfcState.currentTime;
+        }
       }
 
       updateDfcUiProgress();
@@ -3782,13 +4183,13 @@
       const badge = $("dfcVideoBadge");
 
       if (play) {
-        badge.textContent = "播放中";
+        badge.textContent = dfcState.isDriveStream ? "🎬 Google Drive 雲端影片播放中" : "播放中";
         badge.classList.remove("question-stop");
         logAction("播放 DFC 影片", `播放時間點: ${Math.round(dfcState.currentTime)} 秒`);
         if (dfcState.useRealVideo) {
           v.play().catch(() => {
             dfcState.playing = false;
-            badge.textContent = "點擊播放鈕開始";
+            badge.textContent = "點擊畫面或播放鈕開始";
             updateDfcUiProgress();
           });
         }
@@ -3798,7 +4199,7 @@
         if (dfcState.useRealVideo) v.pause();
         if (dfcState.rafId) { cancelAnimationFrame(dfcState.rafId); dfcState.rafId = null; }
         if (dfcState.activeCheckpointIndex === -1) {
-          badge.textContent = "已暫停";
+          badge.textContent = "已暫停 · 點擊繼續播放";
           badge.classList.remove("question-stop");
           logAction("暫停 DFC 影片", `暫停時間點: ${Math.round(dfcState.currentTime)} 秒`);
         }
@@ -3806,16 +4207,22 @@
       updateDfcUiProgress();
     }
 
+    function extractGoogleDriveId(url) {
+      if (!url || typeof url !== "string") return "";
+      const s = url.trim();
+      const m1 = s.match(/\/file\/d\/([a-zA-Z0-9_-]{12,80})/);
+      if (m1) return m1[1];
+      const m2 = s.match(/\/api\/dfc\/drive-video\/([a-zA-Z0-9_-]{12,80})/);
+      if (m2) return m2[1];
+      if (/(?:drive\.google\.com|drive\.usercontent\.google\.com|docs\.google\.com)/i.test(s)) {
+        const m3 = s.match(/[?&]id=([a-zA-Z0-9_-]{12,80})/);
+        if (m3) return m3[1];
+      }
+      return "";
+    }
+
     function parseEmbedVideo(url) {
       if (!url || typeof url !== "string") return null;
-      const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (url.includes("drive.google.com") && url.match(/[?&]id=([a-zA-Z0-9_-]+)/));
-      if (driveMatch) {
-        return {
-          type: "drive",
-          id: driveMatch[1],
-          embedUrl: `https://drive.google.com/file/d/${driveMatch[1]}/preview`
-        };
-      }
       const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
       if (ytMatch) {
         return {
@@ -3832,11 +4239,42 @@
       const canvas = $("dfcDemoCanvas");
       const iframe = $("dfcIframe");
       const badge = $("dfcVideoBadge");
+      const loadingEl = $("dfcVideoLoading");
+      const loadingTxt = $("dfcLoadingText");
+
+      updateDfcPlayerControlUi();
+
+      // 1. 優先判斷是否為 Google Drive 影片：直接轉為後端 Range 串流端點並套入自訂 HTML5 播放器
+      const driveId = extractGoogleDriveId(url);
+      if (driveId && v) {
+        dfcState.isEmbed = false;
+        dfcState.isDriveStream = true;
+        if (iframe) { iframe.classList.add("hide"); iframe.src = ""; }
+        if (loadingEl) {
+          if (loadingTxt) loadingTxt.textContent = "正在從 Google Drive 載入雲端影片串流...";
+          loadingEl.classList.remove("hide");
+        }
+        const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
+        if (v.getAttribute("src") !== streamSrc) {
+          v.src = streamSrc;
+          v.load();
+        }
+        v.classList.remove("hide");
+        if (canvas) canvas.classList.add("hide");
+        if (badge) {
+          badge.textContent = "🎬 Google Drive 雲端串流就緒";
+          badge.classList.remove("question-stop");
+        }
+        return;
+      }
+
+      dfcState.isDriveStream = false;
       const embed = parseEmbedVideo(url);
 
       if (embed) {
         dfcState.isEmbed = true;
         dfcState.useRealVideo = false;
+        if (loadingEl) loadingEl.classList.add("hide");
         if (v) { v.pause(); v.classList.add("hide"); }
         if (canvas) canvas.classList.add("hide");
         if (iframe) {
@@ -3844,11 +4282,11 @@
           iframe.classList.remove("hide");
         }
         if (badge) {
-          badge.textContent = embed.type === "drive" ? "🎬 Google Drive 雲端影片 (DFC 3.0)" : "🎬 YouTube 影片播放中";
+          badge.textContent = "🎬 YouTube 影片播放中";
           badge.classList.remove("question-stop");
         }
         const tl = $("dfcTimeLabel");
-        if (tl) tl.textContent = "雲端串流播放";
+        if (tl) tl.textContent = "外部串流";
         return;
       }
 
@@ -3859,12 +4297,52 @@
       }
 
       if (v && url && !url.includes("YOUR_")) {
+        if (loadingEl) {
+          if (loadingTxt) loadingTxt.textContent = "正在載入影片...";
+          loadingEl.classList.remove("hide");
+        }
         v.src = url;
+        v.load();
       } else {
+        if (loadingEl) loadingEl.classList.add("hide");
         dfcState.useRealVideo = false;
         if (v) v.classList.add("hide");
         if (canvas) canvas.classList.remove("hide");
       }
+    }
+
+    function seekDfcWithPolicy(requestedTime, fromUserTrack = true) {
+      if (dfcState.activeCheckpointIndex !== -1) {
+        showDfcLockToast("📝 請先完成右側當前時間點的題目作答");
+        return;
+      }
+      const seekMode = DFC_CONFIG.allowSeek || "watched";
+      if (fromUserTrack && seekMode === "locked") {
+        showDfcLockToast("🔒 此問卷已鎖定進度條拖曳，請使用「↺ 10s」按鈕倒退重看");
+        return;
+      }
+
+      let targetTime = Math.max(0, Math.min(dfcState.duration, requestedTime));
+
+      // 1. 若為防快轉模式，不可超過目前實際已觀看的最大秒數
+      if (fromUserTrack && seekMode === "watched" && targetTime > dfcState.maxWatchedTime + 0.5) {
+        targetTime = dfcState.maxWatchedTime;
+        showDfcLockToast(`🔒 請依序觀看影片，僅能回看已觀看過的片段 (00:00 ~ ${fmtSec(dfcState.maxWatchedTime)})`);
+      }
+
+      // 2. 不可跳過尚未作答的檢核點題目
+      const nextUnanswered = DFC_CONFIG.checkpoints.find(cp => !dfcState.answeredIds.has(cp.id));
+      if (nextUnanswered && targetTime >= nextUnanswered.time) {
+        targetTime = nextUnanswered.time;
+      }
+
+      dfcState.currentTime = targetTime;
+      if (dfcState.useRealVideo) {
+        const v = $("dfcVideo");
+        if (v) v.currentTime = targetTime;
+      }
+      updateDfcUiProgress();
+      checkDfcTimeCheckpoints();
     }
 
     function initDfcPlayer() {
@@ -3873,35 +4351,155 @@
 
       const v = $("dfcVideo");
       const canvas = $("dfcDemoCanvas");
+      const loadingEl = $("dfcVideoLoading");
+
+      v.addEventListener("contextmenu", e => e.preventDefault());
 
       v.onloadedmetadata = () => {
         if (dfcState.isEmbed) return;
+        if (loadingEl) loadingEl.classList.add("hide");
         if (v.duration && Number.isFinite(v.duration)) {
           dfcState.useRealVideo = true;
           dfcState.duration = v.duration;
-          dfcState.currentTime = 0;
+          dfcState.currentTime = v.currentTime || 0;
           v.classList.remove("hide");
           canvas.classList.add("hide");
+          renderDfcStepPills();
           renderDfcMarkers();
           updateDfcUiProgress();
           if (dfcState.playing) {
             v.play().catch(() => {
               dfcState.playing = false;
-              $("dfcVideoBadge").textContent = "點擊播放鈕開始";
+              $("dfcVideoBadge").textContent = "點擊畫面或播放鈕開始";
               updateDfcUiProgress();
             });
           }
         }
       };
+
+      v.onwaiting = () => {
+        if (!dfcState.isEmbed && loadingEl) {
+          const loadingTxt = $("dfcLoadingText");
+          if (loadingTxt) loadingTxt.textContent = "雲端緩衝載入中...";
+          loadingEl.classList.remove("hide");
+        }
+      };
+      v.oncanplay = () => {
+        if (loadingEl) loadingEl.classList.add("hide");
+      };
+      v.onplaying = () => {
+        if (loadingEl) loadingEl.classList.add("hide");
+      };
+      v.onprogress = () => {
+        updateDfcUiProgress();
+      };
+      v.onratechange = () => {
+        if (!DFC_CONFIG.allowSpeed && v.playbackRate !== 1.0) {
+          v.playbackRate = 1.0;
+          showDfcLockToast("🔒 本課程影片固定為 1.0x 原速播放");
+        }
+      };
       v.onerror = () => {
         if (dfcState.isEmbed) return;
+        if (loadingEl) loadingEl.classList.add("hide");
         dfcState.useRealVideo = false;
         v.classList.add("hide");
         canvas.classList.remove("hide");
         renderDfcMarkers();
         updateDfcUiProgress();
       };
-      v.onended = () => setDfcPlaying(false);
+      v.onended = () => {
+        dfcState.maxWatchedTime = dfcState.duration;
+        setDfcPlaying(false);
+        const badge = $("dfcVideoBadge");
+        badge.textContent = "✓ 播放完畢";
+        badge.classList.remove("question-stop");
+        renderDfcStepPills();
+      };
+
+      // 點擊影片畫面或中央大播放鈕切換播放/暫停
+      const togglePlayOnScreen = (e) => {
+        if (dfcState.isEmbed || dfcState.activeCheckpointIndex !== -1) return;
+        e.stopPropagation();
+        if (dfcState.currentTime >= dfcState.duration - 0.2) {
+          dfcState.currentTime = 0;
+          if (dfcState.useRealVideo) v.currentTime = 0;
+        }
+        setDfcPlaying(!dfcState.playing);
+      };
+      v.onclick = togglePlayOnScreen;
+      if ($("dfcCenterPlay")) $("dfcCenterPlay").onclick = togglePlayOnScreen;
+
+      // 倒退 10 秒重看按鈕
+      if ($("dfcRewindBtn")) {
+        $("dfcRewindBtn").onclick = () => {
+          if (dfcState.activeCheckpointIndex !== -1) return;
+          const target = Math.max(0, dfcState.currentTime - 10);
+          seekDfcWithPolicy(target, false);
+          logAction("倒退 DFC 影片 10 秒", `回退至 ${Math.round(target)} 秒`);
+        };
+      }
+
+      // 音量與靜音控制
+      const muteBtn = $("dfcMuteBtn");
+      const volSlider = $("dfcVolSlider");
+      const syncVolumeUi = () => {
+        if (!muteBtn) return;
+        if (v.muted || v.volume === 0) muteBtn.textContent = "🔇";
+        else if (v.volume < 0.5) muteBtn.textContent = "🔉";
+        else muteBtn.textContent = "🔊";
+      };
+      if (muteBtn) {
+        muteBtn.onclick = () => {
+          v.muted = !v.muted;
+          if (volSlider) volSlider.value = v.muted ? 0 : v.volume;
+          syncVolumeUi();
+        };
+      }
+      if (volSlider) {
+        volSlider.oninput = () => {
+          const val = Number(volSlider.value);
+          v.volume = val;
+          v.muted = val === 0;
+          syncVolumeUi();
+        };
+      }
+
+      // 倍速切換按鈕（僅在後台開放時啟用）
+      const speedBtn = $("dfcSpeedBtn");
+      if (speedBtn) {
+        speedBtn.onclick = () => {
+          if (!DFC_CONFIG.allowSpeed) return;
+          dfcState.playbackSpeedIdx = (dfcState.playbackSpeedIdx + 1) % SPEED_STEPS.length;
+          const spd = SPEED_STEPS[dfcState.playbackSpeedIdx];
+          v.playbackRate = spd;
+          speedBtn.textContent = spd + "x";
+        };
+      }
+
+      // 全螢幕劇院切換（針對 #dfcStage 全螢幕，保留自訂控制列與右側問題卡）
+      const fsBtn = $("dfcFsBtn");
+      if (fsBtn) {
+        fsBtn.onclick = () => {
+          const stage = $("dfcStage");
+          if (!stage) return;
+          if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
+            else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          }
+        };
+      }
+
+      // 視窗失焦或切換分頁時自動暫停（防掛機）
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
+          setDfcPlaying(false);
+          showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停");
+        }
+      });
 
       applyDfcVideoSource(DFC_CONFIG.videoUrl);
 
@@ -3940,34 +4538,71 @@
         } else {
           const cps = DFC_CONFIG.checkpoints || [];
           if (!cps.length) {
-            return toast("目前此問卷尚未設定任何題目");
+            showDfcLockToast("📋 目前此問卷尚未設定任何時間點題目");
+            return;
           }
           const targetIdx = dfcState.activeCheckpointIndex >= 0
             ? dfcState.activeCheckpointIndex
             : (cps.findIndex(c => !dfcState.answeredIds.has(c.id)) >= 0
               ? cps.findIndex(c => !dfcState.answeredIds.has(c.id))
               : 0);
+          const targetCp = cps[targetIdx];
+          const seekMode = DFC_CONFIG.allowSeek || "watched";
+          if (targetCp && !dfcState.answeredIds.has(targetCp.id) && seekMode !== "free" && dfcState.maxWatchedTime + 0.5 < targetCp.time) {
+            showDfcLockToast(`🔒 請先觀看影片至 ${fmtSec(targetCp.time)}，將自動展開第 ${targetIdx + 1} 題`);
+            return;
+          }
           triggerCheckpointQuestion(targetIdx);
           $("dfcToggleQBtn").textContent = "✕ 收合問卷";
         }
       };
     }
 
-    $("dfcTrackWrap").onclick = (e) => {
-      if (dfcState.activeCheckpointIndex !== -1) return;
-      const rect = $("dfcTrackWrap").getBoundingClientRect();
-      const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-      let targetTime = ratio * dfcState.duration;
+    // 自訂進度條懸浮預覽與拖拽控制
+    let isTrackScrubbing = false;
+    const trackEl = $("dfcTrackWrap");
+    if (trackEl) {
+      const updateTooltipFromEvent = (e) => {
+        const tip = $("dfcTrackTooltip");
+        if (!tip) return;
+        const rect = trackEl.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        const hoverSec = ratio * (dfcState.duration || DFC_CONFIG.fallbackDuration);
+        const seekMode = DFC_CONFIG.allowSeek || "watched";
+        const isLocked = seekMode === "locked" || (seekMode === "watched" && hoverSec > dfcState.maxWatchedTime + 0.5);
+        tip.style.left = (ratio * 100) + "%";
+        tip.textContent = (isLocked ? "🔒 " : "") + fmtSec(hoverSec);
+      };
 
-      const nextUnanswered = DFC_CONFIG.checkpoints.find(cp => !dfcState.answeredIds.has(cp.id));
-      if (nextUnanswered && targetTime >= nextUnanswered.time) {
-        targetTime = nextUnanswered.time;
-      }
-      dfcState.currentTime = targetTime;
-      if (dfcState.useRealVideo) $("dfcVideo").currentTime = targetTime;
-      updateDfcUiProgress();
-      checkDfcTimeCheckpoints();
-    };
+      trackEl.addEventListener("pointermove", (e) => {
+        updateTooltipFromEvent(e);
+        if (isTrackScrubbing) {
+          const rect = trackEl.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+          seekDfcWithPolicy(ratio * dfcState.duration, true);
+        }
+      });
+
+      trackEl.addEventListener("pointerdown", (e) => {
+        if (dfcState.activeCheckpointIndex !== -1) {
+          showDfcLockToast("📝 請先完成右側當前時間點的題目作答");
+          return;
+        }
+        isTrackScrubbing = true;
+        try { trackEl.setPointerCapture(e.pointerId); } catch {}
+        const rect = trackEl.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        seekDfcWithPolicy(ratio * dfcState.duration, true);
+      });
+
+      const stopTrackScrub = (e) => {
+        if (!isTrackScrubbing) return;
+        isTrackScrubbing = false;
+        try { trackEl.releasePointerCapture(e.pointerId); } catch {}
+      };
+      trackEl.addEventListener("pointerup", stopTrackScrub);
+      trackEl.addEventListener("pointercancel", stopTrackScrub);
+    }
 
     $("dfcReplayBtn").onclick = () => {
       dfcState.currentTime = 0;
@@ -3998,6 +4633,7 @@
         if (!cfg || typeof cfg !== "object") return;
 
         const prevVideoUrl = DFC_CONFIG.videoUrl;
+        const prevFormId = DFC_CONFIG.id;
         Object.assign(DFC_CONFIG, cfg);
         if (cfg.title && $("dfcTitle")) $("dfcTitle").textContent = cfg.title;
         if (cfg.description && $("dfcSubtitle")) $("dfcSubtitle").textContent = cfg.description;
@@ -4008,11 +4644,17 @@
         dfcState.answeredIds.clear();
         dfcState.answers = {};
         dfcState.submitted = false;
+        if (cfg.id !== prevFormId || cfg.videoUrl !== prevVideoUrl) {
+          dfcState.currentTime = 0;
+          dfcState.maxWatchedTime = 0;
+        }
         $("dfcCompleteBox").classList.add("hide");
         if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
         $("dfcStage").classList.remove("split-active");
         if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "📝 填寫問卷";
         $("dfcPlayBtn").disabled = false;
+
+        updateDfcPlayerControlUi();
 
         if (dfcState.inited) {
           if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl) {
@@ -4033,16 +4675,18 @@
       try {
         const r = await fetch("/api/dfc/forms");
         if (!r.ok) return;
-        const forms = await r.json();
+        const data = await r.json();
+        const forms = Array.isArray(data) ? data : (Array.isArray(data?.forms) ? data.forms : []);
         const wrap = $("dfcSurveyPickerWrap");
         const sel = $("dfcSurveySelect");
         if (!wrap || !sel) return;
 
-        if (Array.isArray(forms) && forms.length > 1) {
+        if (forms.length > 1) {
           sel.innerHTML = forms.map(f => {
             const isSel = f.id === currentFormId ? "selected" : "";
             const tag = f.isDefault ? " [首選]" : "";
-            return '<option value="' + escapeHtml(f.id) + '" ' + isSel + '>' + escapeHtml(f.title) + tag + ' (' + f.checkpointCount + ' 題)</option>';
+            const qCount = f.questionCount ?? f.checkpointCount ?? 0;
+            return '<option value="' + escapeHtml(f.id) + '" ' + isSel + '>' + escapeHtml(f.title) + tag + ' (' + qCount + ' 題)</option>';
           }).join("");
           wrap.classList.remove("hide");
         } else {
