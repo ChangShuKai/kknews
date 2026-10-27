@@ -456,14 +456,34 @@ app.use((req, res, next) => {
   next();
 });
 
+/* --- 靜態資源高效快取 (ETag & 304 Not Modified & Stale-While-Revalidate) --- */
+const ASSET_ETAGS = new Map();
+function sendStaticAsset(req, res, content, contentType, cacheControl = "public, max-age=180, stale-while-revalidate=86400") {
+  if (!content) return notFound(res);
+  let etag = ASSET_ETAGS.get(content);
+  if (!etag) {
+    etag = '"' + crypto.createHash("md5").update(content).digest("hex").slice(0, 16) + '"';
+    ASSET_ETAGS.set(content, etag);
+  }
+  res.set({
+    "Content-Type": contentType,
+    "Cache-Control": cacheControl,
+    "ETag": etag,
+  });
+  if (req.headers["if-none-match"] === etag) {
+    return res.status(304).end();
+  }
+  return res.send(content);
+}
+
 /* --- 前台與靜態資源 --- */
 const cached = res => res.set("Cache-Control", "public, max-age=300");
 app.get("/", (req, res) => res.type("html").send(PAGES.index.html));
-app.get([("/icon.svg"), "/favicon.ico"], (req, res) => cached(res).type("image/svg+xml").send(PAGES.icon));
-app.get("/assets/ui.css", (req, res) => cached(res).type("css").send(PAGES.css));
-app.get("/assets/index.js", (req, res) => res.type("js").send(PAGES.index.js));
-app.get("/assets/login.js", (req, res) => res.type("js").send(PAGES.login.js));
-app.get("/assets/admin.js", (req, res) => adminOf(req) ? res.type("js").send(PAGES.admin.js) : notFound(res));
+app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400"));
+app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8"));
+app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8"));
+app.get("/assets/login.js", (req, res) => sendStaticAsset(req, res, PAGES.login.js, "application/javascript; charset=utf-8"));
+app.get("/assets/admin.js", (req, res) => adminOf(req) ? sendStaticAsset(req, res, PAGES.admin.js, "application/javascript; charset=utf-8", "private, max-age=60, stale-while-revalidate=86400") : notFound(res));
 app.get("/assets/dfc.mp4", (req, res) => {
   for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
     if (fs.existsSync(p)) return res.sendFile(p);

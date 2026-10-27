@@ -1506,8 +1506,16 @@ async function render() {
 
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
     ta.value = r.content; au.value = r.author;
-    const redraw = async () => { await ensureFont(ta.value + au.value); drawCard(cv, ta.value, au.value, cardStyle); };
-    if (canEdit) ta.oninput = au.oninput = redraw;
+    let cardRaf = null;
+    const scheduleRedraw = () => {
+      if (cardRaf) cancelAnimationFrame(cardRaf);
+      cardRaf = requestAnimationFrame(async () => {
+        cardRaf = null;
+        await ensureFont(ta.value + au.value);
+        drawCard(cv, ta.value, au.value, cardStyle);
+      });
+    };
+    if (canEdit) ta.oninput = au.oninput = scheduleRedraw;
     drawCard(cv, r.content, r.author, cardStyle);
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
     if (canEdit) {
