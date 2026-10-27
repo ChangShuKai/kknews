@@ -361,9 +361,9 @@ a:hover { opacity: 0.85; }
 }
 
 .view-pane.active-view {
-  display: flex;
-  opacity: 1;
-  transform: translateY(0);
+  display: flex !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
 }
 
 /* ============================================================================

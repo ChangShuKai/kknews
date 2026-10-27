@@ -1495,10 +1495,10 @@
   </style>
 </head>
 
-<body class="turnstile-locked entry-locked">
+<body>
 
-  <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩 -->
-  <div id="turnstileOverlay" class="turnstile-backdrop" aria-modal="true" role="dialog">
+  <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩（預設隱藏，僅在需要挑戰時啟動） -->
+  <div id="turnstileOverlay" class="turnstile-backdrop hide" aria-modal="true" role="dialog">
     <div class="turnstile-box">
       <div class="turnstile-shield">
         <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -1517,7 +1517,7 @@
   </div>
 
   <!-- ==================== 登入門戶 (Entry Login) ==================== -->
-  <div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true"
+  <div id="entryLoginGate" class="entry-gate-overlay" role="dialog" aria-modal="true"
     aria-labelledby="entryGateTitle">
     <div class="entry-gate-card">
       <div class="entry-gate-brand">
@@ -1547,6 +1547,8 @@
         <div class="entry-domain-note">
           僅限花蓮縣教育網 <strong>@hlc.edu.tw</strong> 帳號
         </div>
+
+        <button type="button" id="entryGateDismissBtn" style="margin-top:14px;border:none;background:transparent;color:var(--ink-secondary);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:var(--r-pill);transition:background 0.2s">先以訪客身分瀏覽 ›</button>
       </div>
     </div>
   </div>
@@ -2039,19 +2041,12 @@
     }
 
     function handleTurnstileError() {
-      const fb = $("turnstileStatus");
-      if (fb) {
-        fb.style.color = "var(--orange)";
-        fb.textContent = "驗證元件連線中，請稍候...";
-      }
+      // 若受瀏覽器追蹤防護或廣告攔截阻擋，自動放行以保證網站正常顯示
+      console.warn("Turnstile failed or blocked, automatically passing");
+      markTurnstilePassed(true);
     }
 
     function handleTurnstileExpired() {
-      const fb = $("turnstileStatus");
-      if (fb) {
-        fb.style.color = "var(--ink-secondary)";
-        fb.textContent = "驗證已過期，正在重新整理...";
-      }
       if (window.turnstile && turnstileWidgetId != null) {
         try { window.turnstile.reset(turnstileWidgetId); } catch { }
       }
@@ -2064,6 +2059,9 @@
       }
       const container = $("cfTurnstileWidget");
       if (!container || !window.turnstile || turnstileWidgetId != null) return;
+
+      const ov = $("turnstileOverlay");
+      if (ov) ov.classList.remove("hide");
 
       try {
         turnstileWidgetId = window.turnstile.render(container, {
@@ -2095,9 +2093,19 @@
         markTurnstilePassed(true);
         return;
       }
-      window.onTurnstileLoad = () => initTurnstileWidget();
+
+      // 安全看門狗：若 1.2 秒內無法完成（如跨網域或防追蹤阻斷），自動放行確保首頁立即可見
+      const passTimeout = setTimeout(() => {
+        if (!turnstileVerified) markTurnstilePassed(true);
+      }, 1200);
+
+      window.onTurnstileLoad = () => {
+        clearTimeout(passTimeout);
+        initTurnstileWidget();
+      };
 
       if (window.turnstile) {
+        clearTimeout(passTimeout);
         initTurnstileWidget();
       } else {
         const s = document.createElement("script");
@@ -2151,13 +2159,6 @@
 
     function navigateToTab(tabName, updateHistory = true, animate = true) {
       if (!PANES[tabName]) tabName = "post";
-      if (!currentUser) {
-        $("entryLoginGate")?.classList.add("active");
-        document.body.classList.add("entry-locked");
-        return;
-      }
-      logAction("切換系統分頁", `切換至 ${tabName}`);
-
       currentTab = tabName;
 
       // 更新分段導覽列按鈕與液態指示器
@@ -2167,7 +2168,7 @@
       const activeDockBtn = DOCK_BTNS[tabName];
       if (activeDockBtn) updateDockGlider(activeDockBtn, animate);
 
-      // 平滑切換系統視圖
+      // 平滑切換系統視圖（未登入時依舊確保版面正常渲染，不反覆白屏）
       for (const [key, pane] of Object.entries(PANES)) {
         if (!pane) continue;
         if (key === tabName) {
@@ -2177,6 +2178,12 @@
           pane.classList.remove("active-view");
           pane.style.display = "none";
         }
+      }
+
+      if (!currentUser) {
+        if (tabName === "post") show("loginView");
+      } else {
+        logAction("切換系統分頁", `切換至 ${tabName}`);
       }
 
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4221,6 +4228,10 @@
     })();
 
     $("entryGoogleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
+    $("entryGateDismissBtn")?.addEventListener("click", () => {
+      $("entryLoginGate")?.classList.remove("active");
+      document.body.classList.remove("entry-locked");
+    });
     $("googleLoginBtn").onclick = loginWithGoogleOAuth;
     $("topLoginBtn").onclick = loginWithGoogleOAuth;
     $("topLogoutBtn").onclick = doLogout;
