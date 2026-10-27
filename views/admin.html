@@ -312,7 +312,6 @@
     margin-bottom: 6px;
   }
 
-<<<<<<< Updated upstream
   /* 表單與 CSV 數據面板 */
   .panel-surface {
     background: #ffffff;
@@ -361,13 +360,15 @@
     border-color: var(--ink);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
-=======
-  .forms-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-  .form-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:.18s}
-  .form-tab-btn:hover{border-color:var(--ink);transform:translateY(-1px)}
-  .form-tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 4px 14px #0000001f}
-  .form-active-badge{background:#10b981;color:#fff;font-size:11px;padding:2px 7px;border-radius:99px;font-weight:700;letter-spacing:.05em}
->>>>>>> Stashed changes
+  .form-active-badge {
+    background: var(--green, #10b981);
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: var(--r-pill, 99px);
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
 
   .table-scroll-container {
     width: 100%;
@@ -400,7 +401,6 @@
   table.data-tbl tr:last-child td { border-bottom: 0; }
   table.data-tbl tr:hover td { background: rgba(0, 0, 0, 0.015); }
 
-<<<<<<< Updated upstream
   /* 管理員權限區塊 */
   .admin-account-row {
     display: flex;
@@ -414,88 +414,12 @@
     margin-bottom: 12px;
     flex-wrap: wrap;
   }
-=======
   .cp-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
-  .cp-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;transition:.2s}
+  .cp-item{background:#fff;border:1px solid var(--line);border-radius:var(--r-md, 12px);padding:12px 14px;font-size:13px;transition:.2s}
   .cp-item:hover{border-color:var(--ink);box-shadow:0 4px 12px #0000000a}
   .cp-item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700}
-  .cp-entry{font-family:monospace;font-size:12px;background:var(--paper);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
-  .cp-badge-type{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-weight:600}
-
-  .table-scroll{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
-  table.data-tbl{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left}
-  table.data-tbl th{background:var(--paper);color:var(--ink);font-weight:700;padding:11px 14px;border-bottom:1.5px solid var(--line);white-space:nowrap}
-  table.data-tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;max-width:340px;word-break:break-word}
-  table.data-tbl tr:last-child td{border-bottom:0}
-  table.data-tbl tr:hover td{background:#faf8f5}
-
-  .stat-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
-  .stat-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
-  .stat-box h4{margin:0 0 12px;font-size:14.5px;line-height:1.4;display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .bar-row{margin-bottom:9px;font-size:12.5px}
-  .bar-lbl{display:flex;justify-content:space-between;margin-bottom:3px;gap:8px}
-  .bar-track{height:8px;background:#e4dfd6;border-radius:99px;overflow:hidden}
-  .bar-fill{height:100%;background:var(--ink);border-radius:99px;transition:width .4s ease}
-
-  /* ===== 分頁 4：多重管理員權限設定面板 ===== */
-  .admin-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
-  @media (max-width:960px){.admin-layout{grid-template-columns:1fr}}
-  .adm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin-bottom:10px;flex-wrap:wrap}
-  .adm-info b{font-size:15px;display:block}
-  .adm-info span{font-size:12.5px;color:var(--muted)}
-  .adm-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .select-sm{padding:7px 10px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:13px;background:#fff}
-
-  /* ===== 超級 DFC 時間點題目工作室彈窗 (Studio Modal) ===== */
-  .modal-xl{width:min(1120px,96vw);height:min(90vh,860px);display:flex;flex-direction:column;overflow:hidden;padding:0;border-radius:24px;text-align:left}
-  .studio-head{padding:18px 24px 14px;border-bottom:1px solid var(--line);background:#faf8f5;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-  .studio-tabs{display:inline-flex;gap:6px;background:var(--paper);padding:4px;border-radius:99px;border:1px solid var(--line)}
-  .studio-tab-btn{border:0;background:transparent;padding:6px 16px;border-radius:99px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.18s}
-  .studio-tab-btn.active{background:var(--ink);color:#fff}
-  .studio-body{flex:1;overflow-y:auto;padding:22px 26px}
-  .studio-foot{padding:14px 26px;border-top:1px solid var(--line);background:#faf8f5;display:flex;align-items:center;justify-content:space-between;gap:12px}
-
-  /* 影片時間點控制器與時間軸置頂卡片 */
-  .studio-video-card{background:#0f172a;color:#fff;border-radius:18px;padding:18px 22px;margin-bottom:20px;box-shadow:0 12px 36px #00000030}
-  .studio-video-grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:center}
-  @media (max-width:820px){.studio-video-grid{grid-template-columns:1fr}}
-  .studio-screen-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid #334155}
-  .studio-screen-wrap video,.studio-screen-wrap canvas{width:100%;height:100%;object-fit:cover;display:block}
-  .studio-video-badge{position:absolute;top:8px;left:8px;background:#000000a6;backdrop-filter:blur(6px);color:#38bdf8;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.05em}
-  .studio-ctrls{display:flex;flex-direction:column;gap:14px}
-  .studio-time-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .studio-big-time{font-family:monospace;font-size:24px;font-weight:800;color:#38bdf8;letter-spacing:.05em}
-  .studio-track-wrap{position:relative;width:100%;height:28px;display:flex;align-items:center;cursor:pointer}
-  .studio-track{position:relative;width:100%;height:10px;background:#1e293b;border-radius:99px;border:1px solid #334155;overflow:visible}
-  .studio-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#38bdf8,#818cf8);border-radius:99px;pointer-events:none}
-  .studio-pin{position:absolute;top:-8px;width:16px;height:26px;transform:translateX(-50%);cursor:pointer;display:grid;place-items:center;z-index:3;transition:transform .15s}
-  .studio-pin:hover{transform:translateX(-50%) scale(1.35);z-index:5}
-  .studio-pin-dot{width:12px;height:12px;border-radius:50%;background:#f59e0b;border:2px solid #fff;box-shadow:0 0 8px #f59e0b}
-  .studio-pin.active .studio-pin-dot{background:#38bdf8;box-shadow:0 0 10px #38bdf8}
-  .studio-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-
-  /* 題目卡片 */
-  .cp-edit-card{background:var(--white);border:1.5px solid var(--line);border-left:5px solid var(--ink);border-radius:16px;padding:18px 20px;margin-bottom:16px;box-shadow:0 4px 14px #00000005;transition:.2s}
-  .cp-edit-card:hover{border-color:#b5afa3;box-shadow:0 8px 24px #0000000a}
-  .cp-edit-card.highlight{border-left-color:#38bdf8;box-shadow:0 0 0 2px #38bdf833}
-  .cp-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .cp-card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .cp-time-badge{font-family:monospace;font-weight:700;font-size:12px;padding:3px 9px;border-radius:99px;background:var(--paper);border:1px solid var(--line)}
-  .cp-tools{display:flex;align-items:center;gap:6px}
-  .quick-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
-  .chip-btn{background:var(--paper);border:1px solid var(--line);padding:3px 9px;border-radius:99px;font:inherit;font-size:11.5px;color:var(--ink);cursor:pointer;transition:.15s}
-  .chip-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
-
-  /* 作答詳細檢視彈窗 */
-  .detail-kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--paper);padding:14px 16px;border-radius:14px;border:1px solid var(--line);margin-bottom:18px}
-  .detail-q-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .detail-q-title{font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)}
-  .detail-q-ans{font-size:14px;color:#0b57d0;background:#eff6ff;padding:8px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;word-break:break-word}
-
-  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  @media (max-width:700px){.grid-2,.grid-3{grid-template-columns:1fr}}
->>>>>>> Stashed changes
+  .cp-entry{font-family:monospace;font-size:12px;background:var(--bg);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+  .cp-badge-type{font-size:11px;padding:2px 8px;border-radius:var(--r-pill, 99px);background:var(--bg);border:1px solid var(--line);font-weight:600}
 </style>
 </head>
 <body>
@@ -576,36 +500,23 @@
   <!-- 分頁 2：已登入帳號列表 -->
   <div id="usersGrid" class="users-list-grid hide"></div>
 
-<<<<<<< Updated upstream
-  <!-- 分頁 3：Google 表單 API 與 CSV 數據 -->
-  <section id="formsPanel" class="hide" aria-label="Google 表單數據">
+  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
+  <section id="formsPanel" class="hide" aria-label="DFC 互動問卷與數據管理">
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <h3>Google 表單與 API 串接管理</h3>
-          <p>檢視全部互動表單的 API 端點、試算表 CSV 連結與時間點題目。</p>
-        </div>
-        <div style="display:flex;gap:8px" id="superFormActions">
-          <button type="button" class="btn ghost sm" id="addNewFormBtn">+ 新增表單來源</button>
-          <button type="button" class="btn primary sm" id="editActiveFormBtn">編輯目前表單 API</button>
-          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">刪除此表單</button>
-=======
-  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
-  <section id="formsPanel" class="panel-wrap hide" aria-label="DFC 互動問卷與數據管理">
-    <div class="panel-card">
-      <div class="panel-head">
-        <div>
-          <h3>🎬 DFC 互動問卷管理與時間點工作室</h3>
+          <h3 style="display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷管理與時間點工作室</h3>
           <p>管理所有 DFC 影片互動問卷、可視化調整各時間點題目與 Google 表單串接，並指定前台主推發布的問卷。</p>
         </div>
-        <div class="adm-actions" id="superFormActions">
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="superFormActions">
           <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增 DFC 問卷</button>
-          <button type="button" class="btn sm" id="editActiveFormBtn">⚙️ 編輯問卷與時間點</button>
+          <button type="button" class="btn primary sm" id="editActiveFormBtn">⚙️ 編輯問卷與時間點</button>
           <button type="button" class="btn ghost sm" id="setActiveFormBtn" title="將此問卷設為前台首頁預設展示的問卷">🌟 設為前台主推</button>
           <button type="button" class="btn ghost sm" id="dupActiveFormBtn" title="複製此問卷快速建立新活動">📑 複製此問卷</button>
           <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新視窗直接體驗此問卷">👁️ 前台預覽作答</button>
           <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
->>>>>>> Stashed changes
+        </div>
+      </div>
         </div>
       </div>
 
@@ -829,52 +740,6 @@
   </div>
 </div>
 
-<<<<<<< Updated upstream
-<!-- Google 表單設定彈窗 -->
-<div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
-  <div class="modal" style="max-width:760px;max-height:88vh;overflow-y:auto">
-    <h3 id="formConfigModalTitle" style="margin:0 0 6px;font-size:20px">設定 Google 表單 API 與題目</h3>
-    <p class="sub" style="margin-bottom:14px;font-size:13.5px">修改主表單後，前台互動影片問答將自動套用最新設定。</p>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <label class="field" style="margin-top:0">
-        <span class="lbl">表單名稱</span>
-        <input class="input" id="cfgFormTitle" placeholder="例如：DFC 互動影片表單">
-      </label>
-      <label class="field" style="margin-top:0">
-        <span class="lbl">影片路徑或網址</span>
-        <input class="input" id="cfgVideoUrl" placeholder="/assets/dfc.mp4 或 https://...">
-      </label>
-    </div>
-
-    <label class="field">
-      <span class="lbl">Google Form API / 提交網址 <span>支援 /viewform, /formResponse, Apps Script</span></span>
-      <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/.../formResponse">
-    </label>
-
-    <label class="field">
-      <span class="lbl">Google 試算表 CSV 結果連結 <span>選填</span></span>
-      <input class="input" id="cfgCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
-    </label>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <label class="field">
-        <span class="lbl">送出時機</span>
-        <select class="input" id="cfgSubmitMode">
-          <option value="end">全部時間點答完後統一送出</option>
-          <option value="each">每個時間點作答時立即送出</option>
-        </select>
-      </label>
-      <label class="field">
-        <span class="lbl">信箱對應 Entry ID <span>選填</span></span>
-        <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.12345678">
-      </label>
-    </div>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
-      <strong style="font-size:14px">影片時間點題目與 Google Form Entry 對應</strong>
-      <button type="button" class="btn ghost sm" id="addCheckpointBtn">+ 新增時間點題目</button>
-=======
 <!-- Super Admin 專屬：DFC 互動影片問卷與時間點可視化工作室彈窗 -->
 <div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
   <div class="modal modal-xl">
@@ -1019,30 +884,22 @@
         <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消關閉</button>
         <button type="button" class="btn" id="saveFormCfgBtn">💾 儲存問卷與時間點設定</button>
       </div>
->>>>>>> Stashed changes
     </div>
   </div>
 </div>
 
-<<<<<<< Updated upstream
-    <div style="display:flex;gap:10px;margin-top:22px">
-      <button type="button" class="btn ghost" id="cancelFormCfgBtn" style="flex:1">取消</button>
-      <button type="button" class="btn primary" id="saveFormCfgBtn" style="flex:1">儲存設定並同步</button>
-=======
 <!-- 作答詳細內容檢視彈窗 -->
 <div id="responseDetailModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="respDetailTitle">
   <div class="modal modal-lg" style="max-width:680px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h3 id="respDetailTitle" style="margin:0;font-size:18px">📝 完整作答記錄詳情</h3>
       <button type="button" class="btn ghost sm" id="closeRespDetailBtn">關閉</button>
->>>>>>> Stashed changes
     </div>
     <div class="detail-kv-grid" id="respDetailMeta"></div>
     <h4 style="margin:16px 0 10px;font-size:14px">各時間點作答內容：</h4>
     <div id="respDetailAnswersList"></div>
   </div>
 </div>
-
 <!-- 匯入 CSV 彈窗 -->
 <div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
   <div class="modal" style="max-width:540px">
@@ -1841,15 +1698,11 @@ function renderDfcPanel() {
     const count = dfcResponses.filter(r => r.formId === f.id).length;
     const isCurActive = f.id === activeDfcFormId;
     btn.className = "form-tab-btn" + (activeForm && activeForm.id === f.id ? " active" : "");
-<<<<<<< Updated upstream
-    btn.innerHTML = `<span>${esc(f.title)}</span><span class="dock-badge">${count}</span>`;
-=======
     btn.innerHTML = `
       <span>📋 ${esc(f.title)}</span>
       <span class="dock-badge">${count} 筆</span>
       ${isCurActive ? `<span class="form-active-badge">🌟 發布中</span>` : ""}
     `;
->>>>>>> Stashed changes
     btn.onclick = () => {
       selectedFormId = f.id;
       renderDfcPanel();
@@ -1919,29 +1772,20 @@ function renderDfcPanel() {
 
   const isDemoUrl = !activeForm.googleFormUrl || activeForm.googleFormUrl.includes("YOUR_GOOGLE_FORM");
   const apiStatusHtml = isDemoUrl
-<<<<<<< Updated upstream
-    ? `<span style="color:var(--orange)">● 示範模式（尚未填入實際 Google Form 網址）</span>`
-    : `<span style="color:var(--green)">● 已串接 Google Form API</span>`;
-
-  $("activeFormApiGrid").innerHTML = `
-    <div><small style="color:var(--ink-tertiary)">表單名稱 / ID</small><div style="font-weight:600">${esc(activeForm.title)} (${esc(activeForm.id)})</div></div>
-    <div><small style="color:var(--ink-tertiary)">Google Form 狀態</small><div style="font-weight:600">${apiStatusHtml}</div></div>
-    <div><small style="color:var(--ink-tertiary)">影片路徑</small><div style="font-weight:600">${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</div></div>
-=======
     ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，作答將儲存於本站雲端資料庫與 CSV）</span>`
-    : `<span style="color:var(--ok)">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
+    : `<span style="color:var(--green, var(--ok))">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
   const apiKeyHtml = googleApiKeyConfigured
-    ? `<span style="color:var(--ok)">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
-    : `<span style="color:var(--muted)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
+    ? `<span style="color:var(--green, var(--ok))">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
+    : `<span style="color:var(--ink-tertiary)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
 
   $("activeFormApiGrid").innerHTML = `
     <div class="api-kv">
       <small>問卷名稱 / ID</small>
-      <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--muted)">(${esc(activeForm.id)})</span></div>
+      <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--ink-tertiary)">(${esc(activeForm.id)})</span></div>
     </div>
     <div class="api-kv">
       <small>前台發布狀態</small>
-      <div>${isDefaultActive ? `<b style="color:var(--ok)">🌟 前台首頁預設展示中</b>` : `<span style="color:var(--muted)">📁 備用問卷活動</span>`}</div>
+      <div>${isDefaultActive ? `<b style="color:var(--green, var(--ok))">🌟 前台首頁預設展示中</b>` : `<span style="color:var(--ink-tertiary)">📁 備用問卷活動</span>`}</div>
     </div>
     <div class="api-kv">
       <small>Google Form API Key 狀態</small>
@@ -1953,13 +1797,12 @@ function renderDfcPanel() {
     </div>
     <div class="api-kv">
       <small>Google 試算表結果 CSV 同步網址</small>
-      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--muted)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
+      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--ink-tertiary)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
     </div>
     <div class="api-kv">
       <small>互動影片路徑 & 送出模式</small>
       <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code> · ${activeForm.submitMode === "each" ? "逐題即時送出" : "全數答完統一送出"}</div>
     </div>
->>>>>>> Stashed changes
   `;
 
   const cpWrap = $("activeFormCpList");
@@ -1981,13 +1824,6 @@ function renderDfcPanel() {
     div.style.borderRadius = "var(--r-md)";
     div.style.fontSize = "13px";
     div.innerHTML = `
-<<<<<<< Updated upstream
-      <div style="display:flex;justify-content:space-between;font-weight:600;margin-bottom:4px">
-        <span>第 ${Number(cp.time)} 秒 · 題目 ${i + 1}</span>
-        <code style="font-size:12px">${esc(cp.entryId)}</code>
-      </div>
-      <div>${esc(cp.title)}</div>
-=======
       <div class="cp-item-top">
         <span>⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒) · 問題 ${i + 1}</span>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1996,9 +1832,8 @@ function renderDfcPanel() {
         </div>
       </div>
       <div style="font-weight:700;margin-bottom:4px;font-size:13.5px">${esc(cp.title)}</div>
-      ${cp.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${esc(cp.desc)}</div>` : ""}
-      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--muted)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
->>>>>>> Stashed changes
+      ${cp.desc ? `<div style="font-size:12px;color:var(--ink-secondary);margin-bottom:6px">${esc(cp.desc)}</div>` : ""}
+      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--ink-secondary)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
     `;
     cpWrap.appendChild(div);
   });
@@ -2029,16 +1864,7 @@ function renderDfcCsvTable() {
           counts[ans] = (counts[ans] || 0) + 1;
         }
       }
-<<<<<<< Updated upstream
-      const box = document.createElement("div");
-      box.style.background = "var(--bg)";
-      box.style.border = "1px solid var(--line)";
-      box.style.borderRadius = "var(--r-md)";
-      box.style.padding = "14px";
-      box.innerHTML = `<h4 style="margin:0 0 10px;font-size:13.5px">${esc(cp.title)} <small style="font-weight:400;color:var(--ink-tertiary)">(${formResps.length} 人填答)</small></h4>`;
-=======
-      box.innerHTML = `<h4><span>📊 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(共 ${formResps.length} 人作答)</small></h4>`;
->>>>>>> Stashed changes
+      box.innerHTML = `<h4><span>📊 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--ink-secondary)">(共 ${formResps.length} 人作答)</small></h4>`;
       for (const opt of cp.options) {
         const c = counts[opt] || 0;
         const pct = formResps.length > 0 ? Math.round((c / formResps.length) * 100) : 0;
@@ -2111,13 +1937,8 @@ function renderDfcCsvTable() {
 
   const isRemote = currentCsvData?.source === "google_remote";
   $("csvSourceHint").textContent = isRemote
-<<<<<<< Updated upstream
-    ? `目前顯示：Google 試算表遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
-    : `目前顯示：本站收集之表單回應（共 ${formResps.length} 筆）`;
-=======
     ? `🟢 目前顯示：從 Google 試算表即時拉取之遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
     : `🔵 目前顯示：本站即時收集與匯入之問卷回傳結果（共 ${formResps.length} 筆）`;
->>>>>>> Stashed changes
 
   const thead = $("dfcCsvThead");
   const tbody = $("dfcCsvTbody");
@@ -2146,18 +1967,11 @@ function renderDfcCsvTable() {
     return;
   }
 
-<<<<<<< Updated upstream
-  const cps = activeForm.checkpoints || [];
-  const trH = document.createElement("tr");
-  const cols = ["提交時間", "填答帳號", "狀態", "裝置", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`)];
-  if (isSuper()) cols.push("管理");
-=======
   // 顯示本地收集與匯入之完整表單回應
   const cps = activeForm.checkpoints || [];
   const trH = document.createElement("tr");
   const cols = ["提交時間", "填答者帳號", "狀態", "裝置 / IP", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`), "作答詳情"];
   if (isSuper()) cols.push("管理操作");
->>>>>>> Stashed changes
   cols.forEach(c => {
     const th = document.createElement("th"); th.textContent = c; trH.appendChild(th);
   });
@@ -2211,8 +2025,6 @@ function renderDfcCsvTable() {
   }
 }
 
-<<<<<<< Updated upstream
-=======
 function openResponseDetailModal(r, form) {
   const modal = $("responseDetailModal");
   if (!modal) return;
@@ -2220,12 +2032,12 @@ function openResponseDetailModal(r, form) {
   const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名訪客");
 
   $("respDetailMeta").innerHTML = `
-    <div><small style="color:var(--muted);font-size:11.5px">填答者</small><div><b>${esc(whoStr)}</b></div></div>
-    <div><small style="color:var(--muted);font-size:11.5px">提交時間</small><div>${esc(timeStr)}</div></div>
-    <div><small style="color:var(--muted);font-size:11.5px">問卷名稱</small><div>${esc(form.title || r.formTitle || "DFC 問卷")}</div></div>
-    <div><small style="color:var(--muted);font-size:11.5px">同步狀態</small><div>${r.syncedToGoogle ? "✓ 已同步 Google 表單" : (r.demo ? "示範模式 (本地保存)" : "本地資料庫保存")}</div></div>
-    <div><small style="color:var(--muted);font-size:11.5px">IP 位址</small><div><code>${esc(r.ip || "—")}</code></div></div>
-    <div><small style="color:var(--muted);font-size:11.5px">裝置與系統</small><div>${esc(r.device || "—")}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">填答者</small><div><b>${esc(whoStr)}</b></div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">提交時間</small><div>${esc(timeStr)}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">問卷名稱</small><div>${esc(form.title || r.formTitle || "DFC 問卷")}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">同步狀態</small><div>${r.syncedToGoogle ? "✓ 已同步 Google 表單" : (r.demo ? "示範模式 (本地保存)" : "本地資料庫保存")}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">IP 位址</small><div><code>${esc(r.ip || "—")}</code></div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">裝置與系統</small><div>${esc(r.device || "—")}</div></div>
   `;
 
   const ansWrap = $("respDetailAnswersList");
@@ -2245,7 +2057,7 @@ function openResponseDetailModal(r, form) {
       formattedVal = esc(String(val || "（未作答）"));
     }
     card.innerHTML = `
-      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px">⏱️ ${formatMmSs(cp.time)} · ${esc(cp.stepLabel || `問題 ${idx + 1}`)}</div>
+      <div style="font-size:12px;color:var(--ink-tertiary);font-weight:600;margin-bottom:4px">⏱️ ${formatMmSs(cp.time)} · ${esc(cp.stepLabel || `問題 ${idx + 1}`)}</div>
       <div class="detail-q-title">Q${idx + 1}. ${esc(cp.title)}</div>
       <div class="detail-q-ans">${formattedVal}</div>
     `;
@@ -2277,8 +2089,6 @@ function setupStudioTabs() {
     $("studioTabTimelineWrap").classList.add("hide");
   };
 }
-
->>>>>>> Stashed changes
 function openFormConfigModal(formObj) {
   if (!isSuper()) return toast("一般管理員僅能查看數據", true);
   editingFormObj = JSON.parse(JSON.stringify(formObj));
@@ -2518,25 +2328,6 @@ function renderCheckpointEditors() {
 
   (editingFormObj.checkpoints || []).forEach((cp, idx) => {
     const card = document.createElement("div");
-<<<<<<< Updated upstream
-    card.style.background = "var(--bg)";
-    card.style.border = "1px solid var(--line)";
-    card.style.borderRadius = "var(--r-md)";
-    card.style.padding = "14px";
-    card.style.marginTop = "10px";
-    card.className = "cp-edit-card";
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <b>題目 #${idx + 1}</b>
-        <button type="button" class="btn danger sm rm-cp" style="padding:4px 10px;font-size:12px">移除</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label class="field" style="margin-top:0"><span class="lbl">觸發秒數</span><input type="number" min="1" class="input cp-time" value="${Number(cp.time) || 5}"></label>
-        <label class="field" style="margin-top:0"><span class="lbl">Entry ID</span><input class="input cp-entry-inp" value="${esc(cp.entryId || "")}"></label>
-      </div>
-      <label class="field"><span class="lbl">問題標題</span><input class="input cp-title" value="${esc(cp.title || "")}"></label>
-      <label class="field"><span class="lbl">選項 (以換行或逗號分隔)</span><textarea class="input cp-opts" rows="2">${esc((cp.options || []).join("\n"))}</textarea></label>
-=======
     card.className = "cp-edit-card" + (idx === studioActiveQuestionIndex ? " highlight" : "");
     card.onclick = () => {
       studioActiveQuestionIndex = idx;
@@ -2615,7 +2406,7 @@ function renderCheckpointEditors() {
           <span class="lbl">選項清單 <span>請以「換行」或「逗號」分隔各個選項</span></span>
           <textarea class="input cp-opts" rows="3" placeholder="選項一&#10;選項二&#10;選項三">${esc((cp.options || []).join("\n"))}</textarea>
           <div class="quick-chips" style="margin-top:6px">
-            <span style="font-size:11.5px;color:var(--muted)">快捷範本：</span>
+            <span style="font-size:11.5px;color:var(--ink-tertiary)">快捷範本：</span>
             <button type="button" class="chip-btn opt-preset" data-preset="likert5">五分滿意度 (非常滿意~非常不滿意)</button>
             <button type="button" class="chip-btn opt-preset" data-preset="agree5">認同度 (非常同意~非常不同意)</button>
             <button type="button" class="chip-btn opt-preset" data-preset="yesno">是非選項 (是、否)</button>
@@ -2629,12 +2420,11 @@ function renderCheckpointEditors() {
           <input type="checkbox" class="cp-req" ${cp.required !== false ? "checked" : ""}>
           <span>此題為必填題</span>
         </label>
-        <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-tertiary)">
           <span>Google Form Entry ID (選填):</span>
           <input class="input cp-entry-inp" style="width:140px;padding:4px 8px;font-size:12px" value="${esc(cp.entryId || "")}" placeholder="entry.123456789">
         </div>
       </div>
->>>>>>> Stashed changes
     `;
 
     // 雙向時間同步
@@ -2764,13 +2554,8 @@ function syncCheckpointsFromDom() {
       id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now().toString(36)),
       time: Math.max(0, secVal),
       entryId: c.querySelector(".cp-entry-inp").value.trim() || `entry.${idx + 1}`,
-<<<<<<< Updated upstream
-      type: "radio",
-      stepLabel: `階段 ${idx + 1}`,
-=======
       type: c.querySelector(".cp-type").value,
       stepLabel: c.querySelector(".cp-step").value.trim() || `階段 ${idx + 1}`,
->>>>>>> Stashed changes
       title: c.querySelector(".cp-title").value.trim() || `問題 ${idx + 1}`,
       desc: c.querySelector(".cp-desc").value.trim() || "",
       options,
@@ -2784,24 +2569,14 @@ $("addCheckpointBtn").onclick = () => {
   const nextIdx = (editingFormObj.checkpoints || []).length + 1;
   const lastTime = editingFormObj.checkpoints.length ? Number(editingFormObj.checkpoints[editingFormObj.checkpoints.length - 1].time) : 0;
   editingFormObj.checkpoints.push({
-<<<<<<< Updated upstream
-    id: "q" + nextIdx + "_" + Date.now(),
-    time: lastTime + 5,
-    entryId: `entry.${nextIdx}00000000`,
-=======
     id: "q" + nextIdx + "_" + Date.now().toString(36),
     time: Number((lastTime + 5).toFixed(1)),
     entryId: `entry.${nextIdx}11111111`,
->>>>>>> Stashed changes
     stepLabel: `階段 ${nextIdx}`,
     title: `第 ${nextIdx} 階段問題`,
     desc: "",
     type: "radio",
-<<<<<<< Updated upstream
-    options: ["選項一", "選項二"],
-=======
     options: ["選項 A", "選項 B", "選項 C"],
->>>>>>> Stashed changes
     required: true,
   });
   studioActiveQuestionIndex = editingFormObj.checkpoints.length - 1;
@@ -2826,14 +2601,10 @@ $("addNewFormBtn").onclick = () => {
     csvUrl: "",
     emailEntryId: "",
     submitMode: "end",
-<<<<<<< Updated upstream
-    checkpoints: [{ id: "q1", time: 5, entryId: "entry.11111111", stepLabel: "階段一", title: "問題一", type: "radio", options: ["選項 A", "選項 B"], required: true }],
-=======
     checkpoints: [
       { id: "q1", time: 4, entryId: "entry.111111111", stepLabel: "階段一 · 感受 Feel", title: "第一階段「感受」：你所觀察到的校園問題是什麼？", type: "radio", options: ["資訊宣傳分散", "動線需改善", "回饋管道不足"], required: true },
       { id: "q2", time: 10, entryId: "entry.222222222", stepLabel: "階段二 · 想像 Imagine", title: "第二階段「想像」：哪種解方最值得嘗試？", type: "checkbox", options: ["互動影音表單", "一句話共創牆", "跨班級工作坊"], required: true },
     ],
->>>>>>> Stashed changes
   });
 };
 
@@ -2869,11 +2640,7 @@ $("saveFormCfgBtn").onclick = async () => {
   selectedFormId = editingFormObj.id;
   setStudioPlaying(false);
   $("formConfigModal").classList.add("hide");
-<<<<<<< Updated upstream
-  toast("已儲存 Google 表單與題目設定");
-=======
   toast("已成功儲存 DFC 問卷與時間點設定！");
->>>>>>> Stashed changes
   load(true);
 };
 
@@ -2881,15 +2648,6 @@ $("delActiveFormBtn").onclick = () => {
   const f = getActiveForm();
   if (!f || f.id === "default-dfc" || dfcForms.length <= 1) return;
   openConfirm({
-<<<<<<< Updated upstream
-    title: `確定要刪除表單「${f.title}」？`,
-    desc: "刪除後此表單設定將移除。",
-    confirmText: "確定刪除",
-    onConfirm: async () => {
-      const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
-      if (r.ok) { selectedFormId = "default-dfc"; toast("已刪除表單"); load(true); }
-      else toast("刪除失敗", true);
-=======
     title: `確定要刪除問卷「${f.title}」？`,
     desc: "刪除後此問卷與相關時間點設定將移除，且不可復原。",
     confirmText: "確定刪除問卷",
@@ -2903,7 +2661,6 @@ $("delActiveFormBtn").onclick = () => {
         const j = await r.json().catch(() => ({}));
         toast(j.error || "刪除失敗", true);
       }
->>>>>>> Stashed changes
     },
   });
 };
