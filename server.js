@@ -462,8 +462,50 @@ app.get("/assets/dfc.mp4", (req, res) => {
   return notFound(res);
 });
 
-/* --- Google Drive 雲端影片原生串流代理：將 Google Drive 影片轉為支援 HTTP 206 Range 的原生 MP4 串流供自訂播放器使用 --- */
+/* --- 高速原生影片串流代理：支援 HTTP 206 Range、中繼快取與自訂播放介面 --- */
 const driveVideoMetaCache = new Map();
+const driveVideoChunkCache = new Map();
+const DEFAULT_DFC_VIDEO_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
+
+// 預先寫入預設影片中繼資料與總位元組數（1.13 GB），實現秒級 metadata 解析
+driveVideoMetaCache.set(DEFAULT_DFC_VIDEO_ID, {
+  totalSize: 1131164130,
+  contentType: "video/mp4",
+  ts: Date.now(),
+});
+
+// 背景預熱頭部與尾部（包含 moov atom），使首次播放載入時間降至毫秒級
+async function prefetchDriveVideoHeadTail(fileId) {
+  try {
+    const meta = driveVideoMetaCache.get(fileId) || { totalSize: 1131164130 };
+    const total = meta.totalSize || 1131164130;
+    const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+
+    fetch(baseUrl, {
+      headers: { "Range": "bytes=0-131071", "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(8000),
+    }).then(async r => {
+      if (r.ok || r.status === 206) {
+        const buf = Buffer.from(await r.arrayBuffer());
+        driveVideoChunkCache.set(`${fileId}:0-131071`, buf);
+      }
+    }).catch(() => {});
+
+    const tailStart = Math.max(0, total - 262144);
+    const tailEnd = total - 1;
+    fetch(baseUrl, {
+      headers: { "Range": `bytes=${tailStart}-${tailEnd}`, "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(8000),
+    }).then(async r => {
+      if (r.ok || r.status === 206) {
+        const buf = Buffer.from(await r.arrayBuffer());
+        driveVideoChunkCache.set(`${fileId}:${tailStart}-${tailEnd}`, buf);
+      }
+    }).catch(() => {});
+  } catch {}
+}
+setTimeout(() => prefetchDriveVideoHeadTail(DEFAULT_DFC_VIDEO_ID), 400);
+
 function extractGoogleDriveFileId(input = "") {
   const s = String(input || "").trim();
   if (!s) return "";
@@ -479,42 +521,37 @@ function extractGoogleDriveFileId(input = "") {
   return "";
 }
 
-app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
+app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.params.fileId);
   if (!fileId) return notFound(res);
 
-  // 1. HEAD 請求快速就緒回傳，加速瀏覽器 metadata 定位
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    "Access-Control-Allow-Headers": "Range, Accept, Content-Type",
+    "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+  });
+
+  if (req.method === "OPTIONS") return res.status(204).end();
+
+  const cachedMeta = driveVideoMetaCache.get(fileId) || (fileId === DEFAULT_DFC_VIDEO_ID ? { totalSize: 1131164130, contentType: "video/mp4" } : null);
+
+  // 1. HEAD 請求秒級回傳中繼資料
   if (req.method === "HEAD") {
-    const cachedMeta = driveVideoMetaCache.get(fileId);
     res.set({
       "Content-Type": cachedMeta?.contentType || "video/mp4",
       ...(cachedMeta?.totalSize ? { "Content-Length": String(cachedMeta.totalSize) } : {}),
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
       "Cache-Control": "public, max-age=86400",
-      "Access-Control-Allow-Origin": "*",
     });
     return res.status(200).end();
   }
 
-  const directCdnUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
-
-  // 2. 核心加速機制：預設以 HTTP 307 重導向將瀏覽器原生導向 Google 雲端高速邊緣 CDN
-  // 徹底避免 Node.js / Vercel Serverless 中繼 4.5MB 與 3MB 人工切塊造成的「一直顯示緩衝載入」卡頓
-  // 瀏覽器遵循 307 時會完整保留 Range 標頭並享有 Google 滿速頻寬與原生自動緩衝
-  if (req.query.proxy !== "1") {
-    res.set({
-      "Cache-Control": "public, max-age=86400",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-    });
-    return res.redirect(307, directCdnUrl);
-  }
-
-  const cachedMeta = driveVideoMetaCache.get(fileId);
-
-  const INITIAL_PROBE_CHUNK = 1024 * 1024;      // 首次載入標頭探測區塊 1 MB，加速 moov metadata 定位
-  const STREAM_CHUNK = 3 * 1024 * 1024;         // 單次串流分塊上限 3 MB（相容 Vercel Serverless 4.5MB 限制並支援高速拖曳）
+  // 2. 原生 Range 切塊支援（取消 307，由代理原生提供 206 串流以保證全自訂播放器運行）
+  const INITIAL_PROBE_CHUNK = 512 * 1024;
+  const STREAM_CHUNK = 2.5 * 1024 * 1024;
 
   const rangeHeader = String(req.headers.range || "");
   let start = 0;
@@ -546,6 +583,42 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
     end = Math.min(end, cachedMeta.totalSize - 1);
   }
 
+  // 3. 檢查快取
+  const exactKey = `${fileId}:${start}-${end}`;
+  if (driveVideoChunkCache.has(exactKey)) {
+    const buf = driveVideoChunkCache.get(exactKey);
+    const totalSize = cachedMeta?.totalSize || (start + buf.byteLength);
+    res.status(206).set({
+      "Content-Type": cachedMeta?.contentType || "video/mp4",
+      "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+      "Content-Length": String(buf.byteLength),
+      "Accept-Ranges": "bytes",
+      "Content-Disposition": "inline",
+      "Cache-Control": "public, max-age=86400",
+    });
+    return res.end(buf);
+  }
+
+  for (const [key, cBuf] of driveVideoChunkCache.entries()) {
+    if (!key.startsWith(`${fileId}:`)) continue;
+    const parts = key.split(":")[1].split("-");
+    const cStart = parseInt(parts[0], 10);
+    const cEnd = parseInt(parts[1], 10);
+    if (start >= cStart && end <= cEnd && cBuf.byteLength >= (end - cStart + 1)) {
+      const sliceBuf = cBuf.subarray(start - cStart, end - cStart + 1);
+      const totalSize = cachedMeta?.totalSize || (cStart + cBuf.byteLength);
+      res.status(206).set({
+        "Content-Type": cachedMeta?.contentType || "video/mp4",
+        "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+        "Content-Length": String(sliceBuf.byteLength),
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": "inline",
+        "Cache-Control": "public, max-age=86400",
+      });
+      return res.end(sliceBuf);
+    }
+  }
+
   const ac = new AbortController();
   const onClose = () => {
     if (!res.writableEnded) ac.abort();
@@ -566,7 +639,6 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
       signal: ac.signal,
     });
 
-    // 若遇到 Google Drive 大檔案病毒掃描 HTML 確認頁，自動擷取 uuid 再次請求
     const ct0 = (upstream.headers.get("content-type") || "").toLowerCase();
     if (ct0.includes("text/html")) {
       const html = await upstream.text();
@@ -591,7 +663,7 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
     }
 
     if (!upstream.ok && upstream.status !== 206) {
-      return res.status(upstream.status === 404 ? 404 : 502).json({ error: "無法從 Google Drive 載入影片（請確認檔案權限已設為「知道連結的任何人皆可檢視」）" });
+      return res.status(upstream.status === 404 ? 404 : 502).json({ error: "無法從影片雲端載入（請確認檔案權限設為知道連結者皆可檢視）" });
     }
 
     const upstreamCt = upstream.headers.get("content-type") || "video/mp4";
@@ -614,8 +686,9 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
       "Content-Type": finalCt,
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
-      "Cache-Control": "public, max-age=3600",
-      "Cross-Origin-Resource-Policy": "same-origin",
+      "Cache-Control": "public, max-age=86400",
+      "Access-Control-Allow-Origin": "*",
+      "Cross-Origin-Resource-Policy": "cross-origin",
     };
     if (contentRange) outHeaders["Content-Range"] = contentRange;
     if (contentLength) outHeaders["Content-Length"] = contentLength;
@@ -633,7 +706,7 @@ app.get("/api/dfc/drive-video/:fileId", async (req, res) => {
     nodeStream.pipe(res);
   } catch (err) {
     if (err?.name === "AbortError") return;
-    if (!res.headersSent) res.status(502).json({ error: "Google Drive 影片串流連線中斷" });
+    if (!res.headersSent) res.status(502).json({ error: "影片串流連線中斷" });
     else res.end();
   } finally {
     req.off("close", onClose);
@@ -941,7 +1014,7 @@ app.get("/api/dfc/config", async (req, res) => {
 /* --- DFC 互動影片表單：串接 Google Form (formResponse / Apps Script API) 並寫入後台統計 --- */
 app.post("/api/dfc/submit", async (req, res) => {
   if (await limited("dfc:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "送出太頻繁，請稍後再試" });
-  const { formId = "default-dfc", formUrl = "", answers = {}, emailEntryId = "" } = req.body || {};
+  const { formId = "default-dfc", formUrl = "", answers = {}, emailEntryId = "", telemetry = {}, engagement = {}, userInfo = {} } = req.body || {};
   if (!answers || typeof answers !== "object") return res.status(400).json({ error: "格式不正確" });
 
   const u = userOf(req);
@@ -1323,6 +1396,122 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
 });
 
 // 拉取並解析指定表單的 Google 表單 CSV 回傳數據（支援 Google Sheets API v4、遠端 Google Sheets CSV 或本地收集紀錄轉 CSV）
+
+/* --- 產生精細化 DFC CSV：每個選項獨立一格、附帶完整行為與設備數據 --- */
+function buildComprehensiveDfcCsv(form, responses) {
+  const checkpoints = Array.isArray(form?.checkpoints) ? form.checkpoints : [];
+
+  const headers = [
+    "序號",
+    "提交時間",
+    "填答者姓名",
+    "填答者信箱",
+    "班級學號",
+    "Google同步狀態",
+    "影片觀看率(%)",
+    "實際觀看秒數",
+    "影片總時長(秒)",
+    "倒退次數(↺10s)",
+    "暫停次數",
+    "快轉跳轉次數",
+    "總停留耗時(秒)",
+    "裝置類型",
+    "作業系統",
+    "瀏覽器",
+    "螢幕解析度",
+    "視窗大小",
+    "系統語言",
+    "網路連線",
+    "IP位址",
+  ];
+
+  checkpoints.forEach((cp, idx) => {
+    const qNum = `Q${idx + 1}`;
+    headers.push(`${qNum}: ${cp.title} [完整填答]`);
+    headers.push(`${qNum} 作答耗時(秒)`);
+
+    const hasOpts = ["radio", "checkbox", "dropdown"].includes(cp.type) && Array.isArray(cp.options) && cp.options.length;
+    if (hasOpts) {
+      cp.options.forEach((opt, oIdx) => {
+        headers.push(`${qNum} [選項${oIdx + 1}: ${opt}]`);
+      });
+    } else if (cp.type === "boolean") {
+      headers.push(`${qNum} [選項: 是/贊成]`);
+      headers.push(`${qNum} [選項: 否/反對]`);
+    } else if (cp.type === "rating") {
+      headers.push(`${qNum} [評分星級 1~5]`);
+    }
+  });
+
+  const rows = (responses || []).map((r, rIdx) => {
+    const tel = r.telemetry || {};
+    const eng = r.engagement || {};
+    const timeSpentMap = eng.timeSpentPerQuestion || {};
+
+    const row = [
+      String(rIdx + 1),
+      r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "",
+      r.userName || "",
+      r.userEmail || "",
+      r.userClass || "",
+      r.syncedToGoogle ? "已同步 Google 表單" : (r.demo ? "示範模式(本地記錄)" : "本地保存"),
+      eng.watchPercentage != null ? `${eng.watchPercentage}%` : "—",
+      eng.watchedSeconds != null ? String(eng.watchedSeconds) : "—",
+      eng.duration != null ? String(eng.duration) : String(form?.fallbackDuration || "—"),
+      eng.rewindCount != null ? String(eng.rewindCount) : "0",
+      eng.pauseCount != null ? String(eng.pauseCount) : "0",
+      eng.seekCount != null ? String(eng.seekCount) : "0",
+      eng.totalSessionSeconds != null ? String(eng.totalSessionSeconds) : "—",
+      tel.deviceType || r.device || "桌機",
+      tel.os || r.device || "—",
+      tel.browser || "—",
+      tel.screenResolution || "—",
+      tel.viewportSize || "—",
+      tel.language || "zh-TW",
+      tel.connectionType || "—",
+      r.ip || "",
+    ];
+
+    checkpoints.forEach((cp) => {
+      const ansVal = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
+      const textVal = Array.isArray(ansVal) ? ansVal.join("、") : String(ansVal ?? "");
+      row.push(textVal);
+
+      const spent = timeSpentMap[cp.id] ?? timeSpentMap[cp.entryId] ?? "";
+      row.push(spent !== "" ? String(spent) : "—");
+
+      const hasOpts = ["radio", "checkbox", "dropdown"].includes(cp.type) && Array.isArray(cp.options) && cp.options.length;
+      if (hasOpts) {
+        cp.options.forEach(opt => {
+          let chosen = false;
+          if (Array.isArray(ansVal)) {
+            chosen = ansVal.includes(opt);
+          } else if (ansVal) {
+            chosen = String(ansVal).trim() === String(opt).trim();
+          }
+          row.push(chosen ? "1" : "0");
+        });
+      } else if (cp.type === "boolean") {
+        const s = String(ansVal).trim();
+        const isYes = s === "是" || s === "true" || s === "贊成";
+        const isNo = s === "否" || s === "false" || s === "反對";
+        row.push(isYes ? "1" : "0");
+        row.push(isNo ? "1" : "0");
+      } else if (cp.type === "rating") {
+        const stars = Number(ansVal) || 0;
+        row.push(stars > 0 ? String(stars) : "");
+      }
+    });
+
+    return row;
+  });
+
+  const csvLines = [headers.map(toCsvCell).join(","), ...rows.map(r => r.map(toCsvCell).join(","))];
+  const rawCsv = "\uFEFF" + csvLines.join("\r\n");
+
+  return { headers, rows, rawCsv };
+}
+
 app.get("/api/admin/dfc/csv", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
@@ -1439,7 +1628,7 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
     localRows,
     remoteHeaders: remoteCsv?.headers || [],
     remoteRows: remoteCsv?.rows || [],
-    rawCsv: "\uFEFF" + csvLines.join("\r\n"),
+    rawCsv: finalRawCsv,
   });
 });
 

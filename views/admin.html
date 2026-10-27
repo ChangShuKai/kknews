@@ -540,7 +540,15 @@
       </div>
 
       <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
-      <div id="dfcStatBars" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px"></div>
+      <!-- DFC 互動問卷深度數據分析中心：每一題提供專屬圖表、數據、對應表格與填答者清單 -->
+      <div id="dfcAnalyticsSection" style="margin-bottom:24px">
+        <div id="dfcKpiBar" class="dfc-kpi-bar"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px;flex-wrap:wrap;gap:8px">
+          <strong style="font-size:15px;color:var(--ink)">📊 各題目深度分析圖表與專屬數據表格</strong>
+          <div id="dfcQuestionFilterTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div id="dfcPerQuestionAnalytics" class="dfc-analytics-wrap"></div>
+      </div>
 
       <div class="table-scroll-container">
         <table class="data-tbl" id="dfcCsvTable">
@@ -1692,7 +1700,7 @@ function renderUsers() {
     const sRight = safeImgSrc(u.selfie_right);
     const sLeft = safeImgSrc(u.selfie_left);
     const avHtml = pic
-      ? `<img class="user-avatar-circle" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
+      ? `<img class="user-avatar-circle" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/icon.svg'">`
       : `<div class="user-avatar-circle">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
@@ -1726,19 +1734,19 @@ function renderUsers() {
       <div class="user-photos-strip">
         <div class="user-photo-box">
           <small>Google 頭貼</small>
-          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer">` : `<div class="placeholder-pic">無</div>`}
+          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">無效</div>` : `<div class="placeholder-pic">無</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：正面</small>
-          ${sFront ? `<img data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面">` : `<div class="placeholder-pic">未拍</div>`}
+          ${sFront ? `<img data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：向右</small>
-          ${sRight ? `<img data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右">` : `<div class="placeholder-pic">未拍</div>`}
+          ${sRight ? `<img data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：向左</small>
-          ${sLeft ? `<img data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左">` : `<div class="placeholder-pic">未拍</div>`}
+          ${sLeft ? `<img data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
       </div>
       <div class="user-stats-bar">
@@ -1974,104 +1982,461 @@ function renderDfcPanel() {
   renderDfcCsvTable();
 }
 
+let dfcSelectedQuestionFilter = "all";
+
+function copyTextToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast("✓ 已複製到剪貼簿！");
+  }).catch(() => {
+    toast("複製失敗，請手動複製", true);
+  });
+}
+
 function renderDfcCsvTable() {
   const activeForm = getActiveForm();
   if (!activeForm) return;
 
-  const statWrap = $("dfcStatBars");
-  statWrap.innerHTML = "";
   const formResps = dfcResponses.filter(r => r.formId === activeForm.id);
+  const cps = activeForm.checkpoints || [];
 
-  for (const cp of (activeForm.checkpoints || [])) {
-    const box = document.createElement("div");
-    box.className = "stat-box";
+  // 1. 渲染頂部 KPI 指標列
+  const kpiBar = $("dfcKpiBar");
+  if (kpiBar) {
+    const totalCount = formResps.length;
+    let sumWatchPct = 0, sumWatchedSec = 0, sumSessionSec = 0, syncedCount = 0, mobileCount = 0;
 
-    if ((cp.type === "radio" || cp.type === "checkbox" || cp.type === "dropdown") && Array.isArray(cp.options) && cp.options.length) {
-      const counts = {};
-      cp.options.forEach(o => { counts[o] = 0; });
-      for (const r of formResps) {
-        const ans = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
-        if (Array.isArray(ans)) {
-          ans.forEach(a => { counts[a] = (counts[a] || 0) + 1; });
-        } else if (ans) {
-          counts[ans] = (counts[ans] || 0) + 1;
-        }
-      }
-      box.innerHTML = `<h4><span>📊 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--ink-secondary)">(共 ${formResps.length} 人作答)</small></h4>`;
-      for (const opt of cp.options) {
-        const c = counts[opt] || 0;
-        const pct = formResps.length > 0 ? Math.round((c / formResps.length) * 100) : 0;
-        box.innerHTML += `
-          <div style="margin-bottom:8px;font-size:12.5px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>${esc(opt)}</span><b>${c} 票 (${pct}%)</b></div>
-            <div style="height:6px;background:rgba(0,0,0,0.06);border-radius:var(--r-pill);overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--blue)"></div></div>
-          </div>`;
-      }
-      statWrap.appendChild(box);
-    } else if (cp.type === "rating") {
-      let sum = 0, ratedCount = 0;
-      const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      for (const r of formResps) {
-        const val = Number(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : 0);
-        if (val >= 1 && val <= 5) {
-          sum += val;
-          ratedCount++;
-          starCounts[val] = (starCounts[val] || 0) + 1;
-        }
-      }
-      const avg = ratedCount > 0 ? (sum / ratedCount).toFixed(1) : "—";
-      box.innerHTML = `<h4><span>⭐ ${esc(cp.title)}</span> <span style="font-size:15px;color:#f59e0b">平均 ${avg} ★ <small style="font-size:12px;color:var(--muted)">(${ratedCount}人評分)</small></span></h4>`;
-      for (let s = 5; s >= 1; s--) {
-        const c = starCounts[s] || 0;
-        const pct = ratedCount > 0 ? Math.round((c / ratedCount) * 100) : 0;
-        box.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-lbl"><span>${"★".repeat(s)} (${s} 星)</span><b>${c} 人 (${pct}%)</b></div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:#f59e0b"></div></div>
-          </div>`;
-      }
-      statWrap.appendChild(box);
-    } else if (cp.type === "boolean") {
-      let yesC = 0, noC = 0;
-      for (const r of formResps) {
-        const val = String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "");
-        if (val === "是" || val === "true" || val === "贊成") yesC++;
-        else if (val === "否" || val === "false" || val === "反對") noC++;
-      }
-      const totalB = yesC + noC;
-      const yesPct = totalB > 0 ? Math.round((yesC / totalB) * 100) : 0;
-      const noPct = totalB > 0 ? Math.round((noC / totalB) * 100) : 0;
-      box.innerHTML = `<h4><span>⚖️ ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(共 ${totalB} 人作答)</small></h4>
-        <div class="bar-row">
-          <div class="bar-lbl"><span>👍 是 / 贊成</span><b>${yesC} 票 (${yesPct}%)</b></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${yesPct}%;background:#10b981"></div></div>
-        </div>
-        <div class="bar-row">
-          <div class="bar-lbl"><span>👎 否 / 反對</span><b>${noC} 票 (${noPct}%)</b></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${noPct}%;background:#ef4444"></div></div>
-        </div>
-      `;
-      statWrap.appendChild(box);
-    } else if (cp.type === "text" || cp.type === "textarea") {
-      const answersText = formResps.map(r => String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "").trim()).filter(Boolean);
-      box.innerHTML = `<h4><span>📝 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(已收錄 ${answersText.length} 則想法)</small></h4>`;
-      if (answersText.length) {
-        const sample = answersText.slice(0, 3);
-        box.innerHTML += `<div style="display:flex;flex-direction:column;gap:6px">
-          ${sample.map(txt => `<div style="font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink)">💭 ${esc(txt)}</div>`).join("")}
-          ${answersText.length > 3 ? `<small style="color:var(--muted);margin-top:2px">以及其餘 ${answersText.length - 3} 則，可於下方表格查看詳情</small>` : ""}
-        </div>`;
-      } else {
-        box.innerHTML += `<div style="font-size:12.5px;color:var(--muted);padding:8px 0">尚無文字回答</div>`;
-      }
-      statWrap.appendChild(box);
+    for (const r of formResps) {
+      const eng = r.engagement || {};
+      const tel = r.telemetry || {};
+      sumWatchPct += Number(eng.watchPercentage) || 0;
+      sumWatchedSec += Number(eng.watchedSeconds) || 0;
+      sumSessionSec += Number(eng.totalSessionSeconds) || 0;
+      if (r.syncedToGoogle) syncedCount++;
+      if (tel.deviceType === "手機" || tel.deviceType === "平板") mobileCount++;
     }
+
+    const avgWatchPct = totalCount > 0 ? Math.round(sumWatchPct / totalCount) : 0;
+    const avgWatchedSec = totalCount > 0 ? Math.round(sumWatchedSec / totalCount) : 0;
+    const avgSessionSec = totalCount > 0 ? Math.round(sumSessionSec / totalCount) : 0;
+    const syncRate = totalCount > 0 ? Math.round((syncedCount / totalCount) * 100) : 100;
+    const mobilePct = totalCount > 0 ? Math.round((mobileCount / totalCount) * 100) : 0;
+
+    kpiBar.innerHTML = `
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val">${totalCount} <small style="font-size:14px;color:var(--ink-secondary)">人</small></span>
+        <span class="dfc-kpi-lbl">總填答人數</span>
+      </div>
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val" style="color:#059669">${avgWatchPct}%</span>
+        <span class="dfc-kpi-lbl">影片平均觀看完成率</span>
+      </div>
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val" style="color:#0284c7">${avgWatchedSec}s <small style="font-size:13px;color:var(--ink-secondary)">/ ${activeForm.fallbackDuration || 363}s</small></span>
+        <span class="dfc-kpi-lbl">平均實際觀看秒數</span>
+      </div>
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val" style="color:#d97706">${avgSessionSec}s</span>
+        <span class="dfc-kpi-lbl">平均總作答停留耗時</span>
+      </div>
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val" style="color:#6366f1">${100 - mobilePct}% <small style="font-size:13px;color:var(--ink-secondary)">桌機 / ${mobilePct}% 行動</small></span>
+        <span class="dfc-kpi-lbl">填答裝置分佈</span>
+      </div>
+      <div class="dfc-kpi-card">
+        <span class="dfc-kpi-val" style="color:#10b981">${syncRate}%</span>
+        <span class="dfc-kpi-lbl">Google 表單同步成功率</span>
+      </div>
+    `;
   }
 
+  // 2. 渲染題目篩選標籤
+  const tabsWrap = $("dfcQuestionFilterTabs");
+  if (tabsWrap) {
+    tabsWrap.innerHTML = "";
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "chip-btn" + (dfcSelectedQuestionFilter === "all" ? " active" : "");
+    allBtn.style.cssText = dfcSelectedQuestionFilter === "all" ? "background:#0f172a;color:#fff;border-color:#0f172a" : "";
+    allBtn.textContent = `📊 全部題目總覽 (${cps.length})`;
+    allBtn.onclick = () => {
+      dfcSelectedQuestionFilter = "all";
+      renderDfcCsvTable();
+    };
+    tabsWrap.appendChild(allBtn);
+
+    cps.forEach((cp, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const isSel = dfcSelectedQuestionFilter === cp.id;
+      btn.className = "chip-btn" + (isSel ? " active" : "");
+      btn.style.cssText = isSel ? "background:#0284c7;color:#fff;border-color:#0284c7" : "";
+      btn.textContent = `Q${idx + 1} (${formatMmSs(cp.time)})`;
+      btn.onclick = () => {
+        dfcSelectedQuestionFilter = cp.id;
+        renderDfcCsvTable();
+      };
+      tabsWrap.appendChild(btn);
+    });
+  }
+
+  // 3. 渲染每一題的獨立專屬分析卡片、圖表與對應數據表格
+  const analyticsWrap = $("dfcPerQuestionAnalytics");
+  if (analyticsWrap) {
+    analyticsWrap.innerHTML = "";
+
+    const visibleCps = dfcSelectedQuestionFilter === "all" 
+      ? cps 
+      : cps.filter(c => c.id === dfcSelectedQuestionFilter);
+
+    if (!cps.length) {
+      analyticsWrap.innerHTML = `<div style="text-align:center;padding:30px;color:var(--ink-secondary);background:#fff;border-radius:12px;border:1px dashed var(--line)">此問卷尚未設定任何時間點題目</div>`;
+    }
+
+    visibleCps.forEach((cp, vIdx) => {
+      const idx = cps.findIndex(c => c.id === cp.id);
+      const card = document.createElement("div");
+      card.className = "q-analytics-card";
+
+      // 統計作答人數與耗時
+      let answeredCount = 0;
+      let sumSpent = 0;
+      let spentCount = 0;
+
+      for (const r of formResps) {
+        const a = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
+        if (a !== undefined && a !== null && a !== "" && (!Array.isArray(a) || a.length > 0)) {
+          answeredCount++;
+        }
+        const eng = r.engagement || {};
+        const spent = eng.timeSpentPerQuestion ? (eng.timeSpentPerQuestion[cp.id] ?? eng.timeSpentPerQuestion[cp.entryId]) : null;
+        if (spent != null && spent > 0) {
+          sumSpent += spent;
+          spentCount++;
+        }
+      }
+
+      const answerRate = formResps.length > 0 ? Math.round((answeredCount / formResps.length) * 100) : 0;
+      const avgSpent = spentCount > 0 ? (sumSpent / spentCount).toFixed(1) : "—";
+
+      let typeBadge = "🔘 單選題";
+      if (cp.type === "checkbox") typeBadge = "☑️ 複選題";
+      else if (cp.type === "rating") typeBadge = "⭐ 5星評分";
+      else if (cp.type === "boolean") typeBadge = "⚖️ 是非題";
+      else if (cp.type === "dropdown") typeBadge = "▾ 下拉選單";
+      else if (cp.type === "text" || cp.type === "textarea") typeBadge = "📝 簡答/想法題";
+
+      let chartAndTableHtml = "";
+
+      // 類型 A：選項題 (radio / checkbox / dropdown)
+      if (["radio", "checkbox", "dropdown"].includes(cp.type) && Array.isArray(cp.options) && cp.options.length) {
+        const counts = {};
+        const respondentsPerOpt = {};
+        cp.options.forEach(o => { counts[o] = 0; respondentsPerOpt[o] = []; });
+
+        for (const r of formResps) {
+          const ans = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
+          const uLabel = r.userName ? `${r.userName} (${r.userEmail || "帳號"})` : (r.userEmail || "匿名");
+          if (Array.isArray(ans)) {
+            ans.forEach(a => {
+              if (counts[a] !== undefined) {
+                counts[a]++;
+                respondentsPerOpt[a].push(uLabel);
+              }
+            });
+          } else if (ans && counts[ans] !== undefined) {
+            counts[ans]++;
+            respondentsPerOpt[ans].push(uLabel);
+          }
+        }
+
+        // 視覺長條圖表
+        let barsHtml = "";
+        let tableRowsHtml = "";
+
+        cp.options.forEach((opt, oIdx) => {
+          const c = counts[opt] || 0;
+          const pct = answeredCount > 0 ? Math.round((c / answeredCount) * 100) : 0;
+          const usersList = respondentsPerOpt[opt] || [];
+          const usersPreview = usersList.length
+            ? usersList.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("") + (usersList.length > 4 ? `<span style="font-size:11px;color:var(--muted)">+${usersList.length - 4}人</span>` : "")
+            : `<span style="color:var(--muted);font-size:11.5px">無人選擇</span>`;
+
+          barsHtml += `
+            <div class="q-bar-row">
+              <div class="q-bar-meta">
+                <span class="q-bar-opt-text">${esc(opt)}</span>
+                <span class="q-bar-stat">${c} 票 (${pct}%)</span>
+              </div>
+              <div class="q-bar-track">
+                <div class="q-bar-fill" style="width:${pct}%"></div>
+              </div>
+            </div>
+          `;
+
+          tableRowsHtml += `
+            <tr>
+              <td><b>${esc(opt)}</b></td>
+              <td><b style="color:var(--blue)">${c}</b> 人次</td>
+              <td><b style="color:var(--ink)">${pct}%</b></td>
+              <td>
+                <div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:120px">
+                  <div style="height:100%;width:${pct}%;background:#0284c7"></div>
+                </div>
+              </td>
+              <td>${usersPreview}</td>
+            </tr>
+          `;
+        });
+
+        chartAndTableHtml = `
+          <div class="q-chart-box">
+            <h5 style="margin:0 0 10px;font-size:12.5px;color:var(--ink-secondary)">📊 各選項得票佔比圖表</h5>
+            ${barsHtml}
+          </div>
+          <div>
+            <h5 style="margin:14px 0 8px;font-size:12.5px;color:var(--ink-secondary)">📋 本題選項數據與選擇填答者對應表格</h5>
+            <table class="mini-tbl">
+              <thead>
+                <tr>
+                  <th style="width:28%">選項內容</th>
+                  <th style="width:14%">得票數</th>
+                  <th style="width:14%">佔比</th>
+                  <th style="width:18%">分佈長條</th>
+                  <th style="width:26%">選擇此項之填答者</th>
+                </tr>
+              </thead>
+              <tbody>${tableRowsHtml}</tbody>
+            </table>
+          </div>
+        `;
+      } else if (cp.type === "rating") {
+        // 類型 B：評分題
+        let sumRating = 0, ratedC = 0;
+        const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        const starUsers = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+
+        for (const r of formResps) {
+          const val = Number(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : 0);
+          const uLabel = r.userName ? `${r.userName} (${r.userEmail || "帳號"})` : (r.userEmail || "匿名");
+          if (val >= 1 && val <= 5) {
+            sumRating += val;
+            ratedC++;
+            starCounts[val] = (starCounts[val] || 0) + 1;
+            starUsers[val].push(uLabel);
+          }
+        }
+        const avgScore = ratedC > 0 ? (sumRating / ratedC).toFixed(1) : "—";
+
+        let barsHtml = "";
+        let tableRowsHtml = "";
+        for (let s = 5; s >= 1; s--) {
+          const c = starCounts[s] || 0;
+          const pct = ratedC > 0 ? Math.round((c / ratedC) * 100) : 0;
+          const uList = starUsers[s] || [];
+          const usersPreview = uList.length
+            ? uList.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("") + (uList.length > 4 ? `<span style="font-size:11px;color:var(--muted)">+${uList.length - 4}人</span>` : "")
+            : `<span style="color:var(--muted);font-size:11.5px">無人評分</span>`;
+
+          barsHtml += `
+            <div class="q-bar-row">
+              <div class="q-bar-meta">
+                <span class="q-bar-opt-text" style="color:#d97706">${"★".repeat(s)} (${s} 星)</span>
+                <span class="q-bar-stat">${c} 人 (${pct}%)</span>
+              </div>
+              <div class="q-bar-track">
+                <div class="q-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div>
+              </div>
+            </div>
+          `;
+
+          tableRowsHtml += `
+            <tr>
+              <td><b style="color:#d97706">${"★".repeat(s)} (${s} 星滿意度)</b></td>
+              <td><b>${c}</b> 人</td>
+              <td><b>${pct}%</b></td>
+              <td>
+                <div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:120px">
+                  <div style="height:100%;width:${pct}%;background:#f59e0b"></div>
+                </div>
+              </td>
+              <td>${usersPreview}</td>
+            </tr>
+          `;
+        }
+
+        chartAndTableHtml = `
+          <div class="q-chart-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h5 style="margin:0;font-size:12.5px;color:var(--ink-secondary)">⭐ 星級評分分佈圖表</h5>
+              <span style="font-size:16px;font-weight:800;color:#d97706">平均得分：${avgScore} ★ <small style="font-size:12px;color:var(--muted)">(${ratedC} 人參與)</small></span>
+            </div>
+            ${barsHtml}
+          </div>
+          <div>
+            <h5 style="margin:14px 0 8px;font-size:12.5px;color:var(--ink-secondary)">📋 各星級人數與填答者名單表格</h5>
+            <table class="mini-tbl">
+              <thead>
+                <tr>
+                  <th style="width:28%">評分星級</th>
+                  <th style="width:14%">評分人數</th>
+                  <th style="width:14%">佔比</th>
+                  <th style="width:18%">分佈長條</th>
+                  <th style="width:26%">評分填答者</th>
+                </tr>
+              </thead>
+              <tbody>${tableRowsHtml}</tbody>
+            </table>
+          </div>
+        `;
+      } else if (cp.type === "boolean") {
+        // 類型 C：是非題
+        let yesC = 0, noC = 0;
+        const yesUsers = [], noUsers = [];
+        for (const r of formResps) {
+          const val = String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "").trim();
+          const uLabel = r.userName ? `${r.userName} (${r.userEmail || "帳號"})` : (r.userEmail || "匿名");
+          if (val === "是" || val === "true" || val === "贊成") {
+            yesC++;
+            yesUsers.push(uLabel);
+          } else if (val === "否" || val === "false" || val === "反對") {
+            noC++;
+            noUsers.push(uLabel);
+          }
+        }
+        const totalB = yesC + noC;
+        const yesPct = totalB > 0 ? Math.round((yesC / totalB) * 100) : 0;
+        const noPct = totalB > 0 ? Math.round((noC / totalB) * 100) : 0;
+
+        chartAndTableHtml = `
+          <div class="q-chart-box">
+            <h5 style="margin:0 0 10px;font-size:12.5px;color:var(--ink-secondary)">⚖️ 是非立場得票分佈</h5>
+            <div class="q-bar-row">
+              <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#059669">👍 是 / 贊成</span><span class="q-bar-stat">${yesC} 票 (${yesPct}%)</span></div>
+              <div class="q-bar-track"><div class="q-bar-fill" style="width:${yesPct}%;background:#10b981"></div></div>
+            </div>
+            <div class="q-bar-row">
+              <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#dc2626">👎 否 / 反對</span><span class="q-bar-stat">${noC} 票 (${noPct}%)</span></div>
+              <div class="q-bar-track"><div class="q-bar-fill" style="width:${noPct}%;background:#ef4444"></div></div>
+            </div>
+          </div>
+          <div>
+            <h5 style="margin:14px 0 8px;font-size:12.5px;color:var(--ink-secondary)">📋 是非立場數據與填答者名單</h5>
+            <table class="mini-tbl">
+              <thead>
+                <tr>
+                  <th style="width:28%">立場選項</th>
+                  <th style="width:14%">得票數</th>
+                  <th style="width:14%">佔比</th>
+                  <th style="width:18%">分佈長條</th>
+                  <th style="width:26%">立場填答者名單</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b style="color:#059669">👍 是 / 贊成</b></td>
+                  <td><b>${yesC}</b> 票</td>
+                  <td><b>${yesPct}%</b></td>
+                  <td><div style="height:7px;background:#e2e8f0;border-radius:99px;width:120px"><div style="height:100%;width:${yesPct}%;background:#10b981"></div></div></td>
+                  <td>${yesUsers.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("")}</td>
+                </tr>
+                <tr>
+                  <td><b style="color:#dc2626">👎 否 / 反對</b></td>
+                  <td><b>${noC}</b> 票</td>
+                  <td><b>${noPct}%</b></td>
+                  <td><div style="height:7px;background:#e2e8f0;border-radius:99px;width:120px"><div style="height:100%;width:${noPct}%;background:#ef4444"></div></div></td>
+                  <td>${noUsers.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("")}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      } else {
+        // 類型 D：簡答 / 詳答題 (text / textarea)
+        const textEntries = [];
+        for (const r of formResps) {
+          const val = String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "").trim();
+          if (val) {
+            textEntries.push({
+              userName: r.userName || "匿名",
+              userEmail: r.userEmail || "",
+              time: r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—",
+              device: r.telemetry?.deviceType || r.device || "—",
+              content: val,
+            });
+          }
+        }
+
+        const tableRows = textEntries.length
+          ? textEntries.map(e => `
+            <tr>
+              <td><b>${esc(e.userName)}</b><br><small style="color:var(--muted)">${esc(e.userEmail)}</small></td>
+              <td><div style="background:#f8fafc;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;line-height:1.5">💭 ${esc(e.content)}</div></td>
+              <td style="white-space:nowrap;font-size:12px;color:var(--muted)">${esc(e.time)}</td>
+              <td style="font-size:12px;color:var(--muted)">${esc(e.device)}</td>
+              <td><button type="button" class="btn ghost sm" onclick="copyTextToClipboard(`${esc(e.content)}`)">複製</button></td>
+            </tr>
+          `).join("")
+          : `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">尚無文字回答記錄</td></tr>`;
+
+        const allCombinedIdeas = textEntries.map((e, idx) => `[${idx + 1}] ${e.userName} (${e.time}): ${e.content}`).join("\n\n");
+
+        chartAndTableHtml = `
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <h5 style="margin:0;font-size:13px;color:var(--ink-secondary)">💬 填答者想法與深度心得列表 (共 ${textEntries.length} 則)</h5>
+              <button type="button" class="btn ghost sm copy-all-btn">📋 一鍵複製本題全部想法</button>
+            </div>
+            <table class="mini-tbl">
+              <thead>
+                <tr>
+                  <th style="width:20%">填答者</th>
+                  <th style="width:48%">填答想法內容</th>
+                  <th style="width:16%">時間</th>
+                  <th style="width:10%">裝置</th>
+                  <th style="width:6%">操作</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const btn = card.querySelector(".copy-all-btn");
+          if (btn) btn.onclick = () => copyTextToClipboard(allCombinedIdeas || "無文字回答");
+        }, 10);
+      }
+
+      card.innerHTML = `
+        <div class="q-analytics-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+              <span class="q-num-pill">Q${idx + 1}</span>
+              <span class="q-time-pill">⏱️ ${formatMmSs(cp.time)} 出現</span>
+              <span class="q-type-pill">${typeBadge}</span>
+              <span style="font-size:12px;font-weight:600;color:var(--ink-secondary)">${esc(cp.stepLabel || `階段 ${idx + 1}`)}</span>
+            </div>
+            <h4 class="q-title-text">${esc(cp.title)}</h4>
+            ${cp.desc ? `<p style="margin:4px 0 0;font-size:12.5px;color:var(--ink-secondary)">${esc(cp.desc)}</p>` : ""}
+          </div>
+          <div class="q-kpis">
+            <span class="q-kpi-item"><b>${answeredCount}</b> 人作答</span>
+            <span class="q-kpi-item"><b>${answerRate}%</b> 作答率</span>
+            <span class="q-kpi-item"><b>${avgSpent}s</b> 平均思考</span>
+          </div>
+        </div>
+        ${chartAndTableHtml}
+      `;
+
+      analyticsWrap.appendChild(card);
+    });
+  }
+
+  // 4. 渲染回傳結果主資料表 (dfcCsvTable)
   const isRemote = currentCsvData?.source === "google_remote";
   $("csvSourceHint").textContent = isRemote
     ? `🟢 目前顯示：從 Google 試算表即時拉取之遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
-    : `🔵 目前顯示：本站即時收集與匯入之問卷回傳結果（共 ${formResps.length} 筆）`;
+    : `🔵 目前顯示：本站精細化收集與匯入之完整互動紀錄（共 ${formResps.length} 筆）`;
 
   const thead = $("dfcCsvThead");
   const tbody = $("dfcCsvTbody");
@@ -2100,10 +2465,9 @@ function renderDfcCsvTable() {
     return;
   }
 
-  // 顯示本地收集與匯入之完整表單回應
-  const cps = activeForm.checkpoints || [];
+  // 本地完整記錄表
   const trH = document.createElement("tr");
-  const cols = ["提交時間", "填答者帳號", "狀態", "裝置 / IP", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`), "作答詳情"];
+  const cols = ["序號", "提交時間", "填答者帳號/姓名", "觀看完成度", "同步狀態", "裝置 / 環境", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`), "作答詳情"];
   if (isSuper()) cols.push("管理操作");
   cols.forEach(c => {
     const th = document.createElement("th"); th.textContent = c; trH.appendChild(th);
@@ -2120,21 +2484,30 @@ function renderDfcCsvTable() {
     return;
   }
 
-  for (const r of filteredResps) {
+  filteredResps.forEach((r, rIdx) => {
     const tr = document.createElement("tr");
     const timeStr = r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—";
-    const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名");
+    const whoStr = r.userName ? `${r.userName} (${r.userEmail || "帳號"})` : (r.userEmail || "匿名訪客");
+    const eng = r.engagement || {};
+    const tel = r.telemetry || {};
+    const watchPct = eng.watchPercentage != null ? `${eng.watchPercentage}%` : "—";
+    const watchSec = eng.watchedSeconds != null ? `${eng.watchedSeconds}s` : "";
+
     let html = `
-      <td style="white-space:nowrap">${esc(timeStr)}</td>
+      <td style="font-weight:700;color:var(--muted)">#${rIdx + 1}</td>
+      <td style="white-space:nowrap;font-size:12.5px">${esc(timeStr)}</td>
       <td><b>${esc(whoStr)}</b></td>
-      <td style="white-space:nowrap"><span class="role-chip">${r.syncedToGoogle ? "已送達" : "本地保存"}</span></td>
-      <td style="font-size:12px;color:var(--ink-tertiary)">${esc(r.device || "—")}</td>
+      <td style="white-space:nowrap"><b style="color:var(--blue)">${watchPct}</b> <small style="color:var(--muted)">${watchSec}</small></td>
+      <td style="white-space:nowrap"><span class="role-chip ${r.syncedToGoogle ? "" : "readonly"}">${r.syncedToGoogle ? "已送達" : "本地保存"}</span></td>
+      <td style="font-size:12px;color:var(--ink-secondary)">${esc(tel.deviceType || r.device || "—")} <small style="display:block;color:var(--muted)">${esc(tel.screenResolution || "")}</small></td>
     `;
+
     for (const cp of cps) {
       const val = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
       const text = Array.isArray(val) ? val.join("、") : String(val ?? "");
-      html += `<td>${esc(text || "—")}</td>`;
+      html += `<td style="font-size:12.5px">${esc(text || "—")}</td>`;
     }
+
     html += `<td style="white-space:nowrap"><button type="button" class="btn ghost sm view-resp-btn">👁️ 詳情</button></td>`;
     if (isSuper()) {
       html += `<td style="white-space:nowrap"><button type="button" class="btn danger sm del-resp-btn" data-id="${esc(r.id)}">刪除</button></td>`;
@@ -2149,28 +2522,34 @@ function renderDfcCsvTable() {
         delBtn.onclick = async () => {
           delBtn.disabled = true;
           const resp = await fetch(`/api/admin/dfc/responses/${encodeURIComponent(r.id)}`, { method: "DELETE", headers: H });
-          if (resp.ok) { toast("已刪除該筆紀錄"); load(true); }
+          if (resp.ok) { toast("已刪除此筆作答"); load(true); }
           else { toast("刪除失敗", true); delBtn.disabled = false; }
         };
       }
     }
     tbody.appendChild(tr);
-  }
+  });
 }
 
 function openResponseDetailModal(r, form) {
   const modal = $("responseDetailModal");
   if (!modal) return;
   const timeStr = r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—";
-  const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名訪客");
+  const whoStr = r.userName ? `${r.userName} (${r.userEmail || "帳號"})` : (r.userEmail || "匿名訪客");
+  const eng = r.engagement || {};
+  const tel = r.telemetry || {};
+  const spentMap = eng.timeSpentPerQuestion || {};
 
   $("respDetailMeta").innerHTML = `
     <div><small style="color:var(--ink-tertiary);font-size:11.5px">填答者</small><div><b>${esc(whoStr)}</b></div></div>
     <div><small style="color:var(--ink-tertiary);font-size:11.5px">提交時間</small><div>${esc(timeStr)}</div></div>
     <div><small style="color:var(--ink-tertiary);font-size:11.5px">問卷名稱</small><div>${esc(form.title || r.formTitle || "DFC 問卷")}</div></div>
     <div><small style="color:var(--ink-tertiary);font-size:11.5px">同步狀態</small><div>${r.syncedToGoogle ? "✓ 已同步 Google 表單" : (r.demo ? "示範模式 (本地保存)" : "本地資料庫保存")}</div></div>
-    <div><small style="color:var(--ink-tertiary);font-size:11.5px">IP 位址</small><div><code>${esc(r.ip || "—")}</code></div></div>
-    <div><small style="color:var(--ink-tertiary);font-size:11.5px">裝置與系統</small><div>${esc(r.device || "—")}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">影片觀看完成度</small><div><b style="color:var(--blue)">${eng.watchPercentage != null ? eng.watchPercentage + "%" : "—"}</b> (${eng.watchedSeconds || 0}s / ${eng.duration || form.fallbackDuration || 0}s)</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">觀看行為統計</small><div>倒退 ${eng.rewindCount || 0} 次 · 暫停 ${eng.pauseCount || 0} 次 · 跳轉 ${eng.seekCount || 0} 次 · 停留 ${eng.totalSessionSeconds || 0}s</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">裝置與系統</small><div>${esc(tel.deviceType || r.device || "—")} · ${esc(tel.os || "")} · ${esc(tel.browser || "")}</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">螢幕與解析度</small><div>螢幕 ${esc(tel.screenResolution || "—")} (視窗 ${esc(tel.viewportSize || "—")})</div></div>
+    <div><small style="color:var(--ink-tertiary);font-size:11.5px">IP 與網路連線</small><div><code>${esc(r.ip || "—")}</code> (${esc(tel.connectionType || "—")})</div></div>
   `;
 
   const ansWrap = $("respDetailAnswersList");
@@ -2189,8 +2568,15 @@ function openResponseDetailModal(r, form) {
     } else {
       formattedVal = esc(String(val || "（未作答）"));
     }
+
+    const spentSec = spentMap[cp.id] ?? spentMap[cp.entryId] ?? "";
+    const spentBadge = spentSec !== "" ? `<span style="font-size:11.5px;color:var(--blue);font-weight:600;margin-left:8px">⏱️ 本題思考作答：${spentSec} 秒</span>` : "";
+
     card.innerHTML = `
-      <div style="font-size:12px;color:var(--ink-tertiary);font-weight:600;margin-bottom:4px">⏱️ ${formatMmSs(cp.time)} · ${esc(cp.stepLabel || `問題 ${idx + 1}`)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:12px;color:var(--ink-tertiary);font-weight:600">⏱️ ${formatMmSs(cp.time)} · ${esc(cp.stepLabel || `問題 ${idx + 1}`)}</div>
+        ${spentBadge}
+      </div>
       <div class="detail-q-title">Q${idx + 1}. ${esc(cp.title)}</div>
       <div class="detail-q-ans">${formattedVal}</div>
     `;
@@ -2279,19 +2665,21 @@ function initStudioPlayer() {
   studioVideoEl = $("studioVideo");
   studioCanvasEl = $("studioCanvas");
   const studioIframe = $("studioIframe");
+  if (studioIframe) {
+    studioIframe.classList.add("hide");
+    studioIframe.src = "";
+  }
   studioCurTime = 0;
-  studioDuration = Number($("cfgFallbackDuration").value) || Number(editingFormObj.fallbackDuration) || 18;
+  studioDuration = Number($("cfgFallbackDuration").value) || Number(editingFormObj?.fallbackDuration) || 18;
   setStudioPlaying(false);
 
   const videoUrl = $("cfgVideoUrl").value.trim();
   const driveId = extractGoogleDriveId(videoUrl);
 
   if (driveId) {
-    // Google Drive 影片：直接轉為代理串流並使用真實 <video> 播放器，解鎖精確秒數抓取與預覽！
-    if (studioIframe) { studioIframe.classList.add("hide"); studioIframe.src = ""; }
     studioVideoEl.classList.remove("hide");
     studioCanvasEl.classList.add("hide");
-    $("studioBadgeText").textContent = "▶ Google Drive 雲端影片";
+    $("studioBadgeText").textContent = "▶ 專屬影片串流就緒";
     const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
     studioVideoEl.preload = "auto";
     if (studioVideoEl.getAttribute("src") !== streamSrc) {
@@ -2299,13 +2687,10 @@ function initStudioPlayer() {
       studioVideoEl.load();
     }
     studioVideoEl.onerror = () => {
-      console.warn("Studio video stream error, switching to preview iframe fallback");
-      if (studioIframe) {
-        studioIframe.src = `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/preview`;
-        studioIframe.classList.remove("hide");
-      }
+      console.warn("Studio video load warning; fallback to interactive canvas");
       studioVideoEl.classList.add("hide");
-      $("studioBadgeText").textContent = "▶ Google Drive 預覽模式";
+      studioCanvasEl.classList.remove("hide");
+      $("studioBadgeText").textContent = "▶ 示範動畫模式";
     };
     studioVideoEl.onloadedmetadata = () => {
       if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
@@ -2319,41 +2704,25 @@ function initStudioPlayer() {
     };
     studioVideoEl.ondurationchange = studioVideoEl.onloadedmetadata;
   } else {
-    const embed = parseEmbedVideo(videoUrl);
-    if (embed) {
-      if (studioIframe) {
-        if (studioIframe.src !== embed.embedUrl) studioIframe.src = embed.embedUrl;
-        studioIframe.classList.remove("hide");
-      }
-      studioVideoEl.classList.add("hide");
+    if (videoUrl && !videoUrl.includes("YOUR_")) {
+      studioVideoEl.src = videoUrl;
+      studioVideoEl.onloadedmetadata = () => {
+        if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
+          studioDuration = studioVideoEl.duration;
+          updateStudioProgressUi();
+          renderStudioPins();
+        }
+      };
+      studioVideoEl.classList.remove("hide");
       studioCanvasEl.classList.add("hide");
-      $("studioBadgeText").textContent = "▶ YouTube 外部預覽";
+      $("studioBadgeText").textContent = "▶ 影片預覽";
     } else {
-      if (studioIframe) {
-        studioIframe.classList.add("hide");
-        studioIframe.src = "";
-      }
-      if (videoUrl && !videoUrl.includes("YOUR_")) {
-        studioVideoEl.src = videoUrl;
-        studioVideoEl.onloadedmetadata = () => {
-          if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
-            studioDuration = studioVideoEl.duration;
-            updateStudioProgressUi();
-            renderStudioPins();
-          }
-        };
-        studioVideoEl.classList.remove("hide");
-        studioCanvasEl.classList.add("hide");
-        $("studioBadgeText").textContent = "▶ 影片預覽";
-      } else {
-        studioVideoEl.classList.add("hide");
-        studioCanvasEl.classList.remove("hide");
-        $("studioBadgeText").textContent = "▶ 示範動畫";
-      }
+      studioVideoEl.classList.add("hide");
+      studioCanvasEl.classList.remove("hide");
+      $("studioBadgeText").textContent = "▶ 示範動畫";
     }
   }
 
-  // 當使用者在基本設定修改影片網址時，即時響應切換
   $("cfgVideoUrl").onchange = () => {
     initStudioPlayer();
   };
@@ -2367,54 +2736,6 @@ function initStudioPlayer() {
     const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
     seekStudioTime(pct * studioDuration);
   };
-
-  $("studioCaptureBtn").onclick = () => {
-    const t = Number(studioCurTime.toFixed(1));
-    const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
-    if (cards.length) {
-      const targetCard = cards[studioActiveQuestionIndex] || cards[0];
-      targetCard.querySelector(".cp-time").value = t;
-      targetCard.querySelector(".cp-time-mm").value = formatMmSs(t);
-      targetCard.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(t)} (${t}秒)`;
-      syncCheckpointsFromDom();
-      renderStudioPins();
-      toast(`已將目前播放時間「${formatMmSs(t)}」填入問題 #${studioActiveQuestionIndex + 1}`);
-    } else {
-      $("studioAddAtPlayheadBtn").click();
-    }
-  };
-
-  $("studioAddAtPlayheadBtn").onclick = () => {
-    syncCheckpointsFromDom();
-    const t = Number(studioCurTime.toFixed(1)) || 5;
-    const nextIdx = (editingFormObj.checkpoints || []).length + 1;
-    editingFormObj.checkpoints.push({
-      id: "q" + nextIdx + "_" + Date.now().toString(36),
-      time: t,
-      entryId: `entry.${nextIdx}11111111`,
-      stepLabel: `階段 ${nextIdx}`,
-      title: `第 ${nextIdx} 階段問題`,
-      desc: "",
-      type: "radio",
-      options: ["選項 A", "選項 B", "選項 C"],
-      required: true,
-    });
-    studioActiveQuestionIndex = editingFormObj.checkpoints.length - 1;
-    renderCheckpointEditors();
-    renderStudioPins();
-    toast(`已於秒數「${formatMmSs(t)}」新增問題 #${nextIdx}！`);
-  };
-
-  $("studioSortCheckpointsBtn").onclick = () => {
-    syncCheckpointsFromDom();
-    editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
-    renderCheckpointEditors();
-    renderStudioPins();
-    toast("已依時間點由小到大重新排序！");
-  };
-
-  updateStudioProgressUi();
-  startStudioLoop();
 }
 
 function setStudioPlaying(play) {
@@ -2513,24 +2834,38 @@ function updateStudioProgressUi() {
 
 function renderStudioPins() {
   const cont = $("studioPinsContainer");
+  if (!cont) return;
   cont.innerHTML = "";
   const cps = editingFormObj.checkpoints || [];
-  $("studioPinCountHint").textContent = `現有 ${cps.length} 個時間點題目`;
+  $("studioPinCountHint").textContent = `現有 ${cps.length} 個題目`;
   $("studioQuestionCountText").textContent = `共 ${cps.length} 題`;
 
+  // 依時間群組化標記圖釘，支援同一時段多題
+  const timeGroups = [];
   cps.forEach((cp, idx) => {
+    let grp = timeGroups.find(g => Math.abs(g.time - cp.time) <= 0.5);
+    if (!grp) {
+      grp = { time: cp.time, items: [] };
+      timeGroups.push(grp);
+    }
+    grp.items.push({ cp, idx });
+  });
+
+  timeGroups.forEach((grp) => {
     const pin = document.createElement("div");
-    pin.className = "studio-pin" + (idx === studioActiveQuestionIndex ? " active" : "");
-    const pct = Math.min(99, Math.max(1, (cp.time / (studioDuration || 18)) * 100));
+    const hasActive = grp.items.some(it => it.idx === studioActiveQuestionIndex);
+    pin.className = "studio-pin" + (hasActive ? " active" : "");
+    const pct = Math.min(99, Math.max(1, (grp.time / (studioDuration || 18)) * 100));
     pin.style.left = pct + "%";
-    pin.title = `題目 #${idx + 1}（${formatMmSs(cp.time)}）: ${cp.title}`;
-    pin.innerHTML = `<div class="studio-pin-dot"></div>`;
+    const qTitles = grp.items.map(it => `Q${it.idx + 1}: ${it.cp.title}`).join("\n");
+    pin.title = `⏱️ ${formatMmSs(grp.time)} (共 ${grp.items.length} 題)\n${qTitles}`;
+    pin.innerHTML = `<div class="studio-pin-dot"></div>${grp.items.length > 1 ? `<span style="position:absolute;top:-13px;font-size:10px;font-weight:800;color:#38bdf8;background:#0f172a;padding:0 4px;border-radius:99px;border:1px solid #38bdf8">${grp.items.length}</span>` : ""}`;
     pin.onclick = (e) => {
       e.stopPropagation();
-      seekStudioTime(cp.time);
-      studioActiveQuestionIndex = idx;
+      seekStudioTime(grp.time);
+      studioActiveQuestionIndex = grp.items[0].idx;
       renderStudioPins();
-      focusQuestionCard(idx);
+      focusQuestionCard(studioActiveQuestionIndex);
     };
     cont.appendChild(pin);
   });
@@ -2961,17 +3296,18 @@ $("confirmImportCsvBtn").onclick = async () => {
 function downloadQuestionsTemplate() {
   const tplCsv = "\uFEFF" + [
     "時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填,Google表單EntryID",
-    "00:04,階段一 · 感受 Feel,在剛才的影片片段中，你觀察到最核心的校園問題是什麼？,單選,資訊傳遞分散 | 空間與動線規劃需更直覺 | 缺乏即時回饋管道,請選擇一個最貼近你觀察到的現象，作答後影片將繼續播放。,是,entry.111111111",
-    "00:10,階段二 · 想像 Imagine,針對這個問題，你認為哪些創意解方最值得嘗試？,多選,導入互動式影音表單 | 建立校園專屬的一句話共創牆 | 結合跨班級工作坊快速製作原型,此題為多選題，可勾選一項或多項方案。,是,entry.222222222",
-    "00:14,階段三 · 實踐 Do,請簡述你在本次行動中擔任的角色或預計實踐的項目,簡答,,限 50 字以內，簡要描述即可。,否,entry.333333333",
-    "00:18,階段三 · 實踐與分享,請寫下你對本次 DFC 行動的一句具體建議或想法,詳答,,作答後進入總體評分！,是,entry.444444444",
-    "00:22,階段四 · 分享 Share,你是否願意將本次成果分享於全校互動成果牆？,是非,,二選一是非題,是,entry.555555555",
-    "00:26,階段四 · 總體反思,你對本次校園 DFC 方案的整體推薦評分？,評分,,1~5 星評分量表,是,entry.666666666"
+    "00:04,階段一 · 感受 Feel (第1題),在剛才的影片片段中，你觀察到最核心的校園問題是什麼？,單選,資訊傳遞分散 | 空間與動線規劃需更直覺 | 缺乏即時回饋管道,請選擇一個最貼近你觀察到的現象。,是,entry.111111111",
+    "00:04,階段一 · 感受 Feel (第2題),你認為這個問題對哪一群體的影響最大？,多選,全體學生 | 導師與行政組長 | 家長與校友 | 學校訪客,本題與上一題同為 00:04 時段問題，支援同時間點連續提問。,是,entry.111111112",
+    "00:10,階段二 · 想像 Imagine (第1題),針對這個問題，你認為哪些創意解方最值得嘗試？,多選,導入互動式影音表單 | 建立校園專屬的一句話共創牆 | 結合跨班級工作坊快速製作原型,此題為多選題，可勾選一項或多項方案。,是,entry.222222222",
+    "00:10,階段二 · 想像 Imagine (第2題),你認為以上解方的實施難易度為何？,下拉,非常容易立即推行 | 需要跨處室合作 | 需要較多經費與時間,同屬 00:10 時段問題，評估解方可行性。,否,entry.222222223",
+    "00:18,階段三 · 實踐 Do,請簡述你在本次行動中擔任的角色或預計實踐的項目,簡答,,限 50 字以內，簡要描述即可。,否,entry.333333333",
+    "00:22,階段四 · 分享 Share (第1題),你是否願意將本次成果分享於全校互動成果牆？,是非,,二選一是非題,是,entry.555555555",
+    "00:22,階段四 · 分享 Share (第2題),你對本次校園 DFC 方案的整體推薦評分？,評分,,1~5 星評分量表，作答後表單即完成！,是,entry.666666666"
   ].join("\r\n");
 
   const blob = new Blob([tplCsv], { type: "text/csv;charset=utf-8" });
   save(blob, "DFC_問卷題目範本.csv");
-  toast("已下載「DFC_問卷題目範本.csv」！可在 Excel 開啟編輯後直接匯入。");
+  toast("已下載最新「DFC_問卷題目範本.csv」（支援同一時段多題）！");
 }
 
 function parseQuestionsCsv(rawText) {

@@ -1763,13 +1763,13 @@
               <div class="video-mode-badge" id="dfcModeBadge">🔒 防快轉學習模式</div>
               <div class="video-loading-overlay hide" id="dfcVideoLoading">
                 <div class="video-spinner"></div>
-                <span id="dfcLoadingText">正在從 Google Drive 載入雲端影片串流...</span>
+                <span id="dfcLoadingText">正在載入專屬影片串流...</span>
               </div>
               <div class="video-center-play" id="dfcCenterPlay" title="點擊播放 / 暫停">
                 <div class="video-center-play-circle">▶</div>
               </div>
               <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
-              <iframe id="dfcIframe" class="hide" allow="autoplay; fullscreen" frameborder="0"></iframe>
+              <!-- 自訂播放器專屬容器，徹底移除外部 iframe 播放器 -->
               <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide"></video>
               <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
             </div>
@@ -2878,6 +2878,16 @@
     /* ============================================================================
      * DFC 互動影片播放器與狀態機（支援 Google Drive 雲端串流直連自訂播放器與防快轉控制）
      * ============================================================================ */
+    const dfcEngagement = {
+      sessionStart: Date.now(),
+      playCount: 0,
+      pauseCount: 0,
+      rewindCount: 0,
+      seekCount: 0,
+      timeSpentPerQuestion: {},
+      checkpointOpenTs: null,
+    };
+
     const dfcState = {
       inited: false,
       videoReady: false,
@@ -2957,9 +2967,15 @@
         const isAct = dfcState.activeCheckpointIndex === idx;
         const canJump = isDone || isAct || seekMode === "free" || dfcState.maxWatchedTime + 0.5 >= cp.time;
         pill.className = "dfc-step-pill" + (isAct ? " active" : isDone ? " done" : "");
-        pill.textContent = `${isDone ? "✓" : (canJump ? "●" : "🔒")} 問題 ${idx + 1} (${fmtSec(cp.time)})`;
+
+        const sameTimeCps = DFC_CONFIG.checkpoints.filter(c => Math.abs(c.time - cp.time) <= 0.5);
+        const sameTotal = sameTimeCps.length;
+        const subIndex = sameTimeCps.findIndex(c => c.id === cp.id) + 1;
+        const multiTag = sameTotal > 1 ? ` [${subIndex}/${sameTotal}]` : "";
+
+        pill.textContent = `${isDone ? "✓" : (canJump ? "●" : "🔒")} Q${idx + 1}${multiTag} (${fmtSec(cp.time)})`;
         pill.style.cursor = "pointer";
-        pill.title = canJump ? "點擊開啟此題問答" : `請先觀看影片至 ${fmtSec(cp.time)} 解鎖此題`;
+        pill.title = canJump ? `點擊作答第 ${idx + 1} 題` : `請先觀看影片至 ${fmtSec(cp.time)} 解鎖此題`;
         pill.onclick = () => {
           if (!canJump) {
             showDfcLockToast(`🔒 請依序觀看影片至 ${fmtSec(cp.time)}，系統將自動展開本題問答`);
@@ -2976,14 +2992,27 @@
       if (!wrap) return;
       wrap.innerHTML = "";
       const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration);
-      DFC_CONFIG.checkpoints.forEach((cp, idx) => {
+
+      // 依時間點群組化，支援同一時段多題標記
+      const timeGroups = [];
+      (DFC_CONFIG.checkpoints || []).forEach((cp, idx) => {
+        let grp = timeGroups.find(g => Math.abs(g.time - cp.time) <= 0.5);
+        if (!grp) {
+          grp = { time: cp.time, items: [] };
+          timeGroups.push(grp);
+        }
+        grp.items.push({ cp, idx });
+      });
+
+      timeGroups.forEach((grp) => {
         const mk = document.createElement("div");
-        const isDone = dfcState.answeredIds.has(cp.id);
-        const isAct = dfcState.activeCheckpointIndex === idx;
-        mk.className = "cinema-marker" + (isAct ? " active" : isDone ? " done" : "");
-        const pct = Math.min(99, Math.max(1, (cp.time / dur) * 100));
+        const allDone = grp.items.every(it => dfcState.answeredIds.has(it.cp.id));
+        const isAct = grp.items.some(it => dfcState.activeCheckpointIndex === it.idx);
+        mk.className = "cinema-marker" + (isAct ? " active" : allDone ? " done" : "");
+        const pct = Math.min(99, Math.max(1, (grp.time / dur) * 100));
         mk.style.left = pct + "%";
-        mk.title = `問題 ${idx + 1}（${fmtSec(cp.time)}）`;
+        const qNames = grp.items.map(it => `Q${it.idx + 1}`).join(", ");
+        mk.title = `⏱️ ${fmtSec(grp.time)}（共 ${grp.items.length} 題: ${qNames}）`;
         wrap.appendChild(mk);
       });
     }
@@ -3097,24 +3126,41 @@
     function triggerCheckpointQuestion(idx) {
       const cp = DFC_CONFIG.checkpoints[idx];
       if (!cp) return;
+      dfcEngagement.checkpointOpenTs = Date.now();
       dfcState.activeCheckpointIndex = idx;
       setDfcPlaying(false);
 
       $("dfcStage").classList.add("split-active");
       if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "✕ 收合問卷";
       $("dfcPlayBtn").disabled = true;
+
+      // 支援同一時段多題：計算本時段題數與題號
+      const sameTimeCps = DFC_CONFIG.checkpoints.filter(c => Math.abs(c.time - cp.time) <= 0.5);
+      const groupTotal = sameTimeCps.length;
+      const subIdx = sameTimeCps.findIndex(c => c.id === cp.id) + 1;
+      const groupUnanswered = sameTimeCps.filter(c => !dfcState.answeredIds.has(c.id));
+      const isLastInGroup = groupUnanswered.length <= 1 && groupUnanswered[0]?.id === cp.id;
+
       const badge = $("dfcVideoBadge");
-      badge.textContent = `問題時間點 (${fmtSec(cp.time)}) · 請於右側作答`;
+      const groupHint = groupTotal > 1 ? ` · (本時段第 ${subIdx}/${groupTotal} 題)` : "";
+      badge.textContent = `問題時間點 (${fmtSec(cp.time)})${groupHint} · 請於右側作答`;
       badge.classList.add("question-stop");
 
-      $("dfcQStepBadge").textContent = `${cp.stepLabel || ("STEP " + (idx + 1))} · QUESTION ${idx + 1}/${DFC_CONFIG.checkpoints.length}`;
+      const stepText = cp.stepLabel || ("STEP " + (idx + 1));
+      const multiHint = groupTotal > 1 ? ` [本時段第 ${subIdx}/${groupTotal} 題]` : "";
+      $("dfcQStepBadge").textContent = `${stepText} · QUESTION ${idx + 1}/${DFC_CONFIG.checkpoints.length}${multiHint}`;
       $("dfcQTitle").textContent = cp.title;
       $("dfcQDesc").textContent = cp.desc || "";
       $("dfcQErr").classList.remove("show");
 
-      const isLast = idx === DFC_CONFIG.checkpoints.length - 1;
-      $("dfcAnswerBtn").textContent = isLast ? "完成作答並送出表單 ✨" : "確認作答，繼續播放 →";
-
+      const isOverallLast = idx === DFC_CONFIG.checkpoints.length - 1;
+      if (!isLastInGroup) {
+        $("dfcAnswerBtn").textContent = `下一步：作答本時段下一題 (${subIdx}/${groupTotal}) →`;
+      } else if (isOverallLast) {
+        $("dfcAnswerBtn").textContent = "完成全部作答並送出表單 ✨";
+      } else {
+        $("dfcAnswerBtn").textContent = "確認作答，繼續播放 →";
+      }
       const area = $("dfcQInputArea");
       area.innerHTML = "";
       const prevVal = dfcState.answers[cp.entryId];
@@ -3489,7 +3535,7 @@
         dfcState.lastTickTs = performance.now();
 
         if (badge) {
-          badge.textContent = dfcState.isDriveStream ? "🎬 Google Drive 雲端影片播放中" : "播放中";
+          dfcEngagement.playCount++; badge.textContent = '🎬 高速影片播放中';
           badge.classList.remove("question-stop");
         }
         logAction("播放 DFC 影片", `播放時間點: ${Math.round(dfcState.currentTime)} 秒`);
@@ -3551,29 +3597,27 @@
     function applyDfcVideoSource(url) {
       const v = $("dfcVideo");
       const canvas = $("dfcDemoCanvas");
-      const iframe = $("dfcIframe");
       const badge = $("dfcVideoBadge");
       const loadingEl = $("dfcVideoLoading");
-      const loadingTxt = $("dfcLoadingText");
 
       updateDfcPlayerControlUi();
 
-      // 1. 優先判斷是否為 Google Drive 影片：直接轉為高速 Range 串流端點並套入自訂 HTML5 播放器
       const driveId = extractGoogleDriveId(url);
-      if (driveId && v) {
-        dfcState.isEmbed = false;
-        dfcState.isDriveStream = true;
-        dfcState.useRealVideo = true;
-        dfcState.videoReady = false;
-        dfcState.videoLoading = false;
-        dfcState.playing = false;
-        dfcState.pendingPlay = false;
+      const isDirectFile = url && (/\.(mp4|webm|ogg|m4v)(\?.*)?$/i.test(url) || url.startsWith("/assets/"));
 
-        if (iframe) { iframe.classList.add("hide"); iframe.src = ""; }
-        // 核心修正：頁面載入時不以全黑遮罩阻擋畫面，確保中央大播放鈕隨時可點擊、不卡死在「緩衝載入中」
-        if (loadingEl) loadingEl.classList.add("hide");
+      dfcState.isEmbed = false;
+      dfcState.isDriveStream = Boolean(driveId);
+      dfcState.useRealVideo = true;
+      dfcState.videoReady = false;
+      dfcState.videoLoading = false;
+      dfcState.playing = false;
+      dfcState.pendingPlay = false;
 
-        const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
+      if (loadingEl) loadingEl.classList.add("hide");
+
+      const streamSrc = driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}` : (url || "/assets/dfc.mp4");
+
+      if (v) {
         if (v.getAttribute("src") !== streamSrc) {
           v.pause();
           v.preload = "auto";
@@ -3584,65 +3628,17 @@
           dfcState.duration = v.duration;
         }
         v.classList.remove("hide");
-        if (canvas) canvas.classList.add("hide");
-        if (badge) {
-          badge.textContent = "🎬 雲端影片已就緒 · 點擊開始觀看";
-          badge.classList.remove("question-stop");
-        }
-        const mb = $("dfcModeBadge");
-        if (mb) mb.textContent = "⚡ 高速順暢播放模式";
-        renderDfcStepPills();
-        renderDfcMarkers();
-        updateDfcUiProgress();
-        return;
       }
-
-      dfcState.isDriveStream = false;
-      const embed = parseEmbedVideo(url);
-
-      if (embed) {
-        dfcState.isEmbed = true;
-        dfcState.useRealVideo = false;
-        dfcState.videoReady = true;
-        dfcState.videoLoading = false;
-        if (loadingEl) loadingEl.classList.add("hide");
-        if (v) { v.pause(); v.classList.add("hide"); }
-        if (canvas) canvas.classList.add("hide");
-        if (iframe) {
-          if (iframe.src !== embed.embedUrl) iframe.src = embed.embedUrl;
-          iframe.classList.remove("hide");
-        }
-        if (badge) {
-          badge.textContent = "🎬 YouTube 影片播放中";
-          badge.classList.remove("question-stop");
-        }
-        const tl = $("dfcTimeLabel");
-        if (tl) tl.textContent = "外部串流";
-        return;
+      if (canvas) canvas.classList.add("hide");
+      if (badge) {
+        badge.textContent = "🎬 專屬劇院播放器 · 點擊開始觀看";
+        badge.classList.remove("question-stop");
       }
-
-      dfcState.isEmbed = false;
-      if (iframe) {
-        iframe.classList.add("hide");
-        iframe.src = "";
-      }
-
-      if (v && url && !url.includes("YOUR_")) {
-        dfcState.useRealVideo = true;
-        dfcState.videoReady = false;
-        dfcState.videoLoading = false;
-        if (loadingEl) loadingEl.classList.add("hide");
-        v.preload = "auto";
-        v.src = url;
-        v.load();
-      } else {
-        if (loadingEl) loadingEl.classList.add("hide");
-        dfcState.useRealVideo = false;
-        dfcState.videoReady = true;
-        dfcState.videoLoading = false;
-        if (v) v.classList.add("hide");
-        if (canvas) canvas.classList.remove("hide");
-      }
+      const mb = $("dfcModeBadge");
+      if (mb) mb.textContent = "⚡ 高速順暢播放模式";
+      renderDfcStepPills();
+      renderDfcMarkers();
+      updateDfcUiProgress();
     }
 
     function seekDfcWithPolicy(requestedTime, fromUserTrack = true) {
@@ -3832,35 +3828,15 @@
       };
 
       v.onerror = (e) => {
-        if (dfcState.isEmbed) return;
         hideLoadingOnEvent();
-        console.warn("dfcVideo error, attempting fallback:", e);
-
-        // 若為 Google Drive 原生串流失敗，自動切換至 Google Drive 官方預覽備援串流
-        if (dfcState.isDriveStream) {
-          const driveId = extractGoogleDriveId(DFC_CONFIG.videoUrl);
-          const iframe = $("dfcIframe");
-          if (driveId && iframe) {
-            console.log("切換 Google Drive 預覽模式備援");
-            dfcState.isEmbed = true;
-            dfcState.useRealVideo = false;
-            v.classList.add("hide");
-            iframe.src = `https://drive.google.com/file/d/${encodeURIComponent(driveId)}/preview`;
-            iframe.classList.remove("hide");
-            const badge = $("dfcVideoBadge");
-            if (badge) {
-              badge.textContent = "🎬 Google Drive 官方串流備援播放中";
-              badge.classList.remove("question-stop");
-            }
-            return;
-          }
-        }
-
-        dfcState.useRealVideo = false;
+        console.warn("dfcVideo stream warning:", e);
+        // 堅持只使用本站自訂播放器，絕對不跳轉 Google Drive iframe 播放器
         dfcState.videoLoading = false;
-        v.classList.add("hide");
-        canvas.classList.remove("hide");
-        renderDfcMarkers();
+        const badge = $("dfcVideoBadge");
+        if (badge) {
+          badge.textContent = "🎬 專屬劇院播放器 · 點擊重新連接";
+          badge.classList.remove("question-stop");
+        }
         updateDfcUiProgress();
       };
 
