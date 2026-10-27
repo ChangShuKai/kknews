@@ -186,7 +186,7 @@ async function ensureVerifyBucket() {
 async function readSysStore(name, fallback) {
   const now = Date.now();
   const cached = sysCache.get(name);
-  if (cached && now - cached.ts < 4000) return cached.data;
+  if (cached && now - cached.ts < 4000) return name === "dfc" ? sanitizeDfcStore(cached.data) : cached.data;
 
   let best = cached ? { rev: cached.rev || 1, data: cached.data } : null;
   const consider = (raw) => {
@@ -228,10 +228,11 @@ async function readSysStore(name, fallback) {
   } catch {}
 
   if (best && best.data !== undefined) {
-    sysCache.set(name, { ts: now, rev: best.rev, data: best.data });
-    return best.data;
+    const finalData = name === "dfc" ? sanitizeDfcStore(best.data) : best.data;
+    sysCache.set(name, { ts: now, rev: best.rev, data: finalData });
+    return finalData;
   }
-  const init = JSON.parse(JSON.stringify(fallback));
+  const init = name === "dfc" ? sanitizeDfcStore(JSON.parse(JSON.stringify(fallback))) : JSON.parse(JSON.stringify(fallback));
   sysCache.set(name, { ts: now, rev: 0, data: init });
   return init;
 }
@@ -281,8 +282,8 @@ const DEFAULT_DFC_STORE = {
   forms: [
     {
       id: "default-dfc",
-      title: "DFC 沉浸式互動影片表單（主表單）",
-      description: "DFC 四步驟（感受、想像、實踐、分享）互動影片探究與反思問卷",
+      title: "DFC 互動影片探究問卷",
+      description: "DFC 四步驟互動影片探究與反思問卷",
       videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
       fallbackDuration: 18,
       googleFormUrl: process.env.GOOGLE_FORM_ACTION_URL || "YOUR_GOOGLE_FORM_URL",
@@ -291,66 +292,31 @@ const DEFAULT_DFC_STORE = {
       submitMode: "end",
       isDefault: true,
       updatedAt: new Date().toISOString(),
-      checkpoints: [
-        {
-          id: "q1",
-          time: 4,
-          entryId: "entry.111111111",
-          stepLabel: "階段一 · 00:04",
-          title: "第一階段「感受 Feel」：在剛才的影片片段中，你觀察到最核心的校園問題是什麼？",
-          desc: "請選擇一個最貼近你觀察到的現象，作答後影片將恢復放大並繼續播放。",
-          type: "radio",
-          options: [
-            "資訊傳遞分散，同學容易錯過重要活動與表單",
-            "空間與動線規劃需要更直覺的視覺引導",
-            "缺乏即時且具互動感的意見回饋管道"
-          ],
-          required: true,
-        },
-        {
-          id: "q2",
-          time: 10,
-          entryId: "entry.222222222",
-          stepLabel: "階段二 · 00:10",
-          title: "第二階段「想像 Imagine」：針對這個問題，你認為哪些創意解方最值得嘗試？",
-          desc: "此題為多選題，可勾選一項或多項方案。",
-          type: "checkbox",
-          options: [
-            "導入互動式影音表單，提升參與時的專注度",
-            "建立校園專屬的一句話／諺語共創牆",
-            "結合跨班級工作坊快速製作原型並測試",
-            "透過數據儀表板公開透明呈現收集進度"
-          ],
-          required: true,
-        },
-        {
-          id: "q3",
-          time: 14,
-          entryId: "entry.333333333",
-          stepLabel: "階段三 · 00:14",
-          title: "第三階段「實踐與分享 Do & Share」：請寫下你對本次 DFC 行動的一句具體建議或想法",
-          desc: "請寫下簡短建議，作答後進入總體評價！",
-          type: "textarea",
-          placeholder: "例如：我覺得可以先從穿堂的互動投影與線上表單同步開始...",
-          required: true,
-        },
-        {
-          id: "q4",
-          time: 17,
-          entryId: "entry.444444444",
-          stepLabel: "階段四 · 00:17",
-          title: "第四階段「總體反思」：你對本次校園 DFC 方案的整體推薦評分？",
-          desc: "1~5 星評分，完成本題後將自動送出完整問卷！",
-          type: "rating",
-          min: 1,
-          max: 5,
-          required: true,
-        },
-      ],
+      checkpoints: [],
     },
   ],
   responses: [],
 };
+
+// 自動清理可能殘留的舊版示範題目 (q1~q4)
+function sanitizeDfcStore(store) {
+  if (!store || typeof store !== "object") return DEFAULT_DFC_STORE;
+  if (!Array.isArray(store.forms)) store.forms = [];
+  store.forms = store.forms.map(f => {
+    if (Array.isArray(f.checkpoints)) {
+      const isLegacyMock = f.checkpoints.length === 4 &&
+        f.checkpoints[0]?.id === "q1" &&
+        f.checkpoints[0]?.title?.includes("第一階段「感受 Feel」");
+      if (isLegacyMock) {
+        f.checkpoints = [];
+      }
+    } else {
+      f.checkpoints = [];
+    }
+    return f;
+  });
+  return store;
+}
 
 function parseCsvText(text = "") {
   const clean = String(text || "").replace(/^\uFEFF/, "");
@@ -440,10 +406,10 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use((req, res, next) => {
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://vercel.live; frame-src 'self' https://challenges.cloudflare.com https://drive.google.com https://*.google.com https://www.youtube.com https://youtube.com https://vercel.live; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live; font-src 'self' https://fonts.gstatic.com https://vercel.live https://assets.vercel.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://vercel.live https://vercel.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
     "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
-    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
   });
   if (SECURE) res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
@@ -1341,7 +1307,7 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   const existingIdx = store.forms.findIndex(f => f.id === id);
   const formObj = {
     id, title, description, videoUrl, fallbackDuration, googleFormUrl, csvUrl, emailEntryId, submitMode,
-    checkpoints: checkpoints.length ? checkpoints : (existingIdx >= 0 ? store.forms[existingIdx].checkpoints : DEFAULT_DFC_STORE.forms[0].checkpoints),
+    checkpoints: Array.isArray(body.checkpoints) ? checkpoints : (existingIdx >= 0 ? (store.forms[existingIdx].checkpoints || []) : []),
     updatedAt: new Date().toISOString(),
   };
 

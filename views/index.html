@@ -2008,7 +2008,7 @@
           <div class="dfc-video-pane">
             <div class="video-cinema-box">
               <div class="video-floating-badge" id="dfcVideoBadge">播放中</div>
-              <iframe id="dfcIframe" class="hide" allow="autoplay; fullscreen" allowfullscreen frameborder="0"></iframe>
+              <iframe id="dfcIframe" class="hide" allow="autoplay; fullscreen" frameborder="0"></iframe>
               <video id="dfcVideo" playsinline preload="metadata" class="hide"></video>
               <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
             </div>
@@ -2688,50 +2688,7 @@
       googleFormUrl: "YOUR_GOOGLE_FORM_URL",
       emailEntryId: "",
       submitMode: "end",
-      checkpoints: [
-        {
-          id: "q1",
-          time: 4,
-          entryId: "entry.111111111",
-          stepLabel: "階段一 · 00:04",
-          title: "第一階段「感受 Feel」：在剛才的影片中，你觀察到最核心的校園問題是什麼？",
-          desc: "請選擇一個最貼近你觀察到的現象，作答後影片將繼續播放。",
-          type: "radio",
-          options: [
-            "資訊傳遞分散，同學容易錯過重要活動與表單",
-            "空間與動線規劃需要更直覺的視覺引導",
-            "缺乏即時且具互動感的意見回饋管道"
-          ],
-          required: true,
-        },
-        {
-          id: "q2",
-          time: 10,
-          entryId: "entry.222222222",
-          stepLabel: "階段二 · 00:10",
-          title: "第二階段「想像 Imagine」：針對這個問題，你認為哪些創意解方最值得嘗試？",
-          desc: "此題為多選題，可勾選一項或多項方案。",
-          type: "checkbox",
-          options: [
-            "導入互動式影音表單，提升參與時的專注度",
-            "建立校園專屬的一句話／諺語共創牆",
-            "結合跨班級工作坊快速製作原型並測試",
-            "透過數據儀表板公開透明呈現收集進度"
-          ],
-          required: true,
-        },
-        {
-          id: "q3",
-          time: 15,
-          entryId: "entry.333333333",
-          stepLabel: "階段三 · 00:15",
-          title: "第三階段「實踐與分享 Do & Share」：請寫下你對本次 DFC 行動的一句具體建議或想法",
-          desc: "完成本題後將自動串接 Google Form 送出你的完整作答！",
-          type: "textarea",
-          placeholder: "例如：我覺得可以先從穿堂的互動投影與線上表單同步開始...",
-          required: true,
-        },
-      ],
+      checkpoints: [],
     };
 
     let googleClientId = "", baseUrl = "";
@@ -3466,12 +3423,15 @@
       ctx.font = "500 21px -apple-system, sans-serif";
       ctx.fillText(phaseSub, w / 2, h / 2 + 32);
 
-      const nextCp = DFC_CONFIG.checkpoints.find(cp => !dfcState.answeredIds.has(cp.id));
+      const cps = DFC_CONFIG.checkpoints || [];
+      const nextCp = cps.find(cp => !dfcState.answeredIds.has(cp.id));
       ctx.fillStyle = "#38bdf8";
       ctx.font = "600 18px -apple-system, sans-serif";
-      const nextHint = nextCp
-        ? `距離下一個互動問題（${fmtSec(nextCp.time)}）還有 ${Math.max(0, (nextCp.time - t)).toFixed(1)} 秒`
-        : "✓ 所有階段問題皆已作答完成";
+      const nextHint = cps.length === 0
+        ? "目前問卷尚無題目，等待匯入中"
+        : (nextCp
+          ? `距離下一個互動問題（${fmtSec(nextCp.time)}）還有 ${Math.max(0, (nextCp.time - t)).toFixed(1)} 秒`
+          : "✓ 所有階段問題皆已作答完成");
       ctx.fillText(nextHint, w / 2, h / 2 + 84);
     }
 
@@ -3978,10 +3938,14 @@
           $("dfcStage").classList.remove("split-active");
           $("dfcToggleQBtn").textContent = "📝 填寫問卷";
         } else {
+          const cps = DFC_CONFIG.checkpoints || [];
+          if (!cps.length) {
+            return toast("目前此問卷尚未設定任何題目");
+          }
           const targetIdx = dfcState.activeCheckpointIndex >= 0
             ? dfcState.activeCheckpointIndex
-            : (DFC_CONFIG.checkpoints.findIndex(c => !dfcState.answeredIds.has(c.id)) >= 0
-              ? DFC_CONFIG.checkpoints.findIndex(c => !dfcState.answeredIds.has(c.id))
+            : (cps.findIndex(c => !dfcState.answeredIds.has(c.id)) >= 0
+              ? cps.findIndex(c => !dfcState.answeredIds.has(c.id))
               : 0);
           triggerCheckpointQuestion(targetIdx);
           $("dfcToggleQBtn").textContent = "✕ 收合問卷";

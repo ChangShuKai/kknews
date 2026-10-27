@@ -771,7 +771,7 @@
           <div class="studio-video-grid">
             <div class="studio-screen-wrap">
               <span class="studio-video-badge" id="studioBadgeText">▶ 影片預覽</span>
-              <iframe id="studioIframe" class="hide" allow="autoplay; fullscreen" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;border-radius:inherit"></iframe>
+              <iframe id="studioIframe" class="hide" allow="autoplay; fullscreen" frameborder="0" style="width:100%;height:100%;border:none;border-radius:inherit"></iframe>
               <video id="studioVideo" playsinline preload="metadata" class="hide"></video>
               <canvas id="studioCanvas" width="640" height="360"></canvas>
             </div>
@@ -821,7 +821,10 @@
             <strong style="font-size:15px">📝 影片時間點題目清單</strong>
             <span style="font-size:12.5px;color:var(--muted);margin-left:6px" id="studioQuestionCountText">共 0 題</span>
           </div>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn ghost sm" id="downloadQTemplateBtn" title="下載 CSV 題目空白範本，可在 Excel 編輯後直接匯入">📤 下載題目範本 (CSV)</button>
+            <button type="button" class="btn ghost sm" id="importQuestionsBtn" title="支援上傳 CSV 檔或直接貼上從 Excel 複製的題目內容">📥 匯入題目 (CSV / Excel)</button>
+            <button type="button" class="btn ghost sm" id="clearAllQuestionsBtn" style="color:var(--err)" title="清空目前這份問卷的所有題目">🗑️ 清空題目</button>
             <button type="button" class="btn ghost sm" id="studioSortCheckpointsBtn" title="依照時間點秒數由小到大自動重新排序">⏱️ 依時間重新排序</button>
             <button type="button" class="btn sm" id="addCheckpointBtn">➕ 新增時間點題目</button>
           </div>
@@ -893,6 +896,77 @@
         <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消關閉</button>
         <button type="button" class="btn" id="saveFormCfgBtn">💾 儲存問卷與時間點設定</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 批次匯入問卷題目彈窗 (CSV / Excel) -->
+<div id="importQuestionsModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importQuestionsTitle">
+  <div class="modal modal-lg" style="max-width:800px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 id="importQuestionsTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">
+        📥 批次匯入問卷題目 (CSV / Excel)
+      </h3>
+      <button type="button" class="btn ghost sm" id="closeImportQModalBtn">✕ 關閉</button>
+    </div>
+    
+    <p style="font-size:13px;color:var(--ink-secondary);margin:0 0 14px;line-height:1.6">
+      支援直接選擇 <b>.csv / .tsv / .txt</b> 檔案，或由 <b>Excel / Google 試算表</b> 複製表格儲存格後直接貼入下方文字框。<br>
+      欄位順序：<b>時間、階段標籤、題目內容、題型、選項清單、補充說明、是否必填、Google表單EntryID</b>。
+    </p>
+
+    <!-- 檔案上傳與模式設定列 -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <label class="btn ghost sm" style="cursor:pointer">
+        📁 選擇 CSV / TSV 檔案上傳
+        <input type="file" id="importQFileInput" accept=".csv,.tsv,.txt" style="display:none">
+      </label>
+      <button type="button" class="btn ghost sm" id="downloadQTemplateInModalBtn">📤 下載題目範本 (CSV)</button>
+      <div style="display:inline-flex;gap:12px;margin-left:auto;align-items:center;font-size:13px">
+        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="radio" name="importQMode" value="replace" checked>
+          <span>替換現有題目（清空後匯入）</span>
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="radio" name="importQMode" value="append">
+          <span>追加至現有題目末端</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 文字貼入區 -->
+    <label class="field" style="margin-top:0">
+      <span class="lbl">貼上 CSV 或由 Excel 複製的內容（含或不含標題列皆可）：</span>
+      <textarea id="importQTextarea" class="input" rows="7" placeholder="時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填,Google表單EntryID&#10;00:04,階段一 · 感受 Feel,你在影片中觀察到什麼校園問題？,單選,資訊宣傳分散 | 動線需改善 | 回饋管道不足,請選擇一個最符合的,是,entry.111111111&#10;00:10,階段二 · 想像 Imagine,有哪些值得嘗試的創意解方？,多選,互動影音表單 | 一句話共創牆 | 跨班級工作坊,可複選多項,是,entry.222222222" style="font-family:monospace;font-size:12.5px"></textarea>
+    </label>
+
+    <!-- 即時預覽區 -->
+    <div id="importQPreviewWrap" class="hide" style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <strong style="font-size:13.5px;color:var(--ink)">🔍 題目解析預覽（共 <span id="importQPreviewCount">0</span> 題）</strong>
+        <span style="font-size:12px;color:var(--muted)">請確認下方題目資訊無誤後點擊「確認匯入題目」</span>
+      </div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px">
+        <table class="table" style="font-size:12px;margin:0;width:100%">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th style="width:80px">時間</th>
+              <th style="width:120px">階段標籤</th>
+              <th>題目內容</th>
+              <th style="width:80px">題型</th>
+              <th style="width:150px">選項清單</th>
+              <th style="width:50px">必填</th>
+            </tr>
+          </thead>
+          <tbody id="importQPreviewTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+      <button type="button" class="btn ghost" id="previewImportQBtn">🔍 預覽解析結果</button>
+      <button type="button" class="btn primary" id="confirmImportQBtn">✓ 確認匯入題目</button>
     </div>
   </div>
 </div>
@@ -2381,6 +2455,30 @@ function renderCheckpointEditors() {
   const wrap = $("cfgCheckpointsWrap");
   wrap.innerHTML = "";
 
+  if (!editingFormObj.checkpoints || editingFormObj.checkpoints.length === 0) {
+    wrap.innerHTML = `
+      <div style="text-align:center;padding:48px 20px;background:var(--card);border:2px dashed var(--line);border-radius:12px;margin:12px 0;color:var(--ink-secondary)">
+        <div style="font-size:36px;margin-bottom:12px">📝</div>
+        <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:6px">目前尚未建立任何題目</div>
+        <div style="font-size:13px;color:var(--muted);max-width:460px;margin:0 auto 18px;line-height:1.6">
+          預設示範內容已刪除。您可以點擊「➕ 新增時間點題目」逐題建立，或使用「📥 匯入題目 (CSV / Excel)」一次快速批次匯入！
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button type="button" class="btn sm" id="emptyAddCpBtn">➕ 新增第一道題目</button>
+          <button type="button" class="btn ghost sm" id="emptyImportCsvBtn">📥 匯入題目 (CSV / Excel)</button>
+          <button type="button" class="btn ghost sm" id="emptyDownloadTplBtn">📤 下載題目範本 (CSV)</button>
+        </div>
+      </div>
+    `;
+    const btnAdd = $("emptyAddCpBtn");
+    const btnImp = $("emptyImportCsvBtn");
+    const btnTpl = $("emptyDownloadTplBtn");
+    if (btnAdd) btnAdd.onclick = () => $("addCheckpointBtn").click();
+    if (btnImp) btnImp.onclick = () => $("importQuestionsBtn").click();
+    if (btnTpl) btnTpl.onclick = () => $("downloadQTemplateBtn").click();
+    return;
+  }
+
   (editingFormObj.checkpoints || []).forEach((cp, idx) => {
     const card = document.createElement("div");
     card.className = "cp-edit-card" + (idx === studioActiveQuestionIndex ? " highlight" : "");
@@ -2656,10 +2754,7 @@ $("addNewFormBtn").onclick = () => {
     csvUrl: "",
     emailEntryId: "",
     submitMode: "end",
-    checkpoints: [
-      { id: "q1", time: 4, entryId: "entry.111111111", stepLabel: "階段一 · 感受 Feel", title: "第一階段「感受」：你所觀察到的校園問題是什麼？", type: "radio", options: ["資訊宣傳分散", "動線需改善", "回饋管道不足"], required: true },
-      { id: "q2", time: 10, entryId: "entry.222222222", stepLabel: "階段二 · 想像 Imagine", title: "第二階段「想像」：哪種解方最值得嘗試？", type: "checkbox", options: ["互動影音表單", "一句話共創牆", "跨班級工作坊"], required: true },
-    ],
+    checkpoints: [],
   });
 };
 
@@ -2760,6 +2855,240 @@ $("confirmImportCsvBtn").onclick = async () => {
   $("importCsvModal").classList.add("hide");
   toast(`已成功匯入 ${j.importedCount || 0} 筆數據`);
   load(true);
+};
+
+/* ============================================================================
+ * 問卷題目 CSV / Excel 範本下載與批次匯入
+ * ============================================================================ */
+
+function downloadQuestionsTemplate() {
+  const tplCsv = "\uFEFF" + [
+    "時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填,Google表單EntryID",
+    "00:04,階段一 · 感受 Feel,在剛才的影片片段中，你觀察到最核心的校園問題是什麼？,單選,資訊傳遞分散 | 空間與動線規劃需更直覺 | 缺乏即時回饋管道,請選擇一個最貼近你觀察到的現象，作答後影片將繼續播放。,是,entry.111111111",
+    "00:10,階段二 · 想像 Imagine,針對這個問題，你認為哪些創意解方最值得嘗試？,多選,導入互動式影音表單 | 建立校園專屬的一句話共創牆 | 結合跨班級工作坊快速製作原型,此題為多選題，可勾選一項或多項方案。,是,entry.222222222",
+    "00:14,階段三 · 實踐 Do,請簡述你在本次行動中擔任的角色或預計實踐的項目,簡答,,限 50 字以內，簡要描述即可。,否,entry.333333333",
+    "00:18,階段三 · 實踐與分享,請寫下你對本次 DFC 行動的一句具體建議或想法,詳答,,作答後進入總體評分！,是,entry.444444444",
+    "00:22,階段四 · 分享 Share,你是否願意將本次成果分享於全校互動成果牆？,是非,,二選一是非題,是,entry.555555555",
+    "00:26,階段四 · 總體反思,你對本次校園 DFC 方案的整體推薦評分？,評分,,1~5 星評分量表,是,entry.666666666"
+  ].join("\r\n");
+
+  const blob = new Blob([tplCsv], { type: "text/csv;charset=utf-8" });
+  save(blob, "DFC_問卷題目範本.csv");
+  toast("已下載「DFC_問卷題目範本.csv」！可在 Excel 開啟編輯後直接匯入。");
+}
+
+function parseQuestionsCsv(rawText) {
+  const clean = String(rawText || "").replace(/^\uFEFF/, "").trim();
+  if (!clean) return [];
+
+  const firstLine = clean.split(/\r?\n/)[0] || "";
+  const isTsv = firstLine.includes("\t") && !firstLine.includes(",");
+
+  let rows = [];
+  if (isTsv) {
+    rows = clean.split(/\r?\n/).map(line => line.split("\t"));
+  } else {
+    let row = [], cur = "", inQuotes = false;
+    for (let i = 0; i < clean.length; i++) {
+      const ch = clean[i], nxt = clean[i + 1];
+      if (inQuotes) {
+        if (ch === '"' && nxt === '"') { cur += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else cur += ch;
+      } else {
+        if (ch === '"') inQuotes = true;
+        else if (ch === ",") { row.push(cur.trim()); cur = ""; }
+        else if (ch === "\r" && nxt === "\n") { row.push(cur.trim()); rows.push(row); row = []; cur = ""; i++; }
+        else if (ch === "\n" || ch === "\r") { row.push(cur.trim()); rows.push(row); row = []; cur = ""; }
+        else cur += ch;
+      }
+    }
+    if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
+  }
+
+  rows = rows.filter(r => r.some(cell => String(cell || "").trim().length > 0));
+  if (!rows.length) return [];
+
+  // 若第一列為標題列則略過
+  const headerTest = rows[0].join(" ").toLowerCase();
+  if (headerTest.includes("時間") || headerTest.includes("題目") || headerTest.includes("time") || headerTest.includes("title")) {
+    rows.shift();
+  }
+
+  const parseTimeSec = (val) => {
+    const s = String(val || "").trim();
+    if (!s) return 0;
+    if (s.includes(":")) {
+      const parts = s.split(":");
+      const mm = Number(parts[0]) || 0;
+      const ss = Number(parts[1]) || 0;
+      return Math.round((mm * 60 + ss) * 10) / 10;
+    }
+    return Math.max(0, Number(s) || 0);
+  };
+
+  const mapType = (raw) => {
+    const t = String(raw || "").trim().toLowerCase();
+    if (t.includes("多選") || t === "checkbox") return "checkbox";
+    if (t.includes("評分") || t.includes("星") || t === "rating") return "rating";
+    if (t.includes("是非") || t === "boolean") return "boolean";
+    if (t.includes("下拉") || t === "dropdown") return "dropdown";
+    if (t.includes("詳答") || t.includes("問答") || t === "textarea") return "textarea";
+    if (t.includes("簡答") || t === "text") return "text";
+    return "radio"; // 預設為單選題
+  };
+
+  const mapRequired = (raw) => {
+    const s = String(raw || "").trim().toLowerCase();
+    if (s === "否" || s === "false" || s === "f" || s === "n" || s === "no" || s === "0") return false;
+    return true;
+  };
+
+  const splitOptions = (raw) => {
+    const s = String(raw || "").trim();
+    if (!s) return [];
+    return s.split(/\r?\n|[|;；]/).map(o => o.trim()).filter(Boolean);
+  };
+
+  return rows.map((r, idx) => {
+    const timeVal = r[0] ?? "";
+    const stepLabel = String(r[1] ?? "").trim() || `階段 ${idx + 1}`;
+    const title = String(r[2] ?? "").trim() || `問題 #${idx + 1}`;
+    const type = mapType(r[3]);
+    const options = splitOptions(r[4]);
+    const desc = String(r[5] ?? "").trim();
+    const required = mapRequired(r[6]);
+    const entryId = String(r[7] ?? "").trim();
+
+    return {
+      id: `q${idx + 1}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      time: parseTimeSec(timeVal),
+      stepLabel,
+      title,
+      type,
+      options,
+      desc,
+      required,
+      entryId: entryId || `entry.${idx + 1}1111111`,
+      min: 1,
+      max: 5,
+    };
+  });
+}
+
+let cachedParsedQuestions = [];
+
+function openImportQuestionsModal() {
+  $("importQFileInput").value = "";
+  $("importQTextarea").value = "";
+  $("importQPreviewWrap").classList.add("hide");
+  cachedParsedQuestions = [];
+  $("importQuestionsModal").classList.remove("hide");
+}
+
+function renderImportQuestionsPreview(list) {
+  cachedParsedQuestions = list;
+  const wrap = $("importQPreviewWrap");
+  const tbody = $("importQPreviewTbody");
+  const countEl = $("importQPreviewCount");
+  countEl.textContent = list.length;
+  tbody.innerHTML = "";
+
+  if (!list.length) {
+    wrap.classList.add("hide");
+    return;
+  }
+
+  const typeLabels = {
+    radio: "🔘 單選",
+    checkbox: "☑️ 多選",
+    rating: "⭐ 評分(1~5)",
+    dropdown: "▾ 下拉",
+    boolean: "⚖️ 是非",
+    text: "💬 簡答",
+    textarea: "📝 詳答",
+  };
+
+  list.forEach((cp, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="color:var(--muted)">${idx + 1}</td>
+      <td><strong>${formatMmSs(cp.time)}</strong> <small style="color:var(--muted)">(${cp.time}s)</small></td>
+      <td><span class="badge" style="font-size:11px">${esc(cp.stepLabel)}</span></td>
+      <td><div style="font-weight:600">${esc(cp.title)}</div>${cp.desc ? `<small style="color:var(--muted)">${esc(cp.desc)}</small>` : ""}</td>
+      <td><span class="cp-badge-type">${typeLabels[cp.type] || cp.type}</span></td>
+      <td><small style="color:var(--ink-secondary)">${cp.options.length ? esc(cp.options.join("、")) : "<i style='color:var(--muted)'>無選項</i>"}</small></td>
+      <td>${cp.required ? "<span style='color:var(--green, #10b981)'>必填</span>" : "<span style='color:var(--muted)'>選填</span>"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  wrap.classList.remove("hide");
+}
+
+$("downloadQTemplateBtn").onclick = () => downloadQuestionsTemplate();
+$("downloadQTemplateInModalBtn").onclick = () => downloadQuestionsTemplate();
+$("importQuestionsBtn").onclick = () => openImportQuestionsModal();
+$("closeImportQModalBtn").onclick = () => $("importQuestionsModal").classList.add("hide");
+
+$("clearAllQuestionsBtn").onclick = () => {
+  if (!editingFormObj) return;
+  openConfirm({
+    title: "確定要清空目前這份問卷的所有題目嗎？",
+    desc: "清空後時間點題目清單將變成 0 題，待儲存後生效。您可以隨時重新手動新增或匯入 CSV 題目。",
+    confirmText: "確定清空所有題目",
+    onConfirm: () => {
+      editingFormObj.checkpoints = [];
+      studioActiveQuestionIndex = -1;
+      renderCheckpointEditors();
+      renderStudioPins();
+      toast("已清空問卷中所有題目，請記得點擊儲存！");
+    },
+  });
+};
+
+$("importQFileInput").onchange = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  $("importQTextarea").value = text;
+  const parsed = parseQuestionsCsv(text);
+  renderImportQuestionsPreview(parsed);
+  if (parsed.length) toast(`已由檔案解析出 ${parsed.length} 道題目！`);
+};
+
+$("previewImportQBtn").onclick = () => {
+  const text = $("importQTextarea").value.trim();
+  if (!text) return toast("請先輸入或貼上 CSV / Excel 內容", true);
+  const parsed = parseQuestionsCsv(text);
+  if (!parsed.length) return toast("無法解析題目內容，請確認格式是否符合說明", true);
+  renderImportQuestionsPreview(parsed);
+  toast(`解析成功：共 ${parsed.length} 道題目！`);
+};
+
+$("confirmImportQBtn").onclick = () => {
+  const text = $("importQTextarea").value.trim();
+  if (!text && !cachedParsedQuestions.length) return toast("請先選擇檔案或貼上內容", true);
+  const list = cachedParsedQuestions.length ? cachedParsedQuestions : parseQuestionsCsv(text);
+  if (!list.length) return toast("尚未解析到任何題目，請檢查格式", true);
+
+  const mode = document.querySelector('input[name="importQMode"]:checked')?.value || "replace";
+  if (!editingFormObj) return;
+
+  if (mode === "replace") {
+    editingFormObj.checkpoints = list;
+  } else {
+    editingFormObj.checkpoints = (editingFormObj.checkpoints || []).concat(list);
+  }
+
+  // 依時間自動排序
+  editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
+  studioActiveQuestionIndex = 0;
+  renderCheckpointEditors();
+  renderStudioPins();
+
+  $("importQuestionsModal").classList.add("hide");
+  toast(`已成功匯入 ${list.length} 道題目！請記得點擊「💾 儲存問卷與時間點設定」保存。`);
 };
 
 $("clearResponsesBtn").onclick = () => {
