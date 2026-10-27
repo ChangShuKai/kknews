@@ -2307,6 +2307,7 @@ function initStudioPlayer() {
         renderStudioPins();
       }
     };
+    studioVideoEl.ondurationchange = studioVideoEl.onloadedmetadata;
   } else {
     const embed = parseEmbedVideo(videoUrl);
     if (embed) {
