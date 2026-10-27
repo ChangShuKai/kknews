@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/assets/ui.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap" rel="stylesheet">
 <style>
+<<<<<<< Updated upstream
   /* ===== 頂部導覽列與懸浮 Dock ===== */
   .top-header {
     height: 64px;
@@ -34,6 +35,147 @@
     height: 26px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+=======
+  body.with-topbar{min-height:100vh;display:flex;flex-direction:column}
+  .top-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 22px;background:#ffffffd9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{margin:0;cursor:pointer;user-select:none}
+  /* 頂部 Dock 欄（精簡為「主頁」與「即時資訊」兩項） */
+  .dock-bar{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);padding:4px;border-radius:99px;box-shadow:0 4px 14px #00000008;flex-wrap:wrap}
+  .dock-item{display:inline-flex;align-items:center;gap:7px;padding:7px 18px;border:0;border-radius:99px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .dock-item:hover{color:var(--ink)}
+  .dock-item.active{background:var(--ink);color:#fff;box-shadow:0 2px 8px #00000022}
+  /* 右上角帳號區 */
+  .acct-zone{display:flex;align-items:center;gap:10px}
+  .acct-pill{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;background:var(--paper);border:1px solid var(--line);border-radius:99px;font-size:13px}
+  .av{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;object-fit:cover}
+  .acct-info{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
+  .acct-logout{background:none;border:0;border-left:1px solid var(--line);padding-left:9px;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+  .acct-logout:hover{color:var(--err)}
+  .page-wrap{flex:1;display:grid;place-items:center;padding:24px 20px}
+  .hint{margin-top:14px;font-size:12.5px;color:var(--muted);text-align:center}
+  .hint b{color:var(--ink)}
+  .skel-block{height:52px;margin-top:12px}
+
+  /* 子頁面頂部返回導覽列 */
+  .subpage-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+  .back-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s}
+  .back-pill:hover{border-color:var(--ink);background:var(--white);transform:translateX(-2px)}
+  .subpage-tag{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);background:var(--paper);border:1px solid var(--line);padding:4px 10px;border-radius:99px}
+
+  /* ===== 主頁（首頁導覽）樣式 ===== */
+  .home-card{width:min(760px,100%);background:var(--white);border-radius:var(--r-lg);padding:40px 36px;box-shadow:var(--shadow);animation:up .45s ease both}
+  .home-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--ink);margin-bottom:14px}
+  .home-card h1{font-size:clamp(24px,3.5vw,32px);line-height:1.25;margin:0 0 10px;letter-spacing:-.01em}
+  .home-card .sub{font-size:15px;max-width:580px;margin-bottom:28px}
+  .home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .nav-tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;text-align:left;background:var(--paper);border:1.5px solid var(--line);border-radius:18px;padding:22px 22px 20px;cursor:pointer;transition:transform .24s cubic-bezier(.22,1,.36,1),border-color .24s,box-shadow .24s;font:inherit;color:var(--ink)}
+  .nav-tile:hover{transform:translateY(-4px);border-color:var(--ink);box-shadow:0 16px 36px #00000012;background:var(--white)}
+  .nav-tile-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .nav-tile-ico{width:44px;height:44px;border-radius:12px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:20px}
+  .nav-tile-tag{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--muted);background:var(--white);border:1px solid var(--line);padding:3px 9px;border-radius:99px}
+  .nav-tile h3{margin:0 0 6px;font-size:18px;line-height:1.35}
+  .nav-tile p{margin:0 0 18px;font-size:13.5px;color:var(--muted);line-height:1.55}
+  .nav-tile-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+  .nav-tile-cta{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;color:var(--ink)}
+  .nav-tile:hover .nav-tile-cta{transform:translateX(3px);transition:transform .2s}
+  .nav-tile-stat{font-size:12px;font-weight:600;color:var(--muted)}
+  .home-foot{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .home-foot-link{background:none;border:0;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+
+  /* ===== 諺語投稿與即時卡片預覽樣式 ===== */
+  .post-card{width:min(760px,100%);background:var(--white);border-radius:var(--r-lg);padding:32px 34px;box-shadow:var(--shadow);animation:up .45s ease both}
+  .post-layout{display:grid;grid-template-columns:1.25fr .95fr;gap:24px;align-items:start}
+  @media (max-width:720px){.post-layout{grid-template-columns:1fr}.post-card{padding:26px 22px}}
+  .preview-box{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .preview-head{width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted)}
+  canvas.live-cv{width:100%;max-width:240px;height:auto;border-radius:12px;display:block;background:repeating-conic-gradient(#eee 0 25%,#f8f8f8 0 50%) 0 0/14px 14px}
+
+  /* ===== DFC 互動影片表單頁面樣式 ===== */
+  .dfc-shell{width:min(1080px,100%);background:var(--white);border-radius:var(--r-lg);padding:28px 30px 30px;box-shadow:var(--shadow);animation:up .45s ease both;overflow:hidden}
+  .dfc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .dfc-head h2{margin:0 0 4px;font-size:22px}
+  .dfc-head p{margin:0;font-size:13.5px;color:var(--muted)}
+  .dfc-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dfc-step-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted);transition:.25s}
+  .dfc-step-pill.active{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 4px 12px #00000024}
+  .dfc-step-pill.done{background:var(--ok-bg);color:var(--ok);border-color:#b7e4c7}
+
+  /* 華麗動畫舞台：預設影片置中放大，觸發時間點時向左縮小、右側彈出表單 */
+  .dfc-stage{position:relative;display:flex;align-items:stretch;justify-content:center;gap:0;perspective:1400px;min-height:420px;transition:gap .7s cubic-bezier(.22,1,.36,1)}
+  .dfc-video-col{width:min(780px,100%);flex:0 0 auto;transition:width .72s cubic-bezier(.22,1,.36,1),transform .72s cubic-bezier(.22,1,.36,1),filter .5s ease;transform-origin:left center;z-index:2}
+  .dfc-stage.split-active{gap:24px;justify-content:space-between;align-items:center}
+  .dfc-stage.split-active .dfc-video-col{width:46%;transform:scale(.95) translateX(-4px) rotateY(4deg)}
+
+  .video-frame{position:relative;width:100%;aspect-ratio:16/9;background:#0f172a;border-radius:20px;overflow:hidden;box-shadow:0 22px 50px #0000002e,0 0 0 1px #ffffff1a;transition:box-shadow .6s ease,border-radius .6s ease}
+  .dfc-stage.split-active .video-frame{box-shadow:0 28px 65px #0f172a45,0 0 0 3px var(--ink)}
+  .video-frame video,.video-frame canvas{width:100%;height:100%;object-fit:cover;display:block}
+  .video-badge{position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;background:#0f172acc;backdrop-filter:blur(8px);color:#fff;font-size:12px;font-weight:600;border:1px solid #ffffff24;z-index:4;transition:.3s}
+  .video-badge.paused-q{background:#f59e0be6;color:#1c1b19;border-color:#fde68a;transform:scale(1.03)}
+
+  /* 影片控制列與時間點標記 */
+  .video-controls{margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+  .vc-btn{background:var(--ink);color:#fff;border:0;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font-size:13px;flex:none;transition:.18s}
+  .vc-btn:hover{opacity:.88}
+  .vc-btn:disabled{opacity:.4;cursor:not-allowed}
+  .vc-track-wrap{position:relative;flex:1;height:8px;background:#ded8ce;border-radius:99px;cursor:pointer}
+  .vc-fill{height:100%;width:0%;background:var(--ink);border-radius:99px;transition:width .1s linear}
+  .vc-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#f59e0b;border:2.5px solid var(--white);box-shadow:0 2px 6px #00000033;z-index:3;transition:transform .2s,background .2s}
+  .vc-marker.done{background:#10b981}
+  .vc-marker.active{transform:translate(-50%,-50%) scale(1.35);background:#ef4444}
+  .vc-time{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);min-width:82px;text-align:right}
+
+  /* 右側彈出表單問題面板 */
+  .dfc-q-col{width:0;opacity:0;overflow:hidden;pointer-events:none;transform:translateX(56px) scale(.94);transition:width .72s cubic-bezier(.22,1,.36,1),opacity .52s ease .08s,transform .72s cubic-bezier(.22,1,.36,1)}
+  .dfc-stage.split-active .dfc-q-col{width:51%;opacity:1;overflow:visible;pointer-events:auto;transform:translateX(0) scale(1)}
+
+  .dfc-q-card{background:linear-gradient(180deg,#ffffff 0%,var(--paper) 100%);border:1.5px solid var(--ink);border-radius:22px;padding:26px 26px 24px;box-shadow:0 24px 60px #00000018;position:relative}
+  .dfc-q-step{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;background:var(--ink);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.08em;margin-bottom:12px}
+  .dfc-q-title{margin:0 0 8px;font-size:19px;line-height:1.4;color:var(--ink)}
+  .dfc-q-desc{margin:0 0 18px;font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .dfc-opt-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+  .dfc-opt{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:12px;background:var(--white);border:1.5px solid var(--line);cursor:pointer;transition:.18s;font-size:14.5px;line-height:1.45}
+  .dfc-opt:hover{border-color:#9e978c}
+  .dfc-opt.selected{border-color:var(--ink);background:#1c1b1908;font-weight:600}
+  .dfc-opt input{margin-top:3px;accent-color:var(--ink);transform:scale(1.15)}
+
+  /* 評分題 1~5 顆星微互動樣式 */
+  .dfc-star-rating{display:flex;flex-direction:column;gap:10px;margin:8px 0 18px;padding:14px 16px;background:var(--white);border:1.5px solid var(--line);border-radius:14px}
+  .dfc-stars-box{display:flex;align-items:center;gap:6px}
+  .dfc-star-btn{background:none;border:none;font-size:34px;line-height:1;cursor:pointer;color:#d1d5db;transition:transform .18s cubic-bezier(.34,1.56,.64,1),color .18s;padding:0 3px}
+  .dfc-star-btn:hover{transform:scale(1.25);color:#fbbf24}
+  .dfc-star-btn.active{color:#f59e0b;transform:scale(1.08)}
+  .dfc-rating-label{font-size:13.5px;font-weight:700;color:var(--muted);transition:color .2s}
+  .dfc-rating-label.highlight{color:var(--ink)}
+
+  /* 是非題雙卡片樣式 */
+  .dfc-bool-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 18px}
+  .dfc-bool-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--white);font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:.2s}
+  .dfc-bool-btn:hover{border-color:#9e978c;transform:translateY(-1px)}
+  .dfc-bool-btn.selected{border-color:var(--ink);background:#1c1b190c;box-shadow:0 6px 18px #00000012}
+
+  /* 下拉選單 */
+  .dfc-select{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--white);font-size:14.5px;color:var(--ink);outline:none;cursor:pointer;transition:.18s;margin-bottom:18px}
+  .dfc-select:focus{border-color:var(--ink);box-shadow:0 0 0 3px #1c1b1915}
+
+  /* 問卷切換下拉膠囊 */
+  .dfc-survey-picker{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-size:12px}
+  .dfc-survey-select{background:none;border:none;font-size:12.5px;font-weight:700;color:var(--ink);outline:none;cursor:pointer}
+
+  /* 作答完成紀錄卡片 */
+  .dfc-summary-card{width:100%;background:var(--white);border-radius:14px;border:1px solid #bbf7d0;padding:14px 16px;margin-top:14px}
+  .dfc-summary-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px dashed #e2e8f0;font-size:13px}
+  .dfc-summary-row:last-child{border-bottom:none}
+
+  .dfc-complete{margin-top:20px;background:var(--ok-bg);border:1.5px solid #a7f3d0;border-radius:18px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:up .4s ease both}
+  .dfc-complete h3{margin:0 0 4px;font-size:18px;color:var(--ok)}
+  .dfc-complete p{margin:0;font-size:13.5px;color:#065f46}
+
+  @media (max-width:860px){
+    .dfc-stage.split-active{flex-direction:column;gap:18px}
+    .dfc-stage.split-active .dfc-video-col{width:100%;transform:scale(.97)}
+    .dfc-stage.split-active .dfc-q-col{width:100%}
+>>>>>>> Stashed changes
   }
 
   /* ===== 液態玻璃懸浮分段導覽 (Apple Liquid Glass Nav with Glider) ===== */
@@ -1246,6 +1388,7 @@
             <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
           </div>
 
+<<<<<<< Updated upstream
           <div class="cinema-controls">
             <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停 (Space)">❚❚</button>
             <div class="cinema-track" id="dfcTrackWrap">
@@ -1265,6 +1408,40 @@
             <div id="dfcQInputArea"></div>
             <div id="dfcQErr" class="alert err" style="margin-top:0;margin-bottom:12px"></div>
             <button type="button" class="btn primary block" id="dfcAnswerBtn">確認作答，繼續觀看 →</button>
+=======
+  <!-- 分頁 2：DFC 互動影片表單頁面（由主頁進入） -->
+  <section class="dfc-shell hide" id="dfcCardView" aria-label="DFC 互動影片表單">
+    <div class="subpage-nav">
+      <button type="button" class="back-pill" id="backFromDfcBtn">← 返回主頁</button>
+      <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
+        <span style="font-weight:700;color:var(--muted)">📋 切換問卷：</span>
+        <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
+      </div>
+      <span class="subpage-tag">🎬 DFC INTERACTIVE FORM</span>
+    </div>
+    <div class="dfc-head">
+      <div>
+        <h2 id="dfcTitle">🎬 DFC 沉浸式互動影片表單</h2>
+        <p id="dfcSubtitle">影片已自動開始播放，到達時間標記時將自動左移並於右側彈出問題。</p>
+      </div>
+      <div class="dfc-steps" id="dfcStepPills"></div>
+    </div>
+
+    <div class="dfc-stage" id="dfcStage">
+      <!-- 左側／中央影片區 -->
+      <div class="dfc-video-col">
+        <div class="video-frame">
+          <div class="video-badge" id="dfcVideoBadge">▶ 影片播放中</div>
+          <video id="dfcVideo" playsinline preload="metadata" class="hide"></video>
+          <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
+        </div>
+
+        <div class="video-controls">
+          <button type="button" class="vc-btn" id="dfcPlayBtn" title="播放 / 暫停 (Space)">❚❚</button>
+          <div class="vc-track-wrap" id="dfcTrackWrap" title="影片進度與問題時間點">
+            <div class="vc-fill" id="dfcTrackFill"></div>
+            <div id="dfcMarkers"></div>
+>>>>>>> Stashed changes
           </div>
         </div>
       </div>
@@ -1280,6 +1457,24 @@
         </div>
       </div>
     </div>
+<<<<<<< Updated upstream
+=======
+
+    <!-- 完成所有時間點題目並串接 Google Form 後的結果區塊 -->
+    <div class="dfc-complete hide" id="dfcCompleteBox">
+      <div style="flex:1 1 100%;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h3 id="dfcCompleteTitle">🎉 已完成所有階段問答並送出 Google 表單！</h3>
+          <p id="dfcCompleteDesc">感謝你的參與，所有時間點的回答皆已成功記錄。</p>
+        </div>
+        <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
+      </div>
+      <div class="dfc-summary-card hide" id="dfcSummaryCard">
+        <div style="font-size:13.5px;font-weight:700;color:var(--ok);margin-bottom:8px">📋 本次作答紀錄摘要：</div>
+        <div id="dfcSummaryItems"></div>
+      </div>
+    </div>
+>>>>>>> Stashed changes
   </section>
 
 </div>
@@ -1302,6 +1497,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
+<<<<<<< Updated upstream
 function say(t, ok) {
   const m = $("msg");
   if (!m) return;
@@ -1313,6 +1509,11 @@ const api = (url, body) => fetch(url, {
   headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
   body: JSON.stringify(body || {})
 });
+=======
+const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function say(t, ok) { const m = $("msg"); m.textContent = t; m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert"; }
+const api = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" }, body: JSON.stringify(body || {}) });
+>>>>>>> Stashed changes
 
 /* ============================================================================
  * Cloudflare Turnstile 人機驗證控制器（高相容性，移除 CSP 衝突之內聯事件）
@@ -2691,12 +2892,112 @@ function triggerCheckpointQuestion(idx) {
       list.appendChild(lbl);
     });
     area.appendChild(list);
+  } else if (cp.type === "rating") {
+    const wrap = document.createElement("div");
+    wrap.className = "dfc-star-rating";
+    const starBox = document.createElement("div");
+    starBox.className = "dfc-stars-box";
+    const label = document.createElement("div");
+    label.className = "dfc-rating-label";
+
+    const ratingDescriptions = {
+      1: "★ 1 分 - 仍有大幅改善空間",
+      2: "★★ 2 分 - 尚可接受，待加強",
+      3: "★★★ 3 分 - 符合預期 / 普通",
+      4: "★★★★ 4 分 - 表現優良、推薦",
+      5: "★★★★★ 5 分 - 極具價值、強烈推薦！",
+    };
+
+    let curRating = prevVal ? Number(prevVal) : 0;
+
+    const updateStars = (val, isHover = false) => {
+      const stars = starBox.querySelectorAll(".dfc-star-btn");
+      stars.forEach(s => {
+        const sVal = Number(s.dataset.val);
+        if (sVal <= val) {
+          s.classList.add("active");
+          if (!isHover && sVal === val) s.classList.add("selected");
+          else if (!isHover) s.classList.remove("selected");
+        } else {
+          s.classList.remove("active", "selected");
+        }
+      });
+      if (val > 0) {
+        label.textContent = ratingDescriptions[val] || `${val} 顆星評分`;
+        label.classList.add("highlight");
+      } else {
+        label.textContent = "點選星級給予評分（1~5 分）";
+        label.classList.remove("highlight");
+      }
+    };
+
+    for (let s = 1; s <= 5; s++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dfc-star-btn";
+      btn.dataset.val = String(s);
+      btn.textContent = "★";
+      btn.title = ratingDescriptions[s] || `${s} 顆星`;
+      btn.onmouseenter = () => updateStars(s, true);
+      btn.onmouseleave = () => updateStars(curRating, false);
+      btn.onclick = () => {
+        curRating = s;
+        updateStars(curRating, false);
+      };
+      starBox.appendChild(btn);
+    }
+
+    wrap.appendChild(starBox);
+    wrap.appendChild(label);
+    area.appendChild(wrap);
+    updateStars(curRating, false);
+  } else if (cp.type === "boolean") {
+    const wrap = document.createElement("div");
+    wrap.className = "dfc-bool-group";
+
+    const opts = [
+      { val: "是", icon: "👍", label: "是 / 贊成" },
+      { val: "否", icon: "👎", label: "否 / 反對" }
+    ];
+
+    opts.forEach(o => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dfc-bool-btn" + (prevVal === o.val ? " selected" : "");
+      btn.dataset.val = o.val;
+      btn.innerHTML = `<span>${o.icon}</span> <span>${escapeHtml(o.label)}</span>`;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".dfc-bool-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+
+    area.appendChild(wrap);
+  } else if (cp.type === "dropdown") {
+    const sel = document.createElement("select");
+    sel.className = "dfc-select";
+    sel.id = "dfcSelectInput";
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "-- 請點擊展開選擇答案 --";
+    sel.appendChild(defaultOpt);
+
+    (cp.options || []).forEach(optText => {
+      const opt = document.createElement("option");
+      opt.value = optText;
+      opt.textContent = optText;
+      if (prevVal === optText) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    area.appendChild(sel);
   } else if (cp.type === "textarea") {
     const ta = document.createElement("textarea");
     ta.className = "input";
     ta.id = "dfcTextInput";
-    ta.rows = 3;
-    ta.placeholder = cp.placeholder || "請輸入你的回答...";
+    ta.rows = 4;
+    ta.placeholder = cp.placeholder || "請詳細輸入你的想法或建議...";
     ta.value = prevVal || "";
     ta.style.marginBottom = "18px";
     area.appendChild(ta);
@@ -2704,7 +3005,7 @@ function triggerCheckpointQuestion(idx) {
     const inp = document.createElement("input");
     inp.className = "input";
     inp.id = "dfcTextInput";
-    inp.placeholder = cp.placeholder || "請輸入你的回答...";
+    inp.placeholder = cp.placeholder || "請輸入你的簡短回答...";
     inp.value = prevVal || "";
     inp.style.marginBottom = "18px";
     area.appendChild(inp);
@@ -2737,6 +3038,15 @@ $("dfcAnswerBtn").onclick = async () => {
     val = checked ? checked.value : "";
   } else if (cp.type === "checkbox") {
     val = Array.from($("dfcQInputArea").querySelectorAll("input[type=checkbox]:checked")).map(i => i.value);
+  } else if (cp.type === "rating") {
+    const active = $("dfcQInputArea").querySelector(".dfc-star-btn.selected");
+    val = active ? active.dataset.val : "";
+  } else if (cp.type === "boolean") {
+    const active = $("dfcQInputArea").querySelector(".dfc-bool-btn.selected");
+    val = active ? active.dataset.val : "";
+  } else if (cp.type === "dropdown") {
+    const sel = $("dfcSelectInput");
+    val = sel ? sel.value : "";
   } else {
     const inp = $("dfcTextInput");
     val = inp ? inp.value.trim() : "";
@@ -2767,6 +3077,26 @@ $("dfcAnswerBtn").onclick = async () => {
       $("dfcCompleteDesc").textContent = res.demo
         ? "目前為示範模式（尚未填入實際 Google Form 網址），作答已驗證並保存於本站紀錄！"
         : "所有時間點的問題皆已成功透過 Google Form API 串接送出！";
+
+      // 渲染作答摘要
+      const summaryCard = $("dfcSummaryCard");
+      const summaryItems = $("dfcSummaryItems");
+      if (summaryCard && summaryItems) {
+        summaryItems.innerHTML = "";
+        DFC_CONFIG.checkpoints.forEach((c, i) => {
+          const row = document.createElement("div");
+          row.className = "dfc-summary-row";
+          const a = dfcState.answers[c.entryId];
+          let aText = Array.isArray(a) ? a.join("、 ") : (a || "(未作答)");
+          if (c.type === "rating" && a) aText = "★".repeat(Number(a)) + ` (${a} 分)`;
+          row.innerHTML = `
+            <div style="font-weight:600;color:var(--ink);max-width:65%">${i + 1}. ${escapeHtml(c.title)}</div>
+            <div style="text-align:right;color:var(--muted);font-weight:600">${escapeHtml(aText)}</div>
+          `;
+          summaryItems.appendChild(row);
+        });
+        summaryCard.classList.remove("hide");
+      }
     }
   } catch (e) {
     const errEl = $("dfcQErr");
@@ -2947,6 +3277,7 @@ $("dfcReplayBtn").onclick = () => {
   dfcState.answers = {};
   dfcState.submitted = false;
   $("dfcCompleteBox").classList.add("hide");
+  if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
   $("dfcStage").classList.remove("split-active");
   $("dfcPlayBtn").disabled = false;
   renderDfcStepPills();
@@ -2954,9 +3285,84 @@ $("dfcReplayBtn").onclick = () => {
   setDfcPlaying(true);
 };
 
+<<<<<<< Updated upstream
 /* ============================================================================
  * 初始化啟動引擎
  * ============================================================================ */
+=======
+async function loadDfcConfig(requestedFormId) {
+  try {
+    const query = requestedFormId ? `?formId=${encodeURIComponent(requestedFormId)}` : "";
+    const r = await fetch(`/api/dfc/config${query}`);
+    if (!r.ok) return;
+    const cfg = await r.json();
+    if (!cfg || typeof cfg !== "object") return;
+
+    const prevVideoUrl = DFC_CONFIG.videoUrl;
+    Object.assign(DFC_CONFIG, cfg);
+    if (cfg.title && $("dfcTitle")) $("dfcTitle").textContent = "🎬 " + cfg.title;
+    if (cfg.description && $("dfcSubtitle")) $("dfcSubtitle").textContent = cfg.description;
+    if (!dfcState.useRealVideo && cfg.fallbackDuration) dfcState.duration = cfg.fallbackDuration;
+
+    // 重設作答狀態
+    dfcState.activeCheckpointIndex = -1;
+    dfcState.answeredIds.clear();
+    dfcState.answers = {};
+    dfcState.submitted = false;
+    $("dfcCompleteBox").classList.add("hide");
+    if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
+    $("dfcStage").classList.remove("split-active");
+    $("dfcPlayBtn").disabled = false;
+
+    if (dfcState.inited) {
+      if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl && $("dfcVideo")) {
+        $("dfcVideo").src = cfg.videoUrl;
+      }
+      renderDfcStepPills();
+      renderDfcMarkers();
+      updateDfcUiProgress();
+    }
+
+    loadAvailableDfcForms(cfg.id);
+  } catch (e) {
+    console.warn("loadDfcConfig error:", e);
+  }
+}
+
+async function loadAvailableDfcForms(currentFormId) {
+  try {
+    const r = await fetch("/api/dfc/forms");
+    if (!r.ok) return;
+    const forms = await r.json();
+    const wrap = $("dfcSurveyPickerWrap");
+    const sel = $("dfcSurveySelect");
+    if (!wrap || !sel) return;
+
+    if (Array.isArray(forms) && forms.length > 1) {
+      sel.innerHTML = forms.map(f => {
+        const isSel = f.id === currentFormId ? "selected" : "";
+        const tag = f.isDefault ? " [首選]" : "";
+        return `<option value="${escapeHtml(f.id)}" ${isSel}>${escapeHtml(f.title)}${tag} (${f.checkpointCount} 題)</option>`;
+      }).join("");
+      wrap.classList.remove("hide");
+    } else {
+      wrap.classList.add("hide");
+    }
+  } catch (e) {}
+}
+
+if ($("dfcSurveySelect")) {
+  $("dfcSurveySelect").onchange = (e) => {
+    const newId = e.target.value;
+    if (!newId) return;
+    const u = new URL(window.location.href);
+    u.searchParams.set("formId", newId);
+    window.history.replaceState({}, "", u.toString());
+    loadDfcConfig(newId);
+  };
+}
+
+>>>>>>> Stashed changes
 (async () => {
   // 檢查初始網址 Hash 路由
   const initHash = window.location.hash.replace("#", "");
@@ -2981,6 +3387,7 @@ $("dfcReplayBtn").onclick = () => {
   }
 
   refreshPublicStatus(true);
+<<<<<<< Updated upstream
   setInterval(() => {
     if (currentTab === "status" && !document.hidden) refreshPublicStatus(false);
   }, 4000);
@@ -3013,6 +3420,25 @@ $("dfcReplayBtn").onclick = () => {
   googleClientId = meData.googleClientId || "";
   baseUrl = meData.baseUrl || "";
   renderMe(callbackUser || meData.user || null);
+=======
+  setInterval(() => refreshPublicStatus(false), 3000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublicStatus(true); });
+
+  // 取得網址列中的 formId（例如 ?formId=survey_xyz）
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetFormId = urlParams.get("formId") || "";
+  await loadDfcConfig(targetFormId);
+  if (targetFormId) {
+    switchDock("dfc");
+  }
+
+  const callbackUser = await handleGoogleCallback();
+  const r = await fetch("/api/me");
+  const data = r.ok ? await r.json() : {};
+  googleClientId = data.googleClientId || "";
+  baseUrl = data.baseUrl || "";
+  renderMe(callbackUser || data.user || null);
+>>>>>>> Stashed changes
 })();
 
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;

@@ -277,16 +277,19 @@ async function writeSysStore(name, data) {
 }
 
 const DEFAULT_DFC_STORE = {
+  activeFormId: "default-dfc",
   forms: [
     {
       id: "default-dfc",
       title: "DFC 沉浸式互動影片表單（主表單）",
+      description: "DFC 四步驟（感受、想像、實踐、分享）互動影片探究與反思問卷",
       videoUrl: "/assets/dfc.mp4",
       fallbackDuration: 18,
       googleFormUrl: process.env.GOOGLE_FORM_ACTION_URL || "YOUR_GOOGLE_FORM_URL",
       csvUrl: process.env.GOOGLE_FORM_CSV_URL || "",
       emailEntryId: "",
       submitMode: "end",
+      isDefault: true,
       updatedAt: new Date().toISOString(),
       checkpoints: [
         {
@@ -322,13 +325,25 @@ const DEFAULT_DFC_STORE = {
         },
         {
           id: "q3",
-          time: 15,
+          time: 14,
           entryId: "entry.333333333",
-          stepLabel: "階段三 · 00:15",
+          stepLabel: "階段三 · 00:14",
           title: "第三階段「實踐與分享 Do & Share」：請寫下你對本次 DFC 行動的一句具體建議或想法",
-          desc: "完成本題後將自動串接 Google Form API 送出你的完整作答！",
+          desc: "請寫下簡短建議，作答後進入總體評價！",
           type: "textarea",
           placeholder: "例如：我覺得可以先從穿堂的互動投影與線上表單同步開始...",
+          required: true,
+        },
+        {
+          id: "q4",
+          time: 17,
+          entryId: "entry.444444444",
+          stepLabel: "階段四 · 00:17",
+          title: "第四階段「總體反思」：你對本次校園 DFC 方案的整體推薦評分？",
+          desc: "1~5 星評分，完成本題後將自動送出完整問卷！",
+          type: "rating",
+          min: 1,
+          max: 5,
           required: true,
         },
       ],
@@ -673,12 +688,47 @@ app.post("/api/proverbs", async (req, res) => {
   res.json({ ok: true });
 });
 
-/* --- 前台讀取最新 DFC 表單設定（Super Admin 於後台修改後前台即時同步） --- */
-app.get("/api/dfc/config", async (req, res) => {
+/* --- 前台讀取 DFC 表單清單（供使用者切換多個問卷與導覽） --- */
+app.get("/api/dfc/forms", async (req, res) => {
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
-  const activeForm = forms[0];
-  res.json(activeForm);
+  const activeId = store.activeFormId || forms[0]?.id || "default-dfc";
+  res.json({
+    activeFormId: activeId,
+    forms: forms.map(f => ({
+      id: f.id,
+      title: f.title,
+      description: f.description || "",
+      videoUrl: f.videoUrl,
+      fallbackDuration: f.fallbackDuration || 18,
+      questionCount: (f.checkpoints || []).length,
+      isDefault: f.id === activeId,
+      updatedAt: f.updatedAt,
+    })),
+  });
+});
+
+/* --- 前台讀取最新 DFC 表單設定（支援 ?formId= 指定問卷或預設讀取發布中的主問卷） --- */
+app.get("/api/dfc/config", async (req, res) => {
+  const formId = String(req.query.formId || "").trim();
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
+  const activeId = store.activeFormId || forms[0]?.id || "default-dfc";
+
+  let matchedForm = formId ? forms.find(f => f.id === formId) : null;
+  if (!matchedForm) matchedForm = forms.find(f => f.id === activeId) || forms[0];
+
+  res.json({
+    ...matchedForm,
+    activeFormId: activeId,
+    formsList: forms.map(f => ({
+      id: f.id,
+      title: f.title,
+      description: f.description || "",
+      questionCount: (f.checkpoints || []).length,
+      isDefault: f.id === activeId,
+    })),
+  });
 });
 
 /* --- DFC 互動影片表單：串接 Google Form (formResponse / Apps Script API) 並寫入後台統計 --- */
@@ -1011,12 +1061,57 @@ app.get("/api/admin/dfc", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   res.json({
-    forms: Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms,
+    activeFormId: store.activeFormId || forms[0]?.id || "default-dfc",
+    forms,
     responses: Array.isArray(store.responses) ? store.responses : [],
     googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
     googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
   });
+});
+
+// 設定前台預設主推問卷
+app.post("/api/admin/dfc/set-active-form", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const { formId } = req.body || {};
+  if (!formId) return res.status(400).json({ error: "缺少表單 ID" });
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const target = (store.forms || []).find(f => f.id === formId);
+  if (!target) return res.status(404).json({ error: "找不到指定表單" });
+  store.activeFormId = formId;
+  await writeSysStore("dfc", store);
+  audit(req, "set_active_dfc_form", formId);
+  res.json({ ok: true, activeFormId: formId });
+});
+
+// 複製既有問卷以快速建立新問卷
+app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const { formId } = req.body || {};
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const src = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0];
+  if (!src) return res.status(404).json({ error: "找不到來源問卷" });
+
+  const newId = "form-" + Date.now();
+  const clonedForm = JSON.parse(JSON.stringify(src));
+  clonedForm.id = newId;
+  clonedForm.title = (clonedForm.title || "問卷") + " (副本)";
+  clonedForm.updatedAt = new Date().toISOString();
+  if (Array.isArray(clonedForm.checkpoints)) {
+    clonedForm.checkpoints = clonedForm.checkpoints.map((cp, idx) => ({
+      ...cp,
+      id: "q" + (idx + 1) + "_" + Date.now().toString(36),
+    }));
+  }
+
+  if (!Array.isArray(store.forms)) store.forms = [];
+  store.forms.push(clonedForm);
+  await writeSysStore("dfc", store);
+  audit(req, "duplicate_dfc_form", `${src.id} -> ${newId}`);
+  res.json({ ok: true, form: clonedForm });
 });
 
 // 拉取並解析指定表單的 Google 表單 CSV 回傳數據（支援 Google Sheets API v4、遠端 Google Sheets CSV 或本地收集紀錄轉 CSV）
@@ -1106,7 +1201,7 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
     "Google同步狀態",
     "裝置資訊",
     "IP位址",
-    ...checkpoints.map((cp, idx) => `Q${idx + 1}: ${cp.title} (${cp.entryId})`),
+    ...checkpoints.map((cp, idx) => `Q${idx + 1}: ${cp.title} (${cp.entryId || cp.id})`),
   ];
   const localRows = responses.map(r => [
     r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "",
@@ -1147,9 +1242,10 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
 
   const body = req.body || {};
   const id = String(body.id || "").trim() || ("form-" + Date.now());
-  const title = str(body.title || "未命名 Google 表單", 100).trim();
+  const title = str(body.title || "未命名 DFC 表單", 100).trim();
+  const description = str(body.description || "", 300).trim();
   const videoUrl = str(body.videoUrl || "/assets/dfc.mp4", 300).trim();
-  const fallbackDuration = Math.max(5, Math.min(3600, Number(body.fallbackDuration) || 18));
+  const fallbackDuration = Math.max(5, Math.min(7200, Number(body.fallbackDuration) || 18));
   const googleFormUrl = str(body.googleFormUrl || "", 400).trim();
   const csvUrl = str(body.csvUrl || "", 400).trim();
   const emailEntryId = str(body.emailEntryId || "", 60).trim();
@@ -1163,17 +1259,20 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   }
 
   let checkpoints = [];
+  const ALLOWED_TYPES = ["radio", "checkbox", "rating", "dropdown", "boolean", "text", "textarea"];
   if (Array.isArray(body.checkpoints)) {
     checkpoints = body.checkpoints.map((cp, idx) => ({
       id: str(cp.id || `q${idx + 1}`, 40),
-      time: Math.max(1, Number(cp.time) || (idx + 1) * 5),
+      time: Math.max(0.5, Number(cp.time) || (idx + 1) * 5),
       entryId: str(cp.entryId || `entry.${idx + 1}`, 60).trim(),
       stepLabel: str(cp.stepLabel || `階段 ${idx + 1}`, 40).trim(),
       title: str(cp.title || `問題 ${idx + 1}`, 200).trim(),
-      desc: str(cp.desc || "", 200).trim(),
-      type: ["radio", "checkbox", "text", "textarea"].includes(cp.type) ? cp.type : "radio",
+      desc: str(cp.desc || "", 300).trim(),
+      type: ALLOWED_TYPES.includes(cp.type) ? cp.type : "radio",
       options: Array.isArray(cp.options) ? cp.options.map(o => str(String(o), 150).trim()).filter(Boolean) : [],
       placeholder: str(cp.placeholder || "", 120).trim(),
+      min: Number(cp.min) || 1,
+      max: Number(cp.max) || 5,
       required: cp.required !== false,
     })).sort((a, b) => a.time - b.time);
   }
@@ -1182,13 +1281,15 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   if (!Array.isArray(store.forms)) store.forms = [];
   const existingIdx = store.forms.findIndex(f => f.id === id);
   const formObj = {
-    id, title, videoUrl, fallbackDuration, googleFormUrl, csvUrl, emailEntryId, submitMode,
+    id, title, description, videoUrl, fallbackDuration, googleFormUrl, csvUrl, emailEntryId, submitMode,
     checkpoints: checkpoints.length ? checkpoints : (existingIdx >= 0 ? store.forms[existingIdx].checkpoints : DEFAULT_DFC_STORE.forms[0].checkpoints),
     updatedAt: new Date().toISOString(),
   };
 
   if (existingIdx >= 0) store.forms[existingIdx] = formObj;
   else store.forms.push(formObj);
+
+  if (body.isDefault) store.activeFormId = id;
 
   await writeSysStore("dfc", store);
   audit(req, "save_dfc_form", id);
@@ -1199,11 +1300,14 @@ app.delete("/api/admin/dfc/forms/:id", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const id = String(req.params.id);
-  if (id === "default-dfc") return res.status(400).json({ error: "主 DFC 表單不可刪除，但可直接編輯修改其設定" });
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  if ((store.forms || []).length <= 1) {
+    return res.status(400).json({ error: "系統至少需保留一份 DFC 表單，不可全數刪除" });
+  }
   store.forms = (store.forms || []).filter(f => f.id !== id);
-  await writeSysStore("dfc", store);
-  audit(req, "delete_dfc_form", id);
+  if (store.activeFormId === id) {
+    store.activeFormId = store.forms[0]?.id || "default-dfc";
+  }
   res.json({ ok: true });
 });
 

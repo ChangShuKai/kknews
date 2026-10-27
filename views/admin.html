@@ -312,6 +312,7 @@
     margin-bottom: 6px;
   }
 
+<<<<<<< Updated upstream
   /* 表單與 CSV 數據面板 */
   .panel-surface {
     background: #ffffff;
@@ -360,6 +361,13 @@
     border-color: var(--ink);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
+=======
+  .forms-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .form-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:.18s}
+  .form-tab-btn:hover{border-color:var(--ink);transform:translateY(-1px)}
+  .form-tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 4px 14px #0000001f}
+  .form-active-badge{background:#10b981;color:#fff;font-size:11px;padding:2px 7px;border-radius:99px;font-weight:700;letter-spacing:.05em}
+>>>>>>> Stashed changes
 
   .table-scroll-container {
     width: 100%;
@@ -392,6 +400,7 @@
   table.data-tbl tr:last-child td { border-bottom: 0; }
   table.data-tbl tr:hover td { background: rgba(0, 0, 0, 0.015); }
 
+<<<<<<< Updated upstream
   /* 管理員權限區塊 */
   .admin-account-row {
     display: flex;
@@ -405,6 +414,88 @@
     margin-bottom: 12px;
     flex-wrap: wrap;
   }
+=======
+  .cp-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
+  .cp-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;transition:.2s}
+  .cp-item:hover{border-color:var(--ink);box-shadow:0 4px 12px #0000000a}
+  .cp-item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700}
+  .cp-entry{font-family:monospace;font-size:12px;background:var(--paper);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+  .cp-badge-type{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--paper);border:1px solid var(--line);font-weight:600}
+
+  .table-scroll{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+  table.data-tbl{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left}
+  table.data-tbl th{background:var(--paper);color:var(--ink);font-weight:700;padding:11px 14px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+  table.data-tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;max-width:340px;word-break:break-word}
+  table.data-tbl tr:last-child td{border-bottom:0}
+  table.data-tbl tr:hover td{background:#faf8f5}
+
+  .stat-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
+  .stat-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .stat-box h4{margin:0 0 12px;font-size:14.5px;line-height:1.4;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .bar-row{margin-bottom:9px;font-size:12.5px}
+  .bar-lbl{display:flex;justify-content:space-between;margin-bottom:3px;gap:8px}
+  .bar-track{height:8px;background:#e4dfd6;border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--ink);border-radius:99px;transition:width .4s ease}
+
+  /* ===== 分頁 4：多重管理員權限設定面板 ===== */
+  .admin-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+  @media (max-width:960px){.admin-layout{grid-template-columns:1fr}}
+  .adm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin-bottom:10px;flex-wrap:wrap}
+  .adm-info b{font-size:15px;display:block}
+  .adm-info span{font-size:12.5px;color:var(--muted)}
+  .adm-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .select-sm{padding:7px 10px;border:1.5px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:13px;background:#fff}
+
+  /* ===== 超級 DFC 時間點題目工作室彈窗 (Studio Modal) ===== */
+  .modal-xl{width:min(1120px,96vw);height:min(90vh,860px);display:flex;flex-direction:column;overflow:hidden;padding:0;border-radius:24px;text-align:left}
+  .studio-head{padding:18px 24px 14px;border-bottom:1px solid var(--line);background:#faf8f5;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .studio-tabs{display:inline-flex;gap:6px;background:var(--paper);padding:4px;border-radius:99px;border:1px solid var(--line)}
+  .studio-tab-btn{border:0;background:transparent;padding:6px 16px;border-radius:99px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.18s}
+  .studio-tab-btn.active{background:var(--ink);color:#fff}
+  .studio-body{flex:1;overflow-y:auto;padding:22px 26px}
+  .studio-foot{padding:14px 26px;border-top:1px solid var(--line);background:#faf8f5;display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+  /* 影片時間點控制器與時間軸置頂卡片 */
+  .studio-video-card{background:#0f172a;color:#fff;border-radius:18px;padding:18px 22px;margin-bottom:20px;box-shadow:0 12px 36px #00000030}
+  .studio-video-grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:center}
+  @media (max-width:820px){.studio-video-grid{grid-template-columns:1fr}}
+  .studio-screen-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid #334155}
+  .studio-screen-wrap video,.studio-screen-wrap canvas{width:100%;height:100%;object-fit:cover;display:block}
+  .studio-video-badge{position:absolute;top:8px;left:8px;background:#000000a6;backdrop-filter:blur(6px);color:#38bdf8;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.05em}
+  .studio-ctrls{display:flex;flex-direction:column;gap:14px}
+  .studio-time-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .studio-big-time{font-family:monospace;font-size:24px;font-weight:800;color:#38bdf8;letter-spacing:.05em}
+  .studio-track-wrap{position:relative;width:100%;height:28px;display:flex;align-items:center;cursor:pointer}
+  .studio-track{position:relative;width:100%;height:10px;background:#1e293b;border-radius:99px;border:1px solid #334155;overflow:visible}
+  .studio-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#38bdf8,#818cf8);border-radius:99px;pointer-events:none}
+  .studio-pin{position:absolute;top:-8px;width:16px;height:26px;transform:translateX(-50%);cursor:pointer;display:grid;place-items:center;z-index:3;transition:transform .15s}
+  .studio-pin:hover{transform:translateX(-50%) scale(1.35);z-index:5}
+  .studio-pin-dot{width:12px;height:12px;border-radius:50%;background:#f59e0b;border:2px solid #fff;box-shadow:0 0 8px #f59e0b}
+  .studio-pin.active .studio-pin-dot{background:#38bdf8;box-shadow:0 0 10px #38bdf8}
+  .studio-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+  /* 題目卡片 */
+  .cp-edit-card{background:var(--white);border:1.5px solid var(--line);border-left:5px solid var(--ink);border-radius:16px;padding:18px 20px;margin-bottom:16px;box-shadow:0 4px 14px #00000005;transition:.2s}
+  .cp-edit-card:hover{border-color:#b5afa3;box-shadow:0 8px 24px #0000000a}
+  .cp-edit-card.highlight{border-left-color:#38bdf8;box-shadow:0 0 0 2px #38bdf833}
+  .cp-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .cp-card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cp-time-badge{font-family:monospace;font-weight:700;font-size:12px;padding:3px 9px;border-radius:99px;background:var(--paper);border:1px solid var(--line)}
+  .cp-tools{display:flex;align-items:center;gap:6px}
+  .quick-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .chip-btn{background:var(--paper);border:1px solid var(--line);padding:3px 9px;border-radius:99px;font:inherit;font-size:11.5px;color:var(--ink);cursor:pointer;transition:.15s}
+  .chip-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* 作答詳細檢視彈窗 */
+  .detail-kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--paper);padding:14px 16px;border-radius:14px;border:1px solid var(--line);margin-bottom:18px}
+  .detail-q-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .detail-q-title{font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)}
+  .detail-q-ans{font-size:14px;color:#0b57d0;background:#eff6ff;padding:8px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;word-break:break-word}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media (max-width:700px){.grid-2,.grid-3{grid-template-columns:1fr}}
+>>>>>>> Stashed changes
 </style>
 </head>
 <body>
@@ -485,6 +576,7 @@
   <!-- 分頁 2：已登入帳號列表 -->
   <div id="usersGrid" class="users-list-grid hide"></div>
 
+<<<<<<< Updated upstream
   <!-- 分頁 3：Google 表單 API 與 CSV 數據 -->
   <section id="formsPanel" class="hide" aria-label="Google 表單數據">
     <div class="panel-surface">
@@ -497,6 +589,23 @@
           <button type="button" class="btn ghost sm" id="addNewFormBtn">+ 新增表單來源</button>
           <button type="button" class="btn primary sm" id="editActiveFormBtn">編輯目前表單 API</button>
           <button type="button" class="btn danger sm hide" id="delActiveFormBtn">刪除此表單</button>
+=======
+  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
+  <section id="formsPanel" class="panel-wrap hide" aria-label="DFC 互動問卷與數據管理">
+    <div class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h3>🎬 DFC 互動問卷管理與時間點工作室</h3>
+          <p>管理所有 DFC 影片互動問卷、可視化調整各時間點題目與 Google 表單串接，並指定前台主推發布的問卷。</p>
+        </div>
+        <div class="adm-actions" id="superFormActions">
+          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增 DFC 問卷</button>
+          <button type="button" class="btn sm" id="editActiveFormBtn">⚙️ 編輯問卷與時間點</button>
+          <button type="button" class="btn ghost sm" id="setActiveFormBtn" title="將此問卷設為前台首頁預設展示的問卷">🌟 設為前台主推</button>
+          <button type="button" class="btn ghost sm" id="dupActiveFormBtn" title="複製此問卷快速建立新活動">📑 複製此問卷</button>
+          <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新視窗直接體驗此問卷">👁️ 前台預覽作答</button>
+          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
+>>>>>>> Stashed changes
         </div>
       </div>
 
@@ -720,6 +829,7 @@
   </div>
 </div>
 
+<<<<<<< Updated upstream
 <!-- Google 表單設定彈窗 -->
 <div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
   <div class="modal" style="max-width:760px;max-height:88vh;overflow-y:auto">
@@ -764,13 +874,172 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
       <strong style="font-size:14px">影片時間點題目與 Google Form Entry 對應</strong>
       <button type="button" class="btn ghost sm" id="addCheckpointBtn">+ 新增時間點題目</button>
+=======
+<!-- Super Admin 專屬：DFC 互動影片問卷與時間點可視化工作室彈窗 -->
+<div id="formConfigModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="formConfigModalTitle">
+  <div class="modal modal-xl">
+    <div class="studio-head">
+      <div>
+        <h3 id="formConfigModalTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷與時間點編輯工作室</h3>
+        <p class="sub" style="margin:2px 0 0;font-size:12.5px">可視化預覽影片、即時標記時間點題目、調整選項與 Google Form 串接。</p>
+      </div>
+      <div class="studio-tabs">
+        <button type="button" class="studio-tab-btn active" id="tabStudioTimeline">⏱️ 時間點題目工作室</button>
+        <button type="button" class="studio-tab-btn" id="tabStudioGeneral">📌 基本設定與 Google 表單</button>
+      </div>
     </div>
-    <div id="cfgCheckpointsWrap"></div>
 
+    <!-- 工作室內容區（捲動） -->
+    <div class="studio-body">
+      <!-- 分頁 A：時間點與題目可視化編輯 -->
+      <div id="studioTabTimelineWrap">
+        <!-- 影片即時時間軸置頂控制卡片 -->
+        <div class="studio-video-card">
+          <div class="studio-video-grid">
+            <div class="studio-screen-wrap">
+              <span class="studio-video-badge" id="studioBadgeText">▶ 影片預覽</span>
+              <video id="studioVideo" playsinline preload="metadata" class="hide"></video>
+              <canvas id="studioCanvas" width="640" height="360"></canvas>
+            </div>
+            <div class="studio-ctrls">
+              <div class="studio-time-row">
+                <div>
+                  <small style="color:#94a3b8;display:block;font-size:11.5px;font-weight:600">目前播放時間點 / 總長度</small>
+                  <div class="studio-big-time" id="studioTimeLabel">00:00.0 / 00:18.0</div>
+                </div>
+                <div class="studio-btns">
+                  <button type="button" class="btn ghost sm" id="studioRwBtn" title="倒退 3 秒">⏪ -3s</button>
+                  <button type="button" class="btn sm" id="studioPlayBtn" style="min-width:70px">▶ 播放</button>
+                  <button type="button" class="btn ghost sm" id="studioFwBtn" title="快進 3 秒">⏩ +3s</button>
+                </div>
+              </div>
+
+              <!-- 時間軸 Scrubber 與 Checkpoint Pins -->
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#94a3b8;margin-bottom:4px">
+                  <span>拖曳或點選進度條跳轉影片（可點選圖釘直達該題時間）</span>
+                  <span id="studioPinCountHint">現有 0 個時間點題目</span>
+                </div>
+                <div class="studio-track-wrap" id="studioTrackWrap">
+                  <div class="studio-track" id="studioTrack">
+                    <div class="studio-fill" id="studioTrackFill" style="width:0%"></div>
+                    <div id="studioPinsContainer"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 關鍵秒數抓取按鈕列 -->
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button type="button" class="btn sm" id="studioCaptureBtn" style="background:#0284c7;border-color:#0284c7;color:#fff" title="將當前播放頭時間填入正在編輯的題目">
+                  📍 抓取當前影片時間填入題目
+                </button>
+                <button type="button" class="btn ghost sm" id="studioAddAtPlayheadBtn" style="background:#1e293b;border-color:#334155;color:#f8fafc" title="在此秒數直接建立新問題">
+                  ➕ 於當前秒數新增題目
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 題目列表標頭工具列 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+          <div>
+            <strong style="font-size:15px">📝 影片時間點題目清單</strong>
+            <span style="font-size:12.5px;color:var(--muted);margin-left:6px" id="studioQuestionCountText">共 0 題</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn ghost sm" id="studioSortCheckpointsBtn" title="依照時間點秒數由小到大自動重新排序">⏱️ 依時間重新排序</button>
+            <button type="button" class="btn sm" id="addCheckpointBtn">➕ 新增時間點題目</button>
+          </div>
+        </div>
+
+        <!-- 題目卡片容器 -->
+        <div id="cfgCheckpointsWrap"></div>
+      </div>
+
+      <!-- 分頁 B：基本設定與 Google 表單串接 -->
+      <div id="studioTabGeneralWrap" class="hide">
+        <div class="grid-2">
+          <label class="field" style="margin-top:0">
+            <span class="lbl">問卷名稱 <b>*</b></span>
+            <input class="input" id="cfgFormTitle" placeholder="例如：DFC 沉浸式互動影片表單">
+          </label>
+          <label class="field" style="margin-top:0">
+            <span class="lbl">影片路徑或網址 <span>支援 /assets/dfc.mp4 或外部 mp4/webm</span></span>
+            <input class="input" id="cfgVideoUrl" placeholder="/assets/dfc.mp4 或 https://...">
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="lbl">問卷簡介與說明 <span>顯示在前台問卷標題下方</span></span>
+          <textarea class="input" id="cfgFormDesc" rows="2" placeholder="請填寫此份 DFC 問卷的探究目的或填答說明..."></textarea>
+        </label>
+
+        <div class="grid-2">
+          <label class="field">
+            <span class="lbl">內建示範動畫總長度 (秒) <span>若無實體影片時的備援長度</span></span>
+            <input type="number" min="5" max="7200" class="input" id="cfgFallbackDuration" value="18">
+          </label>
+          <label class="field">
+            <span class="lbl">送出時機</span>
+            <select class="input" id="cfgSubmitMode">
+              <option value="end">全部時間點答完後統一送出</option>
+              <option value="each">每個時間點作答時立即送出</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="lbl">Google Form 提交網址（選填） <span>支援 /viewform、/formResponse 或 Apps Script 網址</span></span>
+          <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/1FAIpQLS.../formResponse">
+        </label>
+
+        <label class="field">
+          <span class="lbl">Google 試算表結果 CSV 連結（選填） <span>貼上 Google 試算表「發佈到網路 (CSV)」網址即可即時同步雲端數據</span></span>
+          <input class="input" id="cfgCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
+        </label>
+
+        <div class="grid-2">
+          <label class="field">
+            <span class="lbl">自動帶入登入者信箱之 Entry ID <span>選填</span></span>
+            <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.987654321">
+          </label>
+          <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:28px">
+            <input type="checkbox" id="cfgIsDefault" style="transform:scale(1.3);accent-color:var(--ink)">
+            <span style="font-size:13.5px;font-weight:600">將此問卷設為前台預設發布問卷 (Active)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 工作室底部按鈕列 -->
+    <div class="studio-foot">
+      <span style="font-size:12.5px;color:var(--muted)">💡 儲存後前台「🎬 DFC 表單」將即時同步最新的時間點題目與影片設定。</span>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消關閉</button>
+        <button type="button" class="btn" id="saveFormCfgBtn">💾 儲存問卷與時間點設定</button>
+      </div>
+>>>>>>> Stashed changes
+    </div>
+  </div>
+</div>
+
+<<<<<<< Updated upstream
     <div style="display:flex;gap:10px;margin-top:22px">
       <button type="button" class="btn ghost" id="cancelFormCfgBtn" style="flex:1">取消</button>
       <button type="button" class="btn primary" id="saveFormCfgBtn" style="flex:1">儲存設定並同步</button>
+=======
+<!-- 作答詳細內容檢視彈窗 -->
+<div id="responseDetailModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="respDetailTitle">
+  <div class="modal modal-lg" style="max-width:680px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 id="respDetailTitle" style="margin:0;font-size:18px">📝 完整作答記錄詳情</h3>
+      <button type="button" class="btn ghost sm" id="closeRespDetailBtn">關閉</button>
+>>>>>>> Stashed changes
     </div>
+    <div class="detail-kv-grid" id="respDetailMeta"></div>
+    <h4 style="margin:16px 0 10px;font-size:14px">各時間點作答內容：</h4>
+    <div id="respDetailAnswersList"></div>
   </div>
 </div>
 
@@ -1524,17 +1793,63 @@ async function loadAndRenderCsv(showToast = false) {
   } catch {}
 }
 
+let activeDfcFormId = "default-dfc";
+let studioPlaying = false, studioRaf = null, studioDuration = 18, studioActiveQuestionIndex = 0;
+
+function formatMmSs(sec = 0) {
+  const s = Math.max(0, Number(sec) || 0);
+  const m = Math.floor(s / 60);
+  const rem = Math.floor(s % 60);
+  return `${String(m).padStart(2, "0")}:${String(rem).padStart(2, "0")}`;
+}
+
+function parseMmSs(str = "") {
+  const parts = String(str || "").trim().split(":");
+  if (parts.length === 2) {
+    const m = Number(parts[0]) || 0;
+    const s = Number(parts[1]) || 0;
+    return Math.max(0, m * 60 + s);
+  }
+  return Math.max(0, Number(str) || 0);
+}
+
+function getActiveForm() {
+  return dfcForms.find(f => f.id === selectedFormId) || dfcForms[0] || null;
+}
+
+async function loadAndRenderCsv(showToast = false) {
+  const form = getActiveForm();
+  if (!form) return;
+  try {
+    const r = await fetch(`/api/admin/dfc/csv?formId=${encodeURIComponent(form.id)}`);
+    if (!r.ok) return;
+    currentCsvData = await r.json();
+    renderDfcCsvTable();
+    if (showToast) toast("已同步最新 Google 表單 CSV 與回傳數據");
+  } catch {}
+}
+
 function renderDfcPanel() {
   const tabWrap = $("formsTabList");
   tabWrap.innerHTML = "";
   const activeForm = getActiveForm();
+  activeDfcFormId = syncData?.dfc?.activeFormId || activeDfcFormId || "default-dfc";
 
   for (const f of dfcForms) {
     const btn = document.createElement("button");
     btn.type = "button";
     const count = dfcResponses.filter(r => r.formId === f.id).length;
+    const isCurActive = f.id === activeDfcFormId;
     btn.className = "form-tab-btn" + (activeForm && activeForm.id === f.id ? " active" : "");
+<<<<<<< Updated upstream
     btn.innerHTML = `<span>${esc(f.title)}</span><span class="dock-badge">${count}</span>`;
+=======
+    btn.innerHTML = `
+      <span>📋 ${esc(f.title)}</span>
+      <span class="dock-badge">${count} 筆</span>
+      ${isCurActive ? `<span class="form-active-badge">🌟 發布中</span>` : ""}
+    `;
+>>>>>>> Stashed changes
     btn.onclick = () => {
       selectedFormId = f.id;
       renderDfcPanel();
@@ -1544,10 +1859,67 @@ function renderDfcPanel() {
   }
 
   if (!activeForm) return;
-  $("delActiveFormBtn").classList.toggle("hide", !isSuper() || activeForm.id === "default-dfc");
+
+  // 控制項狀態與動作按鈕
+  $("delActiveFormBtn").classList.toggle("hide", !isSuper() || dfcForms.length <= 1);
+  const isDefaultActive = activeForm.id === activeDfcFormId;
+  const setActBtn = $("setActiveFormBtn");
+  if (setActBtn) {
+    setActBtn.disabled = isDefaultActive;
+    setActBtn.textContent = isDefaultActive ? "✓ 目前為前台主推問卷" : "🌟 設為前台主推";
+    setActBtn.style.opacity = isDefaultActive ? "0.6" : "1";
+    setActBtn.onclick = async () => {
+      if (isDefaultActive) return;
+      setActBtn.disabled = true;
+      const r = await fetch("/api/admin/dfc/set-active-form", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({ formId: activeForm.id }),
+      });
+      setActBtn.disabled = false;
+      if (r.ok) {
+        activeDfcFormId = activeForm.id;
+        toast(`已將「${activeForm.title}」設為前台主推發布問卷！`);
+        load(true);
+      } else {
+        const j = await r.json().catch(() => ({}));
+        toast(j.error || "設定失敗", true);
+      }
+    };
+  }
+
+  const dupBtn = $("dupActiveFormBtn");
+  if (dupBtn) {
+    dupBtn.onclick = async () => {
+      dupBtn.disabled = true;
+      const r = await fetch("/api/admin/dfc/duplicate-form", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({ formId: activeForm.id }),
+      });
+      dupBtn.disabled = false;
+      if (r.ok) {
+        const j = await r.json();
+        selectedFormId = j.form?.id || selectedFormId;
+        toast(`已成功複製問卷「${activeForm.title}」！`);
+        load(true);
+      } else {
+        const j = await r.json().catch(() => ({}));
+        toast(j.error || "複製失敗", true);
+      }
+    };
+  }
+
+  const prevBtn = $("previewActiveFormBtn");
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      window.open(`/?formId=${encodeURIComponent(activeForm.id)}`, "_blank");
+    };
+  }
 
   const isDemoUrl = !activeForm.googleFormUrl || activeForm.googleFormUrl.includes("YOUR_GOOGLE_FORM");
   const apiStatusHtml = isDemoUrl
+<<<<<<< Updated upstream
     ? `<span style="color:var(--orange)">● 示範模式（尚未填入實際 Google Form 網址）</span>`
     : `<span style="color:var(--green)">● 已串接 Google Form API</span>`;
 
@@ -1555,10 +1927,53 @@ function renderDfcPanel() {
     <div><small style="color:var(--ink-tertiary)">表單名稱 / ID</small><div style="font-weight:600">${esc(activeForm.title)} (${esc(activeForm.id)})</div></div>
     <div><small style="color:var(--ink-tertiary)">Google Form 狀態</small><div style="font-weight:600">${apiStatusHtml}</div></div>
     <div><small style="color:var(--ink-tertiary)">影片路徑</small><div style="font-weight:600">${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</div></div>
+=======
+    ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，作答將儲存於本站雲端資料庫與 CSV）</span>`
+    : `<span style="color:var(--ok)">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
+  const apiKeyHtml = googleApiKeyConfigured
+    ? `<span style="color:var(--ok)">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
+    : `<span style="color:var(--muted)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
+
+  $("activeFormApiGrid").innerHTML = `
+    <div class="api-kv">
+      <small>問卷名稱 / ID</small>
+      <div>${esc(activeForm.title)} <span style="font-weight:400;color:var(--muted)">(${esc(activeForm.id)})</span></div>
+    </div>
+    <div class="api-kv">
+      <small>前台發布狀態</small>
+      <div>${isDefaultActive ? `<b style="color:var(--ok)">🌟 前台首頁預設展示中</b>` : `<span style="color:var(--muted)">📁 備用問卷活動</span>`}</div>
+    </div>
+    <div class="api-kv">
+      <small>Google Form API Key 狀態</small>
+      <div>${apiKeyHtml}</div>
+    </div>
+    <div class="api-kv">
+      <small>Google Form API 提交網址 (formResponse / Apps Script)</small>
+      <div>${apiStatusHtml}</div>
+    </div>
+    <div class="api-kv">
+      <small>Google 試算表結果 CSV 同步網址</small>
+      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--muted)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
+    </div>
+    <div class="api-kv">
+      <small>互動影片路徑 & 送出模式</small>
+      <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code> · ${activeForm.submitMode === "each" ? "逐題即時送出" : "全數答完統一送出"}</div>
+    </div>
+>>>>>>> Stashed changes
   `;
 
   const cpWrap = $("activeFormCpList");
   cpWrap.innerHTML = "";
+  const typeMap = {
+    radio: "🔘 單選題",
+    checkbox: "☑️ 多選題",
+    rating: "⭐ 5星評分量表",
+    dropdown: "▾ 下拉選單",
+    boolean: "⚖️ 是非題",
+    text: "💬 簡答題",
+    textarea: "📝 詳答題",
+  };
+
   (activeForm.checkpoints || []).forEach((cp, i) => {
     const div = document.createElement("div");
     div.style.background = "var(--bg)";
@@ -1566,11 +1981,24 @@ function renderDfcPanel() {
     div.style.borderRadius = "var(--r-md)";
     div.style.fontSize = "13px";
     div.innerHTML = `
+<<<<<<< Updated upstream
       <div style="display:flex;justify-content:space-between;font-weight:600;margin-bottom:4px">
         <span>第 ${Number(cp.time)} 秒 · 題目 ${i + 1}</span>
         <code style="font-size:12px">${esc(cp.entryId)}</code>
       </div>
       <div>${esc(cp.title)}</div>
+=======
+      <div class="cp-item-top">
+        <span>⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒) · 問題 ${i + 1}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="cp-badge-type">${esc(typeMap[cp.type] || cp.type)}</span>
+          <span class="cp-entry">${esc(cp.entryId || cp.id)}</span>
+        </div>
+      </div>
+      <div style="font-weight:700;margin-bottom:4px;font-size:13.5px">${esc(cp.title)}</div>
+      ${cp.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${esc(cp.desc)}</div>` : ""}
+      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--muted)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
+>>>>>>> Stashed changes
     `;
     cpWrap.appendChild(div);
   });
@@ -1585,8 +2013,12 @@ function renderDfcCsvTable() {
   const statWrap = $("dfcStatBars");
   statWrap.innerHTML = "";
   const formResps = dfcResponses.filter(r => r.formId === activeForm.id);
+
   for (const cp of (activeForm.checkpoints || [])) {
-    if ((cp.type === "radio" || cp.type === "checkbox") && Array.isArray(cp.options) && cp.options.length) {
+    const box = document.createElement("div");
+    box.className = "stat-box";
+
+    if ((cp.type === "radio" || cp.type === "checkbox" || cp.type === "dropdown") && Array.isArray(cp.options) && cp.options.length) {
       const counts = {};
       cp.options.forEach(o => { counts[o] = 0; });
       for (const r of formResps) {
@@ -1597,12 +2029,16 @@ function renderDfcCsvTable() {
           counts[ans] = (counts[ans] || 0) + 1;
         }
       }
+<<<<<<< Updated upstream
       const box = document.createElement("div");
       box.style.background = "var(--bg)";
       box.style.border = "1px solid var(--line)";
       box.style.borderRadius = "var(--r-md)";
       box.style.padding = "14px";
       box.innerHTML = `<h4 style="margin:0 0 10px;font-size:13.5px">${esc(cp.title)} <small style="font-weight:400;color:var(--ink-tertiary)">(${formResps.length} 人填答)</small></h4>`;
+=======
+      box.innerHTML = `<h4><span>📊 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(共 ${formResps.length} 人作答)</small></h4>`;
+>>>>>>> Stashed changes
       for (const opt of cp.options) {
         const c = counts[opt] || 0;
         const pct = formResps.length > 0 ? Math.round((c / formResps.length) * 100) : 0;
@@ -1613,13 +2049,75 @@ function renderDfcCsvTable() {
           </div>`;
       }
       statWrap.appendChild(box);
+    } else if (cp.type === "rating") {
+      let sum = 0, ratedCount = 0;
+      const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      for (const r of formResps) {
+        const val = Number(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : 0);
+        if (val >= 1 && val <= 5) {
+          sum += val;
+          ratedCount++;
+          starCounts[val] = (starCounts[val] || 0) + 1;
+        }
+      }
+      const avg = ratedCount > 0 ? (sum / ratedCount).toFixed(1) : "—";
+      box.innerHTML = `<h4><span>⭐ ${esc(cp.title)}</span> <span style="font-size:15px;color:#f59e0b">平均 ${avg} ★ <small style="font-size:12px;color:var(--muted)">(${ratedCount}人評分)</small></span></h4>`;
+      for (let s = 5; s >= 1; s--) {
+        const c = starCounts[s] || 0;
+        const pct = ratedCount > 0 ? Math.round((c / ratedCount) * 100) : 0;
+        box.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-lbl"><span>${"★".repeat(s)} (${s} 星)</span><b>${c} 人 (${pct}%)</b></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:#f59e0b"></div></div>
+          </div>`;
+      }
+      statWrap.appendChild(box);
+    } else if (cp.type === "boolean") {
+      let yesC = 0, noC = 0;
+      for (const r of formResps) {
+        const val = String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "");
+        if (val === "是" || val === "true" || val === "贊成") yesC++;
+        else if (val === "否" || val === "false" || val === "反對") noC++;
+      }
+      const totalB = yesC + noC;
+      const yesPct = totalB > 0 ? Math.round((yesC / totalB) * 100) : 0;
+      const noPct = totalB > 0 ? Math.round((noC / totalB) * 100) : 0;
+      box.innerHTML = `<h4><span>⚖️ ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(共 ${totalB} 人作答)</small></h4>
+        <div class="bar-row">
+          <div class="bar-lbl"><span>👍 是 / 贊成</span><b>${yesC} 票 (${yesPct}%)</b></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${yesPct}%;background:#10b981"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl"><span>👎 否 / 反對</span><b>${noC} 票 (${noPct}%)</b></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${noPct}%;background:#ef4444"></div></div>
+        </div>
+      `;
+      statWrap.appendChild(box);
+    } else if (cp.type === "text" || cp.type === "textarea") {
+      const answersText = formResps.map(r => String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "").trim()).filter(Boolean);
+      box.innerHTML = `<h4><span>📝 ${esc(cp.title)}</span> <small style="font-weight:400;color:var(--muted)">(已收錄 ${answersText.length} 則想法)</small></h4>`;
+      if (answersText.length) {
+        const sample = answersText.slice(0, 3);
+        box.innerHTML += `<div style="display:flex;flex-direction:column;gap:6px">
+          ${sample.map(txt => `<div style="font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink)">💭 ${esc(txt)}</div>`).join("")}
+          ${answersText.length > 3 ? `<small style="color:var(--muted);margin-top:2px">以及其餘 ${answersText.length - 3} 則，可於下方表格查看詳情</small>` : ""}
+        </div>`;
+      } else {
+        box.innerHTML += `<div style="font-size:12.5px;color:var(--muted);padding:8px 0">尚無文字回答</div>`;
+      }
+      statWrap.appendChild(box);
     }
   }
 
   const isRemote = currentCsvData?.source === "google_remote";
   $("csvSourceHint").textContent = isRemote
+<<<<<<< Updated upstream
     ? `目前顯示：Google 試算表遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
     : `目前顯示：本站收集之表單回應（共 ${formResps.length} 筆）`;
+=======
+    ? `🟢 目前顯示：從 Google 試算表即時拉取之遠端 CSV 結果（共 ${currentCsvData.rows.length} 筆）`
+    : `🔵 目前顯示：本站即時收集與匯入之問卷回傳結果（共 ${formResps.length} 筆）`;
+>>>>>>> Stashed changes
 
   const thead = $("dfcCsvThead");
   const tbody = $("dfcCsvTbody");
@@ -1648,10 +2146,18 @@ function renderDfcCsvTable() {
     return;
   }
 
+<<<<<<< Updated upstream
   const cps = activeForm.checkpoints || [];
   const trH = document.createElement("tr");
   const cols = ["提交時間", "填答帳號", "狀態", "裝置", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`)];
   if (isSuper()) cols.push("管理");
+=======
+  // 顯示本地收集與匯入之完整表單回應
+  const cps = activeForm.checkpoints || [];
+  const trH = document.createElement("tr");
+  const cols = ["提交時間", "填答者帳號", "狀態", "裝置 / IP", ...cps.map((cp, i) => `Q${i + 1}: ${cp.title}`), "作答詳情"];
+  if (isSuper()) cols.push("管理操作");
+>>>>>>> Stashed changes
   cols.forEach(c => {
     const th = document.createElement("th"); th.textContent = c; trH.appendChild(th);
   });
@@ -1682,10 +2188,14 @@ function renderDfcCsvTable() {
       const text = Array.isArray(val) ? val.join("、") : String(val ?? "");
       html += `<td>${esc(text || "—")}</td>`;
     }
+    html += `<td style="white-space:nowrap"><button type="button" class="btn ghost sm view-resp-btn">👁️ 詳情</button></td>`;
     if (isSuper()) {
       html += `<td style="white-space:nowrap"><button type="button" class="btn danger sm del-resp-btn" data-id="${esc(r.id)}">刪除</button></td>`;
     }
     tr.innerHTML = html;
+
+    tr.querySelector(".view-resp-btn").onclick = () => openResponseDetailModal(r, activeForm);
+
     if (isSuper()) {
       const delBtn = tr.querySelector(".del-resp-btn");
       if (delBtn) {
@@ -1701,24 +2211,314 @@ function renderDfcCsvTable() {
   }
 }
 
+<<<<<<< Updated upstream
+=======
+function openResponseDetailModal(r, form) {
+  const modal = $("responseDetailModal");
+  if (!modal) return;
+  const timeStr = r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "—";
+  const whoStr = r.userName ? `${r.userName} (${r.userEmail})` : (r.userEmail || "匿名訪客");
+
+  $("respDetailMeta").innerHTML = `
+    <div><small style="color:var(--muted);font-size:11.5px">填答者</small><div><b>${esc(whoStr)}</b></div></div>
+    <div><small style="color:var(--muted);font-size:11.5px">提交時間</small><div>${esc(timeStr)}</div></div>
+    <div><small style="color:var(--muted);font-size:11.5px">問卷名稱</small><div>${esc(form.title || r.formTitle || "DFC 問卷")}</div></div>
+    <div><small style="color:var(--muted);font-size:11.5px">同步狀態</small><div>${r.syncedToGoogle ? "✓ 已同步 Google 表單" : (r.demo ? "示範模式 (本地保存)" : "本地資料庫保存")}</div></div>
+    <div><small style="color:var(--muted);font-size:11.5px">IP 位址</small><div><code>${esc(r.ip || "—")}</code></div></div>
+    <div><small style="color:var(--muted);font-size:11.5px">裝置與系統</small><div>${esc(r.device || "—")}</div></div>
+  `;
+
+  const ansWrap = $("respDetailAnswersList");
+  ansWrap.innerHTML = "";
+  const cps = form.checkpoints || [];
+  cps.forEach((cp, idx) => {
+    const val = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
+    const card = document.createElement("div");
+    card.className = "detail-q-card";
+    let formattedVal = "";
+    if (cp.type === "rating") {
+      const stars = Number(val) || 0;
+      formattedVal = `<span style="color:#f59e0b;font-weight:700">${"★".repeat(stars)}${"☆".repeat(Math.max(0, 5 - stars))} (${stars} 星)</span>`;
+    } else if (Array.isArray(val)) {
+      formattedVal = val.map(v => `<span style="display:inline-block;background:#3b82f61a;color:#1d4ed8;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;font-weight:600">✓ ${esc(v)}</span>`).join("");
+    } else {
+      formattedVal = esc(String(val || "（未作答）"));
+    }
+    card.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px">⏱️ ${formatMmSs(cp.time)} · ${esc(cp.stepLabel || `問題 ${idx + 1}`)}</div>
+      <div class="detail-q-title">Q${idx + 1}. ${esc(cp.title)}</div>
+      <div class="detail-q-ans">${formattedVal}</div>
+    `;
+    ansWrap.appendChild(card);
+  });
+
+  $("closeRespDetailBtn").onclick = () => modal.classList.add("hide");
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.add("hide"); };
+  modal.classList.remove("hide");
+}
+
+/* ============================================================================
+ * 超級 DFC 時間點題目可視化工作室彈窗邏輯
+ * ============================================================================ */
+let studioCurTime = 0;
+let studioVideoEl = null, studioCanvasEl = null;
+
+function setupStudioTabs() {
+  $("tabStudioTimeline").onclick = () => {
+    $("tabStudioTimeline").classList.add("active");
+    $("tabStudioGeneral").classList.remove("active");
+    $("studioTabTimelineWrap").classList.remove("hide");
+    $("studioTabGeneralWrap").classList.add("hide");
+  };
+  $("tabStudioGeneral").onclick = () => {
+    $("tabStudioGeneral").classList.add("active");
+    $("tabStudioTimeline").classList.remove("active");
+    $("studioTabGeneralWrap").classList.remove("hide");
+    $("studioTabTimelineWrap").classList.add("hide");
+  };
+}
+
+>>>>>>> Stashed changes
 function openFormConfigModal(formObj) {
   if (!isSuper()) return toast("一般管理員僅能查看數據", true);
   editingFormObj = JSON.parse(JSON.stringify(formObj));
   $("cfgFormTitle").value = editingFormObj.title || "";
+  $("cfgFormDesc").value = editingFormObj.description || "";
   $("cfgVideoUrl").value = editingFormObj.videoUrl || "/assets/dfc.mp4";
+  $("cfgFallbackDuration").value = Number(editingFormObj.fallbackDuration) || 18;
   $("cfgGoogleFormUrl").value = editingFormObj.googleFormUrl || "";
   $("cfgCsvUrl").value = editingFormObj.csvUrl || "";
   $("cfgSubmitMode").value = editingFormObj.submitMode || "end";
   $("cfgEmailEntryId").value = editingFormObj.emailEntryId || "";
+  $("cfgIsDefault").checked = editingFormObj.id === activeDfcFormId;
+
+  setupStudioTabs();
+  $("tabStudioTimeline").click();
+
+  initStudioPlayer();
   renderCheckpointEditors();
+  renderStudioPins();
   $("formConfigModal").classList.remove("hide");
+}
+
+function initStudioPlayer() {
+  studioVideoEl = $("studioVideo");
+  studioCanvasEl = $("studioCanvas");
+  studioCurTime = 0;
+  studioDuration = Number($("cfgFallbackDuration").value) || Number(editingFormObj.fallbackDuration) || 18;
+  setStudioPlaying(false);
+
+  const videoUrl = $("cfgVideoUrl").value.trim();
+  let useReal = false;
+  if (videoUrl && !videoUrl.includes("YOUR_")) {
+    studioVideoEl.src = videoUrl;
+    studioVideoEl.onloadedmetadata = () => {
+      if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
+        studioDuration = studioVideoEl.duration;
+        updateStudioProgressUi();
+      }
+    };
+    studioVideoEl.classList.remove("hide");
+    studioCanvasEl.classList.add("hide");
+    useReal = true;
+  } else {
+    studioVideoEl.classList.add("hide");
+    studioCanvasEl.classList.remove("hide");
+  }
+
+  $("studioPlayBtn").onclick = () => setStudioPlaying(!studioPlaying);
+  $("studioRwBtn").onclick = () => seekStudioTime(Math.max(0, studioCurTime - 3));
+  $("studioFwBtn").onclick = () => seekStudioTime(Math.min(studioDuration, studioCurTime + 3));
+
+  $("studioTrackWrap").onclick = (e) => {
+    const rect = $("studioTrack").getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    seekStudioTime(pct * studioDuration);
+  };
+
+  $("studioCaptureBtn").onclick = () => {
+    const t = Number(studioCurTime.toFixed(1));
+    const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
+    if (cards.length) {
+      const targetCard = cards[studioActiveQuestionIndex] || cards[0];
+      targetCard.querySelector(".cp-time").value = t;
+      targetCard.querySelector(".cp-time-mm").value = formatMmSs(t);
+      targetCard.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(t)} (${t}秒)`;
+      syncCheckpointsFromDom();
+      renderStudioPins();
+      toast(`已將目前播放時間「${formatMmSs(t)}」填入問題 #${studioActiveQuestionIndex + 1}`);
+    } else {
+      $("studioAddAtPlayheadBtn").click();
+    }
+  };
+
+  $("studioAddAtPlayheadBtn").onclick = () => {
+    syncCheckpointsFromDom();
+    const t = Number(studioCurTime.toFixed(1)) || 5;
+    const nextIdx = (editingFormObj.checkpoints || []).length + 1;
+    editingFormObj.checkpoints.push({
+      id: "q" + nextIdx + "_" + Date.now().toString(36),
+      time: t,
+      entryId: `entry.${nextIdx}11111111`,
+      stepLabel: `階段 ${nextIdx}`,
+      title: `第 ${nextIdx} 階段問題`,
+      desc: "",
+      type: "radio",
+      options: ["選項 A", "選項 B", "選項 C"],
+      required: true,
+    });
+    studioActiveQuestionIndex = editingFormObj.checkpoints.length - 1;
+    renderCheckpointEditors();
+    renderStudioPins();
+    toast(`已於秒數「${formatMmSs(t)}」新增問題 #${nextIdx}！`);
+  };
+
+  $("studioSortCheckpointsBtn").onclick = () => {
+    syncCheckpointsFromDom();
+    editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
+    renderCheckpointEditors();
+    renderStudioPins();
+    toast("已依時間點由小到大重新排序！");
+  };
+
+  updateStudioProgressUi();
+  startStudioLoop();
+}
+
+function setStudioPlaying(play) {
+  studioPlaying = play;
+  $("studioPlayBtn").textContent = play ? "❚❚ 暫停" : "▶ 播放";
+  if (studioVideoEl && !studioVideoEl.classList.contains("hide")) {
+    if (play) studioVideoEl.play().catch(() => {});
+    else studioVideoEl.pause();
+  }
+}
+
+function seekStudioTime(t) {
+  studioCurTime = Math.max(0, Math.min(studioDuration, t));
+  if (studioVideoEl && !studioVideoEl.classList.contains("hide")) {
+    studioVideoEl.currentTime = studioCurTime;
+  }
+  updateStudioProgressUi();
+}
+
+let lastStudioTick = performance.now();
+function startStudioLoop() {
+  if (studioRaf) cancelAnimationFrame(studioRaf);
+  lastStudioTick = performance.now();
+
+  function loop(now) {
+    const dt = (now - lastStudioTick) / 1000;
+    lastStudioTick = now;
+
+    if (studioPlaying) {
+      if (studioVideoEl && !studioVideoEl.classList.contains("hide")) {
+        studioCurTime = studioVideoEl.currentTime;
+        if (studioVideoEl.ended) setStudioPlaying(false);
+      } else {
+        studioCurTime += dt;
+        if (studioCurTime >= studioDuration) {
+          studioCurTime = studioDuration;
+          setStudioPlaying(false);
+        }
+      }
+      updateStudioProgressUi();
+    }
+
+    // 若為 Canvas 模式，即時繪製背景
+    if (studioCanvasEl && !studioCanvasEl.classList.contains("hide")) {
+      drawStudioCanvas(studioCurTime);
+    }
+
+    if (!$("formConfigModal").classList.contains("hide")) {
+      studioRaf = requestAnimationFrame(loop);
+    }
+  }
+  studioRaf = requestAnimationFrame(loop);
+}
+
+function drawStudioCanvas(t) {
+  const cv = studioCanvasEl;
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+
+  // 漸層背景
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, "#090d16");
+  grad.addColorStop(0.5, "#1e293b");
+  grad.addColorStop(1, "#090d16");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // 動態光暈
+  for (let i = 0; i < 3; i++) {
+    const cx = w * 0.3 + Math.sin(t + i) * 60;
+    const cy = h * 0.5 + Math.cos(t * 0.8 + i) * 40;
+    const r = 90 + i * 30;
+    const rg = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
+    rg.addColorStop(0, i === 0 ? "rgba(56, 189, 248, 0.28)" : "rgba(129, 140, 248, 0.2)");
+    rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "700 22px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("🎬 DFC 互動影片工作室預覽", w / 2, h / 2 - 10);
+
+  ctx.fillStyle = "#38bdf8";
+  ctx.font = "600 15px monospace";
+  ctx.fillText(`PLAYHEAD: ${formatMmSs(t)} / ${formatMmSs(studioDuration)}`, w / 2, h / 2 + 22);
+}
+
+function updateStudioProgressUi() {
+  const pct = Math.min(100, Math.max(0, (studioCurTime / (studioDuration || 18)) * 100));
+  $("studioTrackFill").style.width = pct + "%";
+  $("studioTimeLabel").textContent = `${formatMmSs(studioCurTime)}.${Math.floor((studioCurTime % 1) * 10)} / ${formatMmSs(studioDuration)}.0`;
+}
+
+function renderStudioPins() {
+  const cont = $("studioPinsContainer");
+  cont.innerHTML = "";
+  const cps = editingFormObj.checkpoints || [];
+  $("studioPinCountHint").textContent = `現有 ${cps.length} 個時間點題目`;
+  $("studioQuestionCountText").textContent = `共 ${cps.length} 題`;
+
+  cps.forEach((cp, idx) => {
+    const pin = document.createElement("div");
+    pin.className = "studio-pin" + (idx === studioActiveQuestionIndex ? " active" : "");
+    const pct = Math.min(99, Math.max(1, (cp.time / (studioDuration || 18)) * 100));
+    pin.style.left = pct + "%";
+    pin.title = `題目 #${idx + 1}（${formatMmSs(cp.time)}）: ${cp.title}`;
+    pin.innerHTML = `<div class="studio-pin-dot"></div>`;
+    pin.onclick = (e) => {
+      e.stopPropagation();
+      seekStudioTime(cp.time);
+      studioActiveQuestionIndex = idx;
+      renderStudioPins();
+      focusQuestionCard(idx);
+    };
+    cont.appendChild(pin);
+  });
+}
+
+function focusQuestionCard(idx) {
+  const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
+  cards.forEach((c, i) => c.classList.toggle("highlight", i === idx));
+  if (cards[idx]) {
+    cards[idx].scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 function renderCheckpointEditors() {
   const wrap = $("cfgCheckpointsWrap");
   wrap.innerHTML = "";
+
   (editingFormObj.checkpoints || []).forEach((cp, idx) => {
     const card = document.createElement("div");
+<<<<<<< Updated upstream
     card.style.background = "var(--bg)";
     card.style.border = "1px solid var(--line)";
     card.style.borderRadius = "var(--r-md)";
@@ -1736,12 +2536,219 @@ function renderCheckpointEditors() {
       </div>
       <label class="field"><span class="lbl">問題標題</span><input class="input cp-title" value="${esc(cp.title || "")}"></label>
       <label class="field"><span class="lbl">選項 (以換行或逗號分隔)</span><textarea class="input cp-opts" rows="2">${esc((cp.options || []).join("\n"))}</textarea></label>
+=======
+    card.className = "cp-edit-card" + (idx === studioActiveQuestionIndex ? " highlight" : "");
+    card.onclick = () => {
+      studioActiveQuestionIndex = idx;
+      renderStudioPins();
+    };
+
+    const typeOptions = [
+      { val: "radio", label: "🔘 單選題 (Single Choice)" },
+      { val: "checkbox", label: "☑️ 多選題 (Multiple Choice)" },
+      { val: "rating", label: "⭐ 5星評分量表 (1~5 Stars)" },
+      { val: "dropdown", label: "▾ 下拉選單 (Dropdown)" },
+      { val: "boolean", label: "⚖️ 是非題 (是 / 否)" },
+      { val: "text", label: "💬 簡答題 (Short Text)" },
+      { val: "textarea", label: "📝 詳答題 (Paragraph)" },
+    ];
+
+    const hasOptions = ["radio", "checkbox", "dropdown"].includes(cp.type);
+
+    card.innerHTML = `
+      <div class="cp-card-head">
+        <div class="cp-card-meta">
+          <strong style="font-size:14.5px">問題 #${idx + 1}</strong>
+          <span class="cp-time-badge">⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒)</span>
+          <span class="cp-badge-type">${esc(cp.type)}</span>
+        </div>
+        <div class="cp-tools">
+          <button type="button" class="btn ghost sm preview-cp" title="跳至此秒數試播">▶ 試播此時間點</button>
+          <button type="button" class="btn ghost sm cap-cp" title="填入播放器當前秒數">⚡ 抓取當前秒數</button>
+          <button type="button" class="btn ghost sm mv-up" title="上移此題" ${idx === 0 ? "disabled" : ""}>⬆</button>
+          <button type="button" class="btn ghost sm mv-down" title="下移此題" ${idx === editingFormObj.checkpoints.length - 1 ? "disabled" : ""}>⬇</button>
+          <button type="button" class="btn ghost sm dup-cp" title="複製此題">📑</button>
+          <button type="button" class="btn danger sm rm-cp" title="移除此題">🗑️</button>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <label class="field" style="margin-top:0">
+          <span class="lbl">時間 (分:秒) <span>如 00:04</span></span>
+          <input class="input cp-time-mm" value="${formatMmSs(cp.time)}">
+        </label>
+        <label class="field" style="margin-top:0">
+          <span class="lbl">時間 (總秒數)</span>
+          <input type="number" step="0.5" min="0" class="input cp-time" value="${Number(cp.time) || 5}">
+        </label>
+        <label class="field" style="margin-top:0">
+          <span class="lbl">題目類型</span>
+          <select class="input cp-type">
+            ${typeOptions.map(t => `<option value="${t.val}" ${cp.type === t.val ? "selected" : ""}>${t.label}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="lbl">階段標籤 <span>點選下方快速代入 DFC 步驟名稱</span></span>
+        <input class="input cp-step" value="${esc(cp.stepLabel || `階段 ${idx + 1}`)}">
+        <div class="quick-chips">
+          <button type="button" class="chip-btn" data-step="階段一 · 感受 Feel">階段一 · 感受 Feel</button>
+          <button type="button" class="chip-btn" data-step="階段二 · 想像 Imagine">階段二 · 想像 Imagine</button>
+          <button type="button" class="chip-btn" data-step="階段三 · 實踐 Do">階段三 · 實踐 Do</button>
+          <button type="button" class="chip-btn" data-step="階段四 · 分享 Share">階段四 · 分享 Share</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="lbl">題目內容 <b>*</b></span>
+        <input class="input cp-title" value="${esc(cp.title || "")}" placeholder="例如：在剛才的影片中，你觀察到最核心的校園問題是什麼？">
+      </label>
+
+      <label class="field">
+        <span class="lbl">補充說明或引導提示（選填）</span>
+        <input class="input cp-desc" value="${esc(cp.desc || "")}" placeholder="例如：請勾選一個最符合你想法的選項，作答後影片將繼續播放。">
+      </label>
+
+      <div class="cp-opts-box" style="${hasOptions ? "" : "display:none"}">
+        <label class="field">
+          <span class="lbl">選項清單 <span>請以「換行」或「逗號」分隔各個選項</span></span>
+          <textarea class="input cp-opts" rows="3" placeholder="選項一&#10;選項二&#10;選項三">${esc((cp.options || []).join("\n"))}</textarea>
+          <div class="quick-chips" style="margin-top:6px">
+            <span style="font-size:11.5px;color:var(--muted)">快捷範本：</span>
+            <button type="button" class="chip-btn opt-preset" data-preset="likert5">五分滿意度 (非常滿意~非常不滿意)</button>
+            <button type="button" class="chip-btn opt-preset" data-preset="agree5">認同度 (非常同意~非常不同意)</button>
+            <button type="button" class="chip-btn opt-preset" data-preset="yesno">是非選項 (是、否)</button>
+            <button type="button" class="chip-btn opt-preset" data-preset="dfc">校園 DFC 方案範本</button>
+          </div>
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);flex-wrap:wrap;gap:10px">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer">
+          <input type="checkbox" class="cp-req" ${cp.required !== false ? "checked" : ""}>
+          <span>此題為必填題</span>
+        </label>
+        <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+          <span>Google Form Entry ID (選填):</span>
+          <input class="input cp-entry-inp" style="width:140px;padding:4px 8px;font-size:12px" value="${esc(cp.entryId || "")}" placeholder="entry.123456789">
+        </div>
+      </div>
+>>>>>>> Stashed changes
     `;
+
+    // 雙向時間同步
+    const mmInp = card.querySelector(".cp-time-mm");
+    const secInp = card.querySelector(".cp-time");
+    mmInp.oninput = () => {
+      const s = parseMmSs(mmInp.value);
+      secInp.value = s;
+      card.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(s)} (${s}秒)`;
+      syncCheckpointsFromDom();
+      renderStudioPins();
+    };
+    secInp.oninput = () => {
+      const s = Number(secInp.value) || 0;
+      mmInp.value = formatMmSs(s);
+      card.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(s)} (${s}秒)`;
+      syncCheckpointsFromDom();
+      renderStudioPins();
+    };
+
+    // 階段快捷按鈕
+    card.querySelectorAll(".quick-chips .chip-btn[data-step]").forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        card.querySelector(".cp-step").value = btn.getAttribute("data-step");
+      };
+    });
+
+    // 題目類型切換
+    const typeSelect = card.querySelector(".cp-type");
+    const optsBox = card.querySelector(".cp-opts-box");
+    typeSelect.onchange = () => {
+      const isOptType = ["radio", "checkbox", "dropdown"].includes(typeSelect.value);
+      optsBox.style.display = isOptType ? "" : "none";
+    };
+
+    // 選項範本快捷
+    card.querySelectorAll(".opt-preset").forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const p = btn.getAttribute("data-preset");
+        const ta = card.querySelector(".cp-opts");
+        if (p === "likert5") ta.value = "非常滿意\n滿意\n普通\n不滿意\n非常不滿意";
+        else if (p === "agree5") ta.value = "非常同意\n同意\n普通\n不同意\n非常不同意";
+        else if (p === "yesno") ta.value = "是\n否";
+        else if (p === "dfc") ta.value = "資訊傳遞與活動宣傳\n校園空間動線指引\n互動科技與表單反饋\n跨班級共創實踐行動";
+      };
+    });
+
+    // 試播此時間點
+    card.querySelector(".preview-cp").onclick = () => {
+      seekStudioTime(Number(secInp.value) || 0);
+      setStudioPlaying(true);
+    };
+
+    // 抓取當前秒數
+    card.querySelector(".cap-cp").onclick = () => {
+      const t = Number(studioCurTime.toFixed(1));
+      secInp.value = t;
+      mmInp.value = formatMmSs(t);
+      card.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(t)} (${t}秒)`;
+      syncCheckpointsFromDom();
+      renderStudioPins();
+      toast(`已將目前播放時間「${formatMmSs(t)}」帶入本題`);
+    };
+
+    // 移動上 / 下
+    card.querySelector(".mv-up").onclick = () => {
+      if (idx > 0) {
+        syncCheckpointsFromDom();
+        const tmp = editingFormObj.checkpoints[idx];
+        editingFormObj.checkpoints[idx] = editingFormObj.checkpoints[idx - 1];
+        editingFormObj.checkpoints[idx - 1] = tmp;
+        studioActiveQuestionIndex = idx - 1;
+        renderCheckpointEditors();
+        renderStudioPins();
+      }
+    };
+    card.querySelector(".mv-down").onclick = () => {
+      if (idx < editingFormObj.checkpoints.length - 1) {
+        syncCheckpointsFromDom();
+        const tmp = editingFormObj.checkpoints[idx];
+        editingFormObj.checkpoints[idx] = editingFormObj.checkpoints[idx + 1];
+        editingFormObj.checkpoints[idx + 1] = tmp;
+        studioActiveQuestionIndex = idx + 1;
+        renderCheckpointEditors();
+        renderStudioPins();
+      }
+    };
+
+    // 複製此題
+    card.querySelector(".dup-cp").onclick = () => {
+      syncCheckpointsFromDom();
+      const cloned = JSON.parse(JSON.stringify(editingFormObj.checkpoints[idx]));
+      cloned.id = "q" + (editingFormObj.checkpoints.length + 1) + "_" + Date.now().toString(36);
+      cloned.time = Number(cloned.time) + 3;
+      cloned.title += " (複製)";
+      editingFormObj.checkpoints.splice(idx + 1, 0, cloned);
+      studioActiveQuestionIndex = idx + 1;
+      renderCheckpointEditors();
+      renderStudioPins();
+      toast(`已成功複製題目 #${idx + 1}！`);
+    };
+
+    // 移除此題
     card.querySelector(".rm-cp").onclick = () => {
       syncCheckpointsFromDom();
       editingFormObj.checkpoints.splice(idx, 1);
+      studioActiveQuestionIndex = Math.max(0, idx - 1);
       renderCheckpointEditors();
+      renderStudioPins();
+      toast(`已移除題目 #${idx + 1}`);
     };
+
     wrap.appendChild(card);
   });
 }
@@ -1750,17 +2757,24 @@ function syncCheckpointsFromDom() {
   if (!editingFormObj) return;
   const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
   editingFormObj.checkpoints = cards.map((c, idx) => {
-    const rawOpts = c.querySelector(".cp-opts").value;
+    const rawOpts = c.querySelector(".cp-opts")?.value || "";
     const options = rawOpts.split(/[\r\n,，]+/).map(s => s.trim()).filter(Boolean);
+    const secVal = Number(c.querySelector(".cp-time").value) || parseMmSs(c.querySelector(".cp-time-mm")?.value) || (idx + 1) * 5;
     return {
-      id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now()),
-      time: Math.max(1, Number(c.querySelector(".cp-time").value) || (idx + 1) * 5),
+      id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now().toString(36)),
+      time: Math.max(0, secVal),
       entryId: c.querySelector(".cp-entry-inp").value.trim() || `entry.${idx + 1}`,
+<<<<<<< Updated upstream
       type: "radio",
       stepLabel: `階段 ${idx + 1}`,
+=======
+      type: c.querySelector(".cp-type").value,
+      stepLabel: c.querySelector(".cp-step").value.trim() || `階段 ${idx + 1}`,
+>>>>>>> Stashed changes
       title: c.querySelector(".cp-title").value.trim() || `問題 ${idx + 1}`,
+      desc: c.querySelector(".cp-desc").value.trim() || "",
       options,
-      required: true,
+      required: c.querySelector(".cp-req") ? c.querySelector(".cp-req").checked : true,
     };
   });
 }
@@ -1770,16 +2784,30 @@ $("addCheckpointBtn").onclick = () => {
   const nextIdx = (editingFormObj.checkpoints || []).length + 1;
   const lastTime = editingFormObj.checkpoints.length ? Number(editingFormObj.checkpoints[editingFormObj.checkpoints.length - 1].time) : 0;
   editingFormObj.checkpoints.push({
+<<<<<<< Updated upstream
     id: "q" + nextIdx + "_" + Date.now(),
     time: lastTime + 5,
     entryId: `entry.${nextIdx}00000000`,
+=======
+    id: "q" + nextIdx + "_" + Date.now().toString(36),
+    time: Number((lastTime + 5).toFixed(1)),
+    entryId: `entry.${nextIdx}11111111`,
+>>>>>>> Stashed changes
     stepLabel: `階段 ${nextIdx}`,
     title: `第 ${nextIdx} 階段問題`,
+    desc: "",
     type: "radio",
+<<<<<<< Updated upstream
     options: ["選項一", "選項二"],
+=======
+    options: ["選項 A", "選項 B", "選項 C"],
+>>>>>>> Stashed changes
     required: true,
   });
+  studioActiveQuestionIndex = editingFormObj.checkpoints.length - 1;
   renderCheckpointEditors();
+  renderStudioPins();
+  focusQuestionCard(studioActiveQuestionIndex);
 };
 
 $("editActiveFormBtn").onclick = () => {
@@ -1790,27 +2818,42 @@ $("editActiveFormBtn").onclick = () => {
 $("addNewFormBtn").onclick = () => {
   openFormConfigModal({
     id: "form-" + Date.now(),
-    title: "新增 Google 表單 #" + (dfcForms.length + 1),
+    title: "新增 DFC 影片問卷 #" + (dfcForms.length + 1),
+    description: "DFC 四步驟影片探究與反思問卷",
     videoUrl: "/assets/dfc.mp4",
+    fallbackDuration: 18,
     googleFormUrl: "",
     csvUrl: "",
     emailEntryId: "",
     submitMode: "end",
+<<<<<<< Updated upstream
     checkpoints: [{ id: "q1", time: 5, entryId: "entry.11111111", stepLabel: "階段一", title: "問題一", type: "radio", options: ["選項 A", "選項 B"], required: true }],
+=======
+    checkpoints: [
+      { id: "q1", time: 4, entryId: "entry.111111111", stepLabel: "階段一 · 感受 Feel", title: "第一階段「感受」：你所觀察到的校園問題是什麼？", type: "radio", options: ["資訊宣傳分散", "動線需改善", "回饋管道不足"], required: true },
+      { id: "q2", time: 10, entryId: "entry.222222222", stepLabel: "階段二 · 想像 Imagine", title: "第二階段「想像」：哪種解方最值得嘗試？", type: "checkbox", options: ["互動影音表單", "一句話共創牆", "跨班級工作坊"], required: true },
+    ],
+>>>>>>> Stashed changes
   });
 };
 
-$("cancelFormCfgBtn").onclick = () => $("formConfigModal").classList.add("hide");
+$("cancelFormCfgBtn").onclick = () => {
+  setStudioPlaying(false);
+  $("formConfigModal").classList.add("hide");
+};
 
 $("saveFormCfgBtn").onclick = async () => {
   if (!editingFormObj) return;
   syncCheckpointsFromDom();
-  editingFormObj.title = $("cfgFormTitle").value.trim() || "未命名 Google 表單";
+  editingFormObj.title = $("cfgFormTitle").value.trim() || "未命名 DFC 表單";
+  editingFormObj.description = $("cfgFormDesc").value.trim();
   editingFormObj.videoUrl = $("cfgVideoUrl").value.trim() || "/assets/dfc.mp4";
+  editingFormObj.fallbackDuration = Math.max(5, Number($("cfgFallbackDuration").value) || 18);
   editingFormObj.googleFormUrl = $("cfgGoogleFormUrl").value.trim();
   editingFormObj.csvUrl = $("cfgCsvUrl").value.trim();
   editingFormObj.submitMode = $("cfgSubmitMode").value;
   editingFormObj.emailEntryId = $("cfgEmailEntryId").value.trim();
+  editingFormObj.isDefault = $("cfgIsDefault").checked;
 
   $("saveFormCfgBtn").disabled = true;
   const r = await fetch("/api/admin/dfc/forms", {
@@ -1824,15 +2867,21 @@ $("saveFormCfgBtn").onclick = async () => {
     return toast(j.error || "儲存失敗", true);
   }
   selectedFormId = editingFormObj.id;
+  setStudioPlaying(false);
   $("formConfigModal").classList.add("hide");
+<<<<<<< Updated upstream
   toast("已儲存 Google 表單與題目設定");
+=======
+  toast("已成功儲存 DFC 問卷與時間點設定！");
+>>>>>>> Stashed changes
   load(true);
 };
 
 $("delActiveFormBtn").onclick = () => {
   const f = getActiveForm();
-  if (!f || f.id === "default-dfc") return;
+  if (!f || f.id === "default-dfc" || dfcForms.length <= 1) return;
   openConfirm({
+<<<<<<< Updated upstream
     title: `確定要刪除表單「${f.title}」？`,
     desc: "刪除後此表單設定將移除。",
     confirmText: "確定刪除",
@@ -1840,6 +2889,21 @@ $("delActiveFormBtn").onclick = () => {
       const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
       if (r.ok) { selectedFormId = "default-dfc"; toast("已刪除表單"); load(true); }
       else toast("刪除失敗", true);
+=======
+    title: `確定要刪除問卷「${f.title}」？`,
+    desc: "刪除後此問卷與相關時間點設定將移除，且不可復原。",
+    confirmText: "確定刪除問卷",
+    onConfirm: async () => {
+      const r = await fetch(`/api/admin/dfc/forms/${encodeURIComponent(f.id)}`, { method: "DELETE", headers: H });
+      if (r.ok) {
+        selectedFormId = "default-dfc";
+        toast("已刪除該問卷");
+        load(true);
+      } else {
+        const j = await r.json().catch(() => ({}));
+        toast(j.error || "刪除失敗", true);
+      }
+>>>>>>> Stashed changes
     },
   });
 };
