@@ -283,7 +283,7 @@ const DEFAULT_DFC_STORE = {
       id: "default-dfc",
       title: "DFC 沉浸式互動影片表單（主表單）",
       description: "DFC 四步驟（感受、想像、實踐、分享）互動影片探究與反思問卷",
-      videoUrl: "/assets/dfc.mp4",
+      videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
       fallbackDuration: 18,
       googleFormUrl: process.env.GOOGLE_FORM_ACTION_URL || "YOUR_GOOGLE_FORM_URL",
       csvUrl: process.env.GOOGLE_FORM_CSV_URL || "",
@@ -645,6 +645,7 @@ app.post("/api/auth/google", async (req, res) => {
     given_name: googleInfo.given_name, family_name: googleInfo.family_name, hd: googleInfo.hd, locale: googleInfo.locale,
   }, 8 * 3600));
   setCookie(res, "cf_passed", "1", { maxAge: 86400 });
+  audit(req, "[用戶登入] Google 帳號授權登入", `${email} (${googleInfo.name || "未提供姓名"}) | 裝置: ${deviceInfo}`);
   res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
 });
 
@@ -655,7 +656,43 @@ app.get("/api/me", (req, res) => {
   res.json({ user: { email: u.email, name: u.name, picture: u.picture }, ...base });
 });
 
-app.post("/api/logout", (req, res) => { clearCookie(res, "ks"); res.json({ ok: true }); });
+app.post("/api/logout", (req, res) => {
+  const u = userOf(req);
+  if (u) audit(req, "[用戶登出] 登出平台", `${u.email} (${u.name || ""})`);
+  clearCookie(res, "ks");
+  res.json({ ok: true });
+});
+
+/* --- 使用者全站互動動作安全稽核端點 --- */
+app.post("/api/activity", async (req, res) => {
+  const u = userOf(req);
+  if (!u) return res.status(401).json({ error: "Unauthorized" });
+  if (await limited("act:" + u.id, 150, 60e3)) return res.json({ ok: true });
+
+  const { action, details = "", target = "" } = req.body || {};
+  if (!action || typeof action !== "string") return res.status(400).json({ error: "Missing action" });
+
+  const safeAction = String(action).slice(0, 80);
+  const detailStr = String(details || target || "").slice(0, 300);
+  const userLabel = `${u.email}${u.name ? ` (${u.name})` : ""}`;
+  const logTarget = `${userLabel} | ${detailStr}`;
+
+  audit(req, `[用戶動作] ${safeAction}`, logTarget);
+
+  try {
+    await db.from("activity_logs").insert({
+      user_id: u.id,
+      user_email: u.email,
+      user_name: u.name || "",
+      action: safeAction,
+      details: detailStr,
+      device_info: parseUA(req.headers["user-agent"] || ""),
+      ip_address: clientIp(req),
+    });
+  } catch {}
+
+  res.json({ ok: true });
+});
 
 app.post("/api/proverbs", async (req, res) => {
   const u = userOf(req);
@@ -704,6 +741,7 @@ app.post("/api/proverbs", async (req, res) => {
     error = retry.error;
   }
   if (error) return res.status(500).json({ error: "送出失敗" });
+  audit(req, "[諺語投稿] 送出專屬卡片", `${u.email} (${u.name || ""}) | "${content.slice(0, 40)}" by ${author}`);
   invalidateQueryCache("proverbs", "proverbsCount", "users");
   res.json({ ok: true });
 });
@@ -851,6 +889,7 @@ app.post("/api/dfc/submit", async (req, res) => {
   });
   if (store.responses.length > 2000) store.responses.length = 2000;
   await writeSysStore("dfc", store);
+  audit(req, "[DFC作答] 送出問卷作答", `${u?.email || "訪客"} (${u?.name || ""}) | 表單: ${matchedForm?.title || formId} (${syncedToGoogle ? "已同步Google表單" : "本地保存"})`);
 
   if (syncErr && !isDemo) {
     return res.status(502).json({ error: "已記錄於後台，但串接 Google 表單失敗：" + syncErr });
@@ -1748,7 +1787,7 @@ async function fetchAdminAuditLogs() {
       .select("id, action, target, ip, created_at")
       .not("action", "like", `${SYS_STORE_PREFIX}%`)
       .order("id", { ascending: false })
-      .limit(30);
+      .limit(150);
     if (error) return [];
     return data || [];
   });

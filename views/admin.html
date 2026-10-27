@@ -584,16 +584,24 @@
         </div>
 
         <div class="panel-surface">
-          <div class="panel-surface-head">
+          <div class="panel-surface-head" style="flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
             <div>
-              <h3>操作與稽核紀錄</h3>
-              <p>即時紀錄管理員登入、權限變更與刪除等動作。</p>
+              <h3>全站操作與安全審計紀錄</h3>
+              <p>即時紀錄全站使用者登入、瀏覽、功能操作、投稿及管理員權限變更。</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <input type="text" id="auditSearchInput" class="input" placeholder="🔍 搜尋動作、帳號或詳情..." style="width:200px;padding:6px 10px;font-size:12.5px">
+              <select id="auditFilterType" class="input" style="width:130px;padding:6px 8px;font-size:12.5px">
+                <option value="all">全部紀錄</option>
+                <option value="user">僅使用者動作</option>
+                <option value="admin">僅管理員動作</option>
+              </select>
             </div>
           </div>
-          <div class="table-scroll-container" style="max-height:300px;overflow-y:auto">
+          <div class="table-scroll-container" style="max-height:420px;overflow-y:auto">
             <table class="data-tbl">
               <thead>
-                <tr><th>時間</th><th>動作</th><th>目標詳情</th><th>來源 IP</th></tr>
+                <tr><th style="width:140px">時間</th><th style="width:180px">動作類別</th><th>目標與操作詳情</th><th style="width:130px">來源 IP</th></tr>
               </thead>
               <tbody id="auditLogsTbody">
                 <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">載入中...</td></tr>
@@ -763,6 +771,7 @@
           <div class="studio-video-grid">
             <div class="studio-screen-wrap">
               <span class="studio-video-badge" id="studioBadgeText">▶ 影片預覽</span>
+              <iframe id="studioIframe" class="hide" allow="autoplay; fullscreen" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;border-radius:inherit"></iframe>
               <video id="studioVideo" playsinline preload="metadata" class="hide"></video>
               <canvas id="studioCanvas" width="640" height="360"></canvas>
             </div>
@@ -2102,7 +2111,7 @@ function openFormConfigModal(formObj) {
   editingFormObj = JSON.parse(JSON.stringify(formObj));
   $("cfgFormTitle").value = editingFormObj.title || "";
   $("cfgFormDesc").value = editingFormObj.description || "";
-  $("cfgVideoUrl").value = editingFormObj.videoUrl || "/assets/dfc.mp4";
+  $("cfgVideoUrl").value = editingFormObj.videoUrl || "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview";
   $("cfgFallbackDuration").value = Number(editingFormObj.fallbackDuration) || 18;
   $("cfgGoogleFormUrl").value = editingFormObj.googleFormUrl || "";
   $("cfgCsvUrl").value = editingFormObj.csvUrl || "";
@@ -2119,29 +2128,67 @@ function openFormConfigModal(formObj) {
   $("formConfigModal").classList.remove("hide");
 }
 
+function parseEmbedVideo(url) {
+  if (!url || typeof url !== "string") return null;
+  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (url.includes("drive.google.com") && url.match(/[?&]id=([a-zA-Z0-9_-]+)/));
+  if (driveMatch) {
+    return {
+      type: "drive",
+      id: driveMatch[1],
+      embedUrl: `https://drive.google.com/file/d/${driveMatch[1]}/preview`
+    };
+  }
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch) {
+    return {
+      type: "youtube",
+      id: ytMatch[1],
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
+    };
+  }
+  return null;
+}
+
 function initStudioPlayer() {
   studioVideoEl = $("studioVideo");
   studioCanvasEl = $("studioCanvas");
+  const studioIframe = $("studioIframe");
   studioCurTime = 0;
   studioDuration = Number($("cfgFallbackDuration").value) || Number(editingFormObj.fallbackDuration) || 18;
   setStudioPlaying(false);
 
   const videoUrl = $("cfgVideoUrl").value.trim();
-  let useReal = false;
-  if (videoUrl && !videoUrl.includes("YOUR_")) {
-    studioVideoEl.src = videoUrl;
-    studioVideoEl.onloadedmetadata = () => {
-      if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
-        studioDuration = studioVideoEl.duration;
-        updateStudioProgressUi();
-      }
-    };
-    studioVideoEl.classList.remove("hide");
-    studioCanvasEl.classList.add("hide");
-    useReal = true;
-  } else {
+  const embed = parseEmbedVideo(videoUrl);
+
+  if (embed) {
+    if (studioIframe) {
+      if (studioIframe.src !== embed.embedUrl) studioIframe.src = embed.embedUrl;
+      studioIframe.classList.remove("hide");
+    }
     studioVideoEl.classList.add("hide");
-    studioCanvasEl.classList.remove("hide");
+    studioCanvasEl.classList.add("hide");
+    $("studioBadgeText").textContent = embed.type === "drive" ? "▶ Google Drive 雲端預覽" : "▶ YouTube 預覽";
+  } else {
+    if (studioIframe) {
+      studioIframe.classList.add("hide");
+      studioIframe.src = "";
+    }
+    if (videoUrl && !videoUrl.includes("YOUR_")) {
+      studioVideoEl.src = videoUrl;
+      studioVideoEl.onloadedmetadata = () => {
+        if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
+          studioDuration = studioVideoEl.duration;
+          updateStudioProgressUi();
+        }
+      };
+      studioVideoEl.classList.remove("hide");
+      studioCanvasEl.classList.add("hide");
+      $("studioBadgeText").textContent = "▶ 影片預覽";
+    } else {
+      studioVideoEl.classList.add("hide");
+      studioCanvasEl.classList.remove("hide");
+      $("studioBadgeText").textContent = "▶ 示範動畫";
+    }
   }
 
   $("studioPlayBtn").onclick = () => setStudioPlaying(!studioPlaying);
@@ -2603,7 +2650,7 @@ $("addNewFormBtn").onclick = () => {
     id: "form-" + Date.now(),
     title: "新增 DFC 影片問卷 #" + (dfcForms.length + 1),
     description: "DFC 四步驟影片探究與反思問卷",
-    videoUrl: "/assets/dfc.mp4",
+    videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
     fallbackDuration: 18,
     googleFormUrl: "",
     csvUrl: "",
@@ -2626,7 +2673,7 @@ $("saveFormCfgBtn").onclick = async () => {
   syncCheckpointsFromDom();
   editingFormObj.title = $("cfgFormTitle").value.trim() || "未命名 DFC 表單";
   editingFormObj.description = $("cfgFormDesc").value.trim();
-  editingFormObj.videoUrl = $("cfgVideoUrl").value.trim() || "/assets/dfc.mp4";
+  editingFormObj.videoUrl = $("cfgVideoUrl").value.trim() || "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview";
   editingFormObj.fallbackDuration = Math.max(5, Number($("cfgFallbackDuration").value) || 18);
   editingFormObj.googleFormUrl = $("cfgGoogleFormUrl").value.trim();
   editingFormObj.csvUrl = $("cfgCsvUrl").value.trim();
@@ -2934,15 +2981,49 @@ function renderAuditLogs() {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">尚無紀錄</td></tr>`;
     return;
   }
-  tbody.innerHTML = auditLogs.map(log => `
-    <tr>
-      <td style="white-space:nowrap;font-size:12.5px;color:var(--ink-tertiary)">${esc(log.created_at ? new Date(log.created_at).toLocaleTimeString() : "—")}</td>
-      <td style="white-space:nowrap;font-weight:600">${esc(log.action)}</td>
-      <td>${esc(log.target || "—")}</td>
-      <td style="font-family:monospace;font-size:12px">${esc(log.ip || "—")}</td>
-    </tr>
-  `).join("");
+
+  const kw = ($("auditSearchInput")?.value || "").trim().toLowerCase();
+  const filterType = $("auditFilterType")?.value || "all";
+
+  const filtered = auditLogs.filter(log => {
+    const act = log.action || "";
+    const isUser = act.startsWith("[用戶") || act.startsWith("[諺語") || act.startsWith("[DFC");
+    if (filterType === "user" && !isUser) return false;
+    if (filterType === "admin" && isUser) return false;
+    if (kw) {
+      const match = act.toLowerCase().includes(kw) || (log.target || "").toLowerCase().includes(kw) || (log.ip || "").toLowerCase().includes(kw);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">查無符合篩選條件的審計紀錄</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(log => {
+    const act = log.action || "";
+    const isUser = act.startsWith("[用戶") || act.startsWith("[諺語") || act.startsWith("[DFC");
+    const badgeStyle = isUser
+      ? "background:rgba(0,113,227,0.1);color:#0071e3;border:1px solid rgba(0,113,227,0.2);"
+      : "background:rgba(245,158,11,0.1);color:#b45309;border:1px solid rgba(245,158,11,0.25);";
+    const timeStr = log.created_at ? new Date(log.created_at).toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+    return `
+      <tr>
+        <td style="white-space:nowrap;font-size:12px;color:var(--ink-tertiary)">${esc(timeStr)}</td>
+        <td style="white-space:nowrap;font-weight:600">
+          <span style="display:inline-block;padding:2.5px 8px;border-radius:6px;font-size:12px;${badgeStyle}">${esc(act)}</span>
+        </td>
+        <td style="word-break:break-word;font-size:13px;line-height:1.4">${esc(log.target || "—")}</td>
+        <td style="font-family:monospace;font-size:12px;color:var(--ink-secondary)">${esc(log.ip || "—")}</td>
+      </tr>
+    `;
+  }).join("");
 }
+
+$("auditSearchInput")?.addEventListener("input", renderAuditLogs);
+$("auditFilterType")?.addEventListener("change", renderAuditLogs);
 
 $("createAdminForm").onsubmit = async (ev) => {
   ev.preventDefault();

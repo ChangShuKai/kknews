@@ -621,7 +621,7 @@
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-  .video-cinema-box video, .video-cinema-box canvas {
+  .video-cinema-box video, .video-cinema-box canvas, .video-cinema-box iframe {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -929,11 +929,284 @@
     color: var(--blue);
     display: grid;
     place-items: center;
+  /* ===== 一進系統先登入：校園入口登入門戶 (Entry Login Gateway) ===== */
+  body.entry-locked {
+    overflow: hidden !important;
+  }
+  .entry-gate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 850;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(245, 245, 247, 0.88);
+    backdrop-filter: blur(36px) saturate(180%);
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 0.4s var(--spring-smooth), visibility 0.4s;
+  }
+  .entry-gate-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+  .entry-gate-card {
+    position: relative;
+    width: 100%;
+    max-width: 530px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 28px;
+    box-shadow:
+      0 32px 80px -16px rgba(0, 0, 0, 0.16),
+      0 12px 32px -8px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+    padding: 38px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transform: scale(0.96) translateY(12px);
+    transition: transform 0.45s var(--spring-smooth);
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .entry-gate-overlay.active .entry-gate-card {
+    transform: scale(1) translateY(0);
+  }
+  .entry-gate-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .entry-gate-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f4f9 100%);
+    box-shadow:
+      0 8px 24px -4px rgba(0, 113, 227, 0.18),
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s var(--spring-bounce);
+  }
+  .entry-gate-icon-wrap:hover {
+    transform: scale(1.06) rotate(3deg);
+  }
+  .entry-gate-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  .entry-gate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--r-pill);
+    background: var(--blue-soft);
+    color: var(--blue);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .entry-gate-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    animation: pulseDot 2s infinite ease-in-out;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .entry-gate-title {
+    margin: 10px 0 6px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .entry-gate-sub {
+    margin: 0 0 20px;
+    font-size: 13.5px;
+    color: var(--ink-secondary);
+    line-height: 1.55;
+    max-width: 430px;
+  }
+
+  /* 特色功能微導覽卡 */
+  .entry-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 22px;
+  }
+  .entry-feat-card {
+    background: rgba(0, 0, 0, 0.025);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 12px 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .entry-feat-card:hover {
+    background: rgba(0, 113, 227, 0.04);
+    transform: translateY(-2px);
+  }
+  .entry-feat-icon {
+    font-size: 22px;
+    line-height: 1.1;
+  }
+  .entry-feat-card h4 {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .entry-feat-card p {
+    margin: 0;
+    font-size: 10.5px;
+    color: var(--ink-tertiary);
+    line-height: 1.3;
+  }
+
+  /* 登入核心區塊 */
+  .entry-action-box {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 18px;
+  }
+  .entry-login-tip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .entry-google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 15px 20px;
+    border-radius: var(--r-md);
+    background: #ffffff;
+    border: 1.5px solid var(--line-strong);
+    box-shadow:
+      0 4px 16px -2px rgba(0, 0, 0, 0.08),
+      0 1px 3px rgba(0, 0, 0, 0.04);
+    color: var(--ink);
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.18s var(--spring-smooth), box-shadow 0.18s, border-color 0.18s, background 0.18s;
+  }
+  .entry-google-btn:hover {
+    border-color: var(--blue);
+    background: #fafcff;
+    box-shadow:
+      0 8px 24px -4px rgba(0, 113, 227, 0.22),
+      0 2px 6px rgba(0, 0, 0, 0.04);
+    transform: translateY(-1.5px);
+  }
+  .entry-google-btn:active {
+    transform: scale(0.985);
+  }
+  .entry-btn-arrow {
+    margin-left: 4px;
+    font-size: 16px;
+    color: var(--blue);
+    transition: transform 0.2s;
+  }
+  .entry-google-btn:hover .entry-btn-arrow {
+    transform: translateX(3px);
+  }
+  .entry-domain-note {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+  }
+  .entry-domain-note strong {
+    color: var(--blue);
+  }
+
+  /* 資安審計提示區 */
+  .entry-audit-notice {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(245, 158, 11, 0.07);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--r-md);
+    padding: 12px 14px;
+    text-align: left;
+  }
+  .entry-audit-icon {
+    font-size: 16px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .entry-audit-text {
+    font-size: 11.5px;
+    color: #92400e;
+    line-height: 1.5;
+  }
+  .entry-audit-text strong {
+    font-weight: 700;
+  }
+
+  @media (max-width: 600px) {
+    .entry-gate-card {
+      padding: 28px 20px;
+      border-radius: 22px;
+    }
+    .entry-features-grid {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .entry-feat-card {
+      flex-direction: row;
+      text-align: left;
+      padding: 10px 12px;
+      gap: 10px;
+    }
+    .entry-feat-icon {
+      font-size: 20px;
+    }
+    .entry-gate-title {
+      font-size: 21px;
+    }
   }
 </style>
 </head>
-<body class="turnstile-locked">
+<body class="turnstile-locked entry-locked">
 
 <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩 -->
 <div id="turnstileOverlay" class="turnstile-backdrop" aria-modal="true" role="dialog">
@@ -950,6 +1223,81 @@
       <div id="cfTurnstileWidget"></div>
     </div>
     <div id="turnstileStatus" style="font-size:13px;min-height:22px;font-weight:600;color:var(--ink-secondary)"></div>
+  </div>
+</div>
+
+<!-- ==================== 一進系統先登入：校園入口登入門戶 (Entry Login Gateway) ==================== -->
+<div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true" aria-labelledby="entryGateTitle">
+  <div class="entry-gate-card">
+    <div class="entry-gate-brand">
+      <div class="entry-gate-icon-wrap">
+        <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo">
+      </div>
+      <div class="entry-gate-badge">
+        <span class="entry-gate-dot"></span>
+        <span>校園單一簽入驗證門戶</span>
+      </div>
+    </div>
+
+    <h1 class="entry-gate-title" id="entryGateTitle">歡迎使用 KKNews 校園平台</h1>
+    <p class="entry-gate-sub">以人為本的數位交流空間。請先使用花蓮縣教育網 Google 學校帳號完成登入，驗證後即可暢通使用全站所有功能。</p>
+
+    <!-- 特色功能卡片 (Feature Showcase Cards) -->
+    <div class="entry-features-grid">
+      <div class="entry-feat-card">
+        <div class="entry-feat-icon">✍️</div>
+        <div>
+          <h4>諺語專屬卡片</h4>
+          <p>8 種典雅版面與即時預覽</p>
+        </div>
+      </div>
+      <div class="entry-feat-card">
+        <div class="entry-feat-icon">🎬</div>
+        <div>
+          <h4>DFC 互動影音</h4>
+          <p>沉浸式影片問答微互動</p>
+        </div>
+      </div>
+      <div class="entry-feat-card">
+        <div class="entry-feat-icon">📊</div>
+        <div>
+          <h4>校園即時數據</h4>
+          <p>雲端即時連線與系統指標</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 登入操作核心區 (Core Login Action) -->
+    <div class="entry-action-box">
+      <div class="entry-login-tip">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>一進系統先登入 · 後續使用全功能免再登入</span>
+      </div>
+
+      <button type="button" class="entry-google-btn" id="entryGoogleLoginBtn">
+        <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/>
+          <path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/>
+          <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/>
+        </svg>
+        <span>使用 Google 學校帳號登入</span>
+        <span class="entry-btn-arrow">→</span>
+      </button>
+
+      <div class="entry-domain-note">
+        僅限花蓮縣教育網 <strong>@hlc.edu.tw</strong> 學校帳號
+      </div>
+    </div>
+
+    <!-- 資安審計提示區 (Audit & Security Compliance Box) -->
+    <div class="entry-audit-notice">
+      <div class="entry-audit-icon">🛡️</div>
+      <div class="entry-audit-text">
+        <strong>校園網路安全稽核提示：</strong>
+        為維護系統資安與使用品質，進入系統後<strong>所有登入紀錄、頁面瀏覽、功能操作與作答投稿動作將被即時安全審計並記錄存查</strong>。
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1275,6 +1623,7 @@
         <div class="dfc-video-pane">
           <div class="video-cinema-box">
             <div class="video-floating-badge" id="dfcVideoBadge">播放中</div>
+            <iframe id="dfcIframe" class="hide" allow="autoplay; fullscreen" allowfullscreen frameborder="0"></iframe>
             <video id="dfcVideo" playsinline preload="metadata" class="hide"></video>
             <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
           </div>
@@ -1286,6 +1635,7 @@
               <div id="dfcMarkers"></div>
             </div>
             <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 00:18</span>
+            <button type="button" class="btn ghost sm" id="dfcToggleQBtn" style="white-space:nowrap;margin-left:8px;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝 填寫問卷</button>
           </div>
         </div>
 
@@ -1351,6 +1701,35 @@ const api = (url, body) => fetch(url, {
   headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
   body: JSON.stringify(body || {})
 });
+
+/* ============================================================================
+ * 全站使用者行為安全審計追蹤 (Action Logger)
+ * 記錄所有登入、瀏覽、功能操作、卡片生成與作答歷程
+ * ============================================================================ */
+const actionLogThrottle = new Map();
+function logAction(action, details = "") {
+  if (!currentUser) return;
+  const key = `${action}:${details}`;
+  const now = Date.now();
+  if (actionLogThrottle.has(key) && (now - actionLogThrottle.get(key) < 2500)) return;
+  actionLogThrottle.set(key, now);
+  if (actionLogThrottle.size > 200) actionLogThrottle.clear();
+
+  try {
+    const payload = JSON.stringify({
+      action: String(action),
+      details: String(details),
+      url: location.href,
+      timestamp: new Date().toISOString()
+    });
+    fetch("/api/activity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: payload,
+      keepalive: true
+    }).catch(() => {});
+  } catch {}
+}
 
 /* ============================================================================
  * Cloudflare Turnstile 人機驗證控制器（高相容性，移除 CSP 衝突之內聯事件）
@@ -1540,6 +1919,12 @@ function updateDockGlider(activeBtn, animate = true) {
 
 function navigateToTab(tabName, updateHistory = true, animate = true) {
   if (!PANES[tabName]) tabName = "home";
+  if (!currentUser) {
+    $("entryLoginGate")?.classList.add("active");
+    document.body.classList.add("entry-locked");
+    return;
+  }
+  logAction("切換頁面分頁", `切換至 ${PANES[tabName]?.label || tabName} (${tabName})`);
   const isMainTab = (tabName === "home" || tabName === "status");
 
   if (currentTab === tabName) {
@@ -1904,7 +2289,7 @@ $("manualRefreshStatusBtn").addEventListener("click", () => refreshPublicStatus(
  * DFC 互動影片表單配置與引擎
  * ============================================================================ */
 const DFC_CONFIG = {
-  videoUrl: "/assets/dfc.mp4",
+  videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
   fallbackDuration: 18,
   googleFormUrl: "YOUR_GOOGLE_FORM_URL",
   emailEntryId: "",
@@ -2025,7 +2410,7 @@ async function sha256Hex(str) {
 const randomHex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, "0")).join("");
 
 async function loginWithGoogleOAuth() {
-  const loginBtns = [$("googleLoginBtn"), $("topLoginBtn")].filter(Boolean);
+  const loginBtns = [$("googleLoginBtn"), $("topLoginBtn"), $("entryGoogleLoginBtn")].filter(Boolean);
   loginBtns.forEach(b => { b.disabled = true; });
   try {
     if (!googleClientId) {
@@ -2079,8 +2464,10 @@ async function handleGoogleCallback() {
       say(j.error === "domain" ? "請使用學校帳號（@hlc.edu.tw）登入。" : "登入失敗，請重試。");
       return null;
     }
-    say("登入成功！歡迎回來", true);
+    say("登入成功！歡迎進入 KKNews", true);
     try { sessionStorage.setItem("cf_turnstile_passed", "1"); } catch {}
+    currentUser = j;
+    logAction("Google 帳號登入成功", `使用者: ${j.email} (${j.name || ""})`);
     return j;
   } catch {
     say("登入連線逾時，請再試一次");
@@ -2445,6 +2832,7 @@ function initCardStyleControls() {
       currentCardStyle.accent = p.accent;
       if ($("colorBadge")) $("colorBadge").textContent = p.name;
       renderLivePreviewCard();
+      logAction("切換卡片配色", `選擇主題: ${p.name}`);
     };
     palWrap.appendChild(btn);
   });
@@ -2459,6 +2847,7 @@ function initCardStyleControls() {
         currentCardStyle.layout = btn.dataset.layout || "classic";
         if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
         renderLivePreviewCard();
+        logAction("切換卡片版面", `選擇版面: ${CARD_LAYOUT_NAMES[currentCardStyle.layout] || currentCardStyle.layout}`);
       };
     });
   }
@@ -2475,6 +2864,7 @@ $("dlPreviewBtn").onclick = () => {
     a.download = `kknews_${currentCardStyle.layout}_${Date.now()}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    logAction("下載卡片圖片", `下載 ${currentCardStyle.layout} 風格 PNG 卡片 - 內文: "${($("content")?.value || "").slice(0, 30)}"`);
   });
 };
 
@@ -2492,9 +2882,25 @@ function show(view) {
 
 function renderMe(me) {
   currentUser = me;
-  $("acctGuest").classList.toggle("hide", Boolean(me));
-  $("acctUser").classList.toggle("hide", !me);
-  if (!me) { show("loginView"); return; }
+  const isAuth = Boolean(me);
+  const gate = $("entryLoginGate");
+  if (gate) {
+    if (isAuth) {
+      gate.classList.remove("active");
+      document.body.classList.remove("entry-locked");
+    } else {
+      gate.classList.add("active");
+      document.body.classList.add("entry-locked");
+    }
+  }
+
+  $("acctGuest").classList.toggle("hide", isAuth);
+  $("acctUser").classList.toggle("hide", !isAuth);
+
+  if (!isAuth) {
+    show("loginView");
+    return;
+  }
 
   const label = me.name ? `${me.name}` : me.email;
   const initial = (me.name || me.email || "U")[0].toUpperCase();
@@ -2510,6 +2916,7 @@ function renderMe(me) {
     $("topAvImg").classList.add("hide");
   }
 
+  // 一進系統登入後，諺語投稿及全站功能直接可用，無須再登入
   show("formView");
   let acked = false;
   try { acked = localStorage.getItem("kk_legal_ack") === "1"; } catch {}
@@ -2518,9 +2925,15 @@ function renderMe(me) {
 
 async function doLogout(ev) {
   ev?.preventDefault?.();
+  if (currentUser) {
+    logAction("登出系統", `登出帳號: ${currentUser.email} (${currentUser.name || ""})`);
+  }
   try { sessionStorage.removeItem("cf_turnstile_passed"); } catch {}
   await api("/api/logout");
-  location.reload();
+  currentUser = null;
+  renderMe(null);
+  navigateToTab("home", false, false);
+  say("您已安全登出系統", true);
 }
 
 function setMeterBar(id, pct) {
@@ -2583,6 +2996,7 @@ const dfcState = {
 
 function renderDfcStepPills() {
   const wrap = $("dfcStepPills");
+  if (!wrap) return;
   wrap.innerHTML = "";
   DFC_CONFIG.checkpoints.forEach((cp, idx) => {
     const pill = document.createElement("span");
@@ -2590,6 +3004,9 @@ function renderDfcStepPills() {
     const isAct = dfcState.activeCheckpointIndex === idx;
     pill.className = "dfc-step-pill" + (isAct ? " active" : isDone ? " done" : "");
     pill.textContent = `${isDone ? "✓" : "●"} 問題 ${idx + 1} (${fmtSec(cp.time)})`;
+    pill.style.cursor = "pointer";
+    pill.title = "點擊直接開啟此題問答";
+    pill.onclick = () => triggerCheckpointQuestion(idx);
     wrap.appendChild(pill);
   });
 }
@@ -2680,6 +3097,7 @@ function triggerCheckpointQuestion(idx) {
   setDfcPlaying(false);
 
   $("dfcStage").classList.add("split-active");
+  if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "✕ 收合問卷";
   $("dfcPlayBtn").disabled = true;
   const badge = $("dfcVideoBadge");
   badge.textContent = `問題時間點 (${fmtSec(cp.time)}) · 請於右側作答`;
@@ -2899,6 +3317,8 @@ $("dfcAnswerBtn").onclick = async () => {
 
   dfcState.answers[cp.entryId] = val;
   dfcState.answeredIds.add(cp.id);
+  const displayVal = Array.isArray(val) ? val.join(", ") : String(val);
+  logAction("作答 DFC 題目", `第 ${idx + 1} 題 [${cp.title}]: ${displayVal.slice(0, 50)}`);
 
   const btn = $("dfcAnswerBtn");
   btn.disabled = true;
@@ -2910,6 +3330,7 @@ $("dfcAnswerBtn").onclick = async () => {
     } else if (allDone && !dfcState.submitted) {
       const res = await submitDfcToGoogleForm(dfcState.answers);
       dfcState.submitted = true;
+      logAction("送出 DFC 問卷", `完成表單 [${DFC_CONFIG.title}] 全部 ${DFC_CONFIG.checkpoints.length} 題作答`);
       $("dfcCompleteBox").classList.remove("hide");
       $("dfcCompleteDesc").textContent = res.demo
         ? "目前為示範模式（尚未填入實際 Google Form 網址），作答已驗證並保存於本站紀錄！"
@@ -2947,6 +3368,7 @@ $("dfcAnswerBtn").onclick = async () => {
   dfcState.activeCheckpointIndex = -1;
 
   $("dfcStage").classList.remove("split-active");
+  if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "📝 填寫問卷";
   $("dfcPlayBtn").disabled = false;
   renderDfcStepPills();
   renderDfcMarkers();
@@ -3008,6 +3430,7 @@ function setDfcPlaying(play) {
   if (play) {
     badge.textContent = "播放中";
     badge.classList.remove("question-stop");
+    logAction("播放 DFC 影片", `播放時間點: ${Math.round(dfcState.currentTime)} 秒`);
     if (dfcState.useRealVideo) {
       v.play().catch(() => {
         dfcState.playing = false;
@@ -3023,9 +3446,71 @@ function setDfcPlaying(play) {
     if (dfcState.activeCheckpointIndex === -1) {
       badge.textContent = "已暫停";
       badge.classList.remove("question-stop");
+      logAction("暫停 DFC 影片", `暫停時間點: ${Math.round(dfcState.currentTime)} 秒`);
     }
   }
   updateDfcUiProgress();
+}
+
+function parseEmbedVideo(url) {
+  if (!url || typeof url !== "string") return null;
+  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (url.includes("drive.google.com") && url.match(/[?&]id=([a-zA-Z0-9_-]+)/));
+  if (driveMatch) {
+    return {
+      type: "drive",
+      id: driveMatch[1],
+      embedUrl: `https://drive.google.com/file/d/${driveMatch[1]}/preview`
+    };
+  }
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch) {
+    return {
+      type: "youtube",
+      id: ytMatch[1],
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1`
+    };
+  }
+  return null;
+}
+
+function applyDfcVideoSource(url) {
+  const v = $("dfcVideo");
+  const canvas = $("dfcDemoCanvas");
+  const iframe = $("dfcIframe");
+  const badge = $("dfcVideoBadge");
+  const embed = parseEmbedVideo(url);
+
+  if (embed) {
+    dfcState.isEmbed = true;
+    dfcState.useRealVideo = false;
+    if (v) { v.pause(); v.classList.add("hide"); }
+    if (canvas) canvas.classList.add("hide");
+    if (iframe) {
+      if (iframe.src !== embed.embedUrl) iframe.src = embed.embedUrl;
+      iframe.classList.remove("hide");
+    }
+    if (badge) {
+      badge.textContent = embed.type === "drive" ? "🎬 Google Drive 雲端影片 (DFC 3.0)" : "🎬 YouTube 影片播放中";
+      badge.classList.remove("question-stop");
+    }
+    const tl = $("dfcTimeLabel");
+    if (tl) tl.textContent = "雲端串流播放";
+    return;
+  }
+
+  dfcState.isEmbed = false;
+  if (iframe) {
+    iframe.classList.add("hide");
+    iframe.src = "";
+  }
+
+  if (v && url && !url.includes("YOUR_")) {
+    v.src = url;
+  } else {
+    dfcState.useRealVideo = false;
+    if (v) v.classList.add("hide");
+    if (canvas) canvas.classList.remove("hide");
+  }
 }
 
 function initDfcPlayer() {
@@ -3036,6 +3521,7 @@ function initDfcPlayer() {
   const canvas = $("dfcDemoCanvas");
 
   v.onloadedmetadata = () => {
+    if (dfcState.isEmbed) return;
     if (v.duration && Number.isFinite(v.duration)) {
       dfcState.useRealVideo = true;
       dfcState.duration = v.duration;
@@ -3054,6 +3540,7 @@ function initDfcPlayer() {
     }
   };
   v.onerror = () => {
+    if (dfcState.isEmbed) return;
     dfcState.useRealVideo = false;
     v.classList.add("hide");
     canvas.classList.remove("hide");
@@ -3061,7 +3548,8 @@ function initDfcPlayer() {
     updateDfcUiProgress();
   };
   v.onended = () => setDfcPlaying(false);
-  v.src = DFC_CONFIG.videoUrl;
+
+  applyDfcVideoSource(DFC_CONFIG.videoUrl);
 
   renderDfcStepPills();
   renderDfcMarkers();
@@ -3090,6 +3578,23 @@ $("dfcPlayBtn").onclick = () => {
   setDfcPlaying(!dfcState.playing);
 };
 
+if ($("dfcToggleQBtn")) {
+  $("dfcToggleQBtn").onclick = () => {
+    if ($("dfcStage").classList.contains("split-active")) {
+      $("dfcStage").classList.remove("split-active");
+      $("dfcToggleQBtn").textContent = "📝 填寫問卷";
+    } else {
+      const targetIdx = dfcState.activeCheckpointIndex >= 0
+        ? dfcState.activeCheckpointIndex
+        : (DFC_CONFIG.checkpoints.findIndex(c => !dfcState.answeredIds.has(c.id)) >= 0
+          ? DFC_CONFIG.checkpoints.findIndex(c => !dfcState.answeredIds.has(c.id))
+          : 0);
+      triggerCheckpointQuestion(targetIdx);
+      $("dfcToggleQBtn").textContent = "✕ 收合問卷";
+    }
+  };
+}
+
 $("dfcTrackWrap").onclick = (e) => {
   if (dfcState.activeCheckpointIndex !== -1) return;
   const rect = $("dfcTrackWrap").getBoundingClientRect();
@@ -3116,6 +3621,7 @@ $("dfcReplayBtn").onclick = () => {
   $("dfcCompleteBox").classList.add("hide");
   if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
   $("dfcStage").classList.remove("split-active");
+  if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "📝 填寫問卷";
   $("dfcPlayBtn").disabled = false;
   renderDfcStepPills();
   renderDfcMarkers();
@@ -3147,11 +3653,12 @@ async function loadDfcConfig(requestedFormId) {
     $("dfcCompleteBox").classList.add("hide");
     if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
     $("dfcStage").classList.remove("split-active");
+    if ($("dfcToggleQBtn")) $("dfcToggleQBtn").textContent = "📝 填寫問卷";
     $("dfcPlayBtn").disabled = false;
 
     if (dfcState.inited) {
-      if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl && $("dfcVideo")) {
-        $("dfcVideo").src = cfg.videoUrl;
+      if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl) {
+        applyDfcVideoSource(cfg.videoUrl);
       }
       renderDfcStepPills();
       renderDfcMarkers();
@@ -3190,6 +3697,7 @@ if ($("dfcSurveySelect")) {
   $("dfcSurveySelect").onchange = (e) => {
     const newId = e.target.value;
     if (!newId) return;
+    logAction("切換 DFC 問卷表單", `選擇表單 ID: ${newId}`);
     const u = new URL(window.location.href);
     u.searchParams.set("formId", newId);
     window.history.replaceState({}, "", u.toString());
@@ -3201,19 +3709,10 @@ if ($("dfcSurveySelect")) {
  * 初始化啟動引擎
  * ============================================================================ */
 (async () => {
-  // 檢查初始網址 Hash 路由
-  const initHash = window.location.hash.replace("#", "");
-  if (["post", "dfc", "status"].includes(initHash)) {
-    navigateToTab(initHash, false);
-  }
-
   // 取得網址列中的 formId（例如 ?formId=survey_xyz）
   const urlParams = new URLSearchParams(window.location.search);
   const targetFormId = urlParams.get("formId") || "";
   await loadDfcConfig(targetFormId);
-  if (targetFormId) {
-    navigateToTab("dfc", false);
-  }
 
   // 初始化 Apple 滑動指示器定位與響應式監聽
   const syncDockGlider = (anim = false) => {
@@ -3245,9 +3744,23 @@ if ($("dfcSurveySelect")) {
   ]);
   googleClientId = meData.googleClientId || "";
   baseUrl = meData.baseUrl || "";
-  renderMe(callbackUser || meData.user || null);
+
+  const authedUser = callbackUser || meData.user || null;
+  renderMe(authedUser);
+
+  if (authedUser) {
+    logAction("進入系統", `已驗證身分: ${authedUser.email}`);
+    // 登入成功後若網址有指定的 hash 路由，則進入該功能
+    const initHash = window.location.hash.replace("#", "");
+    if (targetFormId) {
+      navigateToTab("dfc", false);
+    } else if (["post", "dfc", "status"].includes(initHash)) {
+      navigateToTab(initHash, false);
+    }
+  }
 })();
 
+$("entryGoogleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
 $("googleLoginBtn").onclick = loginWithGoogleOAuth;
 $("topLoginBtn").onclick = loginWithGoogleOAuth;
 $("topLogoutBtn").onclick = doLogout;
@@ -3280,6 +3793,7 @@ $("submit").onclick = async () => {
   renderLivePreviewCard();
   refreshPublicStatus(true);
   say("已成功送出！感謝你的投稿", true);
+  logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}`);
 };
 </script>
 </body>

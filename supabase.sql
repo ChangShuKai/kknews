@@ -120,3 +120,20 @@ create table if not exists public.admin_audit (
 );
 alter table public.admin_audit enable row level security;
 revoke all on public.admin_audit from anon, authenticated;
+
+-- 使用者全站互動與行為安全審計紀錄（結構化儲存）
+create table if not exists public.activity_logs (
+  id bigint generated always as identity primary key,
+  user_id uuid references auth.users(id) on delete set null,
+  user_email text,
+  user_name text,
+  action text not null,
+  details text,
+  device_info text,
+  ip_address text,
+  created_at timestamptz not null default now()
+);
+create index if not exists activity_logs_user_time on public.activity_logs (user_email, created_at);
+alter table public.activity_logs enable row level security;
+revoke all on public.activity_logs from anon, authenticated;
+
