@@ -137,3 +137,17 @@ create index if not exists activity_logs_user_time on public.activity_logs (user
 alter table public.activity_logs enable row level security;
 revoke all on public.activity_logs from anon, authenticated;
 
+
+-- DFC 互動影片防暴雷授權名單資料表（可於 Supabase Table Editor / SQL 直接自由新增或由後台管理）
+-- email_pattern 支援完整信箱（如 s112001@hlc.edu.tw）或萬用字元（如 s112*@hlc.edu.tw）
+create table if not exists public.dfc_access_list (
+  id bigint generated always as identity primary key,
+  email_pattern text not null unique,
+  note text default '',
+  added_by text default 'admin',
+  created_at timestamptz not null default now()
+);
+alter table public.dfc_access_list enable row level security;
+revoke all on public.dfc_access_list from anon, authenticated;
+drop policy if exists "allow service_role dfc_access" on public.dfc_access_list;
+create policy "allow service_role dfc_access" on public.dfc_access_list for all to service_role using (true) with check (true);

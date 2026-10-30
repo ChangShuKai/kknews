@@ -1297,3 +1297,475 @@ h1, h2, h3 {
   font-size: 11px;
   margin: 2px;
 }
+
+
+/* ==========================================================================
+   KKNEWS 旗艦級整合體驗與多裝置版面自動適配系統 (Desktop 不動 / Tablet / Mobile 專屬版面)
+   ========================================================================== */
+
+/* 防破圖與全域媒體安全邊界 */
+img, video, canvas, svg {
+  max-width: 100%;
+}
+img {
+  object-fit: cover;
+}
+.table-wrap, .q-analytics-card, .card, .hero, .user-full-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 簡潔頂部導覽列：僅保留「目前頁面標籤名稱按鈕(自動切換)」與「系統狀態按鈕」 */
+.top-nav-minimal {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+.top-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 113, 227, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
+  color: var(--ink);
+  font: 700 13px/1.2 var(--sans);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.08);
+  transition: all 0.2s var(--ease-out);
+  white-space: nowrap;
+}
+.top-page-btn:hover {
+  border-color: var(--blue);
+  background: #e6f2ff;
+  transform: translateY(-1px);
+}
+.top-page-btn .page-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.16);
+}
+.top-page-btn .page-switch-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background: rgba(0, 113, 227, 0.1);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.top-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: #ffffff;
+  color: var(--ink-secondary);
+  font: 600 12.5px/1.2 var(--sans);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  white-space: nowrap;
+}
+.top-status-btn:hover,
+.top-status-btn.active {
+  border-color: #10b981;
+  color: #047857;
+  background: #ecfdf5;
+  transform: translateY(-1px);
+}
+
+/* 裝置偵測與版面狀態徽章 */
+.device-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--ink-secondary);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+/* 宗旨簡潔且具資訊價值橫幅 */
+.mission-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #eff6ff 100%);
+  border: 1px solid rgba(0, 113, 227, 0.16);
+  border-radius: 22px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+.mission-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.mission-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+.mission-desc {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+.mission-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.mission-pillar {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mission-pillar b {
+  font-size: 13px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mission-pillar span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* 登入後主畫面：方形按鈕中樞 (Square Button Hub) */
+.hub-square-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 8px;
+}
+.hub-square-btn {
+  aspect-ratio: 1 / 0.92;
+  min-height: 230px;
+  background: #ffffff;
+  border: 1.5px solid rgba(15, 23, 42, 0.09);
+  border-radius: 26px;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+  transition: transform 0.24s var(--ease-out), box-shadow 0.24s var(--ease-out), border-color 0.22s ease;
+}
+.hub-square-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hub-square-btn:hover {
+  transform: translateY(-5px);
+  border-color: var(--blue);
+  box-shadow: 0 18px 38px rgba(0, 113, 227, 0.13);
+}
+.hub-square-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hub-square-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  box-shadow: inset 0 0 0 1px rgba(0, 113, 227, 0.14);
+}
+.hub-square-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.hub-square-badge.ok {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.hub-square-badge.lock {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.hub-square-body {
+  margin: 14px 0;
+}
+.hub-square-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.hub-square-desc {
+  font-size: 13.5px;
+  color: var(--ink-secondary);
+  line-height: 1.58;
+  margin: 0;
+}
+.hub-square-foot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+/* 子頁面返回方塊選單導覽列 */
+.subpage-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+}
+.subpage-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: #ffffff;
+  color: var(--ink);
+  font: 700 13px/1.2 var(--sans);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.subpage-back-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+/* DFC 防暴雷保護艙 (Anti-Spoiler Vault) */
+.spoiler-vault-card {
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+  border-radius: 24px;
+  padding: 36px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.24);
+  text-align: center;
+  max-width: 680px;
+  margin: 18px auto;
+}
+.spoiler-vault-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.spoiler-vault-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.spoiler-vault-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #ffffff;
+}
+.spoiler-vault-desc {
+  font-size: 14.5px;
+  color: #cbd5e1;
+  line-height: 1.7;
+  margin: 0 auto 20px;
+  max-width: 540px;
+}
+.spoiler-vault-meta {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+/* 智慧漸進式畫質控制 (先低畫質極速載入、緩衝充足自動升 HD) */
+.cinema-quality-pill {
+  background: rgba(15, 23, 42, 0.78);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.cinema-quality-pill:hover {
+  background: rgba(56, 189, 248, 0.2);
+  color: #ffffff;
+}
+video.video-q-360p {
+  filter: contrast(0.98) saturate(0.96) blur(0.35px);
+}
+video.video-q-720p {
+  filter: contrast(1) saturate(1);
+}
+video.video-q-1080p {
+  filter: contrast(1.03) saturate(1.04);
+}
+
+/* ==========================================================================
+   多版面自動切換配置：
+   - html[data-layout="desktop"] (>= 1024px)：電腦端版面完全保持原樣不動
+   - html[data-layout="tablet"]  (680px ~ 1023px)：平板專屬雙欄防破圖版面
+   - html[data-layout="mobile"]  (< 680px)：手機專屬單欄大觸控防破圖版面
+   ========================================================================== */
+
+html[data-layout="tablet"] .wrap {
+  max-width: 960px;
+  padding: 18px 20px 64px;
+}
+html[data-layout="tablet"] .hub-square-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+html[data-layout="tablet"] .hub-square-btn {
+  aspect-ratio: auto;
+  min-height: 200px;
+}
+html[data-layout="tablet"] .mission-pillars {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+html[data-layout="tablet"] .studio-grid,
+html[data-layout="tablet"] .dfc-grid {
+  grid-template-columns: 1fr;
+}
+
+html[data-layout="mobile"] .wrap {
+  padding: 12px 12px 56px;
+}
+html[data-layout="mobile"] .top-header-inner {
+  padding: 8px 12px;
+  gap: 6px;
+}
+html[data-layout="mobile"] .brand-sub {
+  display: none;
+}
+html[data-layout="mobile"] .top-page-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+html[data-layout="mobile"] .top-page-btn .page-switch-hint {
+  display: none;
+}
+html[data-layout="mobile"] .top-status-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+html[data-layout="mobile"] .mission-banner {
+  padding: 18px 16px;
+  border-radius: 18px;
+}
+html[data-layout="mobile"] .mission-title {
+  font-size: 17px;
+}
+html[data-layout="mobile"] .mission-pillars {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+html[data-layout="mobile"] .hub-square-grid {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+html[data-layout="mobile"] .hub-square-btn {
+  aspect-ratio: auto;
+  min-height: 170px;
+  padding: 20px 18px;
+  border-radius: 20px;
+}
+html[data-layout="mobile"] .hub-square-title {
+  font-size: 18px;
+}
+html[data-layout="mobile"] .studio-grid,
+html[data-layout="mobile"] .dfc-grid,
+html[data-layout="mobile"] .row {
+  grid-template-columns: 1fr !important;
+}
+html[data-layout="mobile"] .card,
+html[data-layout="mobile"] .hero {
+  padding: 16px 14px;
+  border-radius: 18px;
+}
+html[data-layout="mobile"] .cinema-controls {
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  gap: 6px;
+}
+html[data-layout="mobile"] .spoiler-vault-card {
+  padding: 24px 18px;
+}

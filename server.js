@@ -13,6 +13,8 @@ const {
   BASE_URL = "http://localhost:3000", PORT = 3000, GOOGLE_CLIENT_ID = "",
   GOOGLE_FORM_API_KEY = process.env.GOOGLE_API_KEY || "",
   TURNSTILE_SECRET_KEY = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || process.env.CLOUDFLARE_SECRET_KEY || "",
+  DFC_ALLOWED_EMAILS = "",
+  DFC_ACCESS_MODE = "whitelist",
 } = process.env;
 for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_ACCESS_KEY })) {
   if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
@@ -278,8 +280,32 @@ async function writeSysStore(name, data) {
   return cloned;
 }
 
+function normalizeEmailRule(v = "") {
+  return String(v || "").trim().toLowerCase();
+}
+function parseEmailListInput(input) {
+  const rawList = Array.isArray(input)
+    ? input
+    : String(input || "").split(/[\r\n,;，；\s]+/);
+  const out = [];
+  const seen = new Set();
+  for (const item of rawList) {
+    const clean = normalizeEmailRule(item);
+    if (!clean || seen.has(clean)) continue;
+    seen.add(clean);
+    out.push(clean);
+  }
+  return out;
+}
+
+const DEFAULT_DFC_ACCESS_MODE = ["whitelist", "all_school", "closed"].includes(String(DFC_ACCESS_MODE || "").trim().toLowerCase())
+  ? String(DFC_ACCESS_MODE).trim().toLowerCase()
+  : "whitelist";
+
 const DEFAULT_DFC_STORE = {
   activeFormId: "default-dfc",
+  accessMode: DEFAULT_DFC_ACCESS_MODE,
+  allowedEmails: parseEmailListInput(DFC_ALLOWED_EMAILS),
   forms: [
     {
       id: "default-dfc",
@@ -303,9 +329,13 @@ const DEFAULT_DFC_STORE = {
   responses: [],
 };
 
-// 自動清理可能殘留的舊版示範題目 (q1~q4)
+// 自動清理可能殘留的舊版示範題目 (q1~q4) 並確保防暴雷觀看權限欄位完整
 function sanitizeDfcStore(store) {
-  if (!store || typeof store !== "object") return DEFAULT_DFC_STORE;
+  if (!store || typeof store !== "object") return JSON.parse(JSON.stringify(DEFAULT_DFC_STORE));
+  if (!["whitelist", "all_school", "closed"].includes(store.accessMode)) {
+    store.accessMode = DEFAULT_DFC_ACCESS_MODE;
+  }
+  store.allowedEmails = parseEmailListInput(store.allowedEmails || []);
   if (!Array.isArray(store.forms)) store.forms = [];
   store.forms = store.forms.map(f => {
     if (Array.isArray(f.checkpoints)) {
@@ -321,6 +351,153 @@ function sanitizeDfcStore(store) {
     return f;
   });
   return store;
+}
+
+/* ---------- DFC 影片防暴雷權限控管（支援後台設定、Supabase dfc_access_list 資料表與 .env DFC_ALLOWED_EMAILS） ---------- */
+function matchDfcEmailPattern(userEmail, pattern) {
+  const email = normalizeEmailRule(userEmail);
+  const pat = normalizeEmailRule(pattern);
+  if (!email || !pat) return false;
+  if (pat === "*" || pat === "all" || pat === "*@hlc.edu.tw") return email.endsWith(SCHOOL);
+  const localPart = email.split("@")[0] || "";
+  if (!pat.includes("@")) {
+    if (pat.includes("*")) {
+      const re = new RegExp("^" + pat.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$", "i");
+      return re.test(localPart);
+    }
+    return localPart === pat;
+  }
+  if (pat.includes("*")) {
+    const re = new RegExp("^" + pat.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$", "i");
+    return re.test(email);
+  }
+  return email === pat;
+}
+
+async function fetchDbDfcAccessList() {
+  return cachedQuery("dfcAccessTable", 4000, async () => {
+    try {
+      const { data, error } = await db.from("dfc_access_list").select("email_pattern, note, added_by, created_at").order("id", { ascending: true });
+      if (error || !Array.isArray(data)) return [];
+      return data.map(r => normalizeEmailRule(r.email_pattern)).filter(Boolean);
+    } catch {
+      return [];
+    }
+  });
+}
+
+async function syncDbDfcAccessList(allowedEmails = [], addedBy = "admin") {
+  invalidateQueryCache("dfcAccessTable");
+  try {
+    const clean = parseEmailListInput(allowedEmails);
+    await db.from("dfc_access_list").delete().neq("email_pattern", "__never__");
+    if (clean.length) {
+      await db.from("dfc_access_list").upsert(
+        clean.map(email_pattern => ({ email_pattern, added_by: addedBy })),
+        { onConflict: "email_pattern" }
+      );
+    }
+  } catch {}
+}
+
+async function getMergedDfcAccessConfig(storeArg = null) {
+  const [store, dbList, adminList] = await Promise.all([
+    storeArg ? Promise.resolve(sanitizeDfcStore(storeArg)) : readSysStore("dfc", DEFAULT_DFC_STORE),
+    fetchDbDfcAccessList().catch(() => []),
+    readSysStore("admins", []).catch(() => []),
+  ]);
+  const envList = parseEmailListInput(DFC_ALLOWED_EMAILS);
+  const storeList = parseEmailListInput(store.allowedEmails || []);
+  const adminEmails = [
+    normalizeEmailRule(ADMIN_EMAIL),
+    ...(Array.isArray(adminList) ? adminList.map(a => normalizeEmailRule(a.email)) : []),
+  ].filter(Boolean);
+
+  const merged = parseEmailListInput([...storeList, ...dbList, ...envList]);
+  return {
+    accessMode: store.accessMode || DEFAULT_DFC_ACCESS_MODE,
+    allowedEmails: merged,
+    storeAllowedEmails: storeList,
+    dbAllowedEmails: dbList,
+    envAllowedEmails: envList,
+    adminEmails,
+  };
+}
+
+async function evaluateDfcAccess(req, storeArg = null) {
+  const cfg = await getMergedDfcAccessConfig(storeArg);
+  const adm = adminOf(req);
+  if (adm) {
+    return {
+      allowed: true,
+      isAdmin: true,
+      mode: cfg.accessMode,
+      reason: "admin",
+      message: "管理員全權預覽模式",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  const u = userOf(req);
+  if (!u || !u.email) {
+    return {
+      allowed: false,
+      isAdmin: false,
+      mode: cfg.accessMode,
+      reason: "unauthenticated",
+      message: "請先使用學校 Google 帳號 (@hlc.edu.tw) 登入以驗證觀看權限。",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  const email = normalizeEmailRule(u.email);
+  if (cfg.adminEmails.some(a => matchDfcEmailPattern(email, a))) {
+    return {
+      allowed: true,
+      isAdmin: true,
+      mode: cfg.accessMode,
+      reason: "admin_email",
+      message: "管理員授權帳號",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  if (cfg.accessMode === "closed") {
+    return {
+      allowed: false,
+      isAdmin: false,
+      mode: "closed",
+      reason: "closed",
+      message: "防暴雷保護中：目前 DFC 互動影片專區暫未開放觀看，敬請期待正式場次開放。",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  if (cfg.accessMode === "all_school") {
+    return {
+      allowed: email.endsWith(SCHOOL),
+      isAdmin: false,
+      mode: "all_school",
+      reason: "all_school",
+      message: "全校 @hlc.edu.tw 開放模式",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  const matched = cfg.allowedEmails.some(pat => matchDfcEmailPattern(email, pat));
+  if (matched) {
+    return {
+      allowed: true,
+      isAdmin: false,
+      mode: "whitelist",
+      reason: "whitelisted",
+      message: "已通過規定帳號名單驗證",
+      allowedEmails: cfg.allowedEmails,
+    };
+  }
+  return {
+    allowed: false,
+    isAdmin: false,
+    mode: "whitelist",
+    reason: "not_in_whitelist",
+    message: "防暴雷保護中：目前 DFC 互動影片僅開放指定規定帳號觀看，您的帳號（" + email + "）尚未列入授權名單。",
+    allowedEmails: cfg.allowedEmails,
+  };
 }
 
 function parseCsvText(text = "") {
@@ -448,23 +625,30 @@ function sendStaticAsset(req, res, content, contentType, cacheControl = "public,
 }
 
 /* --- 前台與靜態資源 --- */
-const cached = res => res.set("Cache-Control", "public, max-age=300");
 app.get("/", (req, res) => res.type("html").send(PAGES.index.html));
 app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400"));
 app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8"));
 app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8"));
 app.get("/assets/login.js", (req, res) => sendStaticAsset(req, res, PAGES.login.js, "application/javascript; charset=utf-8"));
 app.get("/assets/admin.js", (req, res) => adminOf(req) ? sendStaticAsset(req, res, PAGES.admin.js, "application/javascript; charset=utf-8", "private, max-age=60, stale-while-revalidate=86400") : notFound(res));
-app.get("/assets/dfc.mp4", (req, res) => {
+app.get("/assets/dfc.mp4", async (req, res) => {
+  const access = await evaluateDfcAccess(req);
+  if (!access.allowed) {
+    return res.status(403).json({ error: access.message || "防暴雷保護中：僅限授權帳號觀看" });
+  }
   for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
     if (fs.existsSync(p)) return res.sendFile(p);
   }
   return notFound(res);
 });
 
-/* --- 高速原生影片串流代理：支援 HTTP 206 Range、中繼快取與自訂播放介面 --- */
+/* --- 極速原生影片串流代理：支援大區塊 HTTP 206 Range、LRU 記憶體快取、預讀快取與防暴雷權限保護 --- */
 const driveVideoMetaCache = new Map();
 const driveVideoChunkCache = new Map();
+const driveResolvedUrlCache = new Map();
+const drivePrefetchInflight = new Set();
+let driveChunkCacheBytes = 0;
+const MAX_CHUNK_CACHE_BYTES = 96 * 1024 * 1024; // 96 MB 記憶體滑動快取池
 const DEFAULT_DFC_VIDEO_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
 
 // 預先寫入預設影片中繼資料與總位元組數（1.13 GB），實現秒級 metadata 解析
@@ -474,37 +658,103 @@ driveVideoMetaCache.set(DEFAULT_DFC_VIDEO_ID, {
   ts: Date.now(),
 });
 
-// 背景預熱頭部與尾部（包含 moov atom），使首次播放載入時間降至毫秒級
+function storeVideoChunk(key, buf) {
+  if (!buf || !buf.byteLength || buf.byteLength > 12 * 1024 * 1024) return;
+  if (driveVideoChunkCache.has(key)) {
+    const old = driveVideoChunkCache.get(key);
+    driveChunkCacheBytes -= old.byteLength;
+    driveVideoChunkCache.delete(key);
+  }
+  while (driveChunkCacheBytes + buf.byteLength > MAX_CHUNK_CACHE_BYTES && driveVideoChunkCache.size > 0) {
+    const oldestKey = driveVideoChunkCache.keys().next().value;
+    const oldestBuf = driveVideoChunkCache.get(oldestKey);
+    driveChunkCacheBytes -= (oldestBuf?.byteLength || 0);
+    driveVideoChunkCache.delete(oldestKey);
+  }
+  driveVideoChunkCache.set(key, buf);
+  driveChunkCacheBytes += buf.byteLength;
+}
+
+async function resolveDriveDownloadUrl(fileId, signal) {
+  const now = Date.now();
+  const cached = driveResolvedUrlCache.get(fileId);
+  if (cached && now - cached.ts < 25 * 60 * 1000) return cached.url;
+
+  const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+  try {
+    const probe = await fetch(baseUrl, {
+      method: "GET",
+      headers: {
+        "Range": "bytes=0-1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+      },
+      redirect: "follow",
+      signal: signal || AbortSignal.timeout(8000),
+    });
+    const ct = (probe.headers.get("content-type") || "").toLowerCase();
+    if (ct.includes("text/html")) {
+      const html = await probe.text();
+      const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/i) || html.match(/[?&]uuid=([a-zA-Z0-9_-]+)/i);
+      if (uuidMatch) {
+        const confirmedUrl = `${baseUrl}&uuid=${encodeURIComponent(uuidMatch[1])}`;
+        driveResolvedUrlCache.set(fileId, { url: confirmedUrl, ts: now });
+        return confirmedUrl;
+      }
+    } else if (probe.ok || probe.status === 206) {
+      driveResolvedUrlCache.set(fileId, { url: baseUrl, ts: now });
+      return baseUrl;
+    }
+  } catch {}
+  return baseUrl;
+}
+
+function prefetchDriveRange(fileId, start, end) {
+  const meta = driveVideoMetaCache.get(fileId);
+  if (meta?.totalSize && start >= meta.totalSize) return;
+  const clampedEnd = meta?.totalSize ? Math.min(end, meta.totalSize - 1) : end;
+  if (clampedEnd <= start) return;
+  const key = `${fileId}:${start}-${clampedEnd}`;
+  if (driveVideoChunkCache.has(key) || drivePrefetchInflight.has(key)) return;
+
+  for (const [k] of driveVideoChunkCache.entries()) {
+    if (!k.startsWith(`${fileId}:`)) continue;
+    const [cS, cE] = k.split(":")[1].split("-").map(Number);
+    if (start >= cS && clampedEnd <= cE) return;
+  }
+
+  drivePrefetchInflight.add(key);
+  (async () => {
+    try {
+      const streamUrl = await resolveDriveDownloadUrl(fileId, AbortSignal.timeout(10000));
+      const r = await fetch(streamUrl, {
+        headers: {
+          "Range": `bytes=${start}-${clampedEnd}`,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        },
+        signal: AbortSignal.timeout(14000),
+      });
+      const ct = (r.headers.get("content-type") || "").toLowerCase();
+      if ((r.ok || r.status === 206) && !ct.includes("text/html")) {
+        const buf = Buffer.from(await r.arrayBuffer());
+        if (buf.byteLength > 0) storeVideoChunk(key, buf);
+      }
+    } catch {} finally {
+      drivePrefetchInflight.delete(key);
+    }
+  })();
+}
+
+// 背景預熱頭部 4MB 與尾部 512KB（包含 moov atom），使首次播放載入時間降至毫秒級
 async function prefetchDriveVideoHeadTail(fileId) {
   try {
     const meta = driveVideoMetaCache.get(fileId) || { totalSize: 1131164130 };
     const total = meta.totalSize || 1131164130;
-    const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
-
-    fetch(baseUrl, {
-      headers: { "Range": "bytes=0-131071", "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
-    }).then(async r => {
-      if (r.ok || r.status === 206) {
-        const buf = Buffer.from(await r.arrayBuffer());
-        driveVideoChunkCache.set(`${fileId}:0-131071`, buf);
-      }
-    }).catch(() => {});
-
-    const tailStart = Math.max(0, total - 262144);
-    const tailEnd = total - 1;
-    fetch(baseUrl, {
-      headers: { "Range": `bytes=${tailStart}-${tailEnd}`, "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
-    }).then(async r => {
-      if (r.ok || r.status === 206) {
-        const buf = Buffer.from(await r.arrayBuffer());
-        driveVideoChunkCache.set(`${fileId}:${tailStart}-${tailEnd}`, buf);
-      }
-    }).catch(() => {});
+    await resolveDriveDownloadUrl(fileId, AbortSignal.timeout(8000));
+    prefetchDriveRange(fileId, 0, 4 * 1024 * 1024 - 1);
+    prefetchDriveRange(fileId, Math.max(0, total - 524288), total - 1);
   } catch {}
 }
-setTimeout(() => prefetchDriveVideoHeadTail(DEFAULT_DFC_VIDEO_ID), 400);
+setTimeout(() => prefetchDriveVideoHeadTail(DEFAULT_DFC_VIDEO_ID), 300);
 
 function extractGoogleDriveFileId(input = "") {
   const s = String(input || "").trim();
@@ -535,6 +785,12 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
 
   if (req.method === "OPTIONS") return res.status(204).end();
 
+  // 防暴雷權限攔截：未授權帳號一律禁止載入影片位元組
+  const access = await evaluateDfcAccess(req);
+  if (!access.allowed) {
+    return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
+  }
+
   const cachedMeta = driveVideoMetaCache.get(fileId) || (fileId === DEFAULT_DFC_VIDEO_ID ? { totalSize: 1131164130, contentType: "video/mp4" } : null);
 
   // 1. HEAD 請求秒級回傳中繼資料
@@ -544,14 +800,14 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       ...(cachedMeta?.totalSize ? { "Content-Length": String(cachedMeta.totalSize) } : {}),
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "private, max-age=3600",
     });
     return res.status(200).end();
   }
 
-  // 2. 原生 Range 切塊支援（取消 307，由代理原生提供 206 串流以保證全自訂播放器運行）
-  const INITIAL_PROBE_CHUNK = 512 * 1024;
-  const STREAM_CHUNK = 2.5 * 1024 * 1024;
+  // 2. 大區塊高效 Range 切塊支援（4MB 初始啟動 + 8MB 連續串流塊 + 自動背景預讀下一塊）
+  const INITIAL_PROBE_CHUNK = 4 * 1024 * 1024;
+  const STREAM_CHUNK = 8 * 1024 * 1024;
 
   const rangeHeader = String(req.headers.range || "");
   let start = 0;
@@ -583,18 +839,19 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
     end = Math.min(end, cachedMeta.totalSize - 1);
   }
 
-  // 3. 檢查快取
+  // 3. 檢查伺服器記憶體快取（命中時 < 2ms 回應，並觸發下一區塊背景預讀）
   const exactKey = `${fileId}:${start}-${end}`;
   if (driveVideoChunkCache.has(exactKey)) {
     const buf = driveVideoChunkCache.get(exactKey);
     const totalSize = cachedMeta?.totalSize || (start + buf.byteLength);
+    prefetchDriveRange(fileId, end + 1, end + INITIAL_PROBE_CHUNK);
     res.status(206).set({
       "Content-Type": cachedMeta?.contentType || "video/mp4",
       "Content-Range": `bytes ${start}-${end}/${totalSize}`,
       "Content-Length": String(buf.byteLength),
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "private, max-age=3600",
     });
     return res.end(buf);
   }
@@ -607,13 +864,14 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
     if (start >= cStart && end <= cEnd && cBuf.byteLength >= (end - cStart + 1)) {
       const sliceBuf = cBuf.subarray(start - cStart, end - cStart + 1);
       const totalSize = cachedMeta?.totalSize || (cStart + cBuf.byteLength);
+      prefetchDriveRange(fileId, cEnd + 1, cEnd + INITIAL_PROBE_CHUNK);
       res.status(206).set({
         "Content-Type": cachedMeta?.contentType || "video/mp4",
         "Content-Range": `bytes ${start}-${end}/${totalSize}`,
         "Content-Length": String(sliceBuf.byteLength),
         "Accept-Ranges": "bytes",
         "Content-Disposition": "inline",
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "private, max-age=3600",
       });
       return res.end(sliceBuf);
     }
@@ -631,8 +889,8 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   };
 
   try {
-    let baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
-    let upstream = await fetch(baseUrl, {
+    let streamUrl = await resolveDriveDownloadUrl(fileId, ac.signal);
+    let upstream = await fetch(streamUrl, {
       method: "GET",
       headers: reqHeaders,
       redirect: "follow",
@@ -644,7 +902,9 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       const html = await upstream.text();
       const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/i) || html.match(/[?&]uuid=([a-zA-Z0-9_-]+)/i);
       if (uuidMatch) {
+        const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
         const retryUrl = `${baseUrl}&uuid=${encodeURIComponent(uuidMatch[1])}`;
+        driveResolvedUrlCache.set(fileId, { url: retryUrl, ts: Date.now() });
         upstream = await fetch(retryUrl, {
           method: "GET",
           headers: reqHeaders,
@@ -682,11 +942,14 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       }
     }
 
+    // 觸發下一段 4MB 區塊背景預讀，確保客戶端連續播放不中斷
+    prefetchDriveRange(fileId, end + 1, end + INITIAL_PROBE_CHUNK);
+
     const outHeaders = {
       "Content-Type": finalCt,
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "private, max-age=3600",
       "Access-Control-Allow-Origin": "*",
       "Cross-Origin-Resource-Policy": "cross-origin",
     };
@@ -698,7 +961,21 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       return res.end();
     }
 
+    const chunks = [];
+    let collectedBytes = 0;
+    const canCache = (end - start + 1) <= 8 * 1024 * 1024;
     const nodeStream = Readable.fromWeb(upstream.body);
+    nodeStream.on("data", chunk => {
+      if (canCache && collectedBytes <= 8 * 1024 * 1024) {
+        chunks.push(chunk);
+        collectedBytes += chunk.byteLength;
+      }
+    });
+    nodeStream.on("end", () => {
+      if (canCache && chunks.length > 0 && collectedBytes === (end - start + 1)) {
+        storeVideoChunk(exactKey, Buffer.concat(chunks, collectedBytes));
+      }
+    });
     nodeStream.on("error", () => {
       if (!res.headersSent) res.status(502).end();
       else res.end();
@@ -784,7 +1061,6 @@ app.post("/api/verify-turnstile", async (req, res) => {
     const formData = new URLSearchParams();
     formData.append("secret", secret);
     formData.append("response", token);
-    // 依 Cloudflare 官方建議：在反向代理 / Serverless 環境中不傳送 remoteip，以避免 IPv4/IPv6 與代理 IP 不一致造成 invalid-remoteip 誤判
 
     const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
@@ -862,20 +1138,34 @@ app.post("/api/auth/google", async (req, res) => {
     },
   }).then(() => invalidateQueryCache("users")).catch(() => {});
 
-  setCookie(res, "ks", makeToken({
+  const tokenVal = makeToken({
     t: "u", id: u.id, email, name: googleInfo.name, picture: googleInfo.picture, sub: googleInfo.sub,
     given_name: googleInfo.given_name, family_name: googleInfo.family_name, hd: googleInfo.hd, locale: googleInfo.locale,
-  }, 8 * 3600));
+  }, 8 * 3600);
+  setCookie(res, "ks", tokenVal);
   setCookie(res, "cf_passed", "1", { maxAge: 86400 });
   audit(req, "[用戶登入] Google 帳號授權登入", `${email} (${googleInfo.name || "未提供姓名"}) | 裝置: ${deviceInfo}`);
-  res.json({ email, name: googleInfo.name, picture: googleInfo.picture });
+
+  const fakeReq = { headers: { cookie: `ks=${tokenVal}` } };
+  const dfcAccess = await evaluateDfcAccess(fakeReq);
+  res.json({
+    email,
+    name: googleInfo.name,
+    picture: googleInfo.picture,
+    dfcAccess: { allowed: dfcAccess.allowed, mode: dfcAccess.mode, reason: dfcAccess.reason, message: dfcAccess.message || "" },
+  });
 });
 
-app.get("/api/me", (req, res) => {
+app.get("/api/me", async (req, res) => {
   const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, "") };
   const u = userOf(req);
-  if (!u) return res.json({ user: null, ...base });
-  res.json({ user: { email: u.email, name: u.name, picture: u.picture }, ...base });
+  if (!u) return res.json({ user: null, dfcAccess: { allowed: false, mode: "whitelist", reason: "unauthenticated" }, ...base });
+  const dfcAccess = await evaluateDfcAccess(req);
+  res.json({
+    user: { email: u.email, name: u.name, picture: u.picture },
+    dfcAccess: { allowed: dfcAccess.allowed, mode: dfcAccess.mode, reason: dfcAccess.reason, message: dfcAccess.message || "" },
+    ...base,
+  });
 });
 
 app.post("/api/logout", (req, res) => {
@@ -968,12 +1258,25 @@ app.post("/api/proverbs", async (req, res) => {
   res.json({ ok: true });
 });
 
-/* --- 前台讀取 DFC 表單清單（供使用者切換多個問卷與導覽） --- */
+/* --- 前台讀取 DFC 表單清單（嚴格防暴雷：未授權帳號絕不回傳題目、表單與影片網址） --- */
 app.get("/api/dfc/forms", async (req, res) => {
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const access = await evaluateDfcAccess(req, store);
+  if (!access.allowed) {
+    return res.json({
+      restricted: true,
+      accessMode: access.mode,
+      reason: access.reason,
+      message: access.message,
+      activeFormId: "",
+      forms: [],
+    });
+  }
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   const activeId = store.activeFormId || forms[0]?.id || "default-dfc";
   res.json({
+    restricted: false,
+    accessMode: access.mode,
     activeFormId: activeId,
     forms: forms.map(f => ({
       id: f.id,
@@ -988,10 +1291,27 @@ app.get("/api/dfc/forms", async (req, res) => {
   });
 });
 
-/* --- 前台讀取最新 DFC 表單設定（支援 ?formId= 指定問卷或預設讀取發布中的主問卷） --- */
+/* --- 前台讀取最新 DFC 表單設定（嚴格防暴雷：未授權帳號隱藏所有題目與影片來源） --- */
 app.get("/api/dfc/config", async (req, res) => {
   const formId = String(req.query.formId || "").trim();
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const access = await evaluateDfcAccess(req, store);
+  if (!access.allowed) {
+    return res.json({
+      restricted: true,
+      accessMode: access.mode,
+      reason: access.reason,
+      message: access.message,
+      id: "restricted",
+      title: "DFC 互動影片專區（防暴雷保護中）",
+      description: access.message,
+      videoUrl: "",
+      fallbackDuration: 0,
+      checkpoints: [],
+      formsList: [],
+    });
+  }
+
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   const activeId = store.activeFormId || forms[0]?.id || "default-dfc";
 
@@ -1000,6 +1320,8 @@ app.get("/api/dfc/config", async (req, res) => {
 
   res.json({
     ...matchedForm,
+    restricted: false,
+    accessMode: access.mode,
     activeFormId: activeId,
     formsList: forms.map(f => ({
       id: f.id,
@@ -1014,15 +1336,20 @@ app.get("/api/dfc/config", async (req, res) => {
 /* --- DFC 互動影片表單：串接 Google Form (formResponse / Apps Script API) 並寫入後台統計 --- */
 app.post("/api/dfc/submit", async (req, res) => {
   if (await limited("dfc:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "送出太頻繁，請稍後再試" });
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const access = await evaluateDfcAccess(req, store);
+  if (!access.allowed) {
+    return res.status(403).json({ error: access.message || "防暴雷保護中：僅限規定授權帳號提交問卷" });
+  }
+
   const { formId = "default-dfc", formUrl = "", answers = {}, emailEntryId = "", telemetry = {}, engagement = {}, userInfo = {} } = req.body || {};
   if (!answers || typeof answers !== "object") return res.status(400).json({ error: "格式不正確" });
 
-  const u = userOf(req);
+  const u = userOf(req) || adminOf(req);
   const ua = str(req.headers["user-agent"], 300);
   const deviceInfo = parseUA(ua);
   const ip = clientIp(req);
 
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
   const matchedForm = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0] || DEFAULT_DFC_STORE.forms[0];
   const targetUrl = String(formUrl || matchedForm?.googleFormUrl || process.env.GOOGLE_FORM_ACTION_URL || "").trim();
   const activeApiKey = String(matchedForm?.googleApiKey || GOOGLE_FORM_API_KEY || "").trim();
@@ -1039,7 +1366,6 @@ app.post("/api/dfc/submit", async (req, res) => {
       const apiHeaders = activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {};
       const parsedUrl = new URL(targetUrl);
       if (parsedUrl.hostname === "docs.google.com" && parsedUrl.pathname.includes("/forms")) {
-        // 自動將 /viewform 轉為 /formResponse
         let actionUrl = targetUrl.replace(/\/viewform(\?.*)?$/i, "/formResponse");
         if (activeApiKey && !/[?&]key=/i.test(actionUrl)) {
           actionUrl += (actionUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
@@ -1094,24 +1420,27 @@ app.post("/api/dfc/submit", async (req, res) => {
     }
   }
 
-  // 同步保存至系統後台紀錄，供 Super Admin 與一般 Admin 查看及匯出 CSV
+  // 同步保存至系統後台紀錄（含完整互動行為與設備搖測資料），供 Super Admin 與一般 Admin 查看及匯出 CSV
   if (!Array.isArray(store.responses)) store.responses = [];
   store.responses.unshift({
     id: crypto.randomUUID(),
     formId: matchedForm?.id || "default-dfc",
     formTitle: matchedForm?.title || "DFC 互動影片表單",
-    userEmail: u?.email || "匿名訪客",
-    userName: u?.name || "",
+    userEmail: u?.email || String(userInfo?.email || "未知帳號"),
+    userName: u?.name || String(userInfo?.name || ""),
+    userClass: str(String(userInfo?.classSeat || telemetry?.classSeat || ""), 60),
     ip,
     device: deviceInfo,
     answers,
+    telemetry: (telemetry && typeof telemetry === "object") ? telemetry : {},
+    engagement: (engagement && typeof engagement === "object") ? engagement : {},
     syncedToGoogle,
     demo: isDemo,
     submittedAt: new Date().toISOString(),
   });
   if (store.responses.length > 2000) store.responses.length = 2000;
   await writeSysStore("dfc", store);
-  audit(req, "[DFC作答] 送出問卷作答", `${u?.email || "訪客"} (${u?.name || ""}) | 表單: ${matchedForm?.title || formId} (${syncedToGoogle ? "已同步Google表單" : "本地保存"})`);
+  audit(req, "[DFC作答] 送出問卷作答", `${u?.email || "未知"} (${u?.name || ""}) | 表單: ${matchedForm?.title || formId} (${syncedToGoogle ? "已同步Google表單" : "本地保存"})`);
 
   if (syncErr && !isDemo) {
     return res.status(502).json({ error: "已記錄於後台，但串接 Google 表單失敗：" + syncErr });
@@ -1200,52 +1529,56 @@ app.post("/api/admin/login", async (req, res) => {
       matchedAdmin = {
         email: subAcc.email,
         role,
-        isPrimary: false,
         name: subAcc.name || (role === "super_admin" ? "Super Admin" : "一般管理員（唯讀）"),
+        isPrimary: false,
       };
     }
   }
 
-  // 2. 檢查主管理員（.env ADMIN_EMAIL 或預設主管理員信箱）
-  if (!matchedAdmin) {
-    const primaryEmailOk = isPrimaryAdminEmail(inputEmail) || (!subAcc && inputEmail === "admin@sixstarculture.com");
-    const primaryPwOk = primaryEmailOk ? await verifyPassword(inputPw, ADMIN_PASSWORD_HASH) : false;
-    if (primaryEmailOk && primaryPwOk) {
+  // 2. 若尚未匹配成功，檢查是否為系統主 Super Admin 帳號 (.env ADMIN_EMAIL)
+  if (!matchedAdmin && isPrimaryAdminEmail(inputEmail)) {
+    const ok = await verifyPassword(inputPw, ADMIN_PASSWORD_HASH);
+    if (ok) {
       matchedAdmin = {
         email: ADMIN_EMAIL,
         role: "super_admin",
+        name: "SixStar Culture 主管理員",
         isPrimary: true,
-        name: "Super Admin (主管理員)",
       };
     }
   }
 
-  await new Promise(r => setTimeout(r, 350));
-  if (!matchedAdmin) {
-    audit(req, "login_fail", inputEmail);
-    return res.status(401).json({ error: "帳號或密碼錯誤" });
-  }
-  audit(req, `login_ok_${matchedAdmin.role}`, matchedAdmin.email);
+  audit(req, matchedAdmin ? `admin_login_ok:${matchedAdmin.role}` : "admin_login_fail", inputEmail);
+  if (!matchedAdmin) return res.status(401).json({ error: "帳號或密碼錯誤" });
+
   setCookie(res, "ka", makeToken({
     t: "a",
     email: matchedAdmin.email,
     role: matchedAdmin.role,
-    isPrimary: Boolean(matchedAdmin.isPrimary),
     name: matchedAdmin.name,
-    jti: crypto.randomUUID(),
-  }, 8 * 3600), { strict: true });
-  res.json({ ok: true, email: matchedAdmin.email, role: matchedAdmin.role, name: matchedAdmin.name });
+    isPrimary: Boolean(matchedAdmin.isPrimary),
+  }, 4 * 3600), { strict: true });
+  clearCookie(res, "kak");
+  res.json({ ok: true, role: matchedAdmin.role, email: matchedAdmin.email, name: matchedAdmin.name });
 });
-app.post("/api/admin/logout", (req, res) => { clearCookie(res, "ka"); res.json({ ok: true }); });
 
-/* --- 後台管理員帳號管理 API（一般 Admin 僅能查看清單，Super Admin 可新增/修改/刪除管理員） --- */
+app.post("/api/admin/logout", (req, res) => {
+  const adm = adminOf(req);
+  if (adm) audit(req, "admin_logout", adm.email);
+  clearCookie(res, "ka");
+  clearCookie(res, "kak");
+  res.json({ ok: true });
+});
+
+/* --- 後台管理員帳號列表與管理（Super Admin 可新增/移除一般 Admin） --- */
 app.get("/api/admin/accounts", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
-  const isSuper = superAdminOf(req);
   const adminList = await readSysStore("admins", []);
+  const liveAdm = adminOf(req) || adm;
+  const isSuper = liveAdm.role === "super_admin";
   res.json({
-    me: { email: adm.email, role: adm.role, name: adm.name },
+    me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },
     accounts: formatAdminAccounts(adminList, Boolean(isSuper)),
     accessKey: isSuper ? ADMIN_ACCESS_KEY : "",
   });
@@ -1254,29 +1587,27 @@ app.get("/api/admin/accounts", async (req, res) => {
 app.post("/api/admin/accounts", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
-  const email = String(req.body?.email ?? "").trim().toLowerCase();
-  const password = String(req.body?.password ?? "");
-  const name = str(req.body?.name ?? "", 50).trim();
-  const role = normalizeAdminRole(req.body?.role, email);
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "請輸入有效的管理員電子郵件" });
-  if (password.length < 6) return res.status(400).json({ error: "密碼長度至少需 6 個字元" });
-  if (isPrimaryAdminEmail(email)) return res.status(400).json({ error: "此信箱已為系統主 Super Admin 帳號" });
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const password = String(req.body?.password || "");
+  const name = str(req.body?.name || "", 50).trim();
+  const role = req.body?.role === "super_admin" ? "super_admin" : "admin";
+
+  if (!email || !email.includes("@") || email.length > 100) {
+    return res.status(400).json({ error: "請輸入有效的管理員 Email 帳號" });
+  }
+  if (password.length < 6 || password.length > 100) {
+    return res.status(400).json({ error: "密碼長度需介於 6 ~ 100 個字元之間" });
+  }
+  if (eq(email, ADMIN_EMAIL.toLowerCase())) {
+    return res.status(400).json({ error: "此信箱已為系統主 Super Admin 帳號" });
+  }
 
   const adminList = await readSysStore("admins", []);
-  const existing = adminList.find(a => String(a.email || "").trim().toLowerCase() === email);
-  if (existing) {
-    if (req.body?.upsert) {
-      existing.role = role;
-      if (name) existing.name = name;
-      existing.passwordHash = await hashPassword(password);
-      delete existing.plainPassword;
-      await writeSysStore("admins", adminList);
-      audit(req, "update_admin", `${email} (${role})`);
-      return res.json({ ok: true, id: existing.id, role: existing.role, updated: true });
-    }
-    return res.status(400).json({ error: "此管理員信箱已存在，請直接於清單中調整權限或修改密碼" });
+  if (adminList.some(a => String(a.email).toLowerCase() === email)) {
+    return res.status(400).json({ error: "此管理員帳號已經存在" });
   }
+
   const passwordHash = await hashPassword(password);
   const newAcc = {
     id: crypto.randomUUID(),
@@ -1337,19 +1668,64 @@ app.delete("/api/admin/accounts/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-/* --- 後台 Google 表單 API 資訊與 CSV 回傳數據管理 --- */
+/* --- 後台 Google 表單 API 資訊、防暴雷觀看名單與 CSV 回傳數據管理 --- */
 app.get("/api/admin/dfc", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const accessCfg = await getMergedDfcAccessConfig(store);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   res.json({
     activeFormId: store.activeFormId || forms[0]?.id || "default-dfc",
+    accessMode: accessCfg.accessMode,
+    allowedEmails: accessCfg.allowedEmails,
+    storeAllowedEmails: accessCfg.storeAllowedEmails,
+    dbAllowedEmails: accessCfg.dbAllowedEmails,
+    envAllowedEmails: accessCfg.envAllowedEmails,
     forms,
     responses: Array.isArray(store.responses) ? store.responses : [],
     googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
     googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
   });
+});
+
+// 查詢與更新 DFC 影片防暴雷觀看名單（支援切換模式、批次儲存名單、或單鍵切換單一使用者）
+app.get("/api/admin/dfc/access", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  const cfg = await getMergedDfcAccessConfig();
+  res.json(cfg);
+});
+
+app.post("/api/admin/dfc/access", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const cfg = await getMergedDfcAccessConfig(store);
+  let nextList = [...cfg.allowedEmails];
+
+  if (req.body?.accessMode && ["whitelist", "all_school", "closed"].includes(req.body.accessMode)) {
+    store.accessMode = req.body.accessMode;
+  }
+  if (req.body?.allowedEmails !== undefined) {
+    nextList = parseEmailListInput(req.body.allowedEmails);
+  }
+  if (req.body?.toggleEmail) {
+    const target = normalizeEmailRule(req.body.toggleEmail);
+    if (target) {
+      const exists = nextList.includes(target);
+      nextList = exists ? nextList.filter(e => e !== target) : [...nextList, target];
+    }
+  }
+
+  store.allowedEmails = nextList;
+  await writeSysStore("dfc", store);
+  await syncDbDfcAccessList(nextList, adm.email || ADMIN_EMAIL);
+  audit(req, "update_dfc_access", `mode=${store.accessMode}, count=${nextList.length}`);
+
+  const updated = await getMergedDfcAccessConfig(store);
+  res.json({ ok: true, ...updated });
 });
 
 // 設定前台預設主推問卷
@@ -1394,8 +1770,6 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
   audit(req, "duplicate_dfc_form", `${src.id} -> ${newId}`);
   res.json({ ok: true, form: clonedForm });
 });
-
-// 拉取並解析指定表單的 Google 表單 CSV 回傳數據（支援 Google Sheets API v4、遠端 Google Sheets CSV 或本地收集紀錄轉 CSV）
 
 /* --- 產生精細化 DFC CSV：每個選項獨立一格、附帶完整行為與設備數據 --- */
 function buildComprehensiveDfcCsv(form, responses) {
@@ -1528,7 +1902,6 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
   const normalizedCsvUrl = normalizeGoogleCsvUrl(form?.csvUrl || "");
   if (normalizedCsvUrl && /^https:\/\/docs\.google\.com\/spreadsheets\//i.test(normalizedCsvUrl)) {
     const sheetId = extractGoogleSheetId(form?.csvUrl || normalizedCsvUrl);
-    // 若已設定 GOOGLE_FORM_API_KEY，優先嘗試使用 Google Sheets API v4 讀取，失敗時自動退回 CSV 匯出端點
     if (sheetId && activeApiKey) {
       try {
         const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/A1:ZZ2000?key=${encodeURIComponent(activeApiKey)}`;
@@ -1589,33 +1962,15 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
     }
   }
 
-  // 2. 產生本站收集紀錄的標準 CSV 表格結構
-  const checkpoints = Array.isArray(form?.checkpoints) ? form.checkpoints : [];
-  const localHeaders = [
-    "提交時間",
-    "填答者信箱",
-    "填答者姓名",
-    "Google同步狀態",
-    "裝置資訊",
-    "IP位址",
-    ...checkpoints.map((cp, idx) => `Q${idx + 1}: ${cp.title} (${cp.entryId || cp.id})`),
-  ];
-  const localRows = responses.map(r => [
-    r.submittedAt ? new Date(r.submittedAt).toLocaleString("zh-TW", { hour12: false }) : "",
-    r.userEmail || "",
-    r.userName || "",
-    r.syncedToGoogle ? "已同步 Google 表單" : (r.demo ? "示範模式(本地記錄)" : "僅本地記錄"),
-    r.device || "",
-    r.ip || "",
-    ...checkpoints.map(cp => {
-      const v = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
-      return Array.isArray(v) ? v.join("、") : String(v ?? "");
-    }),
-  ]);
+  // 2. 產生本站收集紀錄的精細化完整 CSV 表格結構
+  const comp = buildComprehensiveDfcCsv(form, responses);
+  const localHeaders = comp.headers;
+  const localRows = comp.rows;
 
   const activeHeaders = remoteCsv && remoteCsv.headers.length ? remoteCsv.headers : localHeaders;
   const activeRows = remoteCsv && remoteCsv.headers.length ? remoteCsv.rows : localRows;
   const csvLines = [activeHeaders.map(toCsvCell).join(","), ...activeRows.map(r => r.map(toCsvCell).join(","))];
+  const finalRawCsv = remoteCsv && remoteCsv.headers.length ? "\uFEFF" + csvLines.join("\r\n") : comp.rawCsv;
 
   res.json({
     formId: form?.id || formId,
@@ -1710,7 +2065,9 @@ app.delete("/api/admin/dfc/forms/:id", async (req, res) => {
   if (store.activeFormId === id) {
     store.activeFormId = store.forms[0]?.id || "default-dfc";
   }
-  res.json({ ok: true });
+  await writeSysStore("dfc", store);
+  audit(req, "delete_dfc_form", id);
+  res.json({ ok: true, activeFormId: store.activeFormId });
 });
 
 // Super Admin 匯入 Google 表單 CSV 數據
@@ -1731,7 +2088,6 @@ app.post("/api/admin/dfc/import-csv", async (req, res) => {
     const answers = {};
     parsed.headers.forEach((h, colIdx) => {
       const val = r[colIdx] ?? "";
-      // 若標題能對應到題目名稱或 entryId，同時寫入對應 entryId
       const matchedCp = checkpoints.find((cp, cIdx) => h.includes(cp.entryId) || h.includes(cp.title) || colIdx === cIdx + 1);
       if (matchedCp && !answers[matchedCp.entryId]) answers[matchedCp.entryId] = val;
       answers[h] = val;
@@ -2154,15 +2510,23 @@ app.get("/api/admin/sync", async (req, res) => {
       readSysStore("admins", []),
       fetchAdminAuditLogs().catch(() => []),
     ]);
+    const accessCfg = await getMergedDfcAccessConfig(dfcStore);
     const liveAdm = adminOf(req) || adm;
     const isSuper = liveAdm.role === "super_admin";
     const projectRef = (SUPABASE_URL.match(/https?:\/\/([^.]+)\.supabase\.co/) || [])[1] || "supabase";
     const accounts = formatAdminAccounts(adminList, Boolean(isSuper));
+    const forms = Array.isArray(dfcStore.forms) && dfcStore.forms.length ? dfcStore.forms : DEFAULT_DFC_STORE.forms;
     res.json({
       proverbs,
       users,
       dfc: {
-        forms: Array.isArray(dfcStore.forms) && dfcStore.forms.length ? dfcStore.forms : DEFAULT_DFC_STORE.forms,
+        activeFormId: dfcStore.activeFormId || forms[0]?.id || "default-dfc",
+        accessMode: accessCfg.accessMode,
+        allowedEmails: accessCfg.allowedEmails,
+        storeAllowedEmails: accessCfg.storeAllowedEmails,
+        dbAllowedEmails: accessCfg.dbAllowedEmails,
+        envAllowedEmails: accessCfg.envAllowedEmails,
+        forms,
         responses: Array.isArray(dfcStore.responses) ? dfcStore.responses : [],
         googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
         googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
@@ -2181,7 +2545,7 @@ app.get("/api/admin/sync", async (req, res) => {
         dbName: "Primary Database", regionName: "Northeast Asia (Tokyo)", regionCode: "ap-northeast-1", instanceType: "t3.nano",
         proverbsCount: proverbs.length,
         usersCount: users.length,
-        dfcFormsCount: (dfcStore.forms || []).length,
+        dfcFormsCount: forms.length,
         dfcResponsesCount: (dfcStore.responses || []).length,
         adminsCount: accounts.length,
         nodeRssMb: Math.round(process.memoryUsage().rss / 1048576),

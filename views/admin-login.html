@@ -9,27 +9,34 @@
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   .login-card {
-    width: min(400px, 100%);
+    width: min(420px, 100%);
     background: #ffffff;
     border: 1px solid var(--line);
     border-radius: var(--r-xl);
-    padding: 44px 38px 40px;
+    padding: 40px 36px 36px;
     box-shadow: var(--shadow-lg);
     animation: applePop 0.38s var(--spring-smooth) both;
   }
   .login-brand {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     font-size: 13.5px;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     color: var(--ink);
+    flex-wrap: wrap;
+  }
+  .login-brand-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
   }
   .login-brand img {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 7px;
   }
   .login-brand small {
@@ -47,29 +54,32 @@
 
 <main class="login-card">
   <div class="login-brand">
-    <img src="/icon.svg" alt="KKNews Logo">
-    <span>KKNEWS</span>
-    <small>CONSOLE</small>
+    <div class="login-brand-left">
+      <img src="/icon.svg" alt="KKNews Logo">
+      <span>KKNEWS</span>
+      <small>CONSOLE</small>
+    </div>
+    <span class="device-profile-badge" id="adminLoginDeviceBadge">💻 電腦版面</span>
   </div>
 
-  <h1 style="margin:0 0 8px;font-size:24px;font-weight:700">管理員登入</h1>
-  <p class="sub" style="margin-bottom:24px;font-size:14px">請輸入你的管理員信箱與密碼以進入後台主控台。</p>
+  <h1 style="margin:0 0 8px;font-size:24px;font-weight:800">管理員安全登入</h1>
+  <p class="sub" style="margin-bottom:22px;font-size:13.5px;line-height:1.55">請輸入授權管理員信箱與密碼，進入 KKNews 雲端管理與 DFC 防暴雷主控台。</p>
 
   <form id="loginForm" autocomplete="off">
     <label class="field" style="margin-top:0">
-      <span class="lbl">電子郵件信箱</span>
+      <span class="lbl">管理員電子郵件</span>
       <input class="input" id="email" type="email" placeholder="admin@example.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
     </label>
 
     <label class="field">
       <span class="lbl">
-        <span>密碼</span>
+        <span>安全密碼</span>
         <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">顯示密碼</button>
       </span>
       <input class="input" id="pw" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
     </label>
 
-    <button type="submit" class="btn primary block" id="btn" style="margin-top:24px">登入主控台</button>
+    <button type="submit" class="btn primary block" id="btn" style="margin-top:24px">登入後台主控台</button>
   </form>
 
   <div id="err" class="alert err" role="alert" aria-live="polite"></div>
@@ -77,6 +87,18 @@
 
 <script>
 const $ = id => document.getElementById(id);
+
+function applyLoginDeviceProfile() {
+  const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
+  const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+  const layout = vw < 680 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
+  document.documentElement.setAttribute("data-layout", layout);
+  const label = layout === "mobile" ? "📱 手機版面" : layout === "tablet" ? "📟 平板版面" : "💻 電腦版面";
+  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = `${label} · ${vw}×${vh}`;
+}
+applyLoginDeviceProfile();
+window.addEventListener("resize", applyLoginDeviceProfile);
+
 const urlK = new URLSearchParams(location.search).get("k") || "";
 if (urlK) {
   try { sessionStorage.setItem("kk_admin_k", urlK); } catch {}
@@ -113,11 +135,11 @@ $("loginForm").onsubmit = async ev => {
     }
     const j = await r.json().catch(() => ({}));
     $("btn").disabled = false;
-    $("btn").textContent = "登入主控台";
+    $("btn").textContent = "登入後台主控台";
     sayErr(r.status === 429 ? "登入嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
   } catch {
     $("btn").disabled = false;
-    $("btn").textContent = "登入主控台";
+    $("btn").textContent = "登入後台主控台";
     sayErr("伺服器連線逾時，請重試");
   }
 };

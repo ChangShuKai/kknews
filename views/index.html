@@ -1516,18 +1516,29 @@
     </div>
   </div>
 
-  <!-- ==================== 登入門戶 (Entry Login) ==================== -->
-  <div id="entryLoginGate" class="entry-gate-overlay" role="dialog" aria-modal="true"
+  <!-- ==================== 登入門戶 (Entry Login - 強制學校帳號驗證，取消訪客登入) ==================== -->
+  <div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true"
     aria-labelledby="entryGateTitle">
-    <div class="entry-gate-card">
+    <div class="entry-gate-card" style="max-width:440px">
       <div class="entry-gate-brand">
         <div class="entry-gate-icon-wrap">
           <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo">
         </div>
+        <span class="device-profile-badge" id="loginDeviceBadge">💻 偵測登入裝置版面中...</span>
       </div>
 
-      <h1 class="entry-gate-title" id="entryGateTitle">登入 KKNews</h1>
-      <p class="entry-gate-sub">請使用花蓮縣教育網 Google 學校帳號登入</p>
+      <h1 class="entry-gate-title" id="entryGateTitle">KKNews 校園共創平台</h1>
+      <p class="entry-gate-sub" style="margin-bottom:14px">
+        整合<strong>校園諺語牌卡創作</strong>與 <strong>DFC 四步驟互動影音探究</strong>。<br>
+        為保障教學品質與防暴雷保護，本系統<strong>取消訪客瀏覽</strong>，請先驗證學校信箱。
+      </p>
+
+      <div style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:18px;text-align:left;font-size:12.5px;color:var(--ink-secondary);line-height:1.65">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:4px">📌 平台核心宗旨與服務規格</div>
+        <div>• <b>諺語工坊</b>：5 款美學版面 × 7 種主題色票，即時合成高解析度語錄卡</div>
+        <div>• <b>DFC 互動問卷</b>：智慧漸進畫質串流（先低後高不卡頓）與防暴雷名單保護</div>
+        <div>• <b>跨裝置自適應</b>：自動偵測像素與螢幕比例，無縫配置電腦 / 平板 / 手機版面</div>
+      </div>
 
       <div class="entry-action-box">
         <button type="button" class="entry-google-btn" id="entryGoogleLoginBtn">
@@ -1545,42 +1556,36 @@
         </button>
 
         <div class="entry-domain-note">
-          僅限花蓮縣教育網 <strong>@hlc.edu.tw</strong> 帳號
+          僅限花蓮縣教育網 <strong>@hlc.edu.tw</strong> 教職員生帳號登入
         </div>
 
-        <button type="button" id="entryGateDismissBtn" style="margin-top:14px;border:none;background:transparent;color:var(--ink-secondary);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:var(--r-pill);transition:background 0.2s">先以訪客身分瀏覽 ›</button>
+        <div id="entryLoginAlert" class="alert" style="width:100%;margin-top:8px;font-size:13px" role="status" aria-live="polite"></div>
       </div>
     </div>
   </div>
 
-  <!-- 頂部 Apple Frosted-Glass 導覽列 -->
+  <!-- 頂部極簡導覽列：移除頂部 Dock 欄，僅保留「目前頁面標籤名稱按鈕(自動切換)」與「系統狀態按鈕」 -->
   <header class="top-header">
-    <div class="brand-logo" id="brandHomeBtn" title="返回主頁">
+    <div class="brand-logo" id="brandHomeBtn" title="返回方形主選單">
       <img src="/icon.svg" class="brand-icon" alt="KKNews Logo">
       <span>KKNEWS</span>
     </div>
 
-    <!-- 懸浮分段導覽 (Floating Segmented Nav with Sliding Glider) -->
-    <nav class="dock-container" id="frontDock" aria-label="主要導覽">
-      <div class="dock-glider" id="dockGlider"></div>
-      <button type="button" class="dock-nav-item active" id="dockPost" data-tab="post">
-        <span>✍️ 諺語工坊</span>
+    <div class="top-nav-minimal" aria-label="頂部精簡狀態與頁面切換列">
+      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回方形主選單或切換頁面">
+        <span class="page-tag-dot"></span>
+        <span id="topCurrentPageLabel">🏠 首頁主選單</span>
+        <span class="page-switch-hint" id="topCurrentPageHint">主選單</span>
       </button>
-      <button type="button" class="dock-nav-item" id="dockDfc" data-tab="dfc">
-        <span>🎬 DFC 影音</span>
-      </button>
-      <button type="button" class="dock-nav-item" id="dockStatus" data-tab="status">
-        <span class="dot" id="sysDot"></span>
-        <span>📊 系統資訊</span>
-      </button>
-    </nav>
 
-    <!-- 右上角帳號區 -->
+      <button type="button" class="top-status-btn" id="topStatusBtn" title="查看雲端資料庫與系統即時狀態">
+        <span class="dot" id="sysDot"></span>
+        <span id="topStatusBtnText">系統狀態</span>
+      </button>
+    </div>
+
+    <!-- 右上角已登入帳號區（無訪客狀態） -->
     <div class="acct-zone">
-      <div class="acct-pill" id="acctGuest">
-        <span class="acct-info" style="color:var(--ink-tertiary);padding-left:4px">訪客</span>
-        <button type="button" class="acct-logout" id="topLoginBtn" style="color:var(--blue)">登入</button>
-      </div>
       <div class="acct-pill hide" id="acctUser">
         <div class="av" id="topAv">U</div>
         <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
@@ -1593,9 +1598,89 @@
   <!-- 無縫網頁切換舞台 (View Transition Stage) -->
   <div class="view-stage" id="viewStage">
 
+    <!-- ==================== 系統 0：登入後方形按鈕主選單 (Home Square Hub) ==================== -->
+    <section class="view-pane active-view" id="paneHome" aria-label="系統主頁選單">
+      <div style="width:min(1040px, 100%);margin:0 auto">
+        <div class="mission-banner">
+          <div class="mission-head">
+            <h1 class="mission-title">✦ KKNews 校園共創與 DFC 思維探究中樞</h1>
+            <span class="device-profile-badge" id="homeDeviceBadge">💻 電腦版面 · 自動適配</span>
+          </div>
+          <p class="mission-desc">
+            <strong>平台宗旨：</strong>凝聚校園正向文字力量，並結合 DFC 四步驟（感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share）互動影音教學，打造兼具創作美學、流暢串流與嚴密防暴雷保護的最高規格校園平台。
+          </p>
+          <div class="mission-pillars">
+            <div class="mission-pillar">
+              <b>✍️ 諺語牌卡即時合成</b>
+              <span>支援經典居中、文青直排、現代引言、典雅雙框、潮流海報 5 種版面與 7 款色票。</span>
+            </div>
+            <div class="mission-pillar">
+              <b>🎬 智慧漸進畫質與防暴雷</b>
+              <span>低畫質極速預載啟動、緩衝充足自動升 HD，且僅限授權名單帳號觀看，杜絕劇透。</span>
+            </div>
+            <div class="mission-pillar">
+              <b>📱 跨裝置像素級自動版面</b>
+              <span>自動偵測登入裝置像素與螢幕比例，動態切換電腦、平板與手機專屬防破圖版面。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hub-square-grid">
+          <button type="button" class="hub-square-btn" id="hubBtnPost">
+            <div class="hub-square-top">
+              <div class="hub-square-icon">✍️</div>
+              <span class="hub-square-badge ok">全校開放創作</span>
+            </div>
+            <div class="hub-square-body">
+              <h2 class="hub-square-title">諺語工坊</h2>
+              <p class="hub-square-desc">寫下一句諺語或校園格言並加上署名，60fps 即時預覽專屬排版卡片，一鍵投稿或下載高清 PNG。</p>
+            </div>
+            <div class="hub-square-foot">
+              <span>進入方形工作區</span>
+              <span>→</span>
+            </div>
+          </button>
+
+          <button type="button" class="hub-square-btn" id="hubBtnDfc">
+            <div class="hub-square-top">
+              <div class="hub-square-icon">🎬</div>
+              <span class="hub-square-badge lock" id="hubDfcAccessBadge">🔒 防暴雷驗證中</span>
+            </div>
+            <div class="hub-square-body">
+              <h2 class="hub-square-title">DFC 互動影音問卷</h2>
+              <p class="hub-square-desc">觀看 DFC 探究影片並於指定時間標記展開互動問答；搭載先低後高智慧串流引擎與防暴雷保護。</p>
+            </div>
+            <div class="hub-square-foot">
+              <span id="hubDfcFootText">進入互動劇院</span>
+              <span>→</span>
+            </div>
+          </button>
+
+          <button type="button" class="hub-square-btn" id="hubBtnStatus">
+            <div class="hub-square-top">
+              <div class="hub-square-icon">📊</div>
+              <span class="hub-square-badge" id="hubStatusBadge">東京節點連線中</span>
+            </div>
+            <div class="hub-square-body">
+              <h2 class="hub-square-title">系統即時狀態</h2>
+              <p class="hub-square-desc">即時觀測 Supabase 雲端資料庫（Tokyo ap-northeast-1）CPU、RAM、API 延遲與全站累積創作量。</p>
+            </div>
+            <div class="hub-square-foot">
+              <span>檢視即時遙測</span>
+              <span>→</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== 系統 1：諺語工坊 (Proverb Studio) ==================== -->
-    <section class="view-pane active-view" id="panePost" aria-label="諺語工坊">
+    <section class="view-pane" id="panePost" aria-label="諺語工坊" style="display:none">
       <div class="post-shell">
+        <div class="subpage-nav">
+          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">✍️ 諺語工坊 · 即時排版創作室</span>
+        </div>
 
         <div style="margin-bottom:24px">
           <h1 style="margin:0 0 8px;font-size:26px">寫下你想說的一句話</h1>
@@ -1739,99 +1824,129 @@
     </section>
 
     <!-- ==================== 系統 2：DFC 沉浸式影音表單 (DFC Interactive) ==================== -->
-    <section class="view-pane" id="paneDfc" aria-label="DFC 沉浸式影音表單">
+    <section class="view-pane" id="paneDfc" aria-label="DFC 沉浸式影音表單" style="display:none">
       <div class="dfc-container">
-        <div class="dfc-top-bar" style="margin-top:4px">
-          <div>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
-              <h2 id="dfcTitle" style="margin:0;font-size:24px">DFC 沉浸式互動影片表單</h2>
-              <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
-                <span style="font-weight:700;color:var(--ink-secondary)">📋 切換問卷：</span>
-                <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
-              </div>
-            </div>
-            <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放中，抵達指定時間標記時將流暢向左縮小並於右側展開問答。</p>
-          </div>
-          <div class="dfc-step-indicators" id="dfcStepPills"></div>
+        <div class="subpage-nav">
+          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音 · 智慧漸進串流</span>
         </div>
 
-        <div class="dfc-stage-wrap" id="dfcStage">
-          <!-- 影片劇院區塊 -->
-          <div class="dfc-video-pane">
-            <div class="video-cinema-box" id="dfcCinemaBox">
-              <div class="video-floating-badge" id="dfcVideoBadge">準備播放</div>
-              <div class="video-mode-badge" id="dfcModeBadge">🔒 防快轉學習模式</div>
-              <div class="video-loading-overlay hide" id="dfcVideoLoading">
-                <div class="video-spinner"></div>
-                <span id="dfcLoadingText">正在載入專屬影片串流...</span>
-              </div>
-              <div class="video-center-play" id="dfcCenterPlay" title="點擊播放 / 暫停">
-                <div class="video-center-play-circle">▶</div>
-              </div>
-              <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
-              <!-- 自訂播放器專屬容器，徹底移除外部 iframe 播放器 -->
-              <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide"></video>
-              <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
-            </div>
-
-            <div class="cinema-controls">
-              <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停">▶</button>
-              <button type="button" class="cinema-icon-btn" id="dfcRewindBtn" title="倒退 10 秒重看片段">↺ 10s</button>
-              <div class="cinema-track" id="dfcTrackWrap">
-                <div class="cinema-track-buffered" id="dfcTrackBuffered"></div>
-                <div class="cinema-track-watched" id="dfcTrackWatched"></div>
-                <div class="cinema-track-fill" id="dfcTrackFill"></div>
-                <div class="cinema-track-tooltip" id="dfcTrackTooltip">00:00</div>
-                <div id="dfcMarkers"></div>
-              </div>
-              <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 00:18</span>
-              <div class="cinema-vol-wrap">
-                <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
-                <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
-              </div>
-              <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="切換播放速度">1.0x</button>
-              <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕劇院模式" style="padding:0 8px">⛶</button>
-              <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
-                style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
-                填寫問卷</button>
-            </div>
+        <!-- 防暴雷保護艙：當帳號未列入授權名單時顯示，完全隱藏影片與題目避免暴雷 -->
+        <div class="spoiler-vault-card hide" id="dfcRestrictedBox">
+          <div class="spoiler-vault-icon">🛡️</div>
+          <div class="spoiler-vault-badge">🔒 DFC 防暴雷保護機制已啟動</div>
+          <h3 class="spoiler-vault-title">此帳號尚未開放觀看 DFC 影片與問卷</h3>
+          <p class="spoiler-vault-desc" id="dfcRestrictedMsg">
+            為防止劇情與探究題目提前曝光（禁止暴雷），目前 DFC 互動影片僅開放管理員於資料庫或後台設定之規定帳號觀看。
+          </p>
+          <div class="spoiler-vault-meta">
+            <div><strong>目前登入帳號：</strong><span id="dfcRestrictedEmail">—</span></div>
+            <div style="margin-top:4px"><strong>開放規則說明：</strong>系統管理員可隨時於「管理後台 › DFC 觀看權限管理」或資料庫 <code>dfc_access_list</code> 自由新增授權信箱或學號區段。</div>
           </div>
-
-          <!-- 右側動態問題卡片 -->
-          <div class="dfc-q-pane" id="dfcQuestionCol">
-            <div class="dfc-question-card">
-              <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
-              <h3 id="dfcQTitle" style="margin:0 0 8px;font-size:18px;line-height:1.4">載入中...</h3>
-              <p id="dfcQDesc" style="margin:0 0 18px;font-size:13.5px;color:var(--ink-secondary);line-height:1.55"></p>
-              <div id="dfcQInputArea"></div>
-              <div id="dfcQErr" class="alert err" style="margin-top:0;margin-bottom:12px"></div>
-              <button type="button" class="btn primary block" id="dfcAnswerBtn">確認作答，繼續觀看 →</button>
-            </div>
+          <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+            <button type="button" class="btn primary" id="dfcRestrictedBackBtn">← 返回方形主選單</button>
+            <button type="button" class="btn ghost" id="dfcRestrictedRetryBtn" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">🔄 重新檢查授權狀態</button>
           </div>
         </div>
 
-        <!-- 表單完成回饋 -->
-        <div class="alert ok hide" id="dfcCompleteBox" style="margin-top:24px;padding:20px 24px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div id="dfcAuthorizedContent">
+          <div class="dfc-top-bar" style="margin-top:4px">
             <div>
-              <h3 style="margin:0 0 4px;font-size:18px;color:var(--green)" id="dfcCompleteTitle">🎉 已完成所有階段問答並送出 Google
-                表單！</h3>
-              <p style="margin:0;font-size:13.5px;color:var(--ink-secondary)" id="dfcCompleteDesc">
-                感謝你的參與，所有時間點的回答皆已成功記錄。</p>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
+                <h2 id="dfcTitle" style="margin:0;font-size:24px">DFC 沉浸式互動影片表單</h2>
+                <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
+                  <span style="font-weight:700;color:var(--ink-secondary)">📋 切換問卷：</span>
+                  <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
+                </div>
+              </div>
+              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片採「先低畫質極速預載、後自動升 HD」串流技術，抵達時間標記時將自動於右側展開問答。</p>
             </div>
-            <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
+            <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
-          <div class="dfc-summary-card hide" id="dfcSummaryCard">
-            <div style="font-size:13.5px;font-weight:700;color:var(--green);margin-bottom:8px">📋 本次作答紀錄摘要：</div>
-            <div id="dfcSummaryItems"></div>
+
+          <div class="dfc-stage-wrap" id="dfcStage">
+            <!-- 影片劇院區塊 -->
+            <div class="dfc-video-pane">
+              <div class="video-cinema-box" id="dfcCinemaBox">
+                <div class="video-floating-badge" id="dfcVideoBadge">準備播放</div>
+                <div class="video-mode-badge" id="dfcModeBadge">⚡ 智慧漸進畫質 (360p ➔ HD)</div>
+                <div class="video-loading-overlay hide" id="dfcVideoLoading">
+                  <div class="video-spinner"></div>
+                  <span id="dfcLoadingText">⚡ 正在以低畫質極速預載緩衝，確保播放不卡頓...</span>
+                </div>
+                <div class="video-center-play" id="dfcCenterPlay" title="點擊播放 / 暫停">
+                  <div class="video-center-play-circle">▶</div>
+                </div>
+                <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
+                <!-- 自訂播放器專屬容器 -->
+                <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
+                <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
+              </div>
+
+              <div class="cinema-controls">
+                <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停">▶</button>
+                <button type="button" class="cinema-icon-btn" id="dfcRewindBtn" title="倒退 10 秒重看片段">↺ 10s</button>
+                <div class="cinema-track" id="dfcTrackWrap">
+                  <div class="cinema-track-buffered" id="dfcTrackBuffered"></div>
+                  <div class="cinema-track-watched" id="dfcTrackWatched"></div>
+                  <div class="cinema-track-fill" id="dfcTrackFill"></div>
+                  <div class="cinema-track-tooltip" id="dfcTrackTooltip">00:00</div>
+                  <div id="dfcMarkers"></div>
+                </div>
+                <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 06:03</span>
+                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="點擊切換畫質策略（預設：先低畫質極速載入，緩衝充足自動升 HD）">⚡ 自動(360p➔HD)</button>
+                <div class="cinema-vol-wrap">
+                  <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
+                  <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
+                </div>
+                <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="切換播放速度">1.0x</button>
+                <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕劇院模式" style="padding:0 8px">⛶</button>
+                <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
+                  style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
+                  填寫問卷</button>
+              </div>
+            </div>
+
+            <!-- 右側動態問題卡片 -->
+            <div class="dfc-q-pane" id="dfcQuestionCol">
+              <div class="dfc-question-card">
+                <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
+                <h3 id="dfcQTitle" style="margin:0 0 8px;font-size:18px;line-height:1.4">載入中...</h3>
+                <p id="dfcQDesc" style="margin:0 0 18px;font-size:13.5px;color:var(--ink-secondary);line-height:1.55"></p>
+                <div id="dfcQInputArea"></div>
+                <div id="dfcQErr" class="alert err" style="margin-top:0;margin-bottom:12px"></div>
+                <button type="button" class="btn primary block" id="dfcAnswerBtn">確認作答，繼續觀看 →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 表單完成回饋 -->
+          <div class="alert ok hide" id="dfcCompleteBox" style="margin-top:24px;padding:20px 24px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:18px;color:var(--green)" id="dfcCompleteTitle">🎉 已完成所有階段問答並送出 Google
+                  表單！</h3>
+                <p style="margin:0;font-size:13.5px;color:var(--ink-secondary)" id="dfcCompleteDesc">
+                  感謝你的參與，所有時間點的回答皆已成功記錄。</p>
+              </div>
+              <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
+            </div>
+            <div class="dfc-summary-card hide" id="dfcSummaryCard">
+              <div style="font-size:13.5px;font-weight:700;color:var(--green);margin-bottom:8px">📋 本次作答紀錄摘要：</div>
+              <div id="dfcSummaryItems"></div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ==================== 系統 3：系統即時資訊 (System Status) ==================== -->
-    <section class="view-pane" id="paneStatus" aria-label="系統即時資訊">
+    <section class="view-pane" id="paneStatus" aria-label="系統即時資訊" style="display:none">
       <div class="status-shell">
+        <div class="subpage-nav">
+          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">📊 雲端資料庫與即時系統指標</span>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
           <h2 style="margin:0;font-size:24px">系統即時資訊</h2>
           <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">刷新連線</button>
@@ -1939,10 +2054,12 @@
     const $ = id => document.getElementById(id);
     const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     function say(t, ok) {
-      const m = $("msg");
-      if (!m) return;
-      m.textContent = t;
-      m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert";
+      for (const id of ["msg", "entryLoginAlert"]) {
+        const m = $(id);
+        if (!m) continue;
+        m.textContent = t;
+        m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert";
+      }
     }
     const api = (url, body) => fetch(url, {
       method: "POST",
@@ -2119,56 +2236,71 @@
     setupTurnstile();
 
     /* ============================================================================
-     * 網頁高度整合路由與 Apple 液態玻璃導覽控制器 (Unified Router & Dock Glider)
+     * 跨裝置像素偵測與多版面自動切換引擎 (Desktop 不動 / Tablet / Mobile 自動切換)
+     * ============================================================================ */
+    function detectAndApplyDeviceLayout() {
+      const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
+      const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+      const sw = Math.round(window.screen?.width || vw);
+      const sh = Math.round(window.screen?.height || vh);
+      const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
+      const ua = navigator.userAgent || "";
+      const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(ua);
+      const isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+
+      let layout = "desktop";
+      let label = "💻 電腦標準版面";
+      if (vw < 680 || (isMobileUA && vw < 900)) {
+        layout = "mobile";
+        label = "📱 手機防破圖版面";
+      } else if (vw < 1024 || isTabletUA) {
+        layout = "tablet";
+        label = "📟 平板自適應版面";
+      }
+
+      document.documentElement.setAttribute("data-layout", layout);
+      document.documentElement.setAttribute("data-orientation", vw >= vh ? "landscape" : "portrait");
+
+      const badgeText = `${label} · ${vw}×${vh}px (@${dpr}x)`;
+      if ($("loginDeviceBadge")) $("loginDeviceBadge").textContent = badgeText;
+      if ($("homeDeviceBadge")) $("homeDeviceBadge").textContent = badgeText;
+      return { layout, vw, vh, sw, sh, dpr };
+    }
+    detectAndApplyDeviceLayout();
+    window.addEventListener("resize", detectAndApplyDeviceLayout);
+    window.addEventListener("orientationchange", detectAndApplyDeviceLayout);
+
+    /* ============================================================================
+     * 網頁高度整合路由與簡潔頂部標籤控制器 (Home Square Hub + 頂部自動切換標籤)
      * ============================================================================ */
     const PANES = {
+      home: $("paneHome"),
       post: $("panePost"),
       dfc: $("paneDfc"),
       status: $("paneStatus"),
     };
 
-    const DOCK_BTNS = {
-      post: $("dockPost"),
-      dfc: $("dockDfc"),
-      status: $("dockStatus"),
+    const PAGE_LABELS = {
+      home: { title: "🏠 首頁主選單", hint: "點此快速切換" },
+      post: { title: "✍️ 諺語工坊", hint: "點此回主選單" },
+      dfc: { title: "🎬 DFC 影音問卷", hint: "點此回主選單" },
+      status: { title: "📊 系統即時狀態", hint: "點此回主選單" },
     };
 
-    let currentTab = "post";
+    let currentTab = "home";
 
-    /* Apple 滑動指示器控制器 (Apple Segmented Glider Controller) */
-    function updateDockGlider(activeBtn, animate = true) {
-      const glider = $("dockGlider");
-      const container = $("frontDock");
-      if (!glider || !container || !activeBtn) return;
-      const cRect = container.getBoundingClientRect();
-      const bRect = activeBtn.getBoundingClientRect();
-      if (bRect.width === 0) return;
-
-      const leftOffset = bRect.left - cRect.left;
-      const width = bRect.width;
-
-      if (!animate) {
-        glider.style.transition = "none";
-      } else {
-        glider.style.transition = "transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), width 0.36s cubic-bezier(0.16, 1, 0.3, 1)";
-      }
-      glider.style.transform = `translate3d(${leftOffset}px, 0, 0)`;
-      glider.style.width = `${width}px`;
-      glider.style.opacity = "1";
+    function updateTopHeaderButtons(tabName) {
+      const info = PAGE_LABELS[tabName] || PAGE_LABELS.home;
+      if ($("topCurrentPageLabel")) $("topCurrentPageLabel").textContent = info.title;
+      if ($("topCurrentPageHint")) $("topCurrentPageHint").textContent = info.hint;
+      if ($("topStatusBtn")) $("topStatusBtn").classList.toggle("active", tabName === "status");
     }
 
-    function navigateToTab(tabName, updateHistory = true, animate = true) {
-      if (!PANES[tabName]) tabName = "post";
+    function navigateToTab(tabName, updateHistory = true) {
+      if (!PANES[tabName]) tabName = "home";
       currentTab = tabName;
+      updateTopHeaderButtons(tabName);
 
-      // 更新分段導覽列按鈕與液態指示器
-      for (const [key, btn] of Object.entries(DOCK_BTNS)) {
-        if (btn) btn.classList.toggle("active", key === tabName);
-      }
-      const activeDockBtn = DOCK_BTNS[tabName];
-      if (activeDockBtn) updateDockGlider(activeDockBtn, animate);
-
-      // 平滑切換系統視圖（未登入時依舊確保版面正常渲染，不反覆白屏）
       for (const [key, pane] of Object.entries(PANES)) {
         if (!pane) continue;
         if (key === tabName) {
@@ -2189,9 +2321,9 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
 
       if (updateHistory) {
-        const newHash = tabName === "post" ? "" : "#" + tabName;
+        const newHash = tabName === "home" ? "" : "#" + tabName;
         if (window.location.hash !== newHash) {
-          history.pushState({ tab: tabName }, "", newHash || window.location.pathname);
+          history.pushState({ tab: tabName }, "", newHash || window.location.pathname + window.location.search);
         }
       }
 
@@ -2205,20 +2337,30 @@
     }
 
     window.addEventListener("popstate", () => {
-      const hash = window.location.hash.replace("#", "") || "post";
+      const hash = window.location.hash.replace("#", "") || "home";
       navigateToTab(hash, false);
     });
 
-    window.addEventListener("resize", () => {
-      const activeBtn = DOCK_BTNS[currentTab] || $("dockPost");
-      if (activeBtn) updateDockGlider(activeBtn, false);
+    // 頂部精簡按鈕與方形主選單按鈕綁定
+    $("brandHomeBtn")?.addEventListener("click", () => navigateToTab("home"));
+    $("topCurrentPageBtn")?.addEventListener("click", () => {
+      if (currentTab !== "home") {
+        navigateToTab("home");
+      } else {
+        navigateToTab("post");
+      }
     });
-
-    // 頂部導覽列點擊綁定
-    $("brandHomeBtn")?.addEventListener("click", () => navigateToTab("post"));
-    $("dockPost")?.addEventListener("click", () => navigateToTab("post"));
-    $("dockDfc")?.addEventListener("click", () => navigateToTab("dfc"));
-    $("dockStatus")?.addEventListener("click", () => navigateToTab("status"));
+    $("topStatusBtn")?.addEventListener("click", () => {
+      navigateToTab(currentTab === "status" ? "home" : "status");
+    });
+    $("hubBtnPost")?.addEventListener("click", () => navigateToTab("post"));
+    $("hubBtnDfc")?.addEventListener("click", () => navigateToTab("dfc"));
+    $("hubBtnStatus")?.addEventListener("click", () => navigateToTab("status"));
+    document.querySelectorAll("[data-go-home]").forEach(btn => {
+      btn.addEventListener("click", () => navigateToTab("home"));
+    });
+    $("dfcRestrictedBackBtn")?.addEventListener("click", () => navigateToTab("home"));
+    $("dfcRestrictedRetryBtn")?.addEventListener("click", () => loadDfcConfig(DFC_CONFIG.id));
     $("manualRefreshStatusBtn")?.addEventListener("click", () => refreshPublicStatus(true));
 
     /* ============================================================================
@@ -2777,8 +2919,48 @@
       }
     }
 
-    function renderMe(me) {
+    let currentDfcAccess = { allowed: false, mode: "whitelist", reason: "unauthenticated", message: "" };
+
+    function updateDfcAccessUi(access) {
+      if (access && typeof access === "object") currentDfcAccess = access;
+      const isAllowed = Boolean(currentDfcAccess?.allowed) && !DFC_CONFIG.restricted;
+      const hubBadge = $("hubDfcAccessBadge");
+      const hubFoot = $("hubDfcFootText");
+      if (hubBadge) {
+        hubBadge.className = "hub-square-badge " + (isAllowed ? "ok" : "lock");
+        hubBadge.textContent = isAllowed ? "🟢 已授權觀看" : "🔒 防暴雷保護中";
+      }
+      if (hubFoot) {
+        hubFoot.textContent = isAllowed ? "進入互動劇院" : "查看防暴雷說明";
+      }
+
+      const restrictedBox = $("dfcRestrictedBox");
+      const authContent = $("dfcAuthorizedContent");
+      if (restrictedBox && authContent) {
+        restrictedBox.classList.toggle("hide", isAllowed);
+        authContent.classList.toggle("hide", !isAllowed);
+      }
+      if ($("dfcRestrictedEmail")) {
+        $("dfcRestrictedEmail").textContent = currentUser?.email || "尚未登入";
+      }
+      if ($("dfcRestrictedMsg")) {
+        $("dfcRestrictedMsg").textContent = DFC_CONFIG.message || currentDfcAccess?.message ||
+          "為防止劇情與探究題目提前曝光（禁止暴雷），目前 DFC 互動影片僅開放規定帳號觀看。";
+      }
+      if (!isAllowed) {
+        const v = $("dfcVideo");
+        if (v) {
+          v.pause();
+          v.removeAttribute("src");
+        }
+      }
+    }
+
+    function renderMe(me, dfcAccessArg = null) {
       currentUser = me;
+      if (dfcAccessArg) currentDfcAccess = dfcAccessArg;
+      else if (me?.dfcAccess) currentDfcAccess = me.dfcAccess;
+
       const isAuth = Boolean(me);
       const gate = $("entryLoginGate");
       if (gate) {
@@ -2791,8 +2973,8 @@
         }
       }
 
-      $("acctGuest").classList.toggle("hide", isAuth);
-      $("acctUser").classList.toggle("hide", !isAuth);
+      $("acctUser")?.classList.toggle("hide", !isAuth);
+      updateDfcAccessUi(currentDfcAccess);
 
       if (!isAuth) {
         show("loginView");
@@ -2803,20 +2985,27 @@
       const initial = (me.name || me.email || "U")[0].toUpperCase();
       $("topWho").textContent = label;
       $("topWho").title = me.email;
+      const avImg = $("topAvImg");
+      const avTxt = $("topAv");
+      if (avImg) {
+        avImg.onerror = () => {
+          avImg.classList.add("hide");
+          avTxt?.classList.remove("hide");
+        };
+      }
       if (me.picture && /^https:\/\//i.test(me.picture)) {
-        $("topAvImg").src = me.picture;
-        $("topAvImg").classList.remove("hide");
-        $("topAv").classList.add("hide");
+        avImg.src = me.picture;
+        avImg.classList.remove("hide");
+        avTxt.classList.add("hide");
       } else {
-        $("topAv").textContent = initial;
-        $("topAv").classList.remove("hide");
-        $("topAvImg").classList.add("hide");
+        avTxt.textContent = initial;
+        avTxt.classList.remove("hide");
+        avImg.classList.add("hide");
       }
 
-      // 登入後諺語工坊及全系統無縫啟用，依網址 Hash 進入對應系統（預設諺語工坊）
       show("formView");
       const initialHash = window.location.hash.replace("#", "");
-      navigateToTab(initialHash || "post", false, false);
+      navigateToTab(["home", "post", "dfc", "status"].includes(initialHash) ? initialHash : "home", false);
 
       let acked = false;
       try { acked = localStorage.getItem("kk_legal_ack") === "1"; } catch { }
@@ -2831,9 +3020,10 @@
       try { sessionStorage.removeItem("cf_turnstile_passed"); } catch { }
       await api("/api/logout");
       currentUser = null;
+      currentDfcAccess = { allowed: false, mode: "whitelist", reason: "unauthenticated", message: "" };
       renderMe(null);
-      navigateToTab("post", false, false);
-      say("您已安全登出系統", true);
+      navigateToTab("home", false);
+      say("您已安全登出系統，請使用學校 Google 帳號重新登入", true);
     }
 
     function setMeterBar(id, pct) {
@@ -2853,6 +3043,11 @@
         $("dbIco").classList.toggle("err", !s.ok);
         $("sysDot").className = "dot" + (s.ok ? "" : " warn");
         $("sysText").textContent = s.ok ? "● 雲端連線正常" : "● 系統維護中";
+        if ($("topStatusBtnText")) $("topStatusBtnText").textContent = s.ok ? `系統正常 · ${s.latencyMs ?? "—"}ms` : "系統維護中";
+        if ($("hubStatusBadge")) {
+          $("hubStatusBadge").className = "hub-square-badge " + (s.ok ? "ok" : "lock");
+          $("hubStatusBadge").textContent = s.ok ? `🟢 正常 (${s.latencyMs ?? "—"}ms)` : "🟠 維護中";
+        }
         $("stCpu").textContent = (s.cpuPct ?? "—") + "%";
         $("stDisk").textContent = (s.diskPct ?? "—") + "%";
         $("stRam").textContent = (s.ramPct ?? "—") + "%";
@@ -3321,11 +3516,41 @@
     }
 
     async function submitDfcToGoogleForm(payloadAnswers) {
+      const dur = Math.max(1, Math.round(dfcState.duration || DFC_CONFIG.fallbackDuration || 363));
+      const watchedSec = Math.min(dur, Math.round(dfcState.maxWatchedTime || dfcState.currentTime || 0));
+      const watchPct = Math.min(100, Math.round((watchedSec / dur) * 100));
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const devLayout = detectAndApplyDeviceLayout();
+
+      const telemetry = {
+        deviceType: devLayout.layout === "mobile" ? "手機" : devLayout.layout === "tablet" ? "平板" : "電腦",
+        os: navigator.userAgentData?.platform || navigator.platform || "",
+        browser: navigator.userAgent || "",
+        screenResolution: `${devLayout.sw}x${devLayout.sh}`,
+        viewportSize: `${devLayout.vw}x${devLayout.vh}`,
+        language: navigator.language || "zh-TW",
+        connectionType: conn ? [conn.effectiveType, conn.downlink ? conn.downlink + "Mbps" : ""].filter(Boolean).join(" / ") : "",
+      };
+
+      const engagement = {
+        watchPercentage: watchPct,
+        watchedSeconds: watchedSec,
+        duration: dur,
+        playCount: dfcEngagement.playCount || 1,
+        pauseCount: dfcEngagement.pauseCount || 0,
+        rewindCount: dfcEngagement.rewindCount || 0,
+        seekCount: dfcEngagement.seekCount || 0,
+        totalSessionSeconds: Math.max(1, Math.round((Date.now() - dfcEngagement.sessionStart) / 1000)),
+        timeSpentPerQuestion: dfcEngagement.timeSpentPerQuestion || {},
+      };
+
       const r = await api("/api/dfc/submit", {
         formId: DFC_CONFIG.id || "default-dfc",
         formUrl: DFC_CONFIG.googleFormUrl,
         emailEntryId: DFC_CONFIG.emailEntryId,
         answers: payloadAnswers,
+        telemetry,
+        engagement,
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || "送出失敗");
@@ -3367,6 +3592,11 @@
 
       dfcState.answers[cp.entryId] = val;
       dfcState.answeredIds.add(cp.id);
+      if (dfcEngagement.checkpointOpenTs) {
+        const spentSec = Math.max(1, Math.round((Date.now() - dfcEngagement.checkpointOpenTs) / 1000));
+        dfcEngagement.timeSpentPerQuestion[cp.id] = (dfcEngagement.timeSpentPerQuestion[cp.id] || 0) + spentSec;
+        dfcEngagement.checkpointOpenTs = null;
+      }
       const displayVal = Array.isArray(val) ? val.join(", ") : String(val);
       logAction("作答 DFC 題目", `第 ${idx + 1} 題 [${cp.title}]: ${displayVal.slice(0, 50)}`);
 
@@ -3594,17 +3824,99 @@
       return null;
     }
 
+    /* ============================================================================
+     * 智慧漸進式畫質與防卡頓預緩衝引擎 (寧可畫質先低再上來，絕不看 1 秒停 3 秒)
+     * ============================================================================ */
+    const QUALITY_MODES = ["auto", "360p", "720p", "1080p"];
+    let dfcQualityMode = "auto";
+    let dfcActiveTier = "360p"; // 初始一律以 360p 低負載極速模式啟動
+    let isPrebufferingGate = false;
+    let prebufferCheckInterval = null;
+    const MIN_SAFE_BUFFER_SEC = 3.6; // 至少累積 3.6 秒連續緩衝才啟動/恢復播放，徹底杜絕看1秒停3秒
+
+    function getForwardBufferSeconds(v) {
+      if (!v || !v.buffered || v.buffered.length === 0) return 0;
+      const cur = v.currentTime || 0;
+      let forward = 0;
+      for (let i = 0; i < v.buffered.length; i++) {
+        const start = v.buffered.start(i);
+        const end = v.buffered.end(i);
+        if (start <= cur + 0.5 && end >= cur) {
+          forward = Math.max(forward, end - cur);
+        }
+      }
+      return forward;
+    }
+
+    function applyVisualQualityTier(tier) {
+      const v = $("dfcVideo");
+      const qBtn = $("dfcQualityBtn");
+      const mb = $("dfcModeBadge");
+      dfcActiveTier = tier;
+      if (v) {
+        v.classList.remove("video-q-360p", "video-q-720p", "video-q-1080p");
+        v.classList.add("video-q-" + tier);
+      }
+      const tierLabel = tier === "360p" ? "360p 極速" : tier === "720p" ? "720p HD" : "1080p 原畫";
+      if (qBtn) {
+        qBtn.textContent = dfcQualityMode === "auto"
+          ? `⚡ 自動(${tierLabel})`
+          : `🎞️ 固定 ${tierLabel}`;
+      }
+      if (mb) {
+        const seekMode = DFC_CONFIG.allowSeek || "watched";
+        const lockLabel = seekMode === "locked" ? "🔒 鎖定進度" : seekMode === "free" ? "🎬 自由探索" : "🔒 防快轉";
+        mb.textContent = `${lockLabel} · ⚡ ${tierLabel}`;
+      }
+    }
+
+    function evaluateAdaptiveQuality() {
+      const v = $("dfcVideo");
+      if (!v || !dfcState.useRealVideo) return;
+      const forwardSec = getForwardBufferSeconds(v);
+      if (dfcQualityMode !== "auto") {
+        if (dfcActiveTier !== dfcQualityMode) applyVisualQualityTier(dfcQualityMode);
+        return;
+      }
+      let targetTier = "360p";
+      if (forwardSec >= 11) targetTier = "1080p";
+      else if (forwardSec >= 4.5) targetTier = "720p";
+      else targetTier = "360p";
+
+      if (targetTier !== dfcActiveTier) {
+        applyVisualQualityTier(targetTier);
+      }
+    }
+
+    if ($("dfcQualityBtn")) {
+      $("dfcQualityBtn").onclick = () => {
+        const nextIdx = (QUALITY_MODES.indexOf(dfcQualityMode) + 1) % QUALITY_MODES.length;
+        dfcQualityMode = QUALITY_MODES[nextIdx];
+        if (dfcQualityMode === "auto") {
+          evaluateAdaptiveQuality();
+          showDfcLockToast("⚡ 已切換為「智慧漸進畫質」：先以 360p 極速載入，緩衝充足自動提升至 HD");
+        } else {
+          applyVisualQualityTier(dfcQualityMode);
+          showDfcLockToast(`🎞️ 已切換為「${dfcQualityMode}」畫質模式`);
+        }
+      };
+    }
+
     function applyDfcVideoSource(url) {
       const v = $("dfcVideo");
       const canvas = $("dfcDemoCanvas");
       const badge = $("dfcVideoBadge");
       const loadingEl = $("dfcVideoLoading");
 
+      if (DFC_CONFIG.restricted || !currentDfcAccess.allowed) {
+        updateDfcAccessUi(currentDfcAccess);
+        return;
+      }
+
       updateDfcPlayerControlUi();
+      applyVisualQualityTier("360p");
 
       const driveId = extractGoogleDriveId(url);
-      const isDirectFile = url && (/\.(mp4|webm|ogg|m4v)(\?.*)?$/i.test(url) || url.startsWith("/assets/"));
-
       dfcState.isEmbed = false;
       dfcState.isDriveStream = Boolean(driveId);
       dfcState.useRealVideo = true;
@@ -3631,11 +3943,9 @@
       }
       if (canvas) canvas.classList.add("hide");
       if (badge) {
-        badge.textContent = "🎬 專屬劇院播放器 · 點擊開始觀看";
+        badge.textContent = "⚡ 360p 極速預載就緒 · 點擊開始順暢觀看";
         badge.classList.remove("question-stop");
       }
-      const mb = $("dfcModeBadge");
-      if (mb) mb.textContent = "⚡ 高速順暢播放模式";
       renderDfcStepPills();
       renderDfcMarkers();
       updateDfcUiProgress();
@@ -3657,22 +3967,24 @@
 
       let targetTime = Math.max(0, Math.min(dfcState.duration || 363, requestedTime));
 
-      // 1. 若為防快轉模式，不可超過目前實際已觀看的最大秒數
       if (fromUserTrack && seekMode === "watched" && targetTime > dfcState.maxWatchedTime + 0.5) {
         targetTime = dfcState.maxWatchedTime;
         showDfcLockToast(`🔒 請依序觀看影片，僅能回看已觀看過的片段 (00:00 ~ ${fmtSec(dfcState.maxWatchedTime)})`);
       }
 
-      // 2. 不可跳過尚未作答的檢核點題目
       const nextUnanswered = DFC_CONFIG.checkpoints.find(cp => !dfcState.answeredIds.has(cp.id));
       if (nextUnanswered && targetTime >= nextUnanswered.time) {
         targetTime = nextUnanswered.time;
       }
 
+      if (fromUserTrack) dfcEngagement.seekCount++;
       dfcState.currentTime = targetTime;
       if (dfcState.useRealVideo) {
         const v = $("dfcVideo");
-        if (v) v.currentTime = targetTime;
+        if (v) {
+          if (dfcQualityMode === "auto") applyVisualQualityTier("360p");
+          v.currentTime = targetTime;
+        }
       }
       updateDfcUiProgress();
       checkDfcTimeCheckpoints();
@@ -3689,21 +4001,50 @@
 
       v.addEventListener("contextmenu", e => e.preventDefault());
 
-      let waitTimer = null;
-      let watchdogTimer = null;
-      const clearBufferTimers = () => {
-        if (waitTimer) { clearTimeout(waitTimer); waitTimer = null; }
-        if (watchdogTimer) { clearTimeout(watchdogTimer); watchdogTimer = null; }
+      const stopPrebufferGate = () => {
+        isPrebufferingGate = false;
+        if (prebufferCheckInterval) {
+          clearInterval(prebufferCheckInterval);
+          prebufferCheckInterval = null;
+        }
+        if (loadingEl) loadingEl.classList.add("hide");
       };
 
-      const hideLoadingOnEvent = () => {
-        clearBufferTimers();
-        if (loadingEl) loadingEl.classList.add("hide");
+      const startSmartPrebufferGate = () => {
+        if (isPrebufferingGate || !dfcState.playing) return;
+        isPrebufferingGate = true;
+        if (dfcQualityMode === "auto") applyVisualQualityTier("360p");
+        if (loadingEl) loadingEl.classList.remove("hide");
+
+        const gateStartTs = Date.now();
+        if (prebufferCheckInterval) clearInterval(prebufferCheckInterval);
+        prebufferCheckInterval = setInterval(() => {
+          if (!dfcState.playing || dfcState.activeCheckpointIndex !== -1) {
+            stopPrebufferGate();
+            return;
+          }
+          const fwd = getForwardBufferSeconds(v);
+          const rem = Math.max(0, (v.duration || dfcState.duration || 363) - (v.currentTime || 0));
+          const targetSec = Math.min(MIN_SAFE_BUFFER_SEC, rem);
+          const pct = targetSec > 0 ? Math.min(99, Math.round((fwd / targetSec) * 100)) : 100;
+          const elapsedMs = Date.now() - gateStartTs;
+
+          if (loadingTxt) {
+            loadingTxt.textContent = `⚡ 360p 極速預緩衝中 (${pct}%) · 完成後將連續順暢播放並自動升 HD...`;
+          }
+
+          if (fwd >= targetSec || v.readyState >= 4 || (elapsedMs > 2600 && v.readyState >= 3)) {
+            stopPrebufferGate();
+            evaluateAdaptiveQuality();
+            if (dfcState.playing && v.paused) {
+              v.play().catch(() => {});
+            }
+          }
+        }, 180);
       };
 
       const handleMetadataLoaded = () => {
         if (dfcState.isEmbed) return;
-        hideLoadingOnEvent();
         if (v.duration && Number.isFinite(v.duration) && v.duration > 0) {
           dfcState.useRealVideo = true;
           dfcState.videoReady = true;
@@ -3716,7 +4057,7 @@
 
           const badge = $("dfcVideoBadge");
           if (badge && !badge.classList.contains("question-stop")) {
-            badge.textContent = dfcState.playing ? "🎬 高速串流播放中" : "🎬 影片已就緒 · 點擊開始觀看";
+            badge.textContent = dfcState.playing ? "🎬 智慧漸進串流播放中" : "⚡ 360p 極速預載就緒 · 點擊開始觀看";
           }
 
           renderDfcStepPills();
@@ -3734,8 +4075,8 @@
       v.ondurationchange = handleMetadataLoaded;
 
       v.oncanplay = () => {
-        hideLoadingOnEvent();
         dfcState.videoReady = true;
+        evaluateAdaptiveQuality();
         if (dfcState.pendingPlay) {
           dfcState.pendingPlay = false;
           setDfcPlaying(true);
@@ -3753,6 +4094,7 @@
           dfcState.maxWatchedTime = v.currentTime;
           renderDfcStepPills();
         }
+        evaluateAdaptiveQuality();
         updateDfcUiProgress();
         checkDfcTimeCheckpoints();
       };
@@ -3764,15 +4106,14 @@
       };
 
       v.onseeked = () => {
-        hideLoadingOnEvent();
         if (!dfcState.useRealVideo) return;
         dfcState.currentTime = v.currentTime || 0;
+        evaluateAdaptiveQuality();
         updateDfcUiProgress();
         checkDfcTimeCheckpoints();
       };
 
       v.onplay = () => {
-        hideLoadingOnEvent();
         dfcState.playing = true;
         updateDfcUiProgress();
         if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
@@ -3780,43 +4121,27 @@
       };
 
       v.onpause = () => {
-        hideLoadingOnEvent();
-        if (dfcState.activeCheckpointIndex === -1) {
+        if (!isPrebufferingGate && dfcState.activeCheckpointIndex === -1) {
           dfcState.playing = false;
+          dfcEngagement.pauseCount++;
         }
         updateDfcUiProgress();
       };
 
-      // 核心防卡頓機制：僅在主動播放中且真正等待數據時才顯示輕量提示，並設看門狗超時自動修復
       v.onwaiting = () => {
-        if (dfcState.isEmbed) return;
-        clearBufferTimers();
-        if (dfcState.playing) {
-          waitTimer = setTimeout(() => {
-            if (dfcState.playing && v.readyState < 3 && loadingEl) {
-              if (loadingTxt) loadingTxt.textContent = "⚡ 正在順暢載入後續畫面...";
-              loadingEl.classList.remove("hide");
-            }
-          }, 350);
-
-          // 超過 3 秒自動看門狗強制喚醒，絕對不再卡在緩衝載入畫面
-          watchdogTimer = setTimeout(() => {
-            hideLoadingOnEvent();
-            if (dfcState.playing) {
-              if (v.paused) {
-                v.play().catch(() => {});
-              } else if (v.readyState >= 1) {
-                try { v.currentTime = Math.min((v.duration || 9999), v.currentTime + 0.05); } catch {}
-                v.play().catch(() => {});
-              }
-            }
-          }, 3200);
-        }
+        if (dfcState.isEmbed || !dfcState.playing) return;
+        startSmartPrebufferGate();
       };
 
-      v.onplaying = hideLoadingOnEvent;
+      v.onplaying = () => {
+        if (getForwardBufferSeconds(v) >= 1.5 || v.readyState >= 3) {
+          stopPrebufferGate();
+        }
+        evaluateAdaptiveQuality();
+      };
 
       v.onprogress = () => {
+        evaluateAdaptiveQuality();
         updateDfcUiProgress();
       };
 
@@ -3828,9 +4153,8 @@
       };
 
       v.onerror = (e) => {
-        hideLoadingOnEvent();
+        stopPrebufferGate();
         console.warn("dfcVideo stream warning:", e);
-        // 堅持只使用本站自訂播放器，絕對不跳轉 Google Drive iframe 播放器
         dfcState.videoLoading = false;
         const badge = $("dfcVideoBadge");
         if (badge) {
@@ -3841,6 +4165,7 @@
       };
 
       v.onended = () => {
+        stopPrebufferGate();
         dfcState.maxWatchedTime = dfcState.duration;
         setDfcPlaying(false);
         const badge = $("dfcVideoBadge");
@@ -3851,7 +4176,6 @@
         renderDfcStepPills();
       };
 
-      // 點擊影片畫面或中央大播放鈕切換播放/暫停
       const togglePlayOnScreen = (e) => {
         if (dfcState.isEmbed || dfcState.activeCheckpointIndex !== -1) return;
         e.stopPropagation();
@@ -3864,7 +4188,6 @@
       v.onclick = togglePlayOnScreen;
       if ($("dfcCenterPlay")) $("dfcCenterPlay").onclick = togglePlayOnScreen;
 
-      // 倒退 10 秒重看按鈕
       if ($("dfcRewindBtn")) {
         $("dfcRewindBtn").onclick = () => {
           if (!dfcState.videoReady && dfcState.useRealVideo) {
@@ -3872,13 +4195,13 @@
             return;
           }
           if (dfcState.activeCheckpointIndex !== -1) return;
+          dfcEngagement.rewindCount++;
           const target = Math.max(0, dfcState.currentTime - 10);
           seekDfcWithPolicy(target, false);
           logAction("倒退 DFC 影片 10 秒", `回退至 ${Math.round(target)} 秒`);
         };
       }
 
-      // 音量與靜音控制
       const muteBtn = $("dfcMuteBtn");
       const volSlider = $("dfcVolSlider");
       const syncVolumeUi = () => {
@@ -3903,7 +4226,6 @@
         };
       }
 
-      // 倍速切換按鈕（僅在後台開放時啟用）
       const speedBtn = $("dfcSpeedBtn");
       if (speedBtn) {
         speedBtn.onclick = () => {
@@ -3915,7 +4237,6 @@
         };
       }
 
-      // 全螢幕劇院切換（針對 #dfcStage 全螢幕，保留自訂控制列與右側問題卡）
       const fsBtn = $("dfcFsBtn");
       if (fsBtn) {
         fsBtn.onclick = () => {
@@ -3931,7 +4252,6 @@
         };
       }
 
-      // 視窗失焦或切換分頁時自動暫停（防掛機）
       document.addEventListener("visibilitychange", () => {
         if (document.hidden && dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
           setDfcPlaying(false);
@@ -3939,7 +4259,9 @@
         }
       });
 
-      applyDfcVideoSource(DFC_CONFIG.videoUrl);
+      if (!DFC_CONFIG.restricted && currentDfcAccess.allowed) {
+        applyDfcVideoSource(DFC_CONFIG.videoUrl);
+      }
 
       renderDfcStepPills();
       renderDfcMarkers();
@@ -4079,11 +4401,30 @@
         const prevVideoUrl = DFC_CONFIG.videoUrl;
         const prevFormId = DFC_CONFIG.id;
         Object.assign(DFC_CONFIG, cfg);
+
+        if (cfg.restricted) {
+          currentDfcAccess = {
+            allowed: false,
+            mode: cfg.accessMode || "whitelist",
+            reason: cfg.reason || "restricted",
+            message: cfg.message || "",
+          };
+          updateDfcAccessUi(currentDfcAccess);
+          return;
+        } else {
+          currentDfcAccess = {
+            allowed: true,
+            mode: cfg.accessMode || "whitelist",
+            reason: "authorized",
+            message: "",
+          };
+          updateDfcAccessUi(currentDfcAccess);
+        }
+
         if (cfg.title && $("dfcTitle")) $("dfcTitle").textContent = cfg.title;
         if (cfg.description && $("dfcSubtitle")) $("dfcSubtitle").textContent = cfg.description;
         if (!dfcState.videoReady && cfg.fallbackDuration) dfcState.duration = cfg.fallbackDuration;
 
-        // 重設作答狀態
         dfcState.activeCheckpointIndex = -1;
         dfcState.answeredIds.clear();
         dfcState.answers = {};
@@ -4103,7 +4444,7 @@
         updateDfcPlayerControlUi();
 
         if (dfcState.inited) {
-          if (cfg.videoUrl && cfg.videoUrl !== prevVideoUrl) {
+          if (cfg.videoUrl && (cfg.videoUrl !== prevVideoUrl || !$("dfcVideo")?.getAttribute("src"))) {
             applyDfcVideoSource(cfg.videoUrl);
           }
           renderDfcStepPills();
@@ -4122,6 +4463,7 @@
         const r = await fetch("/api/dfc/forms");
         if (!r.ok) return;
         const data = await r.json();
+        if (data?.restricted) return;
         const forms = Array.isArray(data) ? data : (Array.isArray(data?.forms) ? data.forms : []);
         const wrap = $("dfcSurveyPickerWrap");
         const sel = $("dfcSurveySelect");
@@ -4157,28 +4499,16 @@
      * 初始化啟動引擎
      * ============================================================================ */
     (async () => {
-      // 取得網址列中的 formId（例如 ?formId=survey_xyz）
+      detectAndApplyDeviceLayout();
       const urlParams = new URLSearchParams(window.location.search);
       const targetFormId = urlParams.get("formId") || "";
-      await loadDfcConfig(targetFormId);
-
-      // 初始化 Apple 滑動指示器定位與響應式監聽
-      const syncDockGlider = (anim = false) => {
-        const activeBtn = DOCK_BTNS[currentTab] || $("dockPost");
-        updateDockGlider(activeBtn, anim);
-      };
-      window.addEventListener("resize", () => syncDockGlider(false));
-      requestAnimationFrame(() => syncDockGlider(false));
-      if (document.fonts?.ready) {
-        document.fonts.ready.then(() => syncDockGlider(false));
-      }
 
       refreshPublicStatus(true);
       setInterval(() => {
-        if (currentTab === "status" && !document.hidden) refreshPublicStatus(false);
+        if (!document.hidden) refreshPublicStatus(false);
       }, 4000);
       document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && currentTab === "status") refreshPublicStatus(true);
+        if (!document.hidden) refreshPublicStatus(true);
       });
 
       const [callbackUser, meData] = await Promise.all([
@@ -4189,28 +4519,27 @@
       baseUrl = meData.baseUrl || "";
 
       const authedUser = callbackUser || meData.user || null;
-      renderMe(authedUser);
+      const accessObj = callbackUser?.dfcAccess || meData.dfcAccess || { allowed: false, mode: "whitelist", reason: "unauthenticated" };
+      renderMe(authedUser, accessObj);
+
+      await loadDfcConfig(targetFormId);
 
       if (authedUser) {
         logAction("進入系統", `已驗證身分: ${authedUser.email}`);
-        // 登入成功後若網址有指定的 hash 路由，則進入該功能
         const initHash = window.location.hash.replace("#", "");
         if (targetFormId) {
           navigateToTab("dfc", false);
-        } else if (["post", "dfc", "status"].includes(initHash)) {
+        } else if (["home", "post", "dfc", "status"].includes(initHash)) {
           navigateToTab(initHash, false);
+        } else {
+          navigateToTab("home", false);
         }
       }
     })();
 
     $("entryGoogleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
-    $("entryGateDismissBtn")?.addEventListener("click", () => {
-      $("entryLoginGate")?.classList.remove("active");
-      document.body.classList.remove("entry-locked");
-    });
-    $("googleLoginBtn").onclick = loginWithGoogleOAuth;
-    $("topLoginBtn").onclick = loginWithGoogleOAuth;
-    $("topLogoutBtn").onclick = doLogout;
+    $("googleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
+    if ($("topLogoutBtn")) $("topLogoutBtn").onclick = doLogout;
 
     $("content").oninput = () => {
       $("cc").textContent = $("content").value.length + "/100";

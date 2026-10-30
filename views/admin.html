@@ -517,12 +517,71 @@
           <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
         </div>
       </div>
-        </div>
-      </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="formsTabList"></div>
       <div id="activeFormApiGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:var(--bg);padding:16px;border-radius:var(--r-md);margin-bottom:14px"></div>
       <div id="activeFormCpList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px"></div>
+    </div>
+
+    <!-- DFC 影片防暴雷與規定帳號觀看管理中心 -->
+    <div class="panel-surface" id="dfcAccessControlSurface">
+      <div class="panel-surface-head">
+        <div>
+          <h3 style="display:flex;align-items:center;gap:8px">🛡️ DFC 影片防暴雷與規定帳號觀看管理</h3>
+          <p>自由設定哪些學校帳號可觀看 DFC 互動影片與題目（同時寫入雲端設定與資料庫 <code>public.dfc_access_list</code>），未授權帳號將全面攔截並顯示防暴雷保護畫面。</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="role-chip" id="dfcAccessSummaryBadge">🔒 白名單防暴雷模式</span>
+          <button type="button" class="btn primary sm" id="saveDfcAccessBtn">💾 儲存防暴雷權限設定</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start">
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:16px">
+          <label class="field" style="margin-top:0">
+            <span class="lbl">1. 選擇觀看權限模式 (Access Mode)</span>
+            <select id="dfcAccessModeSelect" class="input" style="font-weight:700">
+              <option value="whitelist">🔒 規定帳號白名單模式（僅下方名單與管理員可看・其餘防暴雷）</option>
+              <option value="all_school">🏫 全校開放模式（所有 @hlc.edu.tw 學校帳號皆可觀看）</option>
+              <option value="closed">⛔ 完全封閉防暴雷模式（僅管理員可預覽，全面禁止一般帳號觀看）</option>
+            </select>
+          </label>
+
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+            <span class="lbl" style="display:block;margin-bottom:6px">2. 從已登入學校帳號快速加入白名單</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="dfcQuickAddUserSelect" class="input" style="flex:1;min-width:180px">
+                <option value="">-- 選擇已登入之學校帳號 --</option>
+              </select>
+              <button type="button" class="btn ghost sm" id="dfcQuickAddUserBtn">➕ 加入授權名單</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;font-size:12.5px;color:var(--ink-secondary);line-height:1.6;background:#ffffff;border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+            <strong>💡 支援 3 種自由設定方式（自動合併生效）：</strong>
+            <div>1. <b>後台直接設定</b>：於右側輸入框編輯並點擊儲存（也可在「已登入帳號」分頁單鍵授權）</div>
+            <div>2. <b>Supabase 資料庫表</b>：於 SQL 資料表 <code>public.dfc_access_list</code> 新增 <code>email_pattern</code></div>
+            <div>3. <b>環境變數</b>：於 <code>.env</code> 設定 <code>DFC_ALLOWED_EMAILS</code></div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:16px">
+          <label class="field" style="margin-top:0">
+            <span class="lbl" style="display:flex;justify-content:space-between;align-items:center">
+              <span>3. 規定可觀看帳號名單（每行一個或以逗號分隔）</span>
+              <span id="dfcAllowedCountLabel" style="color:var(--blue);font-weight:700">0 個授權規則</span>
+            </span>
+            <textarea id="dfcAllowedEmailsInput" class="input" rows="7" style="font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;line-height:1.6" placeholder="支援完整信箱、學號前綴或萬用字元 *，例如：
+s1120001@hlc.edu.tw
+s1120002
+112*@hlc.edu.tw"></textarea>
+          </label>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--ink-tertiary)">
+            <span>支援格式：完整 Email、學號前綴（自動對應 @hlc.edu.tw）或萬用字元（如 <code>112*@hlc.edu.tw</code>）</span>
+            <button type="button" class="btn ghost sm" id="clearDfcAllowedBtn" style="font-size:11.5px;padding:4px 8px">清空名單</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="panel-surface">
@@ -1507,13 +1566,16 @@ async function load(forceRender = false) {
     if (syncData.dfc) {
       dfcForms = syncData.dfc.forms || [];
       dfcResponses = syncData.dfc.responses || [];
+      activeDfcFormId = syncData.dfc.activeFormId || activeDfcFormId || "default-dfc";
+      dfcAccessMode = syncData.dfc.accessMode || "whitelist";
+      dfcAllowedEmails = Array.isArray(syncData.dfc.allowedEmails) ? syncData.dfc.allowedEmails : [];
       googleApiKeyConfigured = Boolean(syncData.dfc.googleApiKeyConfigured);
       googleApiKeyMasked = syncData.dfc.googleApiKeyMasked || "";
       if (!dfcForms.some(f => f.id === selectedFormId) && dfcForms[0]) {
         selectedFormId = dfcForms[0].id;
       }
     }
-    if (syncData.accounts) {
+        if (syncData.accounts) {
       if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
       adminAccounts = syncData.accounts.accounts || [];
       adminAccessKey = syncData.accounts.accessKey || "";
@@ -1533,9 +1595,10 @@ async function load(forceRender = false) {
 
     const adminsSig = JSON.stringify({ a: adminAccounts.map(a => `${a.id}:${a.email}:${a.name}:${a.role}:${a.loginCount}:${a.lastLoginAt}`), role: currentRole, key: adminAccessKey });
     const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
-    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig;
-    const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, role: currentRole });
-    const auditSig = auditLogs.map(l => l.id).join(",");
+    const accessSig = `${dfcAccessMode}:${(dfcAllowedEmails || []).join(",")}`;
+    const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig + ":" + accessSig;
+    const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, a: activeDfcFormId, acc: accessSig, role: currentRole });
+        const auditSig = auditLogs.map(l => l.id).join(",");
 
     if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
       lastRowsSig = rowsSig;
@@ -1683,6 +1746,34 @@ async function render() {
   }
 }
 
+let dfcAccessMode = "whitelist";
+let dfcAllowedEmails = [];
+
+function isEmailAllowedInDfc(email) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e) return false;
+  if (dfcAccessMode === "all_school") return e.endsWith("@hlc.edu.tw");
+  if (dfcAccessMode === "closed") return false;
+  const localPart = e.split("@")[0] || "";
+  return (dfcAllowedEmails || []).some(pat => {
+    const p = String(pat || "").trim().toLowerCase();
+    if (!p) return false;
+    if (p === "*" || p === "all" || p === "*@hlc.edu.tw") return true;
+    if (!p.includes("@")) {
+      if (p.includes("*")) {
+        const re = new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$", "i");
+        return re.test(localPart);
+      }
+      return localPart === p;
+    }
+    if (p.includes("*")) {
+      const re = new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$", "i");
+      return re.test(e);
+    }
+    return e === p;
+  });
+}
+
 function renderUsers() {
   const filtered = users.filter(u => matchSearch([u.name, u.email, u.last_ip, u.last_device, u.google_sub]));
   $("uCount").textContent = searchQuery ? `${filtered.length}/${users.length}` : users.length;
@@ -1700,7 +1791,7 @@ function renderUsers() {
     const sRight = safeImgSrc(u.selfie_right);
     const sLeft = safeImgSrc(u.selfie_left);
     const avHtml = pic
-      ? `<img class="user-avatar-circle" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/icon.svg'">`
+      ? `<img class="user-avatar-circle u-av-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
       : `<div class="user-avatar-circle">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
@@ -1711,12 +1802,22 @@ function renderUsers() {
           ? `<span class="role-chip">Super Admin</span>`
           : `<span class="role-chip readonly">一般管理員 (唯讀)</span>`)
       : "";
+
+    const isDfcAllowed = Boolean(matchedAdm) || isEmailAllowedInDfc(u.email);
+    const dfcBadgeHtml = isDfcAllowed
+      ? `<span class="role-chip" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0">🎬 已授權觀看 DFC</span>`
+      : `<span class="role-chip readonly" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a">🔒 DFC 防暴雷限制</span>`;
+
     const setAdminBtnHtml = isSuper()
       ? (matchedAdm && !matchedAdm.isPrimary
           ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:4px 10px;font-size:12px">調整權限</button>`
           : !matchedAdm
             ? `<button type="button" class="btn ghost sm u-set-admin" style="padding:4px 10px;font-size:12px">設為管理員</button>`
             : "")
+      : "";
+
+    const toggleDfcBtnHtml = (isSuper() && !matchedAdm)
+      ? `<button type="button" class="btn ${isDfcAllowed ? "ghost" : "primary"} sm u-toggle-dfc" style="padding:4px 10px;font-size:12px">${isDfcAllowed ? "🔒 取消 DFC 授權" : "🔓 授權觀看 DFC"}</button>`
       : "";
 
     el.innerHTML = `
@@ -1726,27 +1827,28 @@ function renderUsers() {
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <b style="font-size:15.5px">${esc(displayName)}</b>
             ${admRoleBadge}
+            ${dfcBadgeHtml}
           </div>
           <span style="font-size:13px;color:var(--ink-secondary)">${esc(u.email)}</span>
         </div>
-        <div>${setAdminBtnHtml}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${toggleDfcBtnHtml}${setAdminBtnHtml}</div>
       </div>
       <div class="user-photos-strip">
         <div class="user-photo-box">
           <small>Google 頭貼</small>
-          ${pic ? `<img data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">無效</div>` : `<div class="placeholder-pic">無</div>`}
+          ${pic ? `<img class="u-strip-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer"><div class="placeholder-pic" style="display:none">無效</div>` : `<div class="placeholder-pic">無</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：正面</small>
-          ${sFront ? `<img data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
+          ${sFront ? `<img class="u-strip-img" data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：向右</small>
-          ${sRight ? `<img data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
+          ${sRight ? `<img class="u-strip-img" data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
         <div class="user-photo-box">
           <small>實拍：向左</small>
-          ${sLeft ? `<img data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='grid'"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
+          ${sLeft ? `<img class="u-strip-img" data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
         </div>
       </div>
       <div class="user-stats-bar">
@@ -1759,6 +1861,48 @@ function renderUsers() {
         <div>IP位址：${esc(u.last_ip || "—")} · GPS：${fmtGeo(u.geo)}</div>
         <div>裝置：${esc(u.last_device)}</div>
       </div>`;
+
+    // CSP-safe 圖片防破圖 fallback 綁定
+    const avImgEl = el.querySelector(".u-av-img");
+    if (avImgEl) {
+      avImgEl.addEventListener("error", () => {
+        avImgEl.src = "/icon.svg";
+      }, { once: true });
+    }
+    el.querySelectorAll(".u-strip-img").forEach(img => {
+      img.addEventListener("error", () => {
+        img.style.display = "none";
+        if (img.nextElementSibling) img.nextElementSibling.style.display = "grid";
+      }, { once: true });
+    });
+
+    const toggleDfcBtn = el.querySelector(".u-toggle-dfc");
+    if (toggleDfcBtn) {
+      toggleDfcBtn.onclick = async () => {
+        toggleDfcBtn.disabled = true;
+        try {
+          const r = await fetch("/api/admin/dfc/access", {
+            method: "POST",
+            headers: H,
+            body: JSON.stringify({ toggleEmail: u.email, accessMode: "whitelist" }),
+          });
+          if (r.ok) {
+            const j = await r.json();
+            dfcAccessMode = j.accessMode || "whitelist";
+            dfcAllowedEmails = j.allowedEmails || [];
+            toast(`已更新「${u.email}」的 DFC 影片觀看權限！`);
+            load(true);
+          } else {
+            const j = await r.json().catch(() => ({}));
+            toast(j.error || "更新權限失敗", true);
+          }
+        } catch {
+          toast("網路連線失敗", true);
+        } finally {
+          toggleDfcBtn.disabled = false;
+        }
+      };
+    }
 
     const setAdmBtn = el.querySelector(".u-set-admin");
     if (setAdmBtn) {
@@ -1773,22 +1917,6 @@ function renderUsers() {
     }
     ug.appendChild(el);
   }
-}
-
-function getActiveForm() {
-  return dfcForms.find(f => f.id === selectedFormId) || dfcForms[0] || null;
-}
-
-async function loadAndRenderCsv(showToast = false) {
-  const form = getActiveForm();
-  if (!form) return;
-  try {
-    const r = await fetch(`/api/admin/dfc/csv?formId=${encodeURIComponent(form.id)}`);
-    if (!r.ok) return;
-    currentCsvData = await r.json();
-    renderDfcCsvTable();
-    if (showToast) toast("已同步最新 Google 表單 CSV 與回傳數據");
-  } catch {}
 }
 
 let activeDfcFormId = "default-dfc";
@@ -1827,11 +1955,112 @@ async function loadAndRenderCsv(showToast = false) {
   } catch {}
 }
 
+function renderDfcAccessControlUi() {
+  const modeSel = $("dfcAccessModeSelect");
+  const emailsTa = $("dfcAllowedEmailsInput");
+  const countLbl = $("dfcAllowedCountLabel");
+  const badge = $("dfcAccessSummaryBadge");
+  const quickSel = $("dfcQuickAddUserSelect");
+  const saveBtn = $("saveDfcAccessBtn");
+  const clearBtn = $("clearDfcAllowedBtn");
+  const quickBtn = $("dfcQuickAddUserBtn");
+
+  const canEdit = isSuper();
+  if (modeSel && document.activeElement !== modeSel) modeSel.value = dfcAccessMode || "whitelist";
+  if (emailsTa && document.activeElement !== emailsTa) {
+    emailsTa.value = (dfcAllowedEmails || []).join("\n");
+  }
+  if (countLbl) countLbl.textContent = `${(dfcAllowedEmails || []).length} 個授權規則`;
+  if (badge) {
+    if (dfcAccessMode === "all_school") {
+      badge.textContent = "🏫 全校開放模式";
+      badge.className = "role-chip";
+    } else if (dfcAccessMode === "closed") {
+      badge.textContent = "⛔ 完全封閉防暴雷模式";
+      badge.className = "role-chip readonly";
+    } else {
+      badge.textContent = `🔒 白名單防暴雷 (${(dfcAllowedEmails || []).length} 人)`;
+      badge.className = "role-chip";
+    }
+  }
+  if (modeSel) modeSel.disabled = !canEdit;
+  if (emailsTa) emailsTa.readOnly = !canEdit;
+  if (saveBtn) saveBtn.classList.toggle("hide", !canEdit);
+  if (clearBtn) clearBtn.classList.toggle("hide", !canEdit);
+  if (quickBtn) quickBtn.disabled = !canEdit;
+
+  if (quickSel) {
+    const curVal = quickSel.value;
+    quickSel.innerHTML = '<option value="">-- 選擇已登入之學校帳號快速加入 --</option>' +
+      users.map(u => {
+        const allowed = isEmailAllowedInDfc(u.email);
+        return `<option value="${esc(u.email)}">${esc(u.name || u.email)} (${esc(u.email)}) ${allowed ? "[已授權]" : ""}</option>`;
+      }).join("");
+    if (curVal) quickSel.value = curVal;
+  }
+}
+
+if ($("dfcQuickAddUserBtn")) {
+  $("dfcQuickAddUserBtn").onclick = () => {
+    const sel = $("dfcQuickAddUserSelect");
+    const ta = $("dfcAllowedEmailsInput");
+    if (!sel || !ta || !sel.value) return toast("請先從下拉選單選擇要授權的學校帳號", true);
+    const curList = ta.value.split(/[\r\n,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (!curList.includes(sel.value.toLowerCase())) {
+      curList.push(sel.value.toLowerCase());
+      ta.value = curList.join("\n");
+      if ($("dfcAllowedCountLabel")) $("dfcAllowedCountLabel").textContent = `${curList.length} 個授權規則`;
+      toast("已加入名單，請點擊「儲存防暴雷權限設定」使其生效");
+    } else {
+      toast("該帳號已在下方名單中");
+    }
+  };
+}
+
+if ($("clearDfcAllowedBtn")) {
+  $("clearDfcAllowedBtn").onclick = () => {
+    const ta = $("dfcAllowedEmailsInput");
+    if (ta) ta.value = "";
+    if ($("dfcAllowedCountLabel")) $("dfcAllowedCountLabel").textContent = "0 個授權規則";
+  };
+}
+
+if ($("saveDfcAccessBtn")) {
+  $("saveDfcAccessBtn").onclick = async () => {
+    const btn = $("saveDfcAccessBtn");
+    const mode = $("dfcAccessModeSelect")?.value || "whitelist";
+    const rawEmails = $("dfcAllowedEmailsInput")?.value || "";
+    btn.disabled = true;
+    try {
+      const r = await fetch("/api/admin/dfc/access", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({ accessMode: mode, allowedEmails: rawEmails }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        dfcAccessMode = j.accessMode || mode;
+        dfcAllowedEmails = j.allowedEmails || [];
+        renderDfcAccessControlUi();
+        renderUsers();
+        toast("已儲存 DFC 防暴雷觀看權限與授權名單！");
+      } else {
+        toast(j.error || "儲存失敗", true);
+      }
+    } catch {
+      toast("網路連線失敗", true);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
 function renderDfcPanel() {
+  renderDfcAccessControlUi();
   const tabWrap = $("formsTabList");
   tabWrap.innerHTML = "";
   const activeForm = getActiveForm();
-  activeDfcFormId = syncData?.dfc?.activeFormId || activeDfcFormId || "default-dfc";
+  activeDfcFormId = activeDfcFormId || "default-dfc";
 
   for (const f of dfcForms) {
     const btn = document.createElement("button");
@@ -1854,7 +2083,6 @@ function renderDfcPanel() {
 
   if (!activeForm) return;
 
-  // 控制項狀態與動作按鈕
   $("delActiveFormBtn").classList.toggle("hide", !isSuper() || dfcForms.length <= 1);
   const isDefaultActive = activeForm.id === activeDfcFormId;
   const setActBtn = $("setActiveFormBtn");
@@ -1904,7 +2132,7 @@ function renderDfcPanel() {
     };
   }
 
-  const prevBtn = $("previewActiveFormBtn");
+    const prevBtn = $("previewActiveFormBtn");
   if (prevBtn) {
     prevBtn.onclick = () => {
       window.open(`/?formId=${encodeURIComponent(activeForm.id)}`, "_blank");
@@ -2373,7 +2601,7 @@ function renderDfcCsvTable() {
               <td><div style="background:#f8fafc;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;line-height:1.5">💭 ${esc(e.content)}</div></td>
               <td style="white-space:nowrap;font-size:12px;color:var(--muted)">${esc(e.time)}</td>
               <td style="font-size:12px;color:var(--muted)">${esc(e.device)}</td>
-              <td><button type="button" class="btn ghost sm" onclick="copyTextToClipboard(`${esc(e.content)}`)">複製</button></td>
+              <td><button type="button" class="btn ghost sm copy-single-idea-btn" data-idea="${esc(e.content)}">複製</button></td>
             </tr>
           `).join("")
           : `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">尚無文字回答記錄</td></tr>`;
@@ -2404,6 +2632,9 @@ function renderDfcCsvTable() {
         setTimeout(() => {
           const btn = card.querySelector(".copy-all-btn");
           if (btn) btn.onclick = () => copyTextToClipboard(allCombinedIdeas || "無文字回答");
+          card.querySelectorAll(".copy-single-idea-btn").forEach(b => {
+            b.onclick = () => copyTextToClipboard(b.dataset.idea || "");
+          });
         }, 10);
       }
 
@@ -4048,6 +4279,16 @@ requestAnimationFrame(() => updateAdminDockGlider(activeTab, false));
 if (document.fonts?.ready) {
   document.fonts.ready.then(() => updateAdminDockGlider(activeTab, false));
 }
+
+function detectAdminDeviceLayout() {
+  const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
+  const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+  const layout = vw < 680 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
+  document.documentElement.setAttribute("data-layout", layout);
+  document.documentElement.setAttribute("data-orientation", vw >= vh ? "landscape" : "portrait");
+}
+detectAdminDeviceLayout();
+window.addEventListener("resize", detectAdminDeviceLayout);
 
 load(true);
 </script>
