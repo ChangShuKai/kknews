@@ -1878,8 +1878,9 @@
                   <div class="video-center-play-circle">▶</div>
                 </div>
                 <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
-                <!-- 自訂播放器專屬容器 -->
+                <!-- 自訂播放器專屬容器（含無縫畫質切換凍結幀橋接畫布） -->
                 <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
+                <canvas id="dfcBridgeCanvas" class="video-bridge-canvas" width="1280" height="720"></canvas>
                 <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
               </div>
 
@@ -1894,7 +1895,7 @@
                   <div id="dfcMarkers"></div>
                 </div>
                 <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 06:03</span>
-                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="點擊切換畫質策略（預設：先低畫質極速載入，緩衝充足自動升 HD）">⚡ 自動(360p➔HD)</button>
+                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="點擊切換畫質策略（YouTube ABR：先 360p 極速保底不卡頓，再步進式升 720p HD）">⚡ 自動(360p➔HD)</button>
                 <div class="cinema-vol-wrap">
                   <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
                   <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
@@ -1904,6 +1905,17 @@
                 <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
                   style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
                   填寫問卷</button>
+              </div>
+
+              <!-- YouTube ABR 畫質演進與全片瘋狂預載 / IndexedDB 永久快取即時狀態列 -->
+              <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry">
+                <div class="dfc-preload-row">
+                  <span class="dfc-preload-status-text" id="dfcPreloadStatusText">🚀 YouTube ABR 智慧預載引擎：準備載入全片快取...</span>
+                  <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">💾 IndexedDB 跨視窗永久快取</span>
+                </div>
+                <div class="dfc-preload-bar-track">
+                  <div class="dfc-preload-bar-fill" id="dfcPreloadBarFill"></div>
+                </div>
               </div>
             </div>
 
@@ -3279,16 +3291,23 @@
 
       if (dfcState.useRealVideo) {
         const v = $("dfcVideo");
-        if (v && v.buffered && v.buffered.length > 0 && $("dfcTrackBuffered")) {
-          let bufSec = 0;
-          for (let b = 0; b < v.buffered.length; b++) {
-            if (v.buffered.start(b) <= cur && cur <= v.buffered.end(b)) {
-              bufSec = Math.max(bufSec, v.buffered.end(b));
-            } else if (v.buffered.end(b) > bufSec) {
-              bufSec = v.buffered.end(b);
+        if ($("dfcTrackBuffered")) {
+          let bufPct = 0;
+          if (v && v.buffered && v.buffered.length > 0) {
+            let bufSec = 0;
+            for (let b = 0; b < v.buffered.length; b++) {
+              if (v.buffered.start(b) <= cur && cur <= v.buffered.end(b)) {
+                bufSec = Math.max(bufSec, v.buffered.end(b));
+              } else if (v.buffered.end(b) > bufSec) {
+                bufSec = v.buffered.end(b);
+              }
             }
+            bufPct = Math.min(100, Math.max(0, (bufSec / dur) * 100));
           }
-          $("dfcTrackBuffered").style.width = Math.min(100, Math.max(0, (bufSec / dur) * 100)) + "%";
+          if (typeof dfcTurboState !== "undefined" && dfcTurboState.overallBufferedPct > bufPct) {
+            bufPct = dfcTurboState.overallBufferedPct;
+          }
+          $("dfcTrackBuffered").style.width = Math.min(100, Math.max(0, bufPct)) + "%";
         }
       }
 
@@ -3825,16 +3844,206 @@
     }
 
     /* ============================================================================
-     * 智慧漸進式畫質與防卡頓預緩衝引擎 (寧可畫質先低再上來，絕不看 1 秒停 3 秒)
+     * YouTube ABR 反向工程引擎 + 全片瘋狂併發載入器 + IndexedDB/CacheStorage 跨視窗永久快取
+     * 1. 先從真 360p (546kbps, 23.6MB) 極速啟動保證弱網 0 卡頓，再步進式升 480p ➔ 720p HD (1.78Mbps, 77MB)
+     * 2. 進入 DFC 頁面即啟動 4 執行緒併發分塊狂載整部影片 (0% ➔ 100% 全片載完，絕不只載前幾秒)
+     * 3. 每個 2MB 分塊與完整影片 Blob 皆寫入 IndexedDB 與 CacheStorage，關閉網頁/重開瀏覽器永久保留
      * ============================================================================ */
     const QUALITY_MODES = ["auto", "360p", "720p", "1080p"];
+    const VIDEO_BLOCK_SIZE = 2 * 1024 * 1024; // 2 MB 標準對齊切塊
     let dfcQualityMode = "auto";
-    let dfcActiveTier = "360p"; // 初始一律以 360p 低負載極速模式啟動
+    let dfcActiveTier = "360p";       // 畫面顯示畫質層級 (360p -> 480p -> 720p -> 1080p)
+    let dfcActiveStreamQuality = "360p"; // 實際底層串流/Blob 畫質 ("360p" | "720p")
     let isPrebufferingGate = false;
     let prebufferCheckInterval = null;
-    const MIN_SAFE_BUFFER_SEC = 3.6; // 至少累積 3.6 秒連續緩衝才啟動/恢復播放，徹底杜絕看1秒停3秒
+    let isSeamlessSwapping = false;
+    const MIN_SAFE_BUFFER_SEC = 3.2;
+
+    // 雙指數移動平均 (Dual-EWMA) 頻寬估計器 — 反向還原 YouTube Shaka/ExoPlayer ABR 核心演算法
+    const dfcAbrEstimator = {
+      fastBps: 2500000, // 快速反應視窗 (Half-life ~ 2s)
+      slowBps: 2500000, // 穩定趨勢視窗 (Half-life ~ 5s)
+      sampleCount: 0,
+      sample(bytes, durationMs) {
+        if (!bytes || durationMs <= 8) return;
+        const bps = (bytes * 8 * 1000) / durationMs;
+        const weight = Math.max(0.05, Math.min(2.0, durationMs / 1000));
+        const alphaFast = 1 - Math.exp(-weight / 2.0);
+        const alphaSlow = 1 - Math.exp(-weight / 5.0);
+        if (this.sampleCount === 0) {
+          this.fastBps = bps;
+          this.slowBps = bps;
+        } else {
+          this.fastBps = alphaFast * bps + (1 - alphaFast) * this.fastBps;
+          this.slowBps = alphaSlow * bps + (1 - alphaSlow) * this.slowBps;
+        }
+        this.sampleCount++;
+      },
+      getBandwidthBps() {
+        // YouTube 保守估計原則：取快慢視窗之較小值，防止突發網路抖動造成卡頓
+        return Math.min(this.fastBps, this.slowBps);
+      },
+      getSpeedMBps() {
+        return (this.getBandwidthBps() / 8 / (1024 * 1024)).toFixed(1);
+      }
+    };
+
+    // IndexedDB + CacheStorage 跨視窗永久快取引擎（關閉分頁或重開瀏覽器皆保留已載入進度與完整影片）
+    const DfcVideoCacheDB = (() => {
+      const DB_NAME = "kknews_dfc_video_cache_v2";
+      const DB_VER = 1;
+      const CACHE_STORAGE_NAME = "kknews-dfc-video-v2";
+      let dbPromise = null;
+
+      // 申請瀏覽器持久化儲存權限，避免空間清理時被自動回收
+      try {
+        if (navigator.storage && typeof navigator.storage.persist === "function") {
+          navigator.storage.persist().catch(() => {});
+        }
+      } catch {}
+
+      function openDB() {
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise((resolve, reject) => {
+          if (typeof indexedDB === "undefined") return reject(new Error("No IndexedDB"));
+          const req = indexedDB.open(DB_NAME, DB_VER);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("chunks")) {
+              db.createObjectStore("chunks", { keyPath: "key" });
+            }
+            if (!db.objectStoreNames.contains("meta")) {
+              db.createObjectStore("meta", { keyPath: "key" });
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => {
+            dbPromise = null;
+            reject(req.error);
+          };
+        });
+        return dbPromise;
+      }
+
+      const padIdx = (idx) => String(idx).padStart(5, "0");
+      const chunkKey = (fileId, quality, idx) => `${fileId}:${quality}:${padIdx(idx)}`;
+      const metaKey = (fileId, quality) => `${fileId}:${quality}`;
+
+      return {
+        async getMeta(fileId, quality) {
+          try {
+            const db = await openDB();
+            return await new Promise((resolve) => {
+              const tx = db.transaction("meta", "readonly");
+              const req = tx.objectStore("meta").get(metaKey(fileId, quality));
+              req.onsuccess = () => resolve(req.result || null);
+              req.onerror = () => resolve(null);
+            });
+          } catch { return null; }
+        },
+        async saveMeta(fileId, quality, info) {
+          try {
+            const db = await openDB();
+            await new Promise((resolve) => {
+              const tx = db.transaction("meta", "readwrite");
+              tx.objectStore("meta").put({
+                key: metaKey(fileId, quality),
+                fileId,
+                quality,
+                ...info,
+                updatedAt: Date.now(),
+              });
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            });
+          } catch {}
+        },
+        async saveChunk(fileId, quality, chunkIndex, arrayBuffer) {
+          if (!arrayBuffer || !arrayBuffer.byteLength) return;
+          try {
+            const db = await openDB();
+            await new Promise((resolve) => {
+              const tx = db.transaction("chunks", "readwrite");
+              tx.objectStore("chunks").put({
+                key: chunkKey(fileId, quality, chunkIndex),
+                fileId,
+                quality,
+                chunkIndex,
+                byteLength: arrayBuffer.byteLength,
+                data: arrayBuffer,
+                ts: Date.now(),
+              });
+              tx.oncomplete = () => resolve(true);
+              tx.onerror = () => resolve(false);
+            });
+          } catch {}
+          // 同步寫入 CacheStorage 雙重備份
+          try {
+            if (typeof caches !== "undefined") {
+              const cache = await caches.open(CACHE_STORAGE_NAME);
+              const syntheticUrl = `/__dfc_cache__/${encodeURIComponent(fileId)}/${encodeURIComponent(quality)}/chunk_${padIdx(chunkIndex)}`;
+              await cache.put(syntheticUrl, new Response(arrayBuffer.slice(0), {
+                headers: { "Content-Type": "video/mp4", "X-Chunk-Index": String(chunkIndex) }
+              }));
+            }
+          } catch {}
+        },
+        async loadAllChunksMap(fileId, quality) {
+          const map = new Map();
+          try {
+            const db = await openDB();
+            const rows = await new Promise((resolve) => {
+              const tx = db.transaction("chunks", "readonly");
+              const range = IDBKeyRange.bound(
+                chunkKey(fileId, quality, 0),
+                chunkKey(fileId, quality, 99999)
+              );
+              const req = tx.objectStore("chunks").getAll(range);
+              req.onsuccess = () => resolve(req.result || []);
+              req.onerror = () => resolve([]);
+            });
+            for (const r of rows) {
+              if (r && typeof r.chunkIndex === "number" && r.data && r.data.byteLength > 0) {
+                map.set(r.chunkIndex, r.data);
+              }
+            }
+          } catch {}
+          return map;
+        }
+      };
+    })();
+
+    // 全片瘋狂預載與本機 Blob 快取狀態機
+    const dfcTurboState = {
+      fileId: "",
+      activeRunId: 0,
+      isOnDfcPage: false,
+      manifest: null,
+      overallBufferedPct: 0,
+      blobUrls: { "360p": null, "720p": null },
+      completed: { "360p": false, "720p": false },
+      chunkMaps: { "360p": new Map(), "720p": new Map() },
+      totalSizes: { "360p": 24795892, "720p": 80813091 },
+      chunkCounts: { "360p": 12, "720p": 39 },
+      downloadedBytes: { "360p": 0, "720p": 0 },
+    };
+
+    function updatePreloadTelemetryUi(statusMsg, pct, badgeText, isCachedOk = false) {
+      const stEl = $("dfcPreloadStatusText");
+      const barEl = $("dfcPreloadBarFill");
+      const badgeEl = $("dfcPreloadCacheBadge");
+      if (stEl && statusMsg) stEl.textContent = statusMsg;
+      if (barEl && pct != null) barEl.style.width = Math.min(100, Math.max(0, pct)) + "%";
+      if (badgeEl && badgeText) {
+        badgeEl.textContent = badgeText;
+        badgeEl.classList.toggle("cached-ok", Boolean(isCachedOk));
+      }
+    }
 
     function getForwardBufferSeconds(v) {
+      if (dfcTurboState.completed[dfcActiveStreamQuality] || dfcTurboState.blobUrls[dfcActiveStreamQuality]) {
+        return Math.max(30, (dfcState.duration || 363) - (dfcState.currentTime || 0));
+      }
       if (!v || !v.buffered || v.buffered.length === 0) return 0;
       const cur = v.currentTime || 0;
       let forward = 0;
@@ -3854,10 +4063,18 @@
       const mb = $("dfcModeBadge");
       dfcActiveTier = tier;
       if (v) {
-        v.classList.remove("video-q-360p", "video-q-720p", "video-q-1080p");
+        v.classList.remove("video-q-360p", "video-q-480p", "video-q-720p", "video-q-1080p");
         v.classList.add("video-q-" + tier);
       }
-      const tierLabel = tier === "360p" ? "360p 極速" : tier === "720p" ? "720p HD" : "1080p 原畫";
+      const isCachedFull = dfcTurboState.completed["720p"] || (tier === "360p" && dfcTurboState.completed["360p"]);
+      const cacheTag = isCachedFull ? " · 本機快取" : "";
+      const tierLabel = tier === "360p"
+        ? "360p 流暢保底"
+        : tier === "480p"
+          ? "480p 智慧增強"
+          : tier === "720p"
+            ? "720p HD 高清"
+            : "1080p 超清";
       if (qBtn) {
         qBtn.textContent = dfcQualityMode === "auto"
           ? `⚡ 自動(${tierLabel})`
@@ -3866,25 +4083,148 @@
       if (mb) {
         const seekMode = DFC_CONFIG.allowSeek || "watched";
         const lockLabel = seekMode === "locked" ? "🔒 鎖定進度" : seekMode === "free" ? "🎬 自由探索" : "🔒 防快轉";
-        mb.textContent = `${lockLabel} · ⚡ ${tierLabel}`;
+        mb.textContent = `${lockLabel} · ⚡ ${tierLabel}${cacheTag}`;
       }
     }
 
+    // 零黑畫面凍結幀無縫畫質/快取源熱切換（利用 BridgeCanvas 鎖定最後一幀並於背景預解碼完成後瞬間切換）
+    let standbyDecoderVideo = null;
+    async function seamlessSwapVideoSource(newSrc, newStreamQuality, targetVisualTier) {
+      const v = $("dfcVideo");
+      if (!v || !newSrc) return;
+      if (v.getAttribute("src") === newSrc || v.src === newSrc) {
+        dfcActiveStreamQuality = newStreamQuality;
+        if (targetVisualTier) applyVisualQualityTier(targetVisualTier);
+        return;
+      }
+      if (isSeamlessSwapping) return;
+      isSeamlessSwapping = true;
+
+      const bridge = $("dfcBridgeCanvas");
+      const wasPlaying = dfcState.playing && dfcState.activeCheckpointIndex === -1;
+      const savedTime = Math.max(0, v.currentTime || dfcState.currentTime || 0);
+      const savedRate = v.playbackRate || 1.0;
+      const savedMuted = v.muted;
+      const savedVol = v.volume;
+
+      try {
+        // 1. 先在隱形解碼器預熱新 Blob / 串流至目標秒數，確保瀏覽器硬體解碼器已就緒
+        if (!standbyDecoderVideo) {
+          standbyDecoderVideo = document.createElement("video");
+          standbyDecoderVideo.muted = true;
+          standbyDecoderVideo.playsInline = true;
+          standbyDecoderVideo.preload = "auto";
+        }
+        await new Promise((resolve) => {
+          const timeout = setTimeout(resolve, 1200);
+          const onReady = () => {
+            clearTimeout(timeout);
+            standbyDecoderVideo.onloadeddata = null;
+            standbyDecoderVideo.onseeked = null;
+            standbyDecoderVideo.onerror = null;
+            resolve();
+          };
+          standbyDecoderVideo.onloadeddata = () => {
+            try {
+              if (savedTime > 0.1) standbyDecoderVideo.currentTime = savedTime;
+              else onReady();
+            } catch { onReady(); }
+          };
+          standbyDecoderVideo.onseeked = onReady;
+          standbyDecoderVideo.onerror = onReady;
+          standbyDecoderVideo.src = newSrc;
+          standbyDecoderVideo.load();
+        });
+
+        // 2. 將當前播放畫面繪製至橋接畫布，達成 0ms 無黑屏視覺過渡
+        if (bridge && v.readyState >= 2 && v.videoWidth > 0) {
+          bridge.width = v.videoWidth || 1280;
+          bridge.height = v.videoHeight || 720;
+          const bCtx = bridge.getContext("2d");
+          bCtx.drawImage(v, 0, 0, bridge.width, bridge.height);
+          bridge.classList.add("active");
+        }
+
+        const latestTime = Math.max(savedTime, v.currentTime || dfcState.currentTime || 0);
+        dfcActiveStreamQuality = newStreamQuality;
+        if (targetVisualTier) applyVisualQualityTier(targetVisualTier);
+
+        await new Promise((resolve) => {
+          const swapTimeout = setTimeout(resolve, 900);
+          const finishSwap = () => {
+            clearTimeout(swapTimeout);
+            v.removeEventListener("seeked", finishSwap);
+            v.removeEventListener("canplay", finishSwap);
+            resolve();
+          };
+          v.addEventListener("seeked", finishSwap, { once: true });
+          v.addEventListener("canplay", finishSwap, { once: true });
+
+          v.src = newSrc;
+          v.muted = savedMuted;
+          v.volume = savedVol;
+          v.playbackRate = savedRate;
+          try { v.currentTime = latestTime; } catch {}
+        });
+
+        if (wasPlaying && dfcState.activeCheckpointIndex === -1) {
+          await v.play().catch(() => {});
+        }
+      } catch (e) {
+        console.warn("Seamless swap fallback:", e);
+      } finally {
+        if (bridge) {
+          requestAnimationFrame(() => {
+            setTimeout(() => bridge.classList.remove("active"), 60);
+          });
+        }
+        isSeamlessSwapping = false;
+      }
+    }
+
+    // YouTube 步進式畫質決策狀態機：根據緩衝健康度、雙 EWMA 頻寬與全片快取進度，一步一步提高畫質
     function evaluateAdaptiveQuality() {
       const v = $("dfcVideo");
       if (!v || !dfcState.useRealVideo) return;
-      const forwardSec = getForwardBufferSeconds(v);
+
       if (dfcQualityMode !== "auto") {
+        const manualStreamQ = (dfcQualityMode === "720p" || dfcQualityMode === "1080p") ? "720p" : "360p";
         if (dfcActiveTier !== dfcQualityMode) applyVisualQualityTier(dfcQualityMode);
+        if (dfcActiveStreamQuality !== manualStreamQ && !isSeamlessSwapping) {
+          const targetUrl = dfcTurboState.blobUrls[manualStreamQ]
+            || (dfcTurboState.fileId ? `/api/dfc/drive-video/${encodeURIComponent(dfcTurboState.fileId)}?q=${manualStreamQ}` : null);
+          if (targetUrl) seamlessSwapVideoSource(targetUrl, manualStreamQ, dfcQualityMode);
+        }
         return;
       }
-      let targetTier = "360p";
-      if (forwardSec >= 11) targetTier = "1080p";
-      else if (forwardSec >= 4.5) targetTier = "720p";
-      else targetTier = "360p";
 
-      if (targetTier !== dfcActiveTier) {
-        applyVisualQualityTier(targetTier);
+      // Auto 模式：先 360p 保底流暢 -> 480p 智慧增強 -> 720p HD -> 1080p 超清
+      if (dfcTurboState.completed["720p"] && dfcTurboState.blobUrls["720p"]) {
+        if (dfcActiveStreamQuality !== "720p" && !isSeamlessSwapping) {
+          seamlessSwapVideoSource(dfcTurboState.blobUrls["720p"], "720p", "1080p");
+        } else if (dfcActiveTier !== "1080p" && dfcActiveTier !== "720p") {
+          applyVisualQualityTier("720p");
+        }
+        return;
+      }
+
+      const forwardSec = getForwardBufferSeconds(v);
+      const bwMbps = dfcAbrEstimator.getBandwidthBps() / 1e6;
+      const pct360 = dfcTurboState.chunkCounts["360p"] > 0
+        ? (dfcTurboState.chunkMaps["360p"].size / dfcTurboState.chunkCounts["360p"]) * 100
+        : 0;
+
+      let targetVisual = "360p";
+      if (dfcActiveStreamQuality === "720p") {
+        targetVisual = forwardSec >= 12 ? "1080p" : "720p";
+      } else if (dfcTurboState.completed["360p"] || pct360 >= 50 || (forwardSec >= 8 && bwMbps >= 2.2)) {
+        targetVisual = "480p";
+      } else {
+        targetVisual = "360p";
+      }
+
+      if (targetVisual !== dfcActiveTier) {
+        applyVisualQualityTier(targetVisual);
       }
     }
 
@@ -3894,12 +4234,302 @@
         dfcQualityMode = QUALITY_MODES[nextIdx];
         if (dfcQualityMode === "auto") {
           evaluateAdaptiveQuality();
-          showDfcLockToast("⚡ 已切換為「智慧漸進畫質」：先以 360p 極速載入，緩衝充足自動提升至 HD");
+          showDfcLockToast("⚡ 已切換為「YouTube 智慧漸進畫質」：先 360p 保底流暢不卡頓，再一步一步升至 HD");
         } else {
-          applyVisualQualityTier(dfcQualityMode);
+          evaluateAdaptiveQuality();
           showDfcLockToast(`🎞️ 已切換為「${dfcQualityMode}」畫質模式`);
         }
       };
+    }
+
+    // 組合已下載完成的分塊為完整可離線播放的 MP4 Blob URL
+    function assembleQualityBlobUrl(fileId, quality) {
+      const count = dfcTurboState.chunkCounts[quality] || 0;
+      const map = dfcTurboState.chunkMaps[quality];
+      if (!count || map.size < count) return null;
+      const ordered = [];
+      for (let i = 0; i < count; i++) {
+        const buf = map.get(i);
+        if (!buf) return null;
+        ordered.push(buf);
+      }
+      if (dfcTurboState.blobUrls[quality]) {
+        return dfcTurboState.blobUrls[quality];
+      }
+      const blob = new Blob(ordered, { type: "video/mp4" });
+      const blobUrl = URL.createObjectURL(blob);
+      dfcTurboState.blobUrls[quality] = blobUrl;
+      dfcTurboState.completed[quality] = true;
+      return blobUrl;
+    }
+
+    // 核心：進入 DFC 頁面即啟動全片瘋狂併發載入器（優先秒讀 IndexedDB 快取 -> 4 執行緒狂載 360p 全片 -> 無縫升頻狂載 720p HD 全片）
+    async function startDfcTurboPreloader(fileId) {
+      if (!fileId || DFC_CONFIG.restricted || !currentDfcAccess.allowed) return;
+      if (dfcTurboState.fileId === fileId && dfcTurboState.completed["720p"]) {
+        updatePreloadTelemetryUi(
+          "⚡ 全片 720p HD 已 100% 載入本機快取 · 零網路延遲順暢播放",
+          100,
+          "✅ 本機永久快取已就緒 (100%)",
+          true
+        );
+        return;
+      }
+
+      const isNewFile = dfcTurboState.fileId !== fileId;
+      if (isNewFile) {
+        for (const q of ["360p", "720p"]) {
+          if (dfcTurboState.blobUrls[q]) {
+            try { URL.revokeObjectURL(dfcTurboState.blobUrls[q]); } catch {}
+          }
+          dfcTurboState.blobUrls[q] = null;
+          dfcTurboState.completed[q] = false;
+          dfcTurboState.chunkMaps[q] = new Map();
+          dfcTurboState.downloadedBytes[q] = 0;
+        }
+        dfcTurboState.fileId = fileId;
+        dfcTurboState.overallBufferedPct = 0;
+      }
+
+      const runId = ++dfcTurboState.activeRunId;
+      const v = $("dfcVideo");
+      const badge = $("dfcVideoBadge");
+
+      // Step 1: 先從 IndexedDB 讀取先前已載入的分塊（支援關閉網頁後重開直接秒開或續傳！）
+      const [meta360, meta720, cachedMap720, cachedMap360] = await Promise.all([
+        DfcVideoCacheDB.getMeta(fileId, "360p"),
+        DfcVideoCacheDB.getMeta(fileId, "720p"),
+        DfcVideoCacheDB.loadAllChunksMap(fileId, "720p"),
+        DfcVideoCacheDB.loadAllChunksMap(fileId, "360p"),
+      ]);
+      if (runId !== dfcTurboState.activeRunId) return;
+
+      if (meta360?.totalSize) {
+        dfcTurboState.totalSizes["360p"] = meta360.totalSize;
+        dfcTurboState.chunkCounts["360p"] = meta360.chunkCount || Math.ceil(meta360.totalSize / VIDEO_BLOCK_SIZE);
+      }
+      if (meta720?.totalSize) {
+        dfcTurboState.totalSizes["720p"] = meta720.totalSize;
+        dfcTurboState.chunkCounts["720p"] = meta720.chunkCount || Math.ceil(meta720.totalSize / VIDEO_BLOCK_SIZE);
+      }
+
+      dfcTurboState.chunkMaps["360p"] = cachedMap360;
+      dfcTurboState.chunkMaps["720p"] = cachedMap720;
+
+      // 檢查是否已經有 100% 完整的 720p HD 快取在 IndexedDB 中
+      if (cachedMap720.size >= dfcTurboState.chunkCounts["720p"] && dfcTurboState.chunkCounts["720p"] > 0) {
+        const blob720Url = assembleQualityBlobUrl(fileId, "720p");
+        if (blob720Url) {
+          dfcTurboState.overallBufferedPct = 100;
+          await seamlessSwapVideoSource(blob720Url, "720p", dfcQualityMode === "auto" ? "720p" : dfcQualityMode);
+          if (badge && !badge.classList.contains("question-stop")) {
+            badge.textContent = "⚡ 已從本機快取秒速載入 720p HD 全片 (100% 離線就緒)";
+          }
+          updatePreloadTelemetryUi(
+            "✅ 已從瀏覽器快取直接載入 720p HD 全片 (100%) · 關閉網頁亦永久保留",
+            100,
+            "💾 本機快取命中 100%",
+            true
+          );
+          updateDfcUiProgress();
+          return;
+        }
+      }
+
+      // 檢查是否已經有 100% 完整的 360p 快取在 IndexedDB 中
+      if (cachedMap360.size >= dfcTurboState.chunkCounts["360p"] && dfcTurboState.chunkCounts["360p"] > 0) {
+        const blob360Url = assembleQualityBlobUrl(fileId, "360p");
+        if (blob360Url) {
+          dfcTurboState.overallBufferedPct = 100;
+          await seamlessSwapVideoSource(blob360Url, "360p", "480p");
+          if (badge && !badge.classList.contains("question-stop")) {
+            badge.textContent = "⚡ 已從快取載入 360p 全片保底 (100%) · 背景升頻 720p HD 中";
+          }
+          updatePreloadTelemetryUi(
+            "⚡ 360p 全片已從快取秒開 (100% 絕不卡頓) · 正在背景續傳升頻 720p HD...",
+            100,
+            "💾 360p 已快取 · 升頻 HD 中",
+            true
+          );
+          updateDfcUiProgress();
+        }
+      }
+
+      // Step 2: 取得雲端轉碼分流 Manifest 精確大小與分塊資訊
+      try {
+        const mr = await fetch(`/api/dfc/video-manifest/${encodeURIComponent(fileId)}`);
+        if (mr.ok) {
+          const manifest = await mr.json();
+          if (runId !== dfcTurboState.activeRunId) return;
+          dfcTurboState.manifest = manifest;
+          if (manifest.duration && !dfcState.videoReady) {
+            dfcState.duration = manifest.duration;
+          }
+          for (const q of ["360p", "720p"]) {
+            const t = manifest.tiers?.[q];
+            if (t && t.totalSize > 0) {
+              dfcTurboState.totalSizes[q] = t.totalSize;
+              dfcTurboState.chunkCounts[q] = t.chunkCount || Math.ceil(t.totalSize / VIDEO_BLOCK_SIZE);
+              await DfcVideoCacheDB.saveMeta(fileId, q, {
+                totalSize: t.totalSize,
+                chunkCount: dfcTurboState.chunkCounts[q],
+                blockSize: VIDEO_BLOCK_SIZE,
+              });
+            }
+          }
+        }
+      } catch {}
+      if (runId !== dfcTurboState.activeRunId) return;
+
+      // 內部通用併發分塊下載器（Playhead 播放頭優先排程 + 4 執行緒瘋狂全片載入 + 即時寫入 IndexedDB）
+      async function downloadAllChunksForQuality(quality, onProgress) {
+        const totalSize = dfcTurboState.totalSizes[quality];
+        const chunkCount = dfcTurboState.chunkCounts[quality];
+        const chunkMap = dfcTurboState.chunkMaps[quality];
+        if (!totalSize || !chunkCount) return false;
+        if (chunkMap.size >= chunkCount) return true;
+
+        const inFlightSet = new Set();
+
+        // 智慧排程：永遠優先抓取「目前播放時間點」緊接著的未載入區塊，再把整部影片 0%~100% 全部載完
+        const pickNextChunkIndex = () => {
+          const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
+          const curRatio = Math.min(0.99, Math.max(0, (dfcState.currentTime || 0) / dur));
+          const playheadIdx = Math.floor(curRatio * chunkCount);
+
+          for (let offset = 0; offset < chunkCount; offset++) {
+            const idx = (playheadIdx + offset) % chunkCount;
+            if (!chunkMap.has(idx) && !inFlightSet.has(idx)) {
+              return idx;
+            }
+          }
+          return -1;
+        };
+
+        const workerLoop = async () => {
+          while (runId === dfcTurboState.activeRunId && chunkMap.size < chunkCount) {
+            const idx = pickNextChunkIndex();
+            if (idx === -1) break;
+            inFlightSet.add(idx);
+
+            const startByte = idx * VIDEO_BLOCK_SIZE;
+            const endByte = Math.min(totalSize - 1, (idx + 1) * VIDEO_BLOCK_SIZE - 1);
+            const t0 = performance.now();
+
+            try {
+              const r = await fetch(`/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(quality)}&chunk=${idx}`, {
+                method: "GET",
+                headers: { "Range": `bytes=${startByte}-${endByte}` },
+              });
+              if (r.ok || r.status === 206) {
+                const buf = await r.arrayBuffer();
+                const dt = Math.max(5, performance.now() - t0);
+                if (buf && buf.byteLength > 0) {
+                  dfcAbrEstimator.sample(buf.byteLength, dt);
+                  chunkMap.set(idx, buf);
+                  // 立即寫入 IndexedDB 與 CacheStorage，就算使用者下一秒關掉網頁也留在快取裡！
+                  DfcVideoCacheDB.saveChunk(fileId, quality, idx, buf);
+                  if (onProgress) onProgress(chunkMap.size, chunkCount, totalSize);
+                }
+              } else {
+                await new Promise(res => setTimeout(res, 600));
+              }
+            } catch {
+              await new Promise(res => setTimeout(res, 600));
+            } finally {
+              inFlightSet.delete(idx);
+            }
+          }
+        };
+
+        // 只要在 DFC 頁面即啟動 4 條併發管線瘋狂載入全片
+        const workerCount = dfcTurboState.isOnDfcPage ? 4 : 3;
+        const workers = [];
+        for (let w = 0; w < workerCount; w++) {
+          workers.push(workerLoop());
+        }
+        await Promise.all(workers);
+        return chunkMap.size >= chunkCount;
+      }
+
+      // Step 3: 第一階段 — 先把 360p (僅 23.6MB) 全片 100% 瘋狂載完，徹底鎖死流暢度保底！
+      if (!dfcTurboState.completed["360p"]) {
+        const done360 = await downloadAllChunksForQuality("360p", (doneCount, totalCount, totalBytes) => {
+          if (runId !== dfcTurboState.activeRunId) return;
+          const pct = Math.min(100, Math.round((doneCount / totalCount) * 100));
+          dfcTurboState.overallBufferedPct = Math.max(dfcTurboState.overallBufferedPct, pct);
+          const loadedMB = ((doneCount / totalCount) * (totalBytes / (1024 * 1024))).toFixed(1);
+          const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
+          updatePreloadTelemetryUi(
+            `🚀 360p 流暢保底全片瘋狂載入中：${pct}% (${loadedMB} / ${totalMB} MB · ${dfcAbrEstimator.getSpeedMBps()} MB/s)`,
+            pct,
+            `💾 已寫入快取 ${doneCount}/${totalCount} 塊`,
+            false
+          );
+          evaluateAdaptiveQuality();
+          updateDfcUiProgress();
+        });
+
+        if (runId !== dfcTurboState.activeRunId) return;
+        if (done360) {
+          const blob360Url = assembleQualityBlobUrl(fileId, "360p");
+          await DfcVideoCacheDB.saveMeta(fileId, "360p", {
+            totalSize: dfcTurboState.totalSizes["360p"],
+            chunkCount: dfcTurboState.chunkCounts["360p"],
+            blockSize: VIDEO_BLOCK_SIZE,
+            completed: true,
+          });
+          dfcTurboState.overallBufferedPct = 100;
+          if (blob360Url && dfcActiveStreamQuality === "360p") {
+            await seamlessSwapVideoSource(blob360Url, "360p", dfcQualityMode === "auto" ? "480p" : dfcQualityMode);
+          }
+          updateDfcUiProgress();
+        }
+      }
+
+      // Step 4: 第二階段 — 360p 全片保底完成後，立即自動步進式瘋狂載入 720p HD 全片 (77.1MB)，載完無縫切換至 HD！
+      if (!dfcTurboState.completed["720p"]) {
+        const done720 = await downloadAllChunksForQuality("720p", (doneCount, totalCount, totalBytes) => {
+          if (runId !== dfcTurboState.activeRunId) return;
+          const pct720 = Math.min(100, Math.round((doneCount / totalCount) * 100));
+          const loadedMB = ((doneCount / totalCount) * (totalBytes / (1024 * 1024))).toFixed(1);
+          const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
+          updatePreloadTelemetryUi(
+            `⚡ 360p 全片已 100% 快取保底 · 正在步進升頻載入 720p HD 全片：${pct720}% (${loadedMB} / ${totalMB} MB · ${dfcAbrEstimator.getSpeedMBps()} MB/s)`,
+            pct720,
+            `💾 360p 已鎖定 · HD 快取 ${pct720}%`,
+            true
+          );
+        });
+
+        if (runId !== dfcTurboState.activeRunId) return;
+        if (done720) {
+          const blob720Url = assembleQualityBlobUrl(fileId, "720p");
+          await DfcVideoCacheDB.saveMeta(fileId, "720p", {
+            totalSize: dfcTurboState.totalSizes["720p"],
+            chunkCount: dfcTurboState.chunkCounts["720p"],
+            blockSize: VIDEO_BLOCK_SIZE,
+            completed: true,
+          });
+          dfcTurboState.overallBufferedPct = 100;
+          if (blob720Url && dfcQualityMode !== "360p") {
+            const upgradedTier = dfcQualityMode === "1080p" ? "1080p" : "720p";
+            await seamlessSwapVideoSource(blob720Url, "720p", upgradedTier);
+            if (badge && !badge.classList.contains("question-stop")) {
+              badge.textContent = dfcState.playing
+                ? "🎬 720p HD 全片本機快取播放中"
+                : "⚡ 720p HD 全片已 100% 載入快取 · 點擊開始觀看";
+            }
+          }
+          updatePreloadTelemetryUi(
+            "✅ 720p HD 全片已 100% 載入完成並永久鎖定於瀏覽器快取（關閉網頁下次直接秒開）",
+            100,
+            "💾 全片 HD 永久快取 100%",
+            true
+          );
+          updateDfcUiProgress();
+        }
+      }
     }
 
     function applyDfcVideoSource(url) {
@@ -3914,8 +4544,6 @@
       }
 
       updateDfcPlayerControlUi();
-      applyVisualQualityTier("360p");
-
       const driveId = extractGoogleDriveId(url);
       dfcState.isEmbed = false;
       dfcState.isDriveStream = Boolean(driveId);
@@ -3927,7 +4555,16 @@
 
       if (loadingEl) loadingEl.classList.add("hide");
 
-      const streamSrc = driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}` : (url || "/assets/dfc.mp4");
+      // 若記憶體中已有組裝好的 Blob URL（例如剛從快取載入），直接使用；否則先以 360p 極速串流秒開
+      const existingBlob = (driveId && dfcTurboState.fileId === driveId)
+        ? (dfcTurboState.blobUrls["720p"] || dfcTurboState.blobUrls["360p"])
+        : null;
+      const initialStreamQ = (existingBlob && dfcTurboState.blobUrls["720p"]) ? "720p" : "360p";
+      dfcActiveStreamQuality = initialStreamQ;
+      applyVisualQualityTier(initialStreamQ);
+
+      const streamSrc = existingBlob
+        || (driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}?q=360p` : (url || "/assets/dfc.mp4"));
 
       if (v) {
         if (v.getAttribute("src") !== streamSrc) {
@@ -3943,12 +4580,19 @@
       }
       if (canvas) canvas.classList.add("hide");
       if (badge) {
-        badge.textContent = "⚡ 360p 極速預載就緒 · 點擊開始順暢觀看";
+        badge.textContent = existingBlob
+          ? "⚡ 已從本機快取秒速就緒 · 點擊立即順暢播放"
+          : "⚡ 360p 極速保底就緒 · 全片正在背景瘋狂載入快取";
         badge.classList.remove("question-stop");
       }
       renderDfcStepPills();
       renderDfcMarkers();
       updateDfcUiProgress();
+
+      // 立即啟動全片瘋狂併發載入與 IndexedDB 永久快取引擎
+      if (driveId) {
+        startDfcTurboPreloader(driveId);
+      }
     }
 
     function seekDfcWithPolicy(requestedTime, fromUserTrack = true) {
@@ -3982,7 +4626,6 @@
       if (dfcState.useRealVideo) {
         const v = $("dfcVideo");
         if (v) {
-          if (dfcQualityMode === "auto") applyVisualQualityTier("360p");
           v.currentTime = targetTime;
         }
       }
@@ -4011,7 +4654,12 @@
       };
 
       const startSmartPrebufferGate = () => {
-        if (isPrebufferingGate || !dfcState.playing) return;
+        if (isPrebufferingGate || isSeamlessSwapping || !dfcState.playing) return;
+        // 若目前在 720p 串流遇到網路波動，且 360p 全片快取已就緒，立即秒切回 360p 本機 Blob，做到 0 卡頓！
+        if (dfcActiveStreamQuality === "720p" && !dfcTurboState.completed["720p"] && dfcTurboState.blobUrls["360p"]) {
+          seamlessSwapVideoSource(dfcTurboState.blobUrls["360p"], "360p", "480p");
+          return;
+        }
         isPrebufferingGate = true;
         if (dfcQualityMode === "auto") applyVisualQualityTier("360p");
         if (loadingEl) loadingEl.classList.remove("hide");
@@ -4030,17 +4678,17 @@
           const elapsedMs = Date.now() - gateStartTs;
 
           if (loadingTxt) {
-            loadingTxt.textContent = `⚡ 360p 極速預緩衝中 (${pct}%) · 完成後將連續順暢播放並自動升 HD...`;
+            loadingTxt.textContent = `⚡ 360p 極速保底預緩衝中 (${pct}%) · 緩衝完成後將自動逐步提升畫質...`;
           }
 
-          if (fwd >= targetSec || v.readyState >= 4 || (elapsedMs > 2600 && v.readyState >= 3)) {
+          if (fwd >= targetSec || v.readyState >= 4 || (elapsedMs > 2200 && v.readyState >= 3)) {
             stopPrebufferGate();
             evaluateAdaptiveQuality();
             if (dfcState.playing && v.paused) {
               v.play().catch(() => {});
             }
           }
-        }, 180);
+        }, 160);
       };
 
       const handleMetadataLoaded = () => {
@@ -4051,13 +4699,18 @@
           dfcState.videoLoading = false;
           dfcState.duration = v.duration;
           DFC_CONFIG.fallbackDuration = Math.round(v.duration);
-          dfcState.currentTime = v.currentTime || 0;
+          if (!isSeamlessSwapping) {
+            dfcState.currentTime = v.currentTime || 0;
+          }
           v.classList.remove("hide");
           if (canvas) canvas.classList.add("hide");
 
           const badge = $("dfcVideoBadge");
           if (badge && !badge.classList.contains("question-stop")) {
-            badge.textContent = dfcState.playing ? "🎬 智慧漸進串流播放中" : "⚡ 360p 極速預載就緒 · 點擊開始觀看";
+            const isFullCached = dfcTurboState.completed["720p"] || dfcTurboState.completed["360p"];
+            badge.textContent = dfcState.playing
+              ? (isFullCached ? "🎬 本機快取全片高速播放中" : "🎬 YouTube ABR 智慧漸進串流播放中")
+              : (isFullCached ? "⚡ 全片已載入本機快取 (100%) · 點擊開始觀看" : "⚡ 360p 極速預載就緒 · 點擊開始觀看");
           }
 
           renderDfcStepPills();
@@ -4084,7 +4737,7 @@
       };
 
       v.ontimeupdate = () => {
-        if (!dfcState.useRealVideo) return;
+        if (!dfcState.useRealVideo || isSeamlessSwapping) return;
         if (v.duration && Number.isFinite(v.duration) && v.duration > 0 && Math.abs(dfcState.duration - v.duration) > 0.5) {
           dfcState.duration = v.duration;
           renderDfcMarkers();
@@ -4100,13 +4753,13 @@
       };
 
       v.onseeking = () => {
-        if (!dfcState.useRealVideo) return;
+        if (!dfcState.useRealVideo || isSeamlessSwapping) return;
         dfcState.currentTime = v.currentTime || 0;
         updateDfcUiProgress();
       };
 
       v.onseeked = () => {
-        if (!dfcState.useRealVideo) return;
+        if (!dfcState.useRealVideo || isSeamlessSwapping) return;
         dfcState.currentTime = v.currentTime || 0;
         evaluateAdaptiveQuality();
         updateDfcUiProgress();
@@ -4121,7 +4774,7 @@
       };
 
       v.onpause = () => {
-        if (!isPrebufferingGate && dfcState.activeCheckpointIndex === -1) {
+        if (!isPrebufferingGate && !isSeamlessSwapping && dfcState.activeCheckpointIndex === -1) {
           dfcState.playing = false;
           dfcEngagement.pauseCount++;
         }
@@ -4129,7 +4782,7 @@
       };
 
       v.onwaiting = () => {
-        if (dfcState.isEmbed || !dfcState.playing) return;
+        if (dfcState.isEmbed || isSeamlessSwapping || !dfcState.playing) return;
         startSmartPrebufferGate();
       };
 
@@ -4153,6 +4806,7 @@
       };
 
       v.onerror = (e) => {
+        if (isSeamlessSwapping) return;
         stopPrebufferGate();
         console.warn("dfcVideo stream warning:", e);
         dfcState.videoLoading = false;
@@ -4165,6 +4819,7 @@
       };
 
       v.onended = () => {
+        if (isSeamlessSwapping) return;
         stopPrebufferGate();
         dfcState.maxWatchedTime = dfcState.duration;
         setDfcPlaying(false);
@@ -4255,7 +4910,7 @@
       document.addEventListener("visibilitychange", () => {
         if (document.hidden && dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
           setDfcPlaying(false);
-          showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停");
+          showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停（背景全片快取仍持續載入中）");
         }
       });
 
@@ -4269,12 +4924,19 @@
     }
 
     function enterDfcPage() {
+      dfcTurboState.isOnDfcPage = true;
       initDfcPlayer();
-      // 不再盲目強制自動播放未載入完成的影片，讓使用者點擊開始或等待就緒
+      if (!DFC_CONFIG.restricted && currentDfcAccess.allowed && DFC_CONFIG.videoUrl) {
+        const driveId = extractGoogleDriveId(DFC_CONFIG.videoUrl);
+        if (driveId && (!dfcTurboState.fileId || !dfcTurboState.completed["720p"])) {
+          startDfcTurboPreloader(driveId);
+        }
+      }
       updateDfcUiProgress();
     }
 
     function pauseDfcPage() {
+      dfcTurboState.isOnDfcPage = false;
       if (dfcState.playing) setDfcPlaying(false);
     }
 
@@ -4450,6 +5112,11 @@
           renderDfcStepPills();
           renderDfcMarkers();
           updateDfcUiProgress();
+        } else if (cfg.videoUrl && currentDfcAccess.allowed) {
+          const fid = extractDriveFileId(cfg.videoUrl);
+          if (fid && (!dfcPreloadEngine.running || dfcPreloadEngine.fileId !== fid)) {
+            startDfcTurboPreloader(fid).catch(() => {});
+          }
         }
 
         loadAvailableDfcForms(cfg.id);

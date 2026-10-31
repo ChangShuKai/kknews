@@ -1652,7 +1652,7 @@ img {
   text-align: left;
 }
 
-/* 智慧漸進式畫質控制 (先低畫質極速載入、緩衝充足自動升 HD) */
+/* 智慧漸進式畫質控制 (YouTube ABR 先低畫質保底流暢、再步進式升 HD + IndexedDB 全片快取) */
 .cinema-quality-pill {
   background: rgba(15, 23, 42, 0.78);
   color: #38bdf8;
@@ -1670,13 +1670,87 @@ img {
   color: #ffffff;
 }
 video.video-q-360p {
-  filter: contrast(0.98) saturate(0.96) blur(0.35px);
+  filter: contrast(1.01) saturate(1.0);
+}
+video.video-q-480p {
+  filter: contrast(1.02) saturate(1.02);
 }
 video.video-q-720p {
-  filter: contrast(1) saturate(1);
+  filter: contrast(1.03) saturate(1.04);
 }
 video.video-q-1080p {
-  filter: contrast(1.03) saturate(1.04);
+  filter: contrast(1.05) saturate(1.06);
+}
+
+.video-bridge-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.video-bridge-canvas.active {
+  opacity: 1;
+}
+
+.dfc-preload-telemetry {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+.dfc-preload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dfc-preload-status-text {
+  font-weight: 600;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dfc-preload-cache-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 113, 227, 0.1);
+  color: var(--blue);
+  white-space: nowrap;
+}
+.dfc-preload-cache-badge.cached-ok {
+  background: rgba(52, 199, 89, 0.14);
+  color: #15803d;
+}
+.dfc-preload-bar-track {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  position: relative;
+}
+.dfc-preload-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0071e3, #38bdf8, #34c759);
+  transition: width 0.22s ease;
 }
 
 /* ==========================================================================
