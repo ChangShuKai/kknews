@@ -567,7 +567,7 @@ function normalizeGoogleCsvUrl(url = "") {
 }
 
 /* ---------- URL 安全檢查：防範 SSRF（只允許合法的 Google 服務網域） ---------- */
-function isAllowedGoogleUrl(urlStr, allowedHosts = ["docs.google.com", "script.google.com", "sheets.googleapis.com", "forms.googleapis.com"]) {
+function isAllowedGoogleUrl(urlStr, allowedHosts = ["docs.google.com", "script.google.com", "sheets.googleapis.com", "forms.googleapis.com", "forms.gle"]) {
   try {
     const u = new URL(urlStr);
     if (u.protocol !== "https:") return false;
@@ -1567,7 +1567,7 @@ app.post("/api/proverbs", async (req, res) => {
 /* --- 前台讀取 DFC 表單清單（嚴格防暴雷：未授權帳號絕不回傳題目、表單與影片網址） --- */
 app.get("/api/dfc/forms", async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate");
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.json({
@@ -1590,7 +1590,7 @@ app.get("/api/dfc/forms", async (req, res) => {
       title: f.title,
       description: f.description || "",
       videoUrl: f.videoUrl,
-      videoVersion: `${extractGoogleDriveFileId(f.videoUrl || "") || f.videoUrl || ""}-${f.updatedAt || ""}`,
+      videoVersion: extractGoogleDriveFileId(f.videoUrl || "") || f.videoUrl || "",
       fallbackDuration: f.fallbackDuration || 18,
       questionCount: (f.checkpoints || []).length,
       isDefault: f.id === activeId,
@@ -1603,7 +1603,7 @@ app.get("/api/dfc/forms", async (req, res) => {
 app.get("/api/dfc/config", async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const formId = String(req.query.formId || "").trim();
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.json({
@@ -1629,7 +1629,7 @@ app.get("/api/dfc/config", async (req, res) => {
 
   res.json({
     ...matchedForm,
-    videoVersion: `${extractGoogleDriveFileId(matchedForm?.videoUrl || "") || matchedForm?.videoUrl || ""}-${matchedForm?.updatedAt || ""}`,
+    videoVersion: extractGoogleDriveFileId(matchedForm?.videoUrl || "") || matchedForm?.videoUrl || "",
     restricted: false,
     accessMode: access.mode,
     activeFormId: activeId,
@@ -1646,7 +1646,7 @@ app.get("/api/dfc/config", async (req, res) => {
 /* --- DFC 互動影片表單：串接 Google Form (formResponse / Apps Script API) 並寫入後台統計 --- */
 app.post("/api/dfc/submit", async (req, res) => {
   if (await limited("dfc:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "送出太頻繁，請稍後再試" });
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：僅限規定授權帳號提交問卷" });
@@ -1982,7 +1982,7 @@ app.delete("/api/admin/accounts/:id", async (req, res) => {
 app.get("/api/admin/dfc", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const accessCfg = await getMergedDfcAccessConfig(store);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   res.json({
@@ -2011,7 +2011,7 @@ app.post("/api/admin/dfc/access", async (req, res) => {
   if (!adm) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
 
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const cfg = await getMergedDfcAccessConfig(store);
   let nextList = [...cfg.allowedEmails];
 
@@ -2044,7 +2044,7 @@ app.post("/api/admin/dfc/set-active-form", async (req, res) => {
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const { formId } = req.body || {};
   if (!formId) return res.status(400).json({ error: "缺少表單 ID" });
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const target = (store.forms || []).find(f => f.id === formId);
   if (!target) return res.status(404).json({ error: "找不到指定表單" });
   store.activeFormId = formId;
@@ -2059,7 +2059,7 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const { formId } = req.body || {};
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const src = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0];
   if (!src) return res.status(404).json({ error: "找不到來源問卷" });
 
@@ -2328,23 +2328,27 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   let checkpoints = [];
   const ALLOWED_TYPES = ["radio", "checkbox", "rating", "dropdown", "boolean", "text", "textarea"];
   if (Array.isArray(body.checkpoints)) {
-    checkpoints = body.checkpoints.map((cp, idx) => ({
-      id: str(cp.id || `q${idx + 1}`, 40),
-      time: Math.max(0.5, Number(cp.time) || (idx + 1) * 5),
-      entryId: str(cp.entryId || `entry.${idx + 1}`, 60).trim(),
-      stepLabel: str(cp.stepLabel || `階段 ${idx + 1}`, 40).trim(),
-      title: str(cp.title || `問題 ${idx + 1}`, 200).trim(),
-      desc: str(cp.desc || "", 300).trim(),
-      type: ALLOWED_TYPES.includes(cp.type) ? cp.type : "radio",
-      options: Array.isArray(cp.options) ? cp.options.map(o => str(String(o), 150).trim()).filter(Boolean) : [],
-      placeholder: str(cp.placeholder || "", 120).trim(),
-      min: Number(cp.min) || 1,
-      max: Number(cp.max) || 5,
-      required: cp.required !== false,
-    })).sort((a, b) => a.time - b.time);
+    checkpoints = body.checkpoints.map((cp, idx) => {
+      const rawTime = Number(cp.time);
+      const safeTime = Number.isFinite(rawTime) && rawTime >= 0 ? rawTime : (idx + 1) * 5;
+      return {
+        id: str(cp.id || `q${idx + 1}`, 40),
+        time: safeTime,
+        entryId: str(cp.entryId || `entry.${idx + 1}`, 60).trim(),
+        stepLabel: str(cp.stepLabel || `階段 ${idx + 1}`, 40).trim(),
+        title: str(cp.title || `問題 ${idx + 1}`, 200).trim(),
+        desc: str(cp.desc || "", 300).trim(),
+        type: ALLOWED_TYPES.includes(cp.type) ? cp.type : "radio",
+        options: Array.isArray(cp.options) ? cp.options.map(o => str(String(o), 150).trim()).filter(Boolean) : [],
+        placeholder: str(cp.placeholder || "", 120).trim(),
+        min: Number(cp.min) || 1,
+        max: Number(cp.max) || 5,
+        required: cp.required !== false,
+      };
+    }).sort((a, b) => a.time - b.time);
   }
 
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   if (!Array.isArray(store.forms)) store.forms = [];
   const existingIdx = store.forms.findIndex(f => f.id === id);
   const formObj = {
@@ -2369,7 +2373,7 @@ app.delete("/api/admin/dfc/forms/:id", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const id = String(req.params.id);
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   if ((store.forms || []).length <= 1) {
     return res.status(400).json({ error: "系統至少需保留一份 DFC 表單，不可全數刪除" });
   }
@@ -2391,7 +2395,7 @@ app.post("/api/admin/dfc/import-csv", async (req, res) => {
   if (!parsed.headers.length || !parsed.rows.length) {
     return res.status(400).json({ error: "CSV 內容為空或格式無法解析" });
   }
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   const form = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0] || DEFAULT_DFC_STORE.forms[0];
   const checkpoints = Array.isArray(form?.checkpoints) ? form.checkpoints : [];
 
@@ -2430,7 +2434,7 @@ app.delete("/api/admin/dfc/responses/:id", async (req, res) => {
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const id = String(req.params.id);
   const formId = String(req.query.formId || "");
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
   if (id === "all") {
     store.responses = formId ? (store.responses || []).filter(r => r.formId !== formId) : [];
   } else {
@@ -2814,12 +2818,13 @@ app.get("/api/admin/sync", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
   try {
+    const forceFresh = req.query.force === "1";
     const proverbs = await fetchProverbsList();
     const [users, m, dfcStore, adminList, auditLogs] = await Promise.all([
       fetchEnrichedUsersList(proverbs),
       fetchSupabaseRealMetrics(),
-      readSysStore("dfc", DEFAULT_DFC_STORE),
-      readSysStore("admins", []),
+      readSysStore("dfc", DEFAULT_DFC_STORE, forceFresh),
+      readSysStore("admins", [], forceFresh),
       fetchAdminAuditLogs().catch(() => []),
     ]);
     const accessCfg = await getMergedDfcAccessConfig(dfcStore);

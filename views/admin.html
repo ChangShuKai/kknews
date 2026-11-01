@@ -599,11 +599,12 @@ s1120002
       </div>
 
       <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
-      <!-- DFC 互動問卷深度數據分析中心：每一題提供專屬圖表、數據、對應表格與填答者清單 -->
+      <!-- DFC 互動問卷深度數據分析中心：每一題提供專屬圓餅圖、長條圖、數據、對應表格與填答者清單 -->
       <div id="dfcAnalyticsSection" style="margin-bottom:24px">
         <div id="dfcKpiBar" class="dfc-kpi-bar"></div>
+        <div id="dfcOverallPieBar" class="dfc-overall-pies-grid"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px;flex-wrap:wrap;gap:8px">
-          <strong style="font-size:15px;color:var(--ink)">📊 各題目深度分析圖表與專屬數據表格</strong>
+          <strong style="font-size:15px;color:var(--ink)">🥧 各題目問卷結果圓餅圖、深度分析與專屬數據表格</strong>
           <div id="dfcQuestionFilterTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         </div>
         <div id="dfcPerQuestionAnalytics" class="dfc-analytics-wrap"></div>
@@ -1551,15 +1552,19 @@ function isInteractingAdminsList() {
   return a && $("adminsListWrap").contains(a) && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "BUTTON");
 }
 
+let loadSeq = 0;
 async function load(forceRender = false) {
   if (!forceRender && document.hidden) return;
-  if (isLoading) return;
+  if (!forceRender && isLoading) return;
+  const mySeq = ++loadSeq;
   isLoading = true;
   try {
-    const rSync = await fetch("/api/admin/sync");
+    const syncUrl = forceRender ? `/api/admin/sync?force=1&_t=${Date.now()}` : `/api/admin/sync?_t=${Date.now()}`;
+    const rSync = await fetch(syncUrl, { cache: "no-store" });
     if (rSync.status === 404) { location.reload(); return; }
     if (!rSync.ok) return;
     const syncData = await rSync.json();
+    if (mySeq !== loadSeq) return;
     if (Array.isArray(syncData.proverbs)) rows = syncData.proverbs;
     if (Array.isArray(syncData.users)) users = syncData.users;
     if (syncData.status) applyAdminStatus(syncData.status);
@@ -1575,7 +1580,7 @@ async function load(forceRender = false) {
         selectedFormId = dfcForms[0].id;
       }
     }
-        if (syncData.accounts) {
+    if (syncData.accounts) {
       if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
       adminAccounts = syncData.accounts.accounts || [];
       adminAccessKey = syncData.accounts.accessKey || "";
@@ -1597,8 +1602,15 @@ async function load(forceRender = false) {
     const rowsSig = rows.map(r => `${r.id}:${r.content}:${r.author}:${r.user_name}`).join("|") + ":" + currentRole;
     const accessSig = `${dfcAccessMode}:${(dfcAllowedEmails || []).join(",")}`;
     const usersSig = users.map(u => `${u.id}:${u.login_count}:${u.post_count}:${u.last_sign_in_at}:${u.last_ip}:${u.last_device}:${u.selfie_at}`).join("|") + ":" + adminsSig + ":" + accessSig;
-    const dfcSig = JSON.stringify({ f: dfcForms.map(f => f.id + f.updatedAt), r: dfcResponses.map(x => x.id).join(","), s: selectedFormId, a: activeDfcFormId, acc: accessSig, role: currentRole });
-        const auditSig = auditLogs.map(l => l.id).join(",");
+    const dfcSig = JSON.stringify({
+      f: dfcForms.map(f => `${f.id}:${f.updatedAt}:${(f.checkpoints || []).map(c => `${c.id}:${c.time}:${c.title}`).join("|")}`),
+      r: dfcResponses.map(x => x.id).join(","),
+      s: selectedFormId,
+      a: activeDfcFormId,
+      acc: accessSig,
+      role: currentRole,
+    });
+    const auditSig = auditLogs.map(l => l.id).join(",");
 
     if (forceRender || (rowsSig !== lastRowsSig && !isEditingCard())) {
       lastRowsSig = rowsSig;
@@ -1623,7 +1635,7 @@ async function load(forceRender = false) {
       renderAuditLogs();
     }
   } catch {} finally {
-    isLoading = false;
+    if (mySeq === loadSeq) isLoading = false;
   }
 }
 
@@ -2212,6 +2224,96 @@ function renderDfcPanel() {
 
 let dfcSelectedQuestionFilter = "all";
 
+const PIE_PALETTE = [
+  "#0284c7", "#10b981", "#f59e0b", "#6366f1", "#ec4899",
+  "#8b5cf6", "#14b8a6", "#f97316", "#06b6d4", "#84cc16"
+];
+
+function buildSvgPieChart(slices = [], { title = "🥧 選項佔比圓餅圖", unit = "票" } = {}) {
+  const safeSlices = (slices || []).map((s, idx) => ({
+    label: String(s.label ?? `項目 ${idx + 1}`),
+    value: Math.max(0, Number(s.value) || 0),
+    color: s.color || PIE_PALETTE[idx % PIE_PALETTE.length],
+  }));
+  const total = safeSlices.reduce((acc, s) => acc + s.value, 0);
+  const cx = 100, cy = 100, r = 84;
+  let svgInner = "";
+
+  if (total <= 0) {
+    svgInner = `
+      <circle cx="${cx}" cy="${cy}" r="${r - 2}" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 4"></circle>
+      <text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="#64748b" font-size="12.5" font-weight="700">尚無填答數據</text>
+      <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">0 ${esc(unit)}</text>
+    `;
+  } else {
+    const positiveSlices = safeSlices.filter(s => s.value > 0);
+    if (positiveSlices.length === 1) {
+      const only = positiveSlices[0];
+      svgInner = `
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="${esc(only.color)}" stroke="#ffffff" stroke-width="2" class="pie-slice-path">
+          <title>${esc(only.label)}：${only.value} ${esc(unit)} (100%)</title>
+        </circle>
+        <text x="${cx}" y="${cy}" class="pie-slice-label" style="font-size:13px">100%</text>
+      `;
+    } else {
+      let curAngle = -Math.PI / 2;
+      let pathsHtml = "";
+      let labelsHtml = "";
+      for (const s of positiveSlices) {
+        const ratio = s.value / total;
+        const pct = Math.round(ratio * 100);
+        const angle = ratio * Math.PI * 2;
+        const endAngle = curAngle + angle;
+        const x1 = (cx + r * Math.cos(curAngle)).toFixed(2);
+        const y1 = (cy + r * Math.sin(curAngle)).toFixed(2);
+        const x2 = (cx + r * Math.cos(endAngle)).toFixed(2);
+        const y2 = (cy + r * Math.sin(endAngle)).toFixed(2);
+        const largeArc = angle > Math.PI ? 1 : 0;
+
+        pathsHtml += `
+          <path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z"
+                fill="${esc(s.color)}" stroke="#ffffff" stroke-width="2" class="pie-slice-path">
+            <title>${esc(s.label)}：${s.value} ${esc(unit)} (${pct}%)</title>
+          </path>
+        `;
+
+        if (ratio >= 0.06) {
+          const midAngle = curAngle + angle / 2;
+          const labelR = r * 0.62;
+          const lx = (cx + labelR * Math.cos(midAngle)).toFixed(1);
+          const ly = (cy + labelR * Math.sin(midAngle)).toFixed(1);
+          labelsHtml += `<text x="${lx}" y="${ly}" class="pie-slice-label">${pct}%</text>`;
+        }
+        curAngle = endAngle;
+      }
+      svgInner = pathsHtml + labelsHtml;
+    }
+  }
+
+  const legendHtml = safeSlices.map(s => {
+    const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
+    return `
+      <span class="pie-legend-chip" title="${esc(s.label)}：${s.value} ${esc(unit)} (${pct}%)">
+        <span class="pie-legend-dot" style="background:${esc(s.color)}"></span>
+        <span class="pie-legend-name">${esc(s.label)}</span>
+        <span class="pie-legend-pct">${s.value}${esc(unit)} (${pct}%)</span>
+      </span>
+    `;
+  }).join("");
+
+  return `
+    <div class="pie-visual-card">
+      <div class="pie-visual-title">${esc(title)}</div>
+      <div class="pie-svg-wrap">
+        <svg viewBox="0 0 200 200" role="img" aria-label="${esc(title)}">
+          ${svgInner}
+        </svg>
+      </div>
+      <div class="pie-legend-grid">${legendHtml}</div>
+    </div>
+  `;
+}
+
 function copyTextToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     toast("✓ 已複製到剪貼簿！");
@@ -2224,30 +2326,79 @@ function renderDfcCsvTable() {
   const activeForm = getActiveForm();
   if (!activeForm) return;
 
-  const formResps = dfcResponses.filter(r => r.formId === activeForm.id);
-  const cps = activeForm.checkpoints || [];
+  let formResps = dfcResponses.filter(r => r.formId === activeForm.id);
+  let cps = Array.isArray(activeForm.checkpoints) ? [...activeForm.checkpoints] : [];
 
-  // 1. 渲染頂部 KPI 指標列
-  const kpiBar = $("dfcKpiBar");
-  if (kpiBar) {
-    const totalCount = formResps.length;
-    let sumWatchPct = 0, sumWatchedSec = 0, sumSessionSec = 0, syncedCount = 0, mobileCount = 0;
-
-    for (const r of formResps) {
-      const eng = r.engagement || {};
-      const tel = r.telemetry || {};
-      sumWatchPct += Number(eng.watchPercentage) || 0;
-      sumWatchedSec += Number(eng.watchedSeconds) || 0;
-      sumSessionSec += Number(eng.totalSessionSeconds) || 0;
-      if (r.syncedToGoogle) syncedCount++;
-      if (tel.deviceType === "手機" || tel.deviceType === "平板") mobileCount++;
+  // 若本地無回應但有遠端 Google 試算表 CSV 資料，自動將遠端 CSV 轉換為可供圓餅圖統計之回應資料
+  if (!formResps.length && currentCsvData?.source === "google_remote" && Array.isArray(currentCsvData.rows) && currentCsvData.rows.length) {
+    const headers = currentCsvData.headers || [];
+    if (!cps.length && headers.length > 1) {
+      cps = headers.slice(1).map((h, idx) => {
+        const distinctVals = Array.from(new Set(currentCsvData.rows.map(r => String(r[idx + 1] ?? "").trim()).filter(Boolean)));
+        return {
+          id: `csv_col_${idx + 1}`,
+          entryId: h,
+          time: (idx + 1) * 10,
+          stepLabel: `CSV 欄位 ${idx + 1}`,
+          title: h || `問題 ${idx + 1}`,
+          type: distinctVals.length > 0 && distinctVals.length <= 10 ? "radio" : "text",
+          options: distinctVals.length <= 10 ? distinctVals : [],
+        };
+      });
     }
+    formResps = currentCsvData.rows.map((r, rIdx) => {
+      const answers = {};
+      headers.forEach((h, colIdx) => {
+        const val = r[colIdx] ?? "";
+        answers[h] = val;
+        const matchedCp = cps.find((cp, cIdx) => h.includes(cp.entryId) || h.includes(cp.title) || colIdx === cIdx + 1);
+        if (matchedCp && !answers[matchedCp.entryId]) answers[matchedCp.entryId] = val;
+      });
+      return {
+        id: `remote_${rIdx}`,
+        formId: activeForm.id,
+        userName: r[1] || `填答者 #${rIdx + 1}`,
+        userEmail: r[1] && String(r[1]).includes("@") ? r[1] : "",
+        submittedAt: r[0] || "",
+        syncedToGoogle: true,
+        engagement: { watchPercentage: 100, watchedSeconds: activeForm.fallbackDuration || 363 },
+        telemetry: { deviceType: "Google 表單" },
+        answers,
+      };
+    });
+  }
 
+  // 1. 渲染頂部 KPI 指標列與整體問卷結果圓餅圖總覽
+  const kpiBar = $("dfcKpiBar");
+  const overallPieBar = $("dfcOverallPieBar");
+  const totalCount = formResps.length;
+  let sumWatchPct = 0, sumWatchedSec = 0, sumSessionSec = 0, syncedCount = 0, mobileCount = 0, tabletCount = 0, desktopCount = 0;
+  let watchHigh = 0, watchMid = 0, watchLow = 0;
+
+  for (const r of formResps) {
+    const eng = r.engagement || {};
+    const tel = r.telemetry || {};
+    const wp = Number(eng.watchPercentage) || 0;
+    sumWatchPct += wp;
+    sumWatchedSec += Number(eng.watchedSeconds) || 0;
+    sumSessionSec += Number(eng.totalSessionSeconds) || 0;
+    if (r.syncedToGoogle) syncedCount++;
+
+    if (wp >= 90) watchHigh++;
+    else if (wp >= 50) watchMid++;
+    else watchLow++;
+
+    if (tel.deviceType === "手機") mobileCount++;
+    else if (tel.deviceType === "平板") tabletCount++;
+    else desktopCount++;
+  }
+
+  if (kpiBar) {
     const avgWatchPct = totalCount > 0 ? Math.round(sumWatchPct / totalCount) : 0;
     const avgWatchedSec = totalCount > 0 ? Math.round(sumWatchedSec / totalCount) : 0;
     const avgSessionSec = totalCount > 0 ? Math.round(sumSessionSec / totalCount) : 0;
     const syncRate = totalCount > 0 ? Math.round((syncedCount / totalCount) * 100) : 100;
-    const mobilePct = totalCount > 0 ? Math.round((mobileCount / totalCount) * 100) : 0;
+    const mobilePct = totalCount > 0 ? Math.round(((mobileCount + tabletCount) / totalCount) * 100) : 0;
 
     kpiBar.innerHTML = `
       <div class="dfc-kpi-card">
@@ -2277,6 +2428,42 @@ function renderDfcCsvTable() {
     `;
   }
 
+  if (overallPieBar) {
+    // 計算整體各題完整作答率
+    let fullAnsweredUsers = 0, partialAnsweredUsers = 0;
+    for (const r of formResps) {
+      if (!cps.length) { fullAnsweredUsers++; continue; }
+      let ansC = 0;
+      for (const cp of cps) {
+        const a = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : null;
+        if (a !== undefined && a !== null && a !== "" && (!Array.isArray(a) || a.length > 0)) ansC++;
+      }
+      if (ansC >= cps.length) fullAnsweredUsers++;
+      else if (ansC > 0) partialAnsweredUsers++;
+    }
+    const noneAnsweredUsers = Math.max(0, totalCount - fullAnsweredUsers - partialAnsweredUsers);
+
+    const completionPieHtml = buildSvgPieChart([
+      { label: "完整作答全部題目", value: fullAnsweredUsers, color: "#10b981" },
+      { label: "部分題目作答", value: partialAnsweredUsers, color: "#f59e0b" },
+      ...(noneAnsweredUsers > 0 ? [{ label: "未填答", value: noneAnsweredUsers, color: "#94a3b8" }] : []),
+    ], { title: "🥧 問卷作答完整度圓餅圖", unit: "人" });
+
+    const watchPieHtml = buildSvgPieChart([
+      { label: "完整觀看 (≥90%)", value: watchHigh, color: "#0284c7" },
+      { label: "大部分觀看 (50~89%)", value: watchMid, color: "#38bdf8" },
+      { label: "部分觀看 (<50%)", value: watchLow, color: "#f97316" },
+    ], { title: "🥧 影片觀看完成度圓餅圖", unit: "人" });
+
+    const devicePieHtml = buildSvgPieChart([
+      { label: "電腦 / 桌機", value: desktopCount, color: "#6366f1" },
+      { label: "手機行動端", value: mobileCount, color: "#ec4899" },
+      { label: "平板裝置", value: tabletCount, color: "#14b8a6" },
+    ], { title: "🥧 填答者裝置佔比圓餅圖", unit: "人" });
+
+    overallPieBar.innerHTML = completionPieHtml + watchPieHtml + devicePieHtml;
+  }
+
   // 2. 渲染題目篩選標籤
   const tabsWrap = $("dfcQuestionFilterTabs");
   if (tabsWrap) {
@@ -2285,7 +2472,7 @@ function renderDfcCsvTable() {
     allBtn.type = "button";
     allBtn.className = "chip-btn" + (dfcSelectedQuestionFilter === "all" ? " active" : "");
     allBtn.style.cssText = dfcSelectedQuestionFilter === "all" ? "background:#0f172a;color:#fff;border-color:#0f172a" : "";
-    allBtn.textContent = `📊 全部題目總覽 (${cps.length})`;
+    allBtn.textContent = `🥧 全部題目圓餅圖總覽 (${cps.length})`;
     allBtn.onclick = () => {
       dfcSelectedQuestionFilter = "all";
       renderDfcCsvTable();
@@ -2307,7 +2494,7 @@ function renderDfcCsvTable() {
     });
   }
 
-  // 3. 渲染每一題的獨立專屬分析卡片、圖表與對應數據表格
+  // 3. 渲染每一題的獨立專屬分析卡片、圓餅圖、長條圖與對應數據表格
   const analyticsWrap = $("dfcPerQuestionAnalytics");
   if (analyticsWrap) {
     analyticsWrap.innerHTML = "";
@@ -2317,10 +2504,10 @@ function renderDfcCsvTable() {
       : cps.filter(c => c.id === dfcSelectedQuestionFilter);
 
     if (!cps.length) {
-      analyticsWrap.innerHTML = `<div style="text-align:center;padding:30px;color:var(--ink-secondary);background:#fff;border-radius:12px;border:1px dashed var(--line)">此問卷尚未設定任何時間點題目</div>`;
+      analyticsWrap.innerHTML = `<div style="text-align:center;padding:30px;color:var(--ink-secondary);background:#fff;border-radius:12px;border:1px dashed var(--line)">此問卷尚未設定任何時間點題目（請點擊上方「⚙️ 編輯問卷與時間點」新增題目）</div>`;
     }
 
-    visibleCps.forEach((cp, vIdx) => {
+    visibleCps.forEach((cp) => {
       const idx = cps.findIndex(c => c.id === cp.id);
       const card = document.createElement("div");
       card.className = "q-analytics-card";
@@ -2377,13 +2564,23 @@ function renderDfcCsvTable() {
           }
         }
 
-        // 視覺長條圖表
+        const pieSlices = cp.options.map((opt, oIdx) => ({
+          label: opt,
+          value: counts[opt] || 0,
+          color: PIE_PALETTE[oIdx % PIE_PALETTE.length],
+        }));
+        const pieChartHtml = buildSvgPieChart(pieSlices, { title: "🥧 各選項得票佔比圓餅圖", unit: "票" });
+
+        // 視覺長條圖表與對應色票
         let barsHtml = "";
         let tableRowsHtml = "";
+        const totalVotes = pieSlices.reduce((acc, s) => acc + s.value, 0);
 
         cp.options.forEach((opt, oIdx) => {
           const c = counts[opt] || 0;
-          const pct = answeredCount > 0 ? Math.round((c / answeredCount) * 100) : 0;
+          const baseDenom = cp.type === "checkbox" ? (totalVotes || 1) : (answeredCount || 1);
+          const pct = (cp.type === "checkbox" ? totalVotes > 0 : answeredCount > 0) ? Math.round((c / baseDenom) * 100) : 0;
+          const optColor = PIE_PALETTE[oIdx % PIE_PALETTE.length];
           const usersList = respondentsPerOpt[opt] || [];
           const usersPreview = usersList.length
             ? usersList.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("") + (usersList.length > 4 ? `<span style="font-size:11px;color:var(--muted)">+${usersList.length - 4}人</span>` : "")
@@ -2392,23 +2589,31 @@ function renderDfcCsvTable() {
           barsHtml += `
             <div class="q-bar-row">
               <div class="q-bar-meta">
-                <span class="q-bar-opt-text">${esc(opt)}</span>
-                <span class="q-bar-stat">${c} 票 (${pct}%)</span>
+                <span class="q-bar-opt-text">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${optColor};display:inline-block;flex:none"></span>
+                  <span>${esc(opt)}</span>
+                </span>
+                <span class="q-bar-stat" style="color:${optColor}">${c} 票 (${pct}%)</span>
               </div>
               <div class="q-bar-track">
-                <div class="q-bar-fill" style="width:${pct}%"></div>
+                <div class="q-bar-fill" style="width:${pct}%;background:${optColor}"></div>
               </div>
             </div>
           `;
 
           tableRowsHtml += `
             <tr>
-              <td><b>${esc(opt)}</b></td>
-              <td><b style="color:var(--blue)">${c}</b> 人次</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${optColor};display:inline-block;flex:none"></span>
+                  <b>${esc(opt)}</b>
+                </div>
+              </td>
+              <td><b style="color:${optColor}">${c}</b> 人次</td>
               <td><b style="color:var(--ink)">${pct}%</b></td>
               <td>
                 <div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:120px">
-                  <div style="height:100%;width:${pct}%;background:#0284c7"></div>
+                  <div style="height:100%;width:${pct}%;background:${optColor}"></div>
                 </div>
               </td>
               <td>${usersPreview}</td>
@@ -2418,8 +2623,13 @@ function renderDfcCsvTable() {
 
         chartAndTableHtml = `
           <div class="q-chart-box">
-            <h5 style="margin:0 0 10px;font-size:12.5px;color:var(--ink-secondary)">📊 各選項得票佔比圖表</h5>
-            ${barsHtml}
+            <div class="q-chart-split">
+              ${pieChartHtml}
+              <div>
+                <h5 style="margin:0 0 12px;font-size:12.5px;color:var(--ink-secondary)">📊 各選項得票佔比與分佈明細</h5>
+                ${barsHtml}
+              </div>
+            </div>
           </div>
           <div>
             <h5 style="margin:14px 0 8px;font-size:12.5px;color:var(--ink-secondary)">📋 本題選項數據與選擇填答者對應表格</h5>
@@ -2442,6 +2652,7 @@ function renderDfcCsvTable() {
         let sumRating = 0, ratedC = 0;
         const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
         const starUsers = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+        const starColors = { 5: "#f59e0b", 4: "#10b981", 3: "#0284c7", 2: "#f97316", 1: "#ef4444" };
 
         for (const r of formResps) {
           const val = Number(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id]) : 0);
@@ -2455,11 +2666,19 @@ function renderDfcCsvTable() {
         }
         const avgScore = ratedC > 0 ? (sumRating / ratedC).toFixed(1) : "—";
 
+        const ratingSlices = [5, 4, 3, 2, 1].map(s => ({
+          label: `${s} 星 (${"★".repeat(s)})`,
+          value: starCounts[s] || 0,
+          color: starColors[s],
+        }));
+        const pieChartHtml = buildSvgPieChart(ratingSlices, { title: "🥧 星級評分佔比圓餅圖", unit: "人" });
+
         let barsHtml = "";
         let tableRowsHtml = "";
         for (let s = 5; s >= 1; s--) {
           const c = starCounts[s] || 0;
           const pct = ratedC > 0 ? Math.round((c / ratedC) * 100) : 0;
+          const sClr = starColors[s];
           const uList = starUsers[s] || [];
           const usersPreview = uList.length
             ? uList.slice(0, 4).map(u => `<span class="user-tag-pill">${esc(u)}</span>`).join("") + (uList.length > 4 ? `<span style="font-size:11px;color:var(--muted)">+${uList.length - 4}人</span>` : "")
@@ -2468,23 +2687,26 @@ function renderDfcCsvTable() {
           barsHtml += `
             <div class="q-bar-row">
               <div class="q-bar-meta">
-                <span class="q-bar-opt-text" style="color:#d97706">${"★".repeat(s)} (${s} 星)</span>
-                <span class="q-bar-stat">${c} 人 (${pct}%)</span>
+                <span class="q-bar-opt-text" style="color:${sClr}">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${sClr};display:inline-block"></span>
+                  <span>${"★".repeat(s)} (${s} 星)</span>
+                </span>
+                <span class="q-bar-stat" style="color:${sClr}">${c} 人 (${pct}%)</span>
               </div>
               <div class="q-bar-track">
-                <div class="q-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div>
+                <div class="q-bar-fill" style="width:${pct}%;background:${sClr}"></div>
               </div>
             </div>
           `;
 
           tableRowsHtml += `
             <tr>
-              <td><b style="color:#d97706">${"★".repeat(s)} (${s} 星滿意度)</b></td>
+              <td><b style="color:${sClr}">${"★".repeat(s)} (${s} 星滿意度)</b></td>
               <td><b>${c}</b> 人</td>
               <td><b>${pct}%</b></td>
               <td>
                 <div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;width:120px">
-                  <div style="height:100%;width:${pct}%;background:#f59e0b"></div>
+                  <div style="height:100%;width:${pct}%;background:${sClr}"></div>
                 </div>
               </td>
               <td>${usersPreview}</td>
@@ -2494,11 +2716,16 @@ function renderDfcCsvTable() {
 
         chartAndTableHtml = `
           <div class="q-chart-box">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <h5 style="margin:0;font-size:12.5px;color:var(--ink-secondary)">⭐ 星級評分分佈圖表</h5>
-              <span style="font-size:16px;font-weight:800;color:#d97706">平均得分：${avgScore} ★ <small style="font-size:12px;color:var(--muted)">(${ratedC} 人參與)</small></span>
+            <div class="q-chart-split">
+              ${pieChartHtml}
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+                  <h5 style="margin:0;font-size:12.5px;color:var(--ink-secondary)">⭐ 星級評分分佈圖表</h5>
+                  <span style="font-size:16px;font-weight:800;color:#d97706">平均得分：${avgScore} ★ <small style="font-size:12px;color:var(--muted)">(${ratedC} 人參與)</small></span>
+                </div>
+                ${barsHtml}
+              </div>
             </div>
-            ${barsHtml}
           </div>
           <div>
             <h5 style="margin:14px 0 8px;font-size:12.5px;color:var(--ink-secondary)">📋 各星級人數與填答者名單表格</h5>
@@ -2535,16 +2762,26 @@ function renderDfcCsvTable() {
         const yesPct = totalB > 0 ? Math.round((yesC / totalB) * 100) : 0;
         const noPct = totalB > 0 ? Math.round((noC / totalB) * 100) : 0;
 
+        const boolPieHtml = buildSvgPieChart([
+          { label: "是 / 贊成", value: yesC, color: "#10b981" },
+          { label: "否 / 反對", value: noC, color: "#ef4444" },
+        ], { title: "🥧 是非立場佔比圓餅圖", unit: "票" });
+
         chartAndTableHtml = `
           <div class="q-chart-box">
-            <h5 style="margin:0 0 10px;font-size:12.5px;color:var(--ink-secondary)">⚖️ 是非立場得票分佈</h5>
-            <div class="q-bar-row">
-              <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#059669">👍 是 / 贊成</span><span class="q-bar-stat">${yesC} 票 (${yesPct}%)</span></div>
-              <div class="q-bar-track"><div class="q-bar-fill" style="width:${yesPct}%;background:#10b981"></div></div>
-            </div>
-            <div class="q-bar-row">
-              <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#dc2626">👎 否 / 反對</span><span class="q-bar-stat">${noC} 票 (${noPct}%)</span></div>
-              <div class="q-bar-track"><div class="q-bar-fill" style="width:${noPct}%;background:#ef4444"></div></div>
+            <div class="q-chart-split">
+              ${boolPieHtml}
+              <div>
+                <h5 style="margin:0 0 12px;font-size:12.5px;color:var(--ink-secondary)">⚖️ 是非立場得票分佈</h5>
+                <div class="q-bar-row">
+                  <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#059669">👍 是 / 贊成</span><span class="q-bar-stat" style="color:#059669">${yesC} 票 (${yesPct}%)</span></div>
+                  <div class="q-bar-track"><div class="q-bar-fill" style="width:${yesPct}%;background:#10b981"></div></div>
+                </div>
+                <div class="q-bar-row">
+                  <div class="q-bar-meta"><span class="q-bar-opt-text" style="color:#dc2626">👎 否 / 反對</span><span class="q-bar-stat" style="color:#dc2626">${noC} 票 (${noPct}%)</span></div>
+                  <div class="q-bar-track"><div class="q-bar-fill" style="width:${noPct}%;background:#ef4444"></div></div>
+                </div>
+              </div>
             </div>
           </div>
           <div>
@@ -2579,11 +2816,15 @@ function renderDfcCsvTable() {
           </div>
         `;
       } else {
-        // 類型 D：簡答 / 詳答題 (text / textarea)
+        // 類型 D：簡答 / 詳答題 (text / textarea) — 提供回答字數深度圓餅圖與內容統計
         const textEntries = [];
+        let deepCount = 0, mediumCount = 0, shortCount = 0;
         for (const r of formResps) {
           const val = String(r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "").trim();
           if (val) {
+            if (val.length >= 25) deepCount++;
+            else if (val.length >= 10) mediumCount++;
+            else shortCount++;
             textEntries.push({
               userName: r.userName || "匿名",
               userEmail: r.userEmail || "",
@@ -2593,6 +2834,34 @@ function renderDfcCsvTable() {
             });
           }
         }
+        const unansweredTextCount = Math.max(0, formResps.length - textEntries.length);
+
+        const textPieSlices = [
+          { label: "深度詳答 (≥25字)", value: deepCount, color: "#0284c7" },
+          { label: "完整簡答 (10~24字)", value: mediumCount, color: "#10b981" },
+          { label: "精簡關鍵字 (<10字)", value: shortCount, color: "#f59e0b" },
+          ...(unansweredTextCount > 0 ? [{ label: "未填寫", value: unansweredTextCount, color: "#94a3b8" }] : []),
+        ];
+        const textPieHtml = buildSvgPieChart(textPieSlices, { title: "🥧 作答參與及內容深度圓餅圖", unit: "人" });
+
+        const totalTextBase = Math.max(1, formResps.length);
+        const textBarsHtml = textPieSlices.map(s => {
+          const pct = formResps.length > 0 ? Math.round((s.value / totalTextBase) * 100) : 0;
+          return `
+            <div class="q-bar-row">
+              <div class="q-bar-meta">
+                <span class="q-bar-opt-text">
+                  <span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block"></span>
+                  <span>${esc(s.label)}</span>
+                </span>
+                <span class="q-bar-stat" style="color:${s.color}">${s.value} 人 (${pct}%)</span>
+              </div>
+              <div class="q-bar-track">
+                <div class="q-bar-fill" style="width:${pct}%;background:${s.color}"></div>
+              </div>
+            </div>
+          `;
+        }).join("");
 
         const tableRows = textEntries.length
           ? textEntries.map(e => `
@@ -2609,6 +2878,15 @@ function renderDfcCsvTable() {
         const allCombinedIdeas = textEntries.map((e, idx) => `[${idx + 1}] ${e.userName} (${e.time}): ${e.content}`).join("\n\n");
 
         chartAndTableHtml = `
+          <div class="q-chart-box">
+            <div class="q-chart-split">
+              ${textPieHtml}
+              <div>
+                <h5 style="margin:0 0 12px;font-size:12.5px;color:var(--ink-secondary)">📊 文字回答深度與填答比例分佈</h5>
+                ${textBarsHtml}
+              </div>
+            </div>
+          </div>
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
               <h5 style="margin:0;font-size:13px;color:var(--ink-secondary)">💬 填答者想法與深度心得列表 (共 ${textEntries.length} 則)</h5>
@@ -3141,7 +3419,8 @@ function renderCheckpointEditors() {
   (editingFormObj.checkpoints || []).forEach((cp, idx) => {
     const card = document.createElement("div");
     card.className = "cp-edit-card" + (idx === studioActiveQuestionIndex ? " highlight" : "");
-    card.onclick = () => {
+    card.onclick = (e) => {
+      if (e.target.closest(".cp-tools")) return;
       studioActiveQuestionIndex = idx;
       renderStudioPins();
     };
@@ -3157,12 +3436,13 @@ function renderCheckpointEditors() {
     ];
 
     const hasOptions = ["radio", "checkbox", "dropdown"].includes(cp.type);
+    const cpTimeVal = cp.time != null && !Number.isNaN(Number(cp.time)) ? Number(cp.time) : 5;
 
     card.innerHTML = `
       <div class="cp-card-head">
         <div class="cp-card-meta">
           <strong style="font-size:14.5px">問題 #${idx + 1}</strong>
-          <span class="cp-time-badge">⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒)</span>
+          <span class="cp-time-badge">⏱️ ${formatMmSs(cpTimeVal)} (${cpTimeVal}秒)</span>
           <span class="cp-badge-type">${esc(cp.type)}</span>
         </div>
         <div class="cp-tools">
@@ -3178,11 +3458,11 @@ function renderCheckpointEditors() {
       <div class="grid-3">
         <label class="field" style="margin-top:0">
           <span class="lbl">時間 (分:秒) <span>如 00:04</span></span>
-          <input class="input cp-time-mm" value="${formatMmSs(cp.time)}">
+          <input class="input cp-time-mm" value="${formatMmSs(cpTimeVal)}">
         </label>
         <label class="field" style="margin-top:0">
           <span class="lbl">時間 (總秒數)</span>
-          <input type="number" step="0.5" min="0" class="input cp-time" value="${Number(cp.time) || 5}">
+          <input type="number" step="0.5" min="0" class="input cp-time" value="${cpTimeVal}">
         </label>
         <label class="field" style="margin-top:0">
           <span class="lbl">題目類型</span>
@@ -3239,7 +3519,7 @@ function renderCheckpointEditors() {
       </div>
     `;
 
-    // 雙向時間同步
+    // 雙向時間同步與即時欄位同步
     const mmInp = card.querySelector(".cp-time-mm");
     const secInp = card.querySelector(".cp-time");
     mmInp.oninput = () => {
@@ -3250,18 +3530,24 @@ function renderCheckpointEditors() {
       renderStudioPins();
     };
     secInp.oninput = () => {
-      const s = Number(secInp.value) || 0;
+      const s = Math.max(0, Number(secInp.value) || 0);
       mmInp.value = formatMmSs(s);
       card.querySelector(".cp-time-badge").textContent = `⏱️ ${formatMmSs(s)} (${s}秒)`;
       syncCheckpointsFromDom();
       renderStudioPins();
     };
+    card.querySelectorAll(".cp-step, .cp-title, .cp-desc, .cp-opts, .cp-entry-inp").forEach(inp => {
+      inp.oninput = () => syncCheckpointsFromDom();
+    });
+    const reqChk = card.querySelector(".cp-req");
+    if (reqChk) reqChk.onchange = () => syncCheckpointsFromDom();
 
     // 階段快捷按鈕
     card.querySelectorAll(".quick-chips .chip-btn[data-step]").forEach(btn => {
       btn.onclick = (e) => {
         e.preventDefault();
         card.querySelector(".cp-step").value = btn.getAttribute("data-step");
+        syncCheckpointsFromDom();
       };
     });
 
@@ -3271,6 +3557,9 @@ function renderCheckpointEditors() {
     typeSelect.onchange = () => {
       const isOptType = ["radio", "checkbox", "dropdown"].includes(typeSelect.value);
       optsBox.style.display = isOptType ? "" : "none";
+      const badgeEl = card.querySelector(".cp-badge-type");
+      if (badgeEl) badgeEl.textContent = typeSelect.value;
+      syncCheckpointsFromDom();
     };
 
     // 選項範本快捷
@@ -3283,6 +3572,7 @@ function renderCheckpointEditors() {
         else if (p === "agree5") ta.value = "非常同意\n同意\n普通\n不同意\n非常不同意";
         else if (p === "yesno") ta.value = "是\n否";
         else if (p === "dfc") ta.value = "資訊傳遞與活動宣傳\n校園空間動線指引\n互動科技與表單反饋\n跨班級共創實踐行動";
+        syncCheckpointsFromDom();
       };
     });
 
@@ -3358,10 +3648,16 @@ function renderCheckpointEditors() {
 function syncCheckpointsFromDom() {
   if (!editingFormObj) return;
   const cards = [...$("cfgCheckpointsWrap").querySelectorAll(".cp-edit-card")];
+  if (!cards.length) return;
   editingFormObj.checkpoints = cards.map((c, idx) => {
     const rawOpts = c.querySelector(".cp-opts")?.value || "";
-    const options = rawOpts.split(/[\r\n,，]+/).map(s => s.trim()).filter(Boolean);
-    const secVal = Number(c.querySelector(".cp-time").value) || parseMmSs(c.querySelector(".cp-time-mm")?.value) || (idx + 1) * 5;
+    const options = rawOpts.split(/[\r\n,，|]+/).map(s => s.trim()).filter(Boolean);
+    const rawSecStr = c.querySelector(".cp-time")?.value ?? "";
+    const parsedSec = rawSecStr !== "" ? Number(rawSecStr) : NaN;
+    const mmSec = parseMmSs(c.querySelector(".cp-time-mm")?.value);
+    const secVal = Number.isFinite(parsedSec) && parsedSec >= 0
+      ? parsedSec
+      : (Number.isFinite(mmSec) && mmSec >= 0 ? mmSec : (idx + 1) * 5);
     return {
       id: editingFormObj.checkpoints[idx]?.id || ("q" + (idx + 1) + "_" + Date.now().toString(36)),
       time: Math.max(0, secVal),
@@ -3376,13 +3672,20 @@ function syncCheckpointsFromDom() {
   });
 }
 
-$("addCheckpointBtn").onclick = () => {
+function addCheckpointAtTime(customTime = null) {
+  if (!editingFormObj) return 0;
   syncCheckpointsFromDom();
-  const nextIdx = (editingFormObj.checkpoints || []).length + 1;
-  const lastTime = editingFormObj.checkpoints.length ? Number(editingFormObj.checkpoints[editingFormObj.checkpoints.length - 1].time) : 0;
+  if (!Array.isArray(editingFormObj.checkpoints)) editingFormObj.checkpoints = [];
+  const nextIdx = editingFormObj.checkpoints.length + 1;
+  const lastTime = editingFormObj.checkpoints.length
+    ? (Number(editingFormObj.checkpoints[editingFormObj.checkpoints.length - 1].time) || 0)
+    : 0;
+  const targetTime = customTime !== null && Number.isFinite(Number(customTime))
+    ? Math.max(0, Number(Number(customTime).toFixed(1)))
+    : Number((lastTime + 5).toFixed(1));
   editingFormObj.checkpoints.push({
-    id: "q" + nextIdx + "_" + Date.now().toString(36),
-    time: Number((lastTime + 5).toFixed(1)),
+    id: "q" + nextIdx + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 5),
+    time: targetTime,
     entryId: `entry.${nextIdx}11111111`,
     stepLabel: `階段 ${nextIdx}`,
     title: `第 ${nextIdx} 階段問題`,
@@ -3395,7 +3698,56 @@ $("addCheckpointBtn").onclick = () => {
   renderCheckpointEditors();
   renderStudioPins();
   focusQuestionCard(studioActiveQuestionIndex);
+  return targetTime;
+}
+
+$("addCheckpointBtn").onclick = () => {
+  const t = addCheckpointAtTime(null);
+  toast(`已新增問題 #${editingFormObj.checkpoints.length}（時間點 ${formatMmSs(t)}），編輯後請點擊下方儲存！`);
 };
+
+if ($("studioAddAtPlayheadBtn")) {
+  $("studioAddAtPlayheadBtn").onclick = () => {
+    const t = addCheckpointAtTime(studioCurTime);
+    toast(`已於播放時間「${formatMmSs(t)}」新增問題 #${editingFormObj.checkpoints.length}！`);
+  };
+}
+
+if ($("studioCaptureBtn")) {
+  $("studioCaptureBtn").onclick = () => {
+    if (!editingFormObj) return;
+    syncCheckpointsFromDom();
+    if (!editingFormObj.checkpoints || !editingFormObj.checkpoints.length) {
+      const t = addCheckpointAtTime(studioCurTime);
+      return toast(`已於目前播放時間「${formatMmSs(t)}」建立第 1 道題目！`);
+    }
+    const targetIdx = (studioActiveQuestionIndex >= 0 && studioActiveQuestionIndex < editingFormObj.checkpoints.length)
+      ? studioActiveQuestionIndex
+      : editingFormObj.checkpoints.length - 1;
+    const t = Number(studioCurTime.toFixed(1));
+    editingFormObj.checkpoints[targetIdx].time = t;
+    studioActiveQuestionIndex = targetIdx;
+    renderCheckpointEditors();
+    renderStudioPins();
+    focusQuestionCard(targetIdx);
+    toast(`已將目前播放時間「${formatMmSs(t)}」填入問題 #${targetIdx + 1}！`);
+  };
+}
+
+if ($("studioSortCheckpointsBtn")) {
+  $("studioSortCheckpointsBtn").onclick = () => {
+    if (!editingFormObj) return;
+    syncCheckpointsFromDom();
+    if (!editingFormObj.checkpoints || !editingFormObj.checkpoints.length) {
+      return toast("目前尚無題目可排序", true);
+    }
+    editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
+    studioActiveQuestionIndex = 0;
+    renderCheckpointEditors();
+    renderStudioPins();
+    toast("已依照時間點由小到大重新排序題目！");
+  };
+}
 
 $("editActiveFormBtn").onclick = () => {
   const f = getActiveForm();
@@ -3440,21 +3792,34 @@ $("saveFormCfgBtn").onclick = async () => {
   editingFormObj.pauseOnBlur = $("cfgPauseOnBlur").checked;
 
   $("saveFormCfgBtn").disabled = true;
-  const r = await fetch("/api/admin/dfc/forms", {
-    method: "POST",
-    headers: H,
-    body: JSON.stringify(editingFormObj),
-  });
-  $("saveFormCfgBtn").disabled = false;
-  if (!r.ok) {
+  loadSeq++; // 作廢任何進行中的舊背景同步請求，防止舊快取覆蓋剛儲存的題目
+  try {
+    const r = await fetch("/api/admin/dfc/forms", {
+      method: "POST",
+      headers: H,
+      body: JSON.stringify(editingFormObj),
+    });
     const j = await r.json().catch(() => ({}));
-    return toast(j.error || "儲存失敗", true);
+    if (!r.ok) {
+      return toast(j.error || "儲存失敗", true);
+    }
+    const savedForm = j.form || editingFormObj;
+    const existIdx = dfcForms.findIndex(f => f.id === savedForm.id);
+    if (existIdx >= 0) dfcForms[existIdx] = savedForm;
+    else dfcForms.push(savedForm);
+    selectedFormId = savedForm.id;
+    if (editingFormObj.isDefault) activeDfcFormId = savedForm.id;
+
+    setStudioPlaying(false);
+    $("formConfigModal").classList.add("hide");
+    renderDfcPanel();
+    toast(`已成功儲存問卷設定（共 ${(savedForm.checkpoints || []).length} 道題目）！`);
+    await load(true);
+  } catch {
+    toast("網路連線異常，請重試", true);
+  } finally {
+    $("saveFormCfgBtn").disabled = false;
   }
-  selectedFormId = editingFormObj.id;
-  setStudioPlaying(false);
-  $("formConfigModal").classList.add("hide");
-  toast("已成功儲存 DFC 問卷與時間點設定！");
-  load(true);
 };
 
 $("delActiveFormBtn").onclick = () => {
@@ -3738,6 +4103,7 @@ $("confirmImportQBtn").onclick = () => {
 
   const mode = document.querySelector('input[name="importQMode"]:checked')?.value || "replace";
   if (!editingFormObj) return;
+  syncCheckpointsFromDom();
 
   if (mode === "replace") {
     editingFormObj.checkpoints = list;
@@ -3752,7 +4118,7 @@ $("confirmImportQBtn").onclick = () => {
   renderStudioPins();
 
   $("importQuestionsModal").classList.add("hide");
-  toast(`已成功匯入 ${list.length} 道題目！請記得點擊「💾 儲存問卷與時間點設定」保存。`);
+  toast(`已成功匯入 ${list.length} 道題目！請點擊右下角「💾 儲存問卷與時間點設定」完成保存。`);
 };
 
 $("clearResponsesBtn").onclick = () => {

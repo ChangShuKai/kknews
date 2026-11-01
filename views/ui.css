@@ -1210,14 +1210,152 @@ h1, h2, h3 {
   margin-right: 2px;
 }
 
-/* 圖表長條 */
+/* 圖表長條與互動式圓餅圖 (Pie Chart & Bar Visual Analytics) */
 .q-chart-box {
   background: #f8fafc;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px 18px;
+  border-radius: 14px;
+  padding: 18px 20px;
   margin-bottom: 18px;
 }
+.q-chart-split {
+  display: grid;
+  grid-template-columns: minmax(250px, 310px) 1fr;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 780px) {
+  .q-chart-split {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+.pie-visual-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+}
+.pie-visual-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pie-svg-wrap {
+  position: relative;
+  width: 186px;
+  height: 186px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pie-svg-wrap svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.09));
+}
+.pie-slice-path {
+  transition: transform 0.22s var(--spring-smooth), opacity 0.2s ease, filter 0.2s ease;
+  transform-origin: 100px 100px;
+  cursor: pointer;
+}
+.pie-slice-path:hover {
+  transform: scale(1.045);
+  filter: brightness(1.06);
+}
+.pie-slice-label {
+  font-size: 11px;
+  font-weight: 800;
+  fill: #ffffff;
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(15, 23, 42, 0.38);
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pie-legend-grid {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.pie-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 99px;
+  max-width: 100%;
+}
+.pie-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.pie-legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 130px;
+}
+.pie-legend-pct {
+  color: var(--ink-secondary);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-weight: 700;
+}
+
+/* 問卷整體圓餅圖總覽列 (Overall Survey Pie Dashboard) */
+.dfc-overall-pies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.dfc-overall-pie-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dfc-overall-pie-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .q-bar-row {
   margin-bottom: 10px;
 }
