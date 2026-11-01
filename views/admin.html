@@ -2911,12 +2911,10 @@ function initStudioPlayer() {
     studioVideoEl.classList.remove("hide");
     studioCanvasEl.classList.add("hide");
     $("studioBadgeText").textContent = "▶ 專屬影片串流就緒";
-    const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}`;
+    const streamSrc = `/api/dfc/drive-video/${encodeURIComponent(driveId)}?_t=${Date.now()}`;
     studioVideoEl.preload = "auto";
-    if (studioVideoEl.getAttribute("src") !== streamSrc) {
-      studioVideoEl.src = streamSrc;
-      studioVideoEl.load();
-    }
+    studioVideoEl.src = streamSrc;
+    studioVideoEl.load();
     studioVideoEl.onerror = () => {
       console.warn("Studio video load warning; fallback to interactive canvas");
       studioVideoEl.classList.add("hide");
@@ -2936,7 +2934,9 @@ function initStudioPlayer() {
     studioVideoEl.ondurationchange = studioVideoEl.onloadedmetadata;
   } else {
     if (videoUrl && !videoUrl.includes("YOUR_")) {
-      studioVideoEl.src = videoUrl;
+      const sep = videoUrl.includes("?") ? "&" : "?";
+      studioVideoEl.src = `${videoUrl}${sep}_t=${Date.now()}`;
+      studioVideoEl.load();
       studioVideoEl.onloadedmetadata = () => {
         if (studioVideoEl.duration && !Number.isNaN(studioVideoEl.duration)) {
           studioDuration = studioVideoEl.duration;

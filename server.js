@@ -149,6 +149,7 @@ async function verifyPassword(pw, storedHash = ADMIN_PASSWORD_HASH) {
 const sysCache = new Map();
 const queryCache = new Map();
 let bucketEnsured = false;
+let adminAuditTableOk = true;
 const SYS_STORE_PREFIX = "__sys_store__:";
 
 function localStorePath(name) {
@@ -186,10 +187,13 @@ async function ensureVerifyBucket() {
   bucketEnsured = true;
   try { await db.storage.createBucket("kknews-verify", { public: false }); } catch {}
 }
-async function readSysStore(name, fallback) {
+async function readSysStore(name, fallback, forceFresh = false) {
   const now = Date.now();
   const cached = sysCache.get(name);
-  if (cached && now - cached.ts < 4000) return name === "dfc" ? sanitizeDfcStore(cached.data) : cached.data;
+  if (!forceFresh && cached && now - cached.ts < 1200) {
+    const clonedCached = JSON.parse(JSON.stringify(cached.data));
+    return name === "dfc" ? sanitizeDfcStore(clonedCached) : clonedCached;
+  }
 
   let best = cached ? { rev: cached.rev || 1, data: cached.data } : null;
   const consider = (raw) => {
@@ -198,29 +202,31 @@ async function readSysStore(name, fallback) {
     if (!best || candidate.rev >= best.rev) best = candidate;
   };
 
-  // 1. 優先從 PostgreSQL (admin_audit 系統設定列) 讀取，完全無 CDN 快取延遲
-  try {
-    const { data: rows, error } = await db
-      .from("admin_audit")
-      .select("target, created_at")
-      .eq("action", SYS_STORE_PREFIX + name)
-      .order("id", { ascending: false })
-      .limit(1);
-    if (!error && rows && rows[0]?.target) {
-      consider(JSON.parse(rows[0].target));
-    }
-  } catch {}
-
-  // 2. 若 DB 尚無紀錄，嘗試從 Supabase Storage 讀取
-  if (!best || best.rev <= 1) {
+  // 1. 若 PostgreSQL admin_audit 資料表存在，讀取系統設定列
+  if (adminAuditTableOk) {
     try {
-      await ensureVerifyBucket();
-      const { data: blob, error } = await db.storage.from("kknews-verify").download(`_sys_${name}.json`);
-      if (!error && blob) {
-        consider(JSON.parse(await blob.text()));
+      const { data: rows, error } = await db
+        .from("admin_audit")
+        .select("target, created_at")
+        .eq("action", SYS_STORE_PREFIX + name)
+        .order("id", { ascending: false })
+        .limit(1);
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) {
+        adminAuditTableOk = false;
+      } else if (!error && rows && rows[0]?.target) {
+        consider(JSON.parse(rows[0].target));
       }
     } catch {}
   }
+
+  // 2. 永遠同步檢查私有 Supabase Storage，確保多實例 Serverless 之間版本強一致、絕不鎖死在舊記憶體快取
+  try {
+    await ensureVerifyBucket();
+    const { data: blob, error } = await db.storage.from("kknews-verify").download(`_sys_${name}.json`);
+    if (!error && blob) {
+      consider(JSON.parse(await blob.text()));
+    }
+  } catch {}
 
   // 3. 檢查本機暫存檔（單機重啟或離線保護）
   try {
@@ -232,38 +238,42 @@ async function readSysStore(name, fallback) {
 
   if (best && best.data !== undefined) {
     const finalData = name === "dfc" ? sanitizeDfcStore(best.data) : best.data;
-    sysCache.set(name, { ts: now, rev: best.rev, data: finalData });
-    return finalData;
+    sysCache.set(name, { ts: Date.now(), rev: best.rev, data: finalData });
+    return JSON.parse(JSON.stringify(finalData));
   }
   const init = name === "dfc" ? sanitizeDfcStore(JSON.parse(JSON.stringify(fallback))) : JSON.parse(JSON.stringify(fallback));
-  sysCache.set(name, { ts: now, rev: 0, data: init });
-  return init;
+  sysCache.set(name, { ts: Date.now(), rev: 0, data: init });
+  return JSON.parse(JSON.stringify(init));
 }
 async function writeSysStore(name, data) {
-  const rev = Date.now();
-  const cloned = JSON.parse(JSON.stringify(data));
-  sysCache.set(name, { ts: rev, rev, data: cloned });
+  const prevRev = sysCache.get(name)?.rev || 0;
+  const rev = Math.max(Date.now(), prevRev + 1);
+  const cloned = name === "dfc" ? sanitizeDfcStore(JSON.parse(JSON.stringify(data))) : JSON.parse(JSON.stringify(data));
+  sysCache.set(name, { ts: Date.now(), rev, data: cloned });
   const payloadStr = JSON.stringify({ __kk_rev: rev, data: cloned });
 
   // 1. 寫入本機暫存檔
   try { fs.writeFileSync(localStorePath(name), payloadStr, "utf8"); } catch {}
 
-  // 2. 寫入 PostgreSQL 強一致儲存並清理舊版本列
+  // 2. 寫入 PostgreSQL 強一致儲存並清理舊版本列（若資料表存在）
   const storeKey = SYS_STORE_PREFIX + name;
   const dbWrite = (async () => {
+    if (!adminAuditTableOk) return;
     try {
       const { data: inserted, error } = await db
         .from("admin_audit")
         .insert({ action: storeKey, target: payloadStr, ip: "sys" })
         .select("id")
         .maybeSingle();
-      if (!error && inserted?.id) {
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) {
+        adminAuditTableOk = false;
+      } else if (!error && inserted?.id) {
         await db.from("admin_audit").delete().eq("action", storeKey).lt("id", inserted.id);
       }
     } catch {}
   })();
 
-  // 3. 同步備份至 Supabase Storage（設定 cacheControl: "0" 防止 CDN 快取舊檔）
+  // 3. 同步備份至 Supabase Storage（設定 cacheControl: "0" 防止快取舊檔）
   const storageWrite = (async () => {
     try {
       await ensureVerifyBucket();
@@ -277,7 +287,7 @@ async function writeSysStore(name, data) {
   })();
 
   await Promise.allSettled([dbWrite, storageWrite]);
-  return cloned;
+  return JSON.parse(JSON.stringify(cloned));
 }
 
 function normalizeEmailRule(v = "") {
@@ -636,6 +646,7 @@ app.get("/assets/dfc.mp4", async (req, res) => {
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：僅限授權帳號觀看" });
   }
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
     if (fs.existsSync(p)) return res.sendFile(p);
   }
@@ -643,8 +654,8 @@ app.get("/assets/dfc.mp4", async (req, res) => {
 });
 
 /* --- 極速 YouTube 級 ABR 多畫質影片串流代理：支援 Google Drive 轉碼分流 (360p/720p)、2MB 對齊區塊快取、併發去重與防暴雷權限保護 --- */
-const VIDEO_BLOCK_SIZE = 2 * 1024 * 1024; // 2 MB 標準對齊切塊（前後端 IndexedDB 與伺服器 RAM 快取 100% 對齊）
-const MAX_CHUNK_CACHE_BYTES = 180 * 1024 * 1024; // 180 MB 記憶體快取池（可同時完整容納 360p 全片 24MB + 720p 全片 77MB）
+const VIDEO_BLOCK_SIZE = 2 * 1024 * 1024; // 2 MB 標準對齊切塊
+const MAX_CHUNK_CACHE_BYTES = 180 * 1024 * 1024; // 180 MB 記憶體快取池
 const DEFAULT_DFC_VIDEO_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
 const DEFAULT_WORKSPACE_VIDEO_KEY = "AIzaSyDVQw45DwoYh632gvsP5vPDqEKvb-Ywnb8";
 
@@ -657,28 +668,35 @@ const driveBlockInflight = new Map();
 let driveChunkCacheBytes = 0;
 let cachedWorkspaceVideoApiKey = DEFAULT_WORKSPACE_VIDEO_KEY;
 
-// 預先寫入預設影片各畫質轉碼層精確位元組數（360p 僅 23.6MB、720p HD 僅 77.1MB，對比原檔 1.13GB 縮小達 47 倍）
+// 預設影片各畫質轉碼層備援位元組數（僅在雲端即時探測失敗時作為最後備援，絕不預先覆蓋快取，確保永遠優先抓取最新版影片）
 const DEFAULT_TRANSCODE_SIZES = {
   "360p": { totalSize: 24795892, bitrate: 546732, width: 640, height: 360, itag: 18, contentType: "video/mp4" },
   "720p": { totalSize: 80813091, bitrate: 1781840, width: 1280, height: 720, itag: 22, contentType: "video/mp4" },
   "raw":  { totalSize: 1131164130, bitrate: 24929237, width: 1920, height: 1080, itag: 0, contentType: "video/mp4" },
 };
 
-for (const [q, info] of Object.entries(DEFAULT_TRANSCODE_SIZES)) {
-  driveVideoMetaCache.set(`${DEFAULT_DFC_VIDEO_ID}:${q}`, {
-    totalSize: info.totalSize,
-    bitrate: info.bitrate,
-    width: info.width,
-    height: info.height,
-    contentType: info.contentType,
-    ts: Date.now(),
-  });
+function invalidateDriveVideoCache(fileId = "") {
+  if (!fileId) {
+    driveVideoMetaCache.clear();
+    driveVideoChunkCache.clear();
+    driveResolvedUrlCache.clear();
+    driveTranscodeCache.clear();
+    driveChunkCacheBytes = 0;
+    return;
+  }
+  driveResolvedUrlCache.delete(fileId);
+  driveTranscodeCache.delete(fileId);
+  for (const k of Array.from(driveVideoMetaCache.keys())) {
+    if (k === fileId || k.startsWith(`${fileId}:`)) driveVideoMetaCache.delete(k);
+  }
+  for (const k of Array.from(driveVideoChunkCache.keys())) {
+    if (k.startsWith(`${fileId}:`)) {
+      const old = driveVideoChunkCache.get(k);
+      driveChunkCacheBytes = Math.max(0, driveChunkCacheBytes - (old?.byteLength || 0));
+      driveVideoChunkCache.delete(k);
+    }
+  }
 }
-driveVideoMetaCache.set(DEFAULT_DFC_VIDEO_ID, {
-  totalSize: DEFAULT_TRANSCODE_SIZES["360p"].totalSize,
-  contentType: "video/mp4",
-  ts: Date.now(),
-});
 
 function storeVideoChunk(key, buf) {
   if (!buf || !buf.byteLength || buf.byteLength > 12 * 1024 * 1024) return;
@@ -697,10 +715,10 @@ function storeVideoChunk(key, buf) {
   driveChunkCacheBytes += buf.byteLength;
 }
 
-async function resolveDriveDownloadUrl(fileId, signal) {
+async function resolveDriveDownloadUrl(fileId, signal, forceRefresh = false) {
   const now = Date.now();
   const cached = driveResolvedUrlCache.get(fileId);
-  if (cached && now - cached.ts < 25 * 60 * 1000) return cached.url;
+  if (!forceRefresh && cached && now - cached.ts < 2 * 60 * 1000) return cached.url;
 
   const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
   try {
@@ -726,8 +744,13 @@ async function resolveDriveDownloadUrl(fileId, signal) {
       const cr = probe.headers.get("content-range") || "";
       const sizeMatch = cr.match(/\/(\d+)$/);
       if (sizeMatch) {
+        const newSize = parseInt(sizeMatch[1], 10);
+        const prevRaw = driveVideoMetaCache.get(`${fileId}:raw`);
+        if (prevRaw?.totalSize && prevRaw.totalSize !== newSize) {
+          invalidateDriveVideoCache(fileId);
+        }
         driveVideoMetaCache.set(`${fileId}:raw`, {
-          totalSize: parseInt(sizeMatch[1], 10),
+          totalSize: newSize,
           contentType: "video/mp4",
           ts: now,
         });
@@ -739,12 +762,12 @@ async function resolveDriveDownloadUrl(fileId, signal) {
   return baseUrl;
 }
 
-// 反向解析 Google Drive 底層 YouTube 轉碼引擎 (workspacevideo-pa.googleapis.com)，取得 360p (itag 18) 與 720p HD (itag 22) 高效串流
-async function resolveDriveTranscodedStreams(fileId, signal) {
+// 反向解析 Google Drive 底層 YouTube 轉碼引擎 (workspacevideo-pa.googleapis.com)，取得 360p (itag 18) 與 720p HD (itag 22) 最新版串流
+async function resolveDriveTranscodedStreams(fileId, signal, forceRefresh = false) {
   const now = Date.now();
   const cached = driveTranscodeCache.get(fileId);
-  if (cached && now - cached.ts < 40 * 60 * 1000) return cached;
-  if (driveTranscodeInflight.has(fileId)) return driveTranscodeInflight.get(fileId);
+  if (!forceRefresh && cached && now - cached.ts < 60 * 1000) return cached;
+  if (!forceRefresh && driveTranscodeInflight.has(fileId)) return driveTranscodeInflight.get(fileId);
 
   const task = (async () => {
     const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
@@ -801,7 +824,8 @@ async function resolveDriveTranscodedStreams(fileId, signal) {
               : (f.itag === 22 || f.qualityLabel === "720p" ? "720p" : (f.qualityLabel || `itag_${f.itag}`));
 
             const knownMeta = driveVideoMetaCache.get(`${fileId}:${qKey}`);
-            let totalSize = Number(f.contentLength) || knownMeta?.totalSize || 0;
+            let totalSize = Number(f.contentLength) || 0;
+            let lastModified = f.lastModified || "";
 
             if (!totalSize) {
               try {
@@ -819,12 +843,21 @@ async function resolveDriveTranscodedStreams(fileId, signal) {
                 const cr = probe.headers.get("content-range") || "";
                 const m = cr.match(/\/(\d+)$/);
                 if (m) totalSize = parseInt(m[1], 10);
+                if (!lastModified) lastModified = probe.headers.get("last-modified") || probe.headers.get("etag") || "";
               } catch {}
+            }
+            if (!totalSize && knownMeta?.totalSize) {
+              totalSize = knownMeta.totalSize;
             }
 
             if (totalSize > 0) {
+              // 若偵測到雲端影片位元組大小或版本已變更，立即清除舊區塊快取，確保取得最新版影片
+              if (knownMeta?.totalSize && knownMeta.totalSize !== totalSize) {
+                invalidateDriveVideoCache(fileId);
+              }
               driveVideoMetaCache.set(`${fileId}:${qKey}`, {
                 totalSize,
+                lastModified,
                 bitrate: f.bitrate || (qKey === "360p" ? 546732 : 1781840),
                 width: f.width || (qKey === "360p" ? 640 : 1280),
                 height: f.height || (qKey === "360p" ? 360 : 720),
@@ -839,6 +872,7 @@ async function resolveDriveTranscodedStreams(fileId, signal) {
               url: f.url,
               cookieHeader,
               totalSize,
+              lastModified,
               bitrate: f.bitrate || (qKey === "360p" ? 546732 : 1781840),
               width: f.width || (qKey === "360p" ? 640 : 1280),
               height: f.height || (qKey === "360p" ? 360 : 720),
@@ -847,7 +881,8 @@ async function resolveDriveTranscodedStreams(fileId, signal) {
           }
 
           if (Object.keys(tiers).length > 0) {
-            const result = { fileId, durationSec, tiers, cookieHeader, ts: Date.now() };
+            const versionTag = `${fileId}-${tiers["360p"]?.totalSize || 0}-${tiers["720p"]?.totalSize || 0}-${Math.round(durationSec * 1000)}`;
+            const result = { fileId, durationSec, tiers, cookieHeader, versionTag, ts: Date.now() };
             driveTranscodeCache.set(fileId, result);
             return result;
           }
@@ -856,11 +891,12 @@ async function resolveDriveTranscodedStreams(fileId, signal) {
     } catch {}
 
     // 若該檔案尚無轉碼串流，平滑退回原始檔案直連
-    const rawUrl = await resolveDriveDownloadUrl(fileId, signal);
+    const rawUrl = await resolveDriveDownloadUrl(fileId, signal, forceRefresh);
     const rawMeta = driveVideoMetaCache.get(`${fileId}:raw`) || driveVideoMetaCache.get(fileId) || { totalSize: 0 };
     const fallbackResult = {
       fileId,
       durationSec: 363,
+      versionTag: `${fileId}-raw-${rawMeta.totalSize || 0}`,
       tiers: {
         "360p": { quality: "360p", itag: 0, url: rawUrl, cookieHeader: "", totalSize: rawMeta.totalSize || 0, bitrate: 2000000, width: 1280, height: 720, mimeType: "video/mp4", isRawFallback: true },
       },
@@ -916,7 +952,7 @@ async function getStreamTargetForQuality(fileId, requestedQuality, signal) {
   };
 }
 
-// 以 2MB 標準區塊為單位抓取並快取影片位元組，支援併發去重 (Request Coalescing)
+// 以 2MB 標準區塊為單位抓取並快取影片位元組（Key 綁定 totalSize，確保影片更新時絕不誤用舊快取）
 async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
   const target = await getStreamTargetForQuality(fileId, quality, signal);
   const actualQ = target.quality;
@@ -927,7 +963,7 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
     ? Math.min(totalSize - 1, (blockIndex + 1) * VIDEO_BLOCK_SIZE - 1)
     : ((blockIndex + 1) * VIDEO_BLOCK_SIZE - 1);
 
-  const blockKey = `${fileId}:${actualQ}:${blockStart}-${blockEnd}`;
+  const blockKey = `${fileId}:${actualQ}:${totalSize || 0}:${blockStart}-${blockEnd}`;
   if (driveVideoChunkCache.has(blockKey)) {
     return { buf: driveVideoChunkCache.get(blockKey), blockStart, blockEnd, totalSize, actualQ };
   }
@@ -944,7 +980,7 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
       };
       if (streamTarget.cookieHeader) headers["Cookie"] = streamTarget.cookieHeader;
       if (streamTarget.isTranscoded) {
-        headers["Origin"] = "https://drive.google.com";
+        headers["Origin"] = "https://drive.google.com",
         headers["Referer"] = "https://drive.google.com/";
       }
       return fetch(streamTarget.url, {
@@ -973,6 +1009,9 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
     let resolvedTotal = totalSize;
     if (sizeMatch) {
       resolvedTotal = parseInt(sizeMatch[1], 10);
+      if (totalSize > 0 && resolvedTotal !== totalSize) {
+        invalidateDriveVideoCache(fileId);
+      }
       driveVideoMetaCache.set(`${fileId}:${actualQ}`, {
         totalSize: resolvedTotal,
         contentType: "video/mp4",
@@ -982,7 +1021,7 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
 
     const buf = Buffer.from(await r.arrayBuffer());
     const finalEnd = blockStart + buf.byteLength - 1;
-    const finalKey = `${fileId}:${actualQ}:${blockStart}-${finalEnd}`;
+    const finalKey = `${fileId}:${actualQ}:${resolvedTotal || 0}:${blockStart}-${finalEnd}`;
     if (buf.byteLength > 0) {
       storeVideoChunk(finalKey, buf);
       if (finalKey !== blockKey) storeVideoChunk(blockKey, buf);
@@ -1003,38 +1042,24 @@ function prefetchNextVideoBlocks(fileId, quality, fromBlockIndex, count = 2) {
   }
 }
 
-// 伺服器啟動時自動將預設 DFC 影片的 360p 全片 (僅 23.6MB，共 12 個區塊) 與 720p 前段預熱至伺服器 RAM 快取
-async function prewarmDefaultDfcVideo(fileId) {
+// 伺服器啟動時根據目前設定的主推問卷預熱最新 DFC 影片
+async function prewarmDefaultDfcVideo() {
   try {
-    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(10000));
+    const store = await readSysStore("dfc", DEFAULT_DFC_STORE).catch(() => DEFAULT_DFC_STORE);
+    const forms = Array.isArray(store?.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
+    const activeForm = forms.find(f => f.id === store?.activeFormId) || forms[0];
+    const fileId = extractGoogleDriveFileId(activeForm?.videoUrl || "") || DEFAULT_DFC_VIDEO_ID;
+    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(10000), true);
     const tier360 = transcoded?.tiers?.["360p"];
     if (tier360 && tier360.totalSize > 0) {
-      const totalBlocks360 = Math.ceil(tier360.totalSize / VIDEO_BLOCK_SIZE);
-      // 先預熱前 3 塊（約前 90 秒）與最後 1 塊
       await Promise.allSettled([
         fetchAndCacheVideoBlock(fileId, "360p", 0),
         fetchAndCacheVideoBlock(fileId, "360p", 1),
-        fetchAndCacheVideoBlock(fileId, "360p", 2),
-      ]);
-      // 接著背景依序將整部 360p 影片全片載入伺服器記憶體快取
-      for (let b = 3; b < totalBlocks360; b += 2) {
-        await Promise.allSettled([
-          fetchAndCacheVideoBlock(fileId, "360p", b),
-          b + 1 < totalBlocks360 ? fetchAndCacheVideoBlock(fileId, "360p", b + 1) : Promise.resolve(),
-        ]);
-      }
-    }
-    // 預熱 720p HD 前 2 個區塊（開頭 4MB），加速高畫質無縫升級
-    const tier720 = transcoded?.tiers?.["720p"];
-    if (tier720 && tier720.totalSize > 0) {
-      await Promise.allSettled([
-        fetchAndCacheVideoBlock(fileId, "720p", 0),
-        fetchAndCacheVideoBlock(fileId, "720p", 1),
       ]);
     }
   } catch {}
 }
-setTimeout(() => prewarmDefaultDfcVideo(DEFAULT_DFC_VIDEO_ID), 250);
+setTimeout(() => prewarmDefaultDfcVideo(), 250);
 
 function extractGoogleDriveFileId(input = "") {
   const s = String(input || "").trim();
@@ -1051,23 +1076,30 @@ function extractGoogleDriveFileId(input = "") {
   return "";
 }
 
-// DFC 影片多畫質串流 Manifest 端點（提供 360p / 720p HD 轉碼分流資訊供前端全片瘋狂預載引擎與 IndexedDB 快取使用）
+// DFC 影片多畫質串流 Manifest 端點（強制即時檢驗最新版影片資訊，禁止瀏覽器快取舊版 Manifest）
 app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.params.fileId);
   if (!fileId) return notFound(res);
 
-  const access = await evaluateDfcAccess(req);
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
   }
 
   try {
-    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(9000));
+    const forceFresh = req.query?.fresh === "1" || req.query?.fresh === "true";
+    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(9000), forceFresh);
+    const forms = Array.isArray(store?.forms) ? store.forms : [];
+    const matchedForm = forms.find(f => extractGoogleDriveFileId(f.videoUrl) === fileId) || forms[0];
+    const formUpdatedAt = matchedForm?.updatedAt || "";
+
     const outTiers = {};
     for (const [qKey, t] of Object.entries(transcoded?.tiers || {})) {
       if (qKey !== "360p" && qKey !== "720p") continue;
       const totalSize = t.totalSize || driveVideoMetaCache.get(`${fileId}:${qKey}`)?.totalSize || 0;
       if (!totalSize) continue;
+      const tierVer = `${fileId}-${qKey}-${totalSize}-${formUpdatedAt}`;
       outTiers[qKey] = {
         quality: qKey,
         label: qKey === "360p" ? "360p 極速流暢" : "720p HD 高清",
@@ -1078,13 +1110,15 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
         height: t.height || (qKey === "360p" ? 360 : 720),
         blockSize: VIDEO_BLOCK_SIZE,
         chunkCount: Math.ceil(totalSize / VIDEO_BLOCK_SIZE),
-        url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}`,
+        version: tierVer,
+        url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}&v=${encodeURIComponent(tierVer)}`,
       };
     }
 
     if (!outTiers["360p"] && fileId === DEFAULT_DFC_VIDEO_ID) {
       for (const qKey of ["360p", "720p"]) {
         const d = DEFAULT_TRANSCODE_SIZES[qKey];
+        const tierVer = `${fileId}-${qKey}-${d.totalSize}-${formUpdatedAt}`;
         outTiers[qKey] = {
           quality: qKey,
           label: qKey === "360p" ? "360p 極速流暢" : "720p HD 高清",
@@ -1095,14 +1129,19 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
           height: d.height,
           blockSize: VIDEO_BLOCK_SIZE,
           chunkCount: Math.ceil(d.totalSize / VIDEO_BLOCK_SIZE),
-          url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}`,
+          version: tierVer,
+          url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}&v=${encodeURIComponent(tierVer)}`,
         };
       }
     }
 
-    res.set("Cache-Control", "private, max-age=300");
+    const version = `${transcoded?.versionTag || fileId}-${formUpdatedAt}`;
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
     return res.json({
       fileId,
+      version,
+      updatedAt: formUpdatedAt,
+      checkedAt: new Date().toISOString(),
       duration: transcoded?.durationSec || 362.881,
       blockSize: VIDEO_BLOCK_SIZE,
       defaultQuality: "360p",
@@ -1121,7 +1160,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
     "Access-Control-Allow-Headers": "Range, Accept, Content-Type",
-    "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges, X-Video-Quality, ETag",
+    "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges, X-Video-Quality, X-Video-Version, ETag",
     "Cross-Origin-Resource-Policy": "cross-origin",
   });
 
@@ -1134,21 +1173,19 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   }
 
   const requestedQuality = normalizeRequestedQuality(req.query?.q || req.query?.quality || "360p");
-  const knownMeta = driveVideoMetaCache.get(`${fileId}:${requestedQuality}`)
-    || (fileId === DEFAULT_DFC_VIDEO_ID ? DEFAULT_TRANSCODE_SIZES[requestedQuality] : null);
+  const knownMeta = driveVideoMetaCache.get(`${fileId}:${requestedQuality}`);
 
-  // 1. HEAD 請求秒級回傳中繼資料
+  // 1. HEAD 請求即時回傳最新中繼資料（禁止瀏覽器跨工作階段快取舊影片）
   if (req.method === "HEAD") {
-    const target = knownMeta?.totalSize
-      ? { totalSize: knownMeta.totalSize, contentType: "video/mp4", quality: requestedQuality }
-      : await getStreamTargetForQuality(fileId, requestedQuality, AbortSignal.timeout(8000));
+    const target = await getStreamTargetForQuality(fileId, requestedQuality, AbortSignal.timeout(8000));
     res.set({
       "Content-Type": target.contentType || "video/mp4",
       ...(target.totalSize ? { "Content-Length": String(target.totalSize) } : {}),
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
       "X-Video-Quality": target.quality || requestedQuality,
-      "Cache-Control": "private, max-age=604800, immutable",
+      "X-Video-Version": `${fileId}-${target.quality || requestedQuality}-${target.totalSize || 0}`,
+      "Cache-Control": "no-store, no-cache, must-revalidate",
     });
     return res.status(200).end();
   }
@@ -1236,10 +1273,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
     // 背景自動預讀後續 2 個 2MB 區塊，確保連續串流零等待
     prefetchNextVideoBlocks(fileId, actualQ, lastBlockIdx, 2);
 
-    const etag = `"dfc-${fileId}-${actualQ}-${start}-${actualEnd}"`;
-    if (req.headers["if-none-match"] === etag) {
-      return res.status(304).end();
-    }
+    const etag = `"dfc-${fileId}-${actualQ}-${totalSize || 0}-${start}-${actualEnd}"`;
 
     res.status(206).set({
       "Content-Type": "video/mp4",
@@ -1248,8 +1282,9 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       "Accept-Ranges": "bytes",
       "Content-Disposition": "inline",
       "X-Video-Quality": actualQ,
+      "X-Video-Version": `${fileId}-${actualQ}-${totalSize || 0}`,
       "ETag": etag,
-      "Cache-Control": "private, max-age=604800, immutable",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
     });
     return res.end(sliceBuf);
   } catch (err) {
@@ -1531,6 +1566,7 @@ app.post("/api/proverbs", async (req, res) => {
 
 /* --- 前台讀取 DFC 表單清單（嚴格防暴雷：未授權帳號絕不回傳題目、表單與影片網址） --- */
 app.get("/api/dfc/forms", async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
@@ -1554,6 +1590,7 @@ app.get("/api/dfc/forms", async (req, res) => {
       title: f.title,
       description: f.description || "",
       videoUrl: f.videoUrl,
+      videoVersion: `${extractGoogleDriveFileId(f.videoUrl || "") || f.videoUrl || ""}-${f.updatedAt || ""}`,
       fallbackDuration: f.fallbackDuration || 18,
       questionCount: (f.checkpoints || []).length,
       isDefault: f.id === activeId,
@@ -1564,6 +1601,7 @@ app.get("/api/dfc/forms", async (req, res) => {
 
 /* --- 前台讀取最新 DFC 表單設定（嚴格防暴雷：未授權帳號隱藏所有題目與影片來源） --- */
 app.get("/api/dfc/config", async (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const formId = String(req.query.formId || "").trim();
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
   const access = await evaluateDfcAccess(req, store);
@@ -1591,6 +1629,7 @@ app.get("/api/dfc/config", async (req, res) => {
 
   res.json({
     ...matchedForm,
+    videoVersion: `${extractGoogleDriveFileId(matchedForm?.videoUrl || "") || matchedForm?.videoUrl || ""}-${matchedForm?.updatedAt || ""}`,
     restricted: false,
     accessMode: access.mode,
     activeFormId: activeId,
@@ -2010,6 +2049,7 @@ app.post("/api/admin/dfc/set-active-form", async (req, res) => {
   if (!target) return res.status(404).json({ error: "找不到指定表單" });
   store.activeFormId = formId;
   await writeSysStore("dfc", store);
+  invalidateDriveVideoCache();
   audit(req, "set_active_dfc_form", formId);
   res.json({ ok: true, activeFormId: formId });
 });
@@ -2320,6 +2360,7 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   if (body.isDefault) store.activeFormId = id;
 
   await writeSysStore("dfc", store);
+  invalidateDriveVideoCache();
   audit(req, "save_dfc_form", id);
   res.json({ ok: true, form: formObj });
 });
