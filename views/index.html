@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>KKNews</title>
+  <title>KKNews · 校園金句工坊與 DFC 影音學習平台</title>
+  <meta name="description" content="KKNews 是一個專為校園打造的文字創作與 DFC (Design For Change) 影音互動探究學習平台，支援即時卡片排版合成與安全問答。">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="stylesheet" href="/assets/ui.css">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap"
@@ -1575,6 +1576,7 @@
 
     <!-- 右上角已登入帳號區（無訪客狀態） -->
     <div class="acct-zone">
+      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
       <div class="acct-pill hide" id="acctUser">
         <div class="av" id="topAv">U</div>
         <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
@@ -1648,17 +1650,41 @@
           <button type="button" class="hub-square-btn" id="hubBtnStatus">
             <div class="hub-square-top">
               <div class="hub-square-icon">📊</div>
-              <span class="hub-square-badge" id="hubStatusBadge">東京節點連線中</span>
+              <span class="hub-square-badge ok" id="hubStatusBadge">雲端連線正常</span>
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">系統即時狀態</h2>
-              <p class="hub-square-desc">即時觀測 Supabase 雲端資料庫（Tokyo ap-northeast-1）CPU、RAM、API 延遲與全站累積創作量。</p>
+              <p class="hub-square-desc">即時觀測 Supabase 雲端資料庫連線延遲、服務健康狀態與全站累積創作量。</p>
             </div>
             <div class="hub-square-foot">
               <span>檢視即時遙測</span>
               <span>→</span>
             </div>
           </button>
+        </div>
+
+        <!-- 首頁精選卡片與 DFC 學習指引 -->
+        <div class="home-guide-strip" style="margin-top:28px;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;backdrop-filter:blur(20px)">
+            <div style="font-size:12px;font-weight:700;color:var(--blue);letter-spacing:0.08em;margin-bottom:6px">💡 探索指引 · 三步驟開始學習</div>
+            <h3 style="margin:0 0 10px;font-size:17px;font-weight:700">在 KKNews 你可以這樣做：</h3>
+            <ol style="margin:0;padding-left:20px;font-size:13.5px;color:var(--ink-secondary);line-height:1.7">
+              <li><strong>創作品牌金句</strong>：運用 5 款排版風格與色票，排版出屬於你的校園格言卡。</li>
+              <li><strong>觀看 DFC 案例</strong>：跟著影片走入設計思考情境，在關鍵時間點回答探究問題。</li>
+              <li><strong>實踐改變行動</strong>：串接 Google 表單記錄你的想法，與全校同學共同激盪。</li>
+            </ol>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;backdrop-filter:blur(20px);display:flex;flex-direction:column;justify-content:space-between">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:0.08em;margin-bottom:6px">🎬 DFC 近期主題 · 設計思考</div>
+              <h3 style="margin:0 0 8px;font-size:17px;font-weight:700">「從生活痛點出發，把『我做不到』變成『我們可以怎麼做』」</h3>
+              <p style="margin:0;font-size:13.5px;color:var(--ink-secondary);line-height:1.6">透過感受、想像、實踐與分享四大階段，探索身邊可以被改善的校園細節。</p>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line-subtle)">
+              <span style="font-size:12.5px;color:var(--ink-tertiary)">學生自主學習特輯</span>
+              <button type="button" class="btn ghost sm" id="homeQuickStartDfc" style="padding:4px 12px;font-size:12.5px">立即前往 DFC →</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1801,7 +1827,11 @@
             <div class="studio-preview-box">
               <div class="preview-toolbar">
                 <span>即時卡片效果</span>
-                <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:2px 8px;font-size:12px" title="複製當前金句文字與署名">複製文字</button>
+                  <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:2px 8px;font-size:12px" title="重設回預設經典米白排版">重設版型</button>
+                  <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
+                </div>
               </div>
               <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
             </div>
@@ -1896,22 +1926,28 @@
                   填寫問卷</button>
               </div>
 
-              <!-- YouTube ABR 畫質演進與雲端最新版全片本機暫存狀態列（關閉網頁即自動刪除，下次重載最新版） -->
-              <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry">
-                <div class="dfc-preload-row">
-                  <span class="dfc-preload-status-text" id="dfcPreloadStatusText">🚀 正在同步雲端最新版影片並下載至當次本機暫存...</span>
-                  <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">🧹 當次本機暫存（關閉即刪・下次重載）</span>
+              <!-- YouTube ABR 畫質演進與雲端最新版全片本機暫存狀態列（收合摺疊，保持畫面焦點） -->
+              <details class="dfc-telemetry-details" style="margin-top:10px;font-size:12.5px">
+                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 播放詳細技術資訊與緩衝狀態（點擊展開）</summary>
+                <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry" style="margin-top:6px">
+                  <div class="dfc-preload-row">
+                    <span class="dfc-preload-status-text" id="dfcPreloadStatusText">🚀 正在同步雲端最新版影片並下載至當次本機暫存...</span>
+                    <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">🧹 當次本機暫存（關閉即刪・下次重載）</span>
+                  </div>
+                  <div class="dfc-preload-bar-track">
+                    <div class="dfc-preload-bar-fill" id="dfcPreloadBarFill"></div>
+                  </div>
                 </div>
-                <div class="dfc-preload-bar-track">
-                  <div class="dfc-preload-bar-fill" id="dfcPreloadBarFill"></div>
-                </div>
-              </div>
+              </details>
             </div>
 
             <!-- 右側動態問題卡片 -->
             <div class="dfc-q-pane" id="dfcQuestionCol">
               <div class="dfc-question-card">
-                <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+                  <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
+                  <button type="button" class="btn ghost sm" id="dfcRewindForQuestionBtn" style="font-size:11.5px;padding:2px 8px" title="沒聽清剛才影片對話？倒退 10 秒重新觀看">↺ 倒退 10 秒重看</button>
+                </div>
                 <h3 id="dfcQTitle" style="margin:0 0 8px;font-size:18px;line-height:1.4">載入中...</h3>
                 <p id="dfcQDesc" style="margin:0 0 18px;font-size:13.5px;color:var(--ink-secondary);line-height:1.55"></p>
                 <div id="dfcQInputArea"></div>
@@ -1930,7 +1966,10 @@
                 <p style="margin:0;font-size:13.5px;color:var(--ink-secondary)" id="dfcCompleteDesc">
                   感謝你的參與，所有時間點的回答皆已成功記錄。</p>
               </div>
-              <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button type="button" class="btn primary sm" id="dfcCertBtn" style="background:linear-gradient(135deg,#d97706,#b45309);border:none;color:#fff;box-shadow:0 2px 8px rgba(180,83,9,0.25)">🎓 產生並下載 DFC 結業榮譽證書 (PNG)</button>
+                <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
+              </div>
             </div>
             <div class="dfc-summary-card hide" id="dfcSummaryCard">
               <div style="font-size:13.5px;font-weight:700;color:var(--green);margin-bottom:8px">📋 本次作答紀錄摘要：</div>
@@ -1965,12 +2004,10 @@
               </svg>
             </div>
             <div style="flex:1;min-width:0">
-              <b id="dbName" style="font-size:16px;display:block">Primary Database</b>
-              <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">Northeast Asia (Tokyo)</span>
-              <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">ap-northeast-1 ·
-                t3.nano</span>
+              <b id="dbName" style="font-size:16px;display:block">Supabase PostgreSQL</b>
+              <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">雲端受管資料庫</span>
+              <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">即時連線健康監測</span>
             </div>
-            <div class="jp-flag-badge" title="Tokyo (ap-northeast-1)"></div>
           </div>
 
           <div class="meters-row">
@@ -2053,6 +2090,34 @@
 
   <script>
     const $ = id => document.getElementById(id);
+    function initThemeController() {
+      try {
+        const saved = localStorage.getItem("kk_theme");
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+        const updateBtn = () => {
+          const btn = $("themeToggleBtn");
+          if (!btn) return;
+          const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+          btn.textContent = isDark ? "☀️" : "🌙";
+          btn.title = isDark ? "切換為淺色模式" : "切換為深色模式";
+        };
+        updateBtn();
+        const btn = $("themeToggleBtn");
+        if (btn) {
+          btn.onclick = () => {
+            const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+            const next = isDark ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            localStorage.setItem("kk_theme", next);
+            updateBtn();
+            if (typeof renderLivePreviewCard === "function") renderLivePreviewCard();
+          };
+        }
+      } catch (e) {}
+    }
+    initThemeController();
     const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     function say(t, ok) {
       for (const id of ["msg", "entryLoginAlert"]) {
@@ -2152,16 +2217,37 @@
             try { window.turnstile.reset(turnstileWidgetId); } catch { }
           }
         }
-      } catch {
+      } catch (err) {
         isVerifyingTurnstile = false;
-        markTurnstilePassed(false);
+        if (fb) {
+          fb.style.color = "var(--red)";
+          fb.innerHTML = '⚠️ 驗證服務連線異常。<button type="button" class="btn ghost sm" id="tsRetryBtn" style="margin-left:8px;padding:2px 8px;font-size:12px">點此重試</button>';
+          const btn = $("tsRetryBtn");
+          if (btn) btn.onclick = () => {
+            if (window.turnstile && turnstileWidgetId != null) {
+              try { window.turnstile.reset(turnstileWidgetId); } catch {}
+            }
+          };
+        }
       }
     }
 
     function handleTurnstileError() {
-      // 若受瀏覽器追蹤防護或廣告攔截阻擋，自動放行以保證網站正常顯示
-      console.warn("Turnstile failed or blocked, automatically passing");
-      markTurnstilePassed(true);
+      console.warn("Turnstile failed or blocked");
+      isVerifyingTurnstile = false;
+      const fb = $("turnstileStatus");
+      if (fb) {
+        fb.style.color = "var(--red)";
+        fb.innerHTML = '⚠️ 人機安全驗證載入失敗或受網路阻擋。<button type="button" class="btn ghost sm" id="tsReloadBtn" style="margin-left:8px;padding:2px 8px;font-size:12px">點此重試</button>';
+        const btn = $("tsReloadBtn");
+        if (btn) btn.onclick = () => {
+          if (window.turnstile && turnstileWidgetId != null) {
+            try { window.turnstile.reset(turnstileWidgetId); } catch {}
+          } else {
+            location.reload();
+          }
+        };
+      }
     }
 
     function handleTurnstileExpired() {
@@ -2565,23 +2651,86 @@
 
     const NO_LINE_START = new Set("，。、！？；：）》」』】〕…,.!?:;)]}");
 
+    function drawCinnabarSeal(ctx, name, x, y, size = 42) {
+      const clean = String(name || "").replace(/^[—\-\s@✦]+|[✦\s]+$/g, "").trim();
+      if (!clean || clean === "署名") return;
+
+      ctx.save();
+      const sealRed = "#b91c1c";
+      ctx.strokeStyle = sealRed;
+      ctx.fillStyle = sealRed;
+      ctx.lineWidth = 2.4;
+
+      const r = 5;
+      ctx.beginPath();
+      ctx.roundRect(x, y, size, size, r);
+      ctx.stroke();
+
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.roundRect(x + 2.5, y + 2.5, size - 5, size - 5, r - 1.5);
+      ctx.stroke();
+
+      const chars = Array.from(clean).slice(0, 4);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (chars.length === 1) {
+        ctx.font = `900 ${Math.round(size * 0.52)}px "Noto Serif TC", serif`;
+        ctx.fillText(chars[0], x + size / 2, y + size / 2 + 1);
+      } else if (chars.length === 2) {
+        ctx.font = `900 ${Math.round(size * 0.42)}px "Noto Serif TC", serif`;
+        const half = size / 2;
+        ctx.fillText(chars[0], x + size / 2, y + half * 0.54);
+        ctx.fillText(chars[1], x + size / 2, y + half * 1.48);
+      } else if (chars.length === 3) {
+        ctx.font = `900 ${Math.round(size * 0.35)}px "Noto Serif TC", serif`;
+        ctx.fillText(chars[0], x + size * 0.72, y + size * 0.32);
+        ctx.fillText(chars[1], x + size * 0.72, y + size * 0.72);
+        ctx.fillText(chars[2], x + size * 0.28, y + size * 0.32);
+        ctx.fillText("印", x + size * 0.28, y + size * 0.72);
+      } else {
+        ctx.font = `900 ${Math.round(size * 0.35)}px "Noto Serif TC", serif`;
+        ctx.fillText(chars[0], x + size * 0.72, y + size * 0.32);
+        ctx.fillText(chars[1], x + size * 0.72, y + size * 0.72);
+        ctx.fillText(chars[2], x + size * 0.28, y + size * 0.32);
+        ctx.fillText(chars[3], x + size * 0.28, y + size * 0.72);
+      }
+      ctx.restore();
+    }
+
     function wrapText(ctx, text, maxW) {
       const lines = [];
       for (const para of String(text || "").split("\n")) {
         if (!para) { lines.push(""); continue; }
+        let tokens;
+        if (typeof Intl !== "undefined" && Intl.Segmenter) {
+          const seg = new Intl.Segmenter("zh-Hant", { granularity: "word" });
+          tokens = [];
+          for (const s of seg.segment(para)) {
+            const t = s.segment;
+            if (/^[\u4e00-\u9fa5]+$/.test(t) && t.length > 1) {
+              tokens.push(...t.split(""));
+            } else {
+              tokens.push(t);
+            }
+          }
+        } else {
+          tokens = Array.from(para);
+        }
         let line = "";
-        const chars = Array.from(para);
-        for (let i = 0; i < chars.length; i++) {
-          const ch = chars[i];
-          const test = line + ch;
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i];
+          const test = line + token;
           if (ctx.measureText(test).width > maxW && line) {
-            if (NO_LINE_START.has(ch) && line.length > 1) {
+            const firstChar = token[0];
+            if (NO_LINE_START.has(firstChar) && line.length > 1) {
               const lastChar = line.slice(-1);
               lines.push(line.slice(0, -1));
-              line = lastChar + ch;
+              line = lastChar + token;
             } else {
               lines.push(line);
-              line = ch;
+              line = token.trimStart();
             }
           } else {
             line = test;
@@ -2688,6 +2837,9 @@
         authorChars.forEach((ch, idx) => {
           ctx.fillText(ch, authorColX, aStartY + idx * (aSize * 1.25) + aSize / 2);
         });
+        if (!isPlaceholder && displayAuthor !== "署名") {
+          drawCinnabarSeal(ctx, displayAuthor, authorColX - 21, aStartY + authorH + 16, 42);
+        }
 
       } else if (layout === "quote") {
         const contentX = CX + 72, contentW = CW - 144;
@@ -2726,6 +2878,10 @@
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         ctx.fillText("— " + displayAuthor, contentX, divY + 16);
+        if (!isPlaceholder && displayAuthor !== "署名") {
+          const authW = ctx.measureText("— " + displayAuthor).width;
+          drawCinnabarSeal(ctx, displayAuthor, contentX + authW + 18, divY + 8, 38);
+        }
 
       } else if (layout === "framed") {
         const FX = CX + 36, FY = CY + 36, FW = CW - 72, FH = CH - 72;
@@ -2758,6 +2914,9 @@
         ctx.fillStyle = subClr;
         ctx.textAlign = 'center';
         ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
+        if (!isPlaceholder && displayAuthor !== "署名") {
+          drawCinnabarSeal(ctx, displayAuthor, CX + CW / 2 - 21, fStartY + fTotalH + fas * 1.8, 42);
+        }
 
       } else if (layout === "poster") {
         ctx.save();
@@ -2813,6 +2972,9 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(authorStr, pX + 14, aBadgeY + (pas + 20) / 2);
         ctx.restore();
+        if (!isPlaceholder && displayAuthor !== "署名") {
+          drawCinnabarSeal(ctx, displayAuthor, pX + aw + 38, aBadgeY + (pas + 20) / 2 - 20, 40);
+        }
 
       } else {
         // classic
@@ -2839,14 +3001,24 @@
         ctx.textAlign = "right";
         ctx.fillStyle = subClr;
         ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
+        if (!isPlaceholder && displayAuthor !== "署名") {
+          drawCinnabarSeal(ctx, displayAuthor, startX + widest + 16, startY + totalH + as * 0.5, 40);
+        }
       }
     }
 
+    let fontReadyChecked = false;
     function renderLivePreviewCard() {
       const cv = $("liveCardCanvas");
       if (!cv) return;
       const text = $("content")?.value || "";
       const author = $("author")?.value || "";
+      if (!fontReadyChecked && document.fonts && document.fonts.status !== "loaded") {
+        document.fonts.ready.then(() => {
+          fontReadyChecked = true;
+          drawCardCanvas(cv, text, author, currentCardStyle);
+        });
+      }
       drawCardCanvas(cv, text, author, currentCardStyle);
     }
 
@@ -3052,19 +3224,35 @@
           $("hubStatusBadge").className = "hub-square-badge " + (s.ok ? "ok" : "lock");
           $("hubStatusBadge").textContent = s.ok ? `🟢 正常 (${s.latencyMs ?? "—"}ms)` : "🟠 維護中";
         }
-        $("stCpu").textContent = (s.cpuPct ?? "—") + "%";
-        $("stDisk").textContent = (s.diskPct ?? "—") + "%";
-        $("stRam").textContent = (s.ramPct ?? "—") + "%";
-        const maxC = s.maxConns ?? 60;
-        const curC = s.conns ?? 0;
-        $("stConns").textContent = `${s.conns ?? "—"}/${maxC}`;
-        setMeterBar("barCpu", s.cpuPct);
-        setMeterBar("barRam", s.ramPct);
-        setMeterBar("barDisk", s.diskPct);
-        setMeterBar("barConns", maxC > 0 ? Math.round((curC / maxC) * 100) : 0);
+        if (s.metricsAvailable === false) {
+          $("stCpu").textContent = "暫時無法讀取";
+          $("stDisk").textContent = "暫時無法讀取";
+          $("stRam").textContent = "暫時無法讀取";
+          $("stConns").textContent = "暫時無法讀取";
+          $("stCacheHit").textContent = "暫時無法讀取";
+          setMeterBar("barCpu", 0);
+          setMeterBar("barRam", 0);
+          setMeterBar("barDisk", 0);
+          setMeterBar("barConns", 0);
+          if ($("dbSpec")) $("dbSpec").textContent = "Supabase 雲端資料庫 · 連線正常";
+          if ($("dbRegion")) $("dbRegion").textContent = "雲端受管服務";
+        } else {
+          $("stCpu").textContent = (s.cpuPct != null ? `${s.cpuPct}%` : "暫時無法讀取");
+          $("stDisk").textContent = (s.diskPct != null ? `${s.diskPct}%` : "暫時無法讀取");
+          $("stRam").textContent = (s.ramPct != null ? `${s.ramPct}%` : "暫時無法讀取");
+          const maxC = s.maxConns ?? 60;
+          const curC = s.conns ?? 0;
+          $("stConns").textContent = s.conns != null ? `${curC}/${maxC}` : "暫時無法讀取";
+          setMeterBar("barCpu", s.cpuPct);
+          setMeterBar("barRam", s.ramPct);
+          setMeterBar("barDisk", s.diskPct);
+          setMeterBar("barConns", (s.conns != null && maxC > 0) ? Math.round((curC / maxC) * 100) : 0);
+          $("stCacheHit").textContent = s.cacheHitPct != null ? `${s.cacheHitPct}%` : "暫時無法讀取";
+          if ($("dbSpec")) $("dbSpec").textContent = s.instanceType || "Supabase Managed Postgres";
+          if ($("dbRegion")) $("dbRegion").textContent = s.regionName || "Supabase Cloud";
+        }
 
         $("stLatency").textContent = s.latencyMs != null ? `${s.latencyMs} ms` : "— ms";
-        $("stCacheHit").textContent = s.cacheHitPct != null ? `${s.cacheHitPct}%` : "—%";
         $("stProverbsCount").textContent = s.proverbsCount != null ? `${s.proverbsCount} 張` : "— 張";
         $("stDfcCount").textContent = s.dfcResponsesCount != null ? `${s.dfcResponsesCount} 筆` : "— 筆";
         $("stUpdatedAt").textContent = "更新時間：" + new Date().toLocaleTimeString("zh-TW", { hour12: false });
@@ -4945,6 +5133,211 @@
       trackEl.addEventListener("pointercancel", stopTrackScrub);
     }
 
+    function generateDfcCertificate() {
+      const cv = document.createElement("canvas");
+      const W = 1600, H = 1130;
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d");
+
+      // 1. 背景底色：典雅象牙米紙質
+      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+      bgGrad.addColorStop(0, "#fdfcf9");
+      bgGrad.addColorStop(1, "#f7f4ec");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. 外部燙金雙邊框 (Double Gold Border)
+      const MX = 44, MY = 44, MW = W - 88, MH = H - 88;
+      ctx.save();
+      ctx.strokeStyle = "#c5a059";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(MX, MY, MW, MH);
+
+      // 內細邊框
+      ctx.strokeStyle = "#d4af37";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(MX + 12, MY + 12, MW - 24, MH - 24);
+
+      // 四個角落裝飾花紋 (Corner Flourishes)
+      const drawCorner = (cx, cy, flipX, flipY) => {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(flipX, flipY);
+        ctx.strokeStyle = "#b38728";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, 28);
+        ctx.lineTo(8, 8);
+        ctx.lineTo(28, 8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(16, 16, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#b38728";
+        ctx.fill();
+        ctx.restore();
+      };
+      drawCorner(MX + 16, MY + 16, 1, 1);
+      drawCorner(MX + MW - 16, MY + 16, -1, 1);
+      drawCorner(MX + 16, MY + MH - 16, 1, -1);
+      drawCorner(MX + MW - 16, MY + MH - 16, -1, -1);
+      ctx.restore();
+
+      // 3. 頂部主標題
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#8c6d37";
+      ctx.font = '700 22px -apple-system, "SF Pro Text", sans-serif';
+      ctx.fillText("✦ DESIGN FOR CHANGE · 學習歷程修業證書 ✦", W / 2, MY + 90);
+
+      ctx.fillStyle = "#1e293b";
+      ctx.font = '900 52px "Noto Serif TC", serif';
+      ctx.fillText("DFC 創意行動探究學習 · 完課榮譽證書", W / 2, MY + 170);
+
+      // 金色分隔飾線
+      ctx.strokeStyle = "#c5a059";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 160, MY + 205);
+      ctx.lineTo(W / 2 + 160, MY + 205);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W / 2, MY + 205, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#b38728";
+      ctx.fill();
+      ctx.restore();
+
+      // 4. 學習者姓名
+      const studentName = currentUser?.name || currentUser?.email?.split("@")[0] || $("author")?.value || "熱心學員";
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = '600 24px -apple-system, sans-serif';
+      ctx.fillStyle = "#64748b";
+      ctx.fillText("茲證明 學習者", W / 2, MY + 280);
+
+      ctx.font = '900 58px "Noto Serif TC", serif';
+      ctx.fillStyle = "#0f172a";
+      ctx.fillText(studentName, W / 2, MY + 360);
+      const nw = ctx.measureText(studentName).width;
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - nw / 2 - 20, MY + 380);
+      ctx.lineTo(W / 2 + nw / 2 + 20, MY + 380);
+      ctx.stroke();
+      ctx.restore();
+
+      // 5. 研習內文說明
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = '500 26px/1.8 "Noto Serif TC", serif';
+      ctx.fillStyle = "#334155";
+      const courseTitle = DFC_CONFIG.title || "校園 DFC 影音互動探究課程";
+      const descLine1 = `於 KKNews 影音互動探究學習平台，完整修畢《${courseTitle}》專題課程，`;
+      const descLine2 = "循序完成【感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share】四大探究階段，";
+      const descLine3 = "主動發掘校園生活痛點並提出具體創意思辨行動，展現卓越之問題解決力與同理心實踐精神，";
+      const descLine4 = "圓滿通過全數影音時間節點之檢核問卷與反思心得，特頒發此證以資表揚與肯定。";
+      ctx.fillText(descLine1, W / 2, MY + 450);
+      ctx.fillText(descLine2, W / 2, MY + 500);
+      ctx.fillText(descLine3, W / 2, MY + 550);
+      ctx.fillText(descLine4, W / 2, MY + 600);
+      ctx.restore();
+
+      // 6. 底部四大步驟圖標徽章
+      const steps = [
+        { label: "感受 Feel", desc: "同理心觀察" },
+        { label: "想像 Imagine", desc: "創意思辨" },
+        { label: "實踐 Do", desc: "具體行動" },
+        { label: "分享 Share", desc: "引領改變" }
+      ];
+      const stepW = 200, stepGap = 36;
+      const totalStepsW = steps.length * stepW + (steps.length - 1) * stepGap;
+      const stepStartX = (W - totalStepsW) / 2;
+      const stepY = MY + 670;
+      steps.forEach((s, idx) => {
+        const sx = stepStartX + idx * (stepW + stepGap);
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(sx, stepY, stepW, 76, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#0f172a";
+        ctx.font = '700 18px -apple-system, sans-serif';
+        ctx.fillText(s.label, sx + stepW / 2, stepY + 32);
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = '500 13.5px -apple-system, sans-serif';
+        ctx.fillText(s.desc, sx + stepW / 2, stepY + 56);
+        ctx.restore();
+      });
+
+      // 7. 證書頒發日期與驗證編號
+      const now = new Date();
+      const dateStr = `${now.getFullYear()} 年 ${String(now.getMonth() + 1).padStart(2, "0")} 月 ${String(now.getDate()).padStart(2, "0")} 日`;
+      const certId = "KK-DFC-" + now.getFullYear() + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      ctx.save();
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#64748b";
+      ctx.font = '600 18px -apple-system, sans-serif';
+      ctx.fillText("發證單位：KKNews 校園文字工坊與 DFC 影音學習中心", MX + 70, MY + MH - 110);
+      ctx.fillText(`頒發日期：${dateStr}`, MX + 70, MY + MH - 75);
+      ctx.font = '500 14px "SF Mono", monospace';
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText(`研習證號：${certId}`, MX + 70, MY + MH - 45);
+      ctx.restore();
+
+      // 8. 右下角正式朱印紅章 (Official Red Seal)
+      ctx.save();
+      const sealX = MX + MW - 230, sealY = MY + MH - 180, sealS = 130;
+      ctx.strokeStyle = "#c5221f";
+      ctx.fillStyle = "#c5221f";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.roundRect(sealX, sealY, sealS, sealS, 16);
+      ctx.stroke();
+
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(sealX + 6, sealY + 6, sealS - 12, sealS - 12, 12);
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = '900 24px "Noto Serif TC", serif';
+      ctx.fillText("花蓮", sealX + sealS * 0.73, sealY + sealS * 0.3);
+      ctx.fillText("教育", sealX + sealS * 0.73, sealY + sealS * 0.7);
+      ctx.fillText("DFC", sealX + sealS * 0.27, sealY + sealS * 0.3);
+      ctx.fillText("之印", sealX + sealS * 0.27, sealY + sealS * 0.7);
+      ctx.restore();
+
+      // 觸發下載
+      cv.toBlob(blob => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `DFC_完課榮譽證書_${studentName}.png`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 1000);
+      });
+    }
+
+    if ($("dfcCertBtn")) {
+      $("dfcCertBtn").onclick = () => {
+        generateDfcCertificate();
+        logAction("下載完課證書", "DFC 結業榮譽證書 PNG");
+      };
+    }
+
     $("dfcReplayBtn").onclick = () => {
       dfcState.currentTime = 0;
       if (dfcState.useRealVideo) $("dfcVideo").currentTime = 0;
@@ -5127,12 +5520,36 @@
     $("googleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
     if ($("topLogoutBtn")) $("topLogoutBtn").onclick = doLogout;
 
+    // 草稿恢復
+    try {
+      const savedDraft = JSON.parse(localStorage.getItem("kk_proverb_draft") || "{}");
+      if (savedDraft.content) {
+        $("content").value = savedDraft.content;
+        $("cc").textContent = savedDraft.content.length + "/100";
+      }
+      if (savedDraft.author) {
+        $("author").value = savedDraft.author;
+        $("ac").textContent = savedDraft.author.length + "/30";
+      }
+    } catch {}
+
+    const saveProverbDraft = () => {
+      try {
+        localStorage.setItem("kk_proverb_draft", JSON.stringify({
+          content: $("content").value,
+          author: $("author").value
+        }));
+      } catch {}
+    };
+
     $("content").oninput = () => {
       $("cc").textContent = $("content").value.length + "/100";
+      saveProverbDraft();
       renderLivePreviewCard();
     };
     $("author").oninput = () => {
       $("ac").textContent = $("author").value.length + "/30";
+      saveProverbDraft();
       renderLivePreviewCard();
     };
     $("content").onkeydown = $("author").onkeydown = (e) => {
@@ -5141,6 +5558,78 @@
         $("submit").click();
       }
     };
+
+    if ($("copyProverbBtn")) {
+      $("copyProverbBtn").onclick = () => {
+        const c = $("content").value.trim() || "寫下你想說的一句話";
+        const a = $("author").value.trim() || "署名";
+        const text = `「${c}」—— ${a}`;
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(text).then(
+            () => say("已複製金句至剪貼簿！", true),
+            () => say("複製失敗，請手動複製")
+          );
+        } else {
+          say("瀏覽器不支援自動複製，請手動複製");
+        }
+      };
+    }
+
+    if ($("resetCardStyleBtn")) {
+      $("resetCardStyleBtn").onclick = () => {
+        currentCardStyle = { layout: "classic", themeId: "ivory", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
+        initCardStyleControls();
+        renderLivePreviewCard();
+        say("已重設回預設經典米白版型", true);
+      };
+    }
+
+    if ($("homeQuickStartDfc")) {
+      $("homeQuickStartDfc").onclick = () => navigateToTab("dfc", true);
+    }
+
+    if ($("dfcRewindForQuestionBtn")) {
+      $("dfcRewindForQuestionBtn").onclick = () => {
+        const cp = DFC_CONFIG.checkpoints[dfcState.activeCheckpointIndex];
+        if (!cp) return;
+        dfcEngagement.rewindCount++;
+        const target = Math.max(0, cp.time - 10);
+        dfcState.activeCheckpointIndex = -1;
+        $("dfcStage").classList.remove("split-active");
+        $("dfcPlayBtn").disabled = false;
+        seekDfcWithPolicy(target, false);
+        setDfcPlaying(true);
+        logAction("答題時倒退 10 秒重看", `重看至 ${Math.round(target)} 秒`);
+      };
+    }
+
+    // 全局鍵盤控制（DFC 播放器快捷鍵：Space 播放/暫停，←/→ 快退快進 5 秒，F 全螢幕，M 靜音）
+    window.addEventListener("keydown", (e) => {
+      const pane = $("paneDfc");
+      if (!pane || pane.style.display === "none") return;
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        $("dfcPlayBtn")?.click();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        $("dfcRewindBtn")?.click();
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        if (dfcState.activeCheckpointIndex === -1) {
+          const target = Math.min(dfcState.maxWatchedTime, dfcState.currentTime + 5);
+          seekDfcWithPolicy(target, false);
+        }
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        $("dfcFsBtn")?.click();
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        $("dfcMuteBtn")?.click();
+      }
+    });
 
     $("submit").onclick = async () => {
       const content = $("content").value.trim(), author = $("author").value.trim();
@@ -5151,10 +5640,11 @@
       const j = await r.json().catch(() => ({}));
       $("submit").disabled = false;
       if (!r.ok) return say(j.error || "送出失敗");
+      try { localStorage.removeItem("kk_proverb_draft"); } catch {}
       $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
       renderLivePreviewCard();
       refreshPublicStatus(true);
-      say("已成功送出！感謝你的投稿", true);
+      say("🎉 投稿已成功送出！卡片已收錄於校園資料庫，歡迎前往「DFC 互動影音」繼續學習。", true);
       logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}`);
     };
   </script>

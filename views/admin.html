@@ -465,6 +465,7 @@
 
   <!-- 右上角管理員帳號資訊 -->
   <div class="acct-zone">
+    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
     <div class="acct-pill">
       <div class="acct-av" id="adminAv">A</div>
       <span class="role-chip" id="adminRoleBadge">Super Admin</span>
@@ -1118,9 +1119,43 @@ s1120002
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+function initThemeController() {
+  try {
+    const saved = localStorage.getItem("kk_theme");
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = saved || (prefersDark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    const updateBtn = () => {
+      const btn = $("themeToggleBtn");
+      if (!btn) return;
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      btn.textContent = isDark ? "☀️" : "🌙";
+      btn.title = isDark ? "切換為淺色模式" : "切換為深色模式";
+    };
+    updateBtn();
+    const btn = $("themeToggleBtn");
+    if (btn) {
+      btn.onclick = () => {
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        const next = isDark ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("kk_theme", next);
+        updateBtn();
+      };
+    }
+  } catch (e) {}
+}
+initThemeController();
 let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingConfirmFn = null;
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
+let isFormDirty = false;
+window.addEventListener("beforeunload", (e) => {
+  if (isFormDirty) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
 let googleApiKeyConfigured = false, googleApiKeyMasked = "";
 let adminAccounts = [], adminAccessKey = "", auditLogs = [], editingFormObj = null, editingAdminTarget = null;
 let lastRowsSig = "", lastUsersSig = "", lastDfcSig = "", lastAdminsSig = "", lastAuditSig = "", isLoading = false;
@@ -1225,23 +1260,86 @@ function isColorDark(hex) {
 
 const NO_LINE_START = new Set("，。、！？；：）》」』】〕…,.!?:;)]}");
 
+function drawCinnabarSeal(ctx, name, x, y, size = 42) {
+  const clean = String(name || "").replace(/^[—\-\s@✦]+|[✦\s]+$/g, "").trim();
+  if (!clean || clean === "署名") return;
+
+  ctx.save();
+  const sealRed = "#b91c1c";
+  ctx.strokeStyle = sealRed;
+  ctx.fillStyle = sealRed;
+  ctx.lineWidth = 2.4;
+
+  const r = 5;
+  ctx.beginPath();
+  ctx.roundRect(x, y, size, size, r);
+  ctx.stroke();
+
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.roundRect(x + 2.5, y + 2.5, size - 5, size - 5, r - 1.5);
+  ctx.stroke();
+
+  const chars = Array.from(clean).slice(0, 4);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  if (chars.length === 1) {
+    ctx.font = `900 ${Math.round(size * 0.52)}px "Noto Serif TC", serif`;
+    ctx.fillText(chars[0], x + size / 2, y + size / 2 + 1);
+  } else if (chars.length === 2) {
+    ctx.font = `900 ${Math.round(size * 0.42)}px "Noto Serif TC", serif`;
+    const half = size / 2;
+    ctx.fillText(chars[0], x + size / 2, y + half * 0.54);
+    ctx.fillText(chars[1], x + size / 2, y + half * 1.48);
+  } else if (chars.length === 3) {
+    ctx.font = `900 ${Math.round(size * 0.35)}px "Noto Serif TC", serif`;
+    ctx.fillText(chars[0], x + size * 0.72, y + size * 0.32);
+    ctx.fillText(chars[1], x + size * 0.72, y + size * 0.72);
+    ctx.fillText(chars[2], x + size * 0.28, y + size * 0.32);
+    ctx.fillText("印", x + size * 0.28, y + size * 0.72);
+  } else {
+    ctx.font = `900 ${Math.round(size * 0.35)}px "Noto Serif TC", serif`;
+    ctx.fillText(chars[0], x + size * 0.72, y + size * 0.32);
+    ctx.fillText(chars[1], x + size * 0.72, y + size * 0.72);
+    ctx.fillText(chars[2], x + size * 0.28, y + size * 0.32);
+    ctx.fillText(chars[3], x + size * 0.28, y + size * 0.72);
+  }
+  ctx.restore();
+}
+
 function wrapText(ctx, text, maxW) {
   const lines = [];
   for (const para of String(text || "").split("\n")) {
     if (!para) { lines.push(""); continue; }
+    let tokens;
+    if (typeof Intl !== "undefined" && Intl.Segmenter) {
+      const seg = new Intl.Segmenter("zh-Hant", { granularity: "word" });
+      tokens = [];
+      for (const s of seg.segment(para)) {
+        const t = s.segment;
+        if (/^[\u4e00-\u9fa5]+$/.test(t) && t.length > 1) {
+          tokens.push(...t.split(""));
+        } else {
+          tokens.push(t);
+        }
+      }
+    } else {
+      tokens = Array.from(para);
+    }
     let line = "";
-    const chars = Array.from(para);
-    for (let i = 0; i < chars.length; i++) {
-      const ch = chars[i];
-      const test = line + ch;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const test = line + token;
       if (ctx.measureText(test).width > maxW && line) {
-        if (NO_LINE_START.has(ch) && line.length > 1) {
+        const firstChar = token[0];
+        if (NO_LINE_START.has(firstChar) && line.length > 1) {
           const lastChar = line.slice(-1);
           lines.push(line.slice(0, -1));
-          line = lastChar + ch;
+          line = lastChar + token;
         } else {
           lines.push(line);
-          line = ch;
+          line = token.trimStart();
         }
       } else {
         line = test;
@@ -1346,6 +1444,9 @@ function drawCard(canvas, text, author, style = {}) {
     authorChars.forEach((ch, idx) => {
       ctx.fillText(ch, authorColX, aStartY + idx * (aSize * 1.25) + aSize / 2);
     });
+    if (!isPlaceholder && displayAuthor !== "署名") {
+      drawCinnabarSeal(ctx, displayAuthor, authorColX - 21, aStartY + authorH + 16, 42);
+    }
 
   } else if (layout === "quote") {
     const contentX = CX + 72, contentW = CW - 144;
@@ -1387,6 +1488,10 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText("— " + displayAuthor, contentX, divY + 16);
+    if (!isPlaceholder && displayAuthor !== "署名") {
+      const authW = ctx.measureText("— " + displayAuthor).width;
+      drawCinnabarSeal(ctx, displayAuthor, contentX + authW + 18, divY + 8, 38);
+    }
 
   } else if (layout === "framed") {
     const FX = CX + 36, FY = CY + 36, FW = CW - 72, FH = CH - 72;
@@ -1422,6 +1527,9 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.fillStyle = subClr;
     ctx.textAlign = 'center';
     ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
+    if (!isPlaceholder && displayAuthor !== "署名") {
+      drawCinnabarSeal(ctx, displayAuthor, CX + CW / 2 - 21, fStartY + fTotalH + fas * 1.8, 42);
+    }
 
   } else if (layout === "poster") {
     ctx.save();
@@ -1480,6 +1588,9 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textBaseline = 'middle';
     ctx.fillText(authorStr, pX + 14, aBadgeY + (pas + 20) / 2);
     ctx.restore();
+    if (!isPlaceholder && displayAuthor !== "署名") {
+      drawCinnabarSeal(ctx, displayAuthor, pX + aw + 38, aBadgeY + (pas + 20) / 2 - 20, 40);
+    }
 
   } else {
     let size = FONT_SIZE || 70;
@@ -1510,6 +1621,9 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textAlign = "right";
     ctx.fillStyle = subClr;
     ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
+    if (!isPlaceholder && displayAuthor !== "署名") {
+      drawCinnabarSeal(ctx, displayAuthor, startX + widest + 16, startY + totalH + as * 0.5, 40);
+    }
   }
 }
 async function ensureFont(text) { try { await document.fonts.load(`40px ${FONT}`, text); } catch {} }
@@ -1639,7 +1753,9 @@ async function load(forceRender = false) {
   }
 }
 
-setInterval(() => load(false), 3000);
+setInterval(() => {
+  if (!document.hidden) load(false);
+}, 10000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load(false); });
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -1799,9 +1915,6 @@ function renderUsers() {
     const el = document.createElement("div"); el.className = "user-item-card";
     const displayName = u.name || (u.email || "").split("@")[0] || "未命名";
     const pic = safeImgSrc(u.picture);
-    const sFront = safeImgSrc(u.selfie);
-    const sRight = safeImgSrc(u.selfie_right);
-    const sLeft = safeImgSrc(u.selfie_left);
     const avHtml = pic
       ? `<img class="user-avatar-circle u-av-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
       : `<div class="user-avatar-circle">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
@@ -1844,24 +1957,6 @@ function renderUsers() {
           <span style="font-size:13px;color:var(--ink-secondary)">${esc(u.email)}</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${toggleDfcBtnHtml}${setAdminBtnHtml}</div>
-      </div>
-      <div class="user-photos-strip">
-        <div class="user-photo-box">
-          <small>Google 頭貼</small>
-          ${pic ? `<img class="u-strip-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="Google" referrerpolicy="no-referrer"><div class="placeholder-pic" style="display:none">無效</div>` : `<div class="placeholder-pic">無</div>`}
-        </div>
-        <div class="user-photo-box">
-          <small>實拍：正面</small>
-          ${sFront ? `<img class="u-strip-img" data-zoom="${esc(sFront)}" src="${esc(sFront)}" alt="正面"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
-        </div>
-        <div class="user-photo-box">
-          <small>實拍：向右</small>
-          ${sRight ? `<img class="u-strip-img" data-zoom="${esc(sRight)}" src="${esc(sRight)}" alt="向右"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
-        </div>
-        <div class="user-photo-box">
-          <small>實拍：向左</small>
-          ${sLeft ? `<img class="u-strip-img" data-zoom="${esc(sLeft)}" src="${esc(sLeft)}" alt="向左"><div class="placeholder-pic" style="display:none">未拍</div>` : `<div class="placeholder-pic">未拍</div>`}
-        </div>
       </div>
       <div class="user-stats-bar">
         <div><b>${u.login_count}</b><small>登入次數</small></div>
@@ -3120,6 +3215,15 @@ function setupStudioTabs() {
 function openFormConfigModal(formObj) {
   if (!isSuper()) return toast("一般管理員僅能查看數據", true);
   editingFormObj = JSON.parse(JSON.stringify(formObj));
+  isFormDirty = false;
+  setTimeout(() => {
+    const modalEl = $("formConfigModal");
+    if (modalEl && !modalEl._dirtyBound) {
+      modalEl._dirtyBound = true;
+      modalEl.addEventListener("input", () => { isFormDirty = true; });
+      modalEl.addEventListener("change", () => { isFormDirty = true; });
+    }
+  }, 100);
   $("cfgFormTitle").value = editingFormObj.title || "";
   $("cfgFormDesc").value = editingFormObj.description || "";
   $("cfgVideoUrl").value = editingFormObj.videoUrl || "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview";
@@ -3770,6 +3874,10 @@ $("addNewFormBtn").onclick = () => {
 };
 
 $("cancelFormCfgBtn").onclick = () => {
+  if (isFormDirty && !confirm("您有尚未儲存的問卷設定變更，確定要捨棄離開嗎？")) {
+    return;
+  }
+  isFormDirty = false;
   setStudioPlaying(false);
   $("formConfigModal").classList.add("hide");
 };
@@ -3810,6 +3918,7 @@ $("saveFormCfgBtn").onclick = async () => {
     selectedFormId = savedForm.id;
     if (editingFormObj.isDefault) activeDfcFormId = savedForm.id;
 
+    isFormDirty = false;
     setStudioPlaying(false);
     $("formConfigModal").classList.add("hide");
     renderDfcPanel();
@@ -4570,7 +4679,11 @@ $("dockAdmins").onclick = () => { if (Date.now() >= adminSuppressClickUntil) swi
 $("dockStatus").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("status"); };
 
 function toCsvField(v) {
-  const s = String(v ?? "");
+  let s = String(v ?? "");
+  // 防範試算表公式注入 (Formula Injection: =, +, -, @, \t, \r)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s;
+  }
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 $("exportPostsCsvBtn").onclick = () => {

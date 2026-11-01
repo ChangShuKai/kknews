@@ -38,7 +38,7 @@
 - **🎨 HTML5 Canvas 即時高解析度繪圖**：支援 5 種卡片排版與多款經典色系，所見即所得，毫秒級即時繪製渲染。
 - **🎬 創新 DFC 影音時間軸互動問卷**：串聯 Google Drive 串流與本機影片，時間點到達自動縮放畫面展開互動題庫，支援 6 種靈活題型。
 - **🔒 隱蔽式後台與 RBAC 分級授權**：動態金鑰偽裝 404 入口、Super Admin（完整權限）與 Admin（唯讀審計）角色分離。
-- **📊 系統連線即時儀表板**：每 4 秒輪詢 Supabase 資料庫連線數、CPU、RAM、快取命中率與 API 延遲指標。
+- **📊 系統服務監測儀表板**：動態觀測 Supabase 雲端資料庫連線狀態、API 延遲與全站統計指標。
 
 ---
 
@@ -79,8 +79,8 @@
 | **人機驗證與限流** | 整合 Cloudflare Turnstile 機器人防禦；採用分散式 Supabase Rate Limiter 針對 IP/Action 進行防刷保護（故障時自動平滑回退記憶體快取）。 |
 | **密碼安全與防時序攻擊** | 管理員密碼採用 `scrypt` 結合高強度隨機 Salt 雜湊；校驗時使用 `crypto.timingSafeEqual` 杜絕時序攻擊（Timing Attacks）。 |
 | **隱藏後台入口** | `/adminusercontrol?k=<ADMIN_ACCESS_KEY>`，若未提供或金鑰比對錯誤一律回應 HTTP 404 Not Found。 |
-| **嚴格 CSP 防護** | 後端自動解析 HTML 並將內嵌腳本拆分成外部獨立資源，完全移除 `'unsafe-inline'`，並配置嚴謹的 Content-Security-Policy。 |
-| **全站安全審計 (Audit Logs)** | 結構化記錄所有使用者登入、作答歷程、IP 位址、裝置 User-Agent、實拍驗證照片與管理員後台操作軌跡。 |
+| **嚴格 CSP 防護** | 後端自動解析 HTML 並將內嵌 JavaScript 腳本拆分為外部獨立檔案，完全移除腳本的 `'unsafe-inline'`，並配置嚴格的 Content-Security-Policy。 |
+| **全站安全審計 (Audit Logs)** | 結構化記錄所有使用者登入、作答歷程、IP 位址、裝置環境資訊與管理員後台操作軌跡。 |
 
 ---
 

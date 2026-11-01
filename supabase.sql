@@ -90,6 +90,7 @@ grant execute on function public.get_db_metrics() to service_role;
 
 -- ===== 安全強化新增（請在 Supabase SQL Editor 執行一次）=====
 -- 實拍照片改存專用資料表：只有 service_role（伺服器）能讀寫，使用者無法透過 Supabase 改寫
+-- [注意] 考量校園資安與個資法隱私權最小化原則，已全面取消學生三張臉部照片採集，本資料表僅供歷史相容保留
 create table if not exists public.user_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   selfie_front text not null,

@@ -537,7 +537,11 @@ function parseCsvText(text = "") {
 }
 
 function toCsvCell(v) {
-  const s = Array.isArray(v) ? v.join("; ") : String(v ?? "");
+  let s = Array.isArray(v) ? v.join("; ") : String(v ?? "");
+  // 防範試算表公式注入 (Formula Injection: =, +, -, @, \t, \r)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s;
+  }
   if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
@@ -657,7 +661,7 @@ app.get("/assets/dfc.mp4", async (req, res) => {
 const VIDEO_BLOCK_SIZE = 2 * 1024 * 1024; // 2 MB 標準對齊切塊
 const MAX_CHUNK_CACHE_BYTES = 180 * 1024 * 1024; // 180 MB 記憶體快取池
 const DEFAULT_DFC_VIDEO_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
-const DEFAULT_WORKSPACE_VIDEO_KEY = "AIzaSyDVQw45DwoYh632gvsP5vPDqEKvb-Ywnb8";
+const DEFAULT_WORKSPACE_VIDEO_KEY = (process.env.GOOGLE_WORKSPACE_VIDEO_KEY || process.env.GOOGLE_API_KEY || "").trim();
 
 const driveVideoMetaCache = new Map();
 const driveVideoChunkCache = new Map();
@@ -1059,7 +1063,9 @@ async function prewarmDefaultDfcVideo() {
     }
   } catch {}
 }
-setTimeout(() => prewarmDefaultDfcVideo(), 250);
+if (!process.env.VERCEL) {
+  setTimeout(() => prewarmDefaultDfcVideo(), 1000);
+}
 
 function extractGoogleDriveFileId(input = "") {
   const s = String(input || "").trim();
@@ -1356,10 +1362,13 @@ app.post("/api/verify-turnstile", async (req, res) => {
     ""
   ).trim();
 
-  // 若尚未在環境變數填寫 Secret Key，輸出提示並暫行放行（供本地測試）
+  // 若尚未在環境變數填寫 Secret Key，在正式環境明確拒絕，僅本機開發警告提示
   if (!secret) {
-    console.warn("[Turnstile] 未偵測到 TURNSTILE_SECRET_KEY 環境變數，已暫行通過。請記得在 Vercel 設定 TURNSTILE_SECRET_KEY。");
-    setCookie(res, "cf_passed", "1", { maxAge: 86400 });
+    if (process.env.NODE_ENV === "production" || process.env.VERCEL === "1") {
+      console.error("[Turnstile] 伺服器未設定 TURNSTILE_SECRET_KEY 環境變數");
+      return res.status(500).json({ ok: false, error: "伺服器人機驗證金鑰尚未設定，請通知系統管理員" });
+    }
+    console.warn("[Turnstile] 本機測試模式：未設定 TURNSTILE_SECRET_KEY，允許開發測試通過。");
     return res.json({ ok: true, devMode: true });
   }
 
@@ -1372,11 +1381,12 @@ app.post("/api/verify-turnstile", async (req, res) => {
       method: "POST",
       body: formData,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      signal: AbortSignal.timeout(8000),
     });
 
     const cfData = await cfRes.json();
     if (cfData.success) {
-      setCookie(res, "cf_passed", "1", { maxAge: 86400 });
+      setCookie(res, "cf_passed", "1", { maxAge: 600 });
       return res.json({ ok: true });
     } else {
       console.warn("[Turnstile] 驗證失敗:", cfData["error-codes"]);
@@ -1384,7 +1394,7 @@ app.post("/api/verify-turnstile", async (req, res) => {
     }
   } catch (err) {
     console.error("[Turnstile] 驗證伺服器連線異常:", err);
-    return res.status(500).json({ ok: false, error: "驗證伺服器連線異常，請稍後重試" });
+    return res.status(502).json({ ok: false, error: "人機驗證服務連線逾時，請點擊重試" });
   }
 });
 
@@ -2465,15 +2475,11 @@ async function fetchProverbsCount() {
 
 async function fetchEnrichedUsersList(preloadedProverbs = null) {
   return cachedQuery("users", 2500, async () => {
-    const [{ data: usersData, error: uErr }, proverbsData, profilesRes, storageFilesRes] = await Promise.all([
+    const [{ data: usersData, error: uErr }, proverbsData] = await Promise.all([
       db.auth.admin.listUsers({ page: 1, perPage: 1000 }),
       preloadedProverbs ? Promise.resolve(preloadedProverbs) : fetchProverbsList().catch(() => []),
-      cachedQuery("userProfiles", 5000, () => db.from("user_profiles").select("user_id,selfie_front,selfie_right,selfie_left,selfie_at").then(r => r, () => ({ data: [] }))),
-      cachedQuery("verifyStorageList", 5000, () => db.storage.from("kknews-verify").list("", { limit: 1000 }).then(r => r, () => ({ data: [] }))),
     ]);
     if (uErr) throw uErr;
-    const profileMap = Object.fromEntries(((profilesRes && profilesRes.data) || []).map(p => [p.user_id, p]));
-    const storageSet = new Set(((storageFilesRes && storageFilesRes.data) || []).map(f => f.name.replace(/\.json$/, "")));
 
     const postStats = {};
     for (const p of (proverbsData || [])) {
@@ -2505,14 +2511,7 @@ async function fetchEnrichedUsersList(preloadedProverbs = null) {
 
     return (usersData?.users || []).map(u => {
       const md = u.user_metadata || {};
-      const pf = profileMap[u.id] || {};
       const st = postStats[u.id] || postStats[u.email] || { count: 0 };
-      const hasStorage = storageSet.has(u.id);
-      const selfie = pf.selfie_front || md.kk_selfie || "";
-      const selfieRight = pf.selfie_right || md.kk_selfie_right || "";
-      const selfieLeft = pf.selfie_left || md.kk_selfie_left || "";
-      const selfieAt = pf.selfie_at || md.kk_selfie_at || "";
-      const hasPhotos = Boolean(selfie || hasStorage || md.kk_verified);
       return {
         id: u.id,
         email: u.email || "",
@@ -2520,11 +2519,6 @@ async function fetchEnrichedUsersList(preloadedProverbs = null) {
         given_name: md.given_name || "",
         family_name: md.family_name || "",
         picture: md.picture || md.avatar_url || "",
-        has_photos: hasPhotos,
-        selfie,
-        selfie_right: selfieRight,
-        selfie_left: selfieLeft,
-        selfie_at: selfieAt,
         google_sub: md.sub || md.provider_id || "",
         email_verified: md.email_verified ?? Boolean(u.email_confirmed_at),
         hd: md.hd || (u.email || "").split("@")[1] || "",
@@ -2549,11 +2543,30 @@ async function fetchEnrichedUsersList(preloadedProverbs = null) {
   });
 }
 
-/* --- 投稿管理 API（一般 Admin 僅可讀取，Super Admin 可修改與刪除） --- */
+/* --- 投稿管理 API（支援分頁與搜尋，一般 Admin 僅可讀取，Super Admin 可修改與刪除） --- */
 app.get("/api/admin/proverbs", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   try {
-    res.json(await fetchProverbsList());
+    const all = await fetchProverbsList();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(0, parseInt(req.query.limit) || 0));
+    const search = String(req.query.search || "").trim().toLowerCase();
+    let filtered = all;
+    if (search) {
+      filtered = all.filter(p =>
+        (p.content && p.content.toLowerCase().includes(search)) ||
+        (p.author && p.author.toLowerCase().includes(search)) ||
+        (p.user_email && p.user_email.toLowerCase().includes(search)) ||
+        (p.user_name && String(p.user_name).toLowerCase().includes(search))
+      );
+    }
+    if (limit > 0) {
+      const total = filtered.length;
+      const start = (page - 1) * limit;
+      const paginated = filtered.slice(start, start + limit);
+      return res.json({ items: paginated, total, page, limit, totalPages: Math.ceil(total / limit) });
+    }
+    res.json(filtered);
   } catch {
     res.status(500).json({ error: "讀取失敗" });
   }
@@ -2587,11 +2600,29 @@ app.delete("/api/admin/proverbs/:id", async (req, res) => {
   res.status(error ? 500 : 200).json({ ok: !error });
 });
 
-// 已登入帳號完整彙整（包含實拍三張照片、定位、硬體環境、登入與貼文次數）
+// 已登入帳號彙整（包含定位、硬體環境、登入與貼文次數，取消實拍照收集以保護隱私，支援分頁與搜尋）
 app.get("/api/admin/users", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   try {
-    res.json(await fetchEnrichedUsersList());
+    const all = await fetchEnrichedUsersList();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(0, parseInt(req.query.limit) || 0));
+    const search = String(req.query.search || "").trim().toLowerCase();
+    let filtered = all;
+    if (search) {
+      filtered = all.filter(u =>
+        (u.email && u.email.toLowerCase().includes(search)) ||
+        (u.name && u.name.toLowerCase().includes(search)) ||
+        (u.last_device && u.last_device.toLowerCase().includes(search))
+      );
+    }
+    if (limit > 0) {
+      const total = filtered.length;
+      const start = (page - 1) * limit;
+      const paginated = filtered.slice(start, start + limit);
+      return res.json({ items: paginated, total, page, limit, totalPages: Math.ceil(total / limit) });
+    }
+    res.json(filtered);
   } catch {
     res.status(500).json({ error: "讀取帳號失敗" });
   }
@@ -2599,29 +2630,8 @@ app.get("/api/admin/users", async (req, res) => {
 
 app.get("/api/admin/users/:id/photos", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
-  const id = String(req.params.id);
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({});
-  audit(req, "view_photos", id);
-
-  // 1. 優先從私有 Storage 讀取
-  try {
-    const { data: stBlob, error: stErr } = await db.storage.from("kknews-verify").download(`${id}.json`);
-    if (!stErr && stBlob) {
-      const parsed = JSON.parse(await stBlob.text());
-      return res.json({ front: parsed.front || "", right: parsed.right || "", left: parsed.left || "", at: parsed.at || "" });
-    }
-  } catch {}
-
-  // 2. 查 user_profiles 表
-  const { data } = await db.from("user_profiles").select("selfie_front,selfie_right,selfie_left,selfie_at").eq("user_id", id).maybeSingle().then(r => r, () => ({ data: null }));
-  if (data && data.selfie_front) {
-    return res.json({ front: data.selfie_front, right: data.selfie_right, left: data.selfie_left, at: data.selfie_at });
-  }
-
-  // 3. 查 user_metadata 舊格式
-  const { data: uData } = await db.auth.admin.getUserById(id).catch(() => ({}));
-  const md = uData?.user?.user_metadata || {};
-  res.json({ front: md.kk_selfie || "", right: md.kk_selfie_right || "", left: md.kk_selfie_left || "", at: md.kk_selfie_at || "" });
+  // 已取消實拍三張照片收集，回傳空物件
+  res.json({ front: "", right: "", left: "", at: "" });
 });
 
 /* 資料庫即時狀態：直接抓取 Supabase /customer/v1/privileged/metrics 真實 Prometheus 指標 */
@@ -2705,36 +2715,38 @@ async function fetchSupabaseRealMetrics() {
       const latencyMs = Date.now() - t0;
       return {
         ok: !error,
+        metricsAvailable: false,
         latencyMs,
-        cpuPct: 3,
-        diskPct: 12,
-        ramPct: 38,
-        conns: 4,
-        maxConns: 60,
-        memUsedMb: 388,
-        memTotalMb: 1024,
-        diskUsedMb: 960,
-        diskTotalGb: "8.00",
-        dbSizeMb: "14.20",
-        walSizeMb: "16.0",
-        cacheHitPct: "99.98",
+        cpuPct: null,
+        diskPct: null,
+        ramPct: null,
+        conns: null,
+        maxConns: null,
+        memUsedMb: null,
+        memTotalMb: null,
+        diskUsedMb: null,
+        diskTotalGb: null,
+        dbSizeMb: null,
+        walSizeMb: null,
+        cacheHitPct: null,
         xactCommit: 0,
         xactRollback: 0,
         tupInserted: 0,
         tupUpdated: 0,
         tupDeleted: 0,
         totalQueries: 0,
-        load1: "0.03",
-        load5: "0.02",
-        load15: "0.01",
-        netRxMb: "0.0",
-        netTxMb: "0.0",
+        load1: null,
+        load5: null,
+        load15: null,
+        netRxMb: null,
+        netTxMb: null,
+        checkedAt: new Date().toISOString(),
       };
     }
   });
 }
 
-// 前台「即時資訊」狀態：提供資料庫區域、資源使用率、延遲、快取命中與平台即時統計
+// 前台「即時資訊」狀態：提供真實連線狀態、延遲與平台真實統計（若硬體底層指標不可用，誠實回傳 null）
 app.get("/api/status", async (req, res) => {
   try {
     const [m, proverbsCount, dfcStore] = await Promise.all([
@@ -2742,12 +2754,15 @@ app.get("/api/status", async (req, res) => {
       fetchProverbsCount().catch(() => 0),
       readSysStore("dfc", DEFAULT_DFC_STORE),
     ]);
+    const projectRef = (SUPABASE_URL.match(/https?:\/\/([^.]+)\.supabase\.co/) || [])[1] || "supabase";
     res.json({
       ok: m.ok,
-      dbName: "Primary Database",
-      regionName: "Northeast Asia (Tokyo)",
-      regionCode: "ap-northeast-1",
-      instanceType: "t3.nano",
+      metricsAvailable: m.metricsAvailable !== false,
+      dbName: "Supabase PostgreSQL",
+      projectRef,
+      regionName: "Supabase Managed Cloud",
+      regionCode: "cloud",
+      instanceType: "Serverless Postgres",
       latencyMs: m.latencyMs,
       cacheHitPct: m.cacheHitPct,
       cpuPct: m.cpuPct,
@@ -2758,7 +2773,7 @@ app.get("/api/status", async (req, res) => {
       proverbsCount,
       dfcResponsesCount: (dfcStore?.responses || []).length,
       dfcFormsCount: (dfcStore?.forms || []).length,
-      checkedAt: new Date().toISOString(),
+      checkedAt: m.checkedAt || new Date().toISOString(),
     });
   } catch {
     res.status(500).json({ ok: false });
@@ -2851,7 +2866,7 @@ app.get("/api/admin/sync", async (req, res) => {
       accounts: {
         me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },
         accounts,
-        accessKey: isSuper ? ADMIN_ACCESS_KEY : "",
+        accessKey: "",
       },
       auditLogs,
       status: {
@@ -2859,7 +2874,10 @@ app.get("/api/admin/sync", async (req, res) => {
         adminEmail: liveAdm.email || ADMIN_EMAIL,
         adminRole: liveAdm.role || "super_admin",
         adminName: liveAdm.name || "Super Admin",
-        dbName: "Primary Database", regionName: "Northeast Asia (Tokyo)", regionCode: "ap-northeast-1", instanceType: "t3.nano",
+        dbName: "Supabase PostgreSQL",
+        regionName: m.metricsAvailable !== false ? "Supabase Cloud" : "雲端資料庫",
+        regionCode: "cloud",
+        instanceType: "Managed Postgres",
         proverbsCount: proverbs.length,
         usersCount: users.length,
         dfcFormsCount: forms.length,
