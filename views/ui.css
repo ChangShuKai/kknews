@@ -220,7 +220,7 @@
 }
 
 [data-theme="dark"] body {
-  background-color: #000000;
+  background-color: #0b0d13;
   background-image:
     radial-gradient(1000px 600px at 15% -5%, rgba(10, 132, 255, 0.08) 0%, transparent 60%),
     radial-gradient(900px 500px at 85% 105%, rgba(48, 209, 88, 0.06) 0%, transparent 60%);
@@ -228,16 +228,17 @@
 
 [data-theme="dark"] .top-header,
 [data-theme="dark"] header {
-  background: rgba(20, 20, 22, 0.82) !important;
+  background: rgba(18, 20, 26, 0.85) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-theme="dark"] .input,
 [data-theme="dark"] textarea,
-[data-theme="dark"] select {
-  background: #1c1c1e !important;
-  color: #f5f5f7 !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
+[data-theme="dark"] select,
+[data-theme="dark"] .search-box {
+  background: #14161c !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 [data-theme="dark"] .login-card,
@@ -247,9 +248,10 @@
 [data-theme="dark"] .home-guide-card,
 [data-theme="dark"] .user-item-card,
 [data-theme="dark"] .post-item-card,
-[data-theme="dark"] .mission-banner {
-  background: #1c1c1e !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+[data-theme="dark"] .mission-banner,
+[data-theme="dark"] .admin-empty-state {
+  background: #181a20 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 [data-theme="dark"] .btn.ghost {
