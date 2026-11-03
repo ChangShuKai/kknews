@@ -355,6 +355,8 @@
       width: 100%;
       max-width: 320px;
       height: auto;
+      aspect-ratio: 768 / 1024;
+      object-fit: contain;
       border-radius: 16px;
       display: block;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
@@ -398,14 +400,8 @@
 
     .layout-picker-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
       gap: 8px;
-    }
-
-    @media (max-width: 520px) {
-      .layout-picker-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
     }
 
     .layout-card-btn {
@@ -421,6 +417,7 @@
       transition: 0.18s var(--spring-smooth);
       font: inherit;
       color: var(--ink);
+      min-width: 0;
     }
 
     .layout-card-btn:hover {
@@ -863,14 +860,14 @@
 
     /* 影片自訂控制列 */
     .cinema-controls {
-      margin-top: 14px;
+      margin-top: 12px;
       background: var(--bg);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      padding: 10px 14px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -934,8 +931,8 @@
 
     .cinema-track {
       position: relative;
-      flex: 1;
-      min-width: 140px;
+      flex: 1 1 100px;
+      min-width: 80px;
       height: 9px;
       background: rgba(0, 0, 0, 0.09);
       border-radius: var(--r-pill);
@@ -1244,15 +1241,9 @@
 
     .kpi-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 12px;
       margin: 18px 0;
-    }
-
-    @media (max-width: 580px) {
-      .kpi-row {
-        grid-template-columns: 1fr 1fr;
-      }
     }
 
     .kpi-card {
@@ -1525,7 +1516,7 @@
         <div class="entry-gate-icon-wrap">
           <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo">
         </div>
-        <span class="device-profile-badge" id="loginDeviceBadge">💻 偵測登入裝置版面中...</span>
+        <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
       </div>
 
       <h1 class="entry-gate-title" id="entryGateTitle">KKNews 校園共創平台</h1>
@@ -1562,10 +1553,10 @@
     </div>
 
     <div class="top-nav-minimal" aria-label="頂部精簡狀態與頁面切換列">
-      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回方形主選單或切換頁面">
+      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回首頁或切換頁面">
         <span class="page-tag-dot"></span>
-        <span id="topCurrentPageLabel">🏠 首頁主選單</span>
-        <span class="page-switch-hint" id="topCurrentPageHint">主選單</span>
+        <span id="topCurrentPageLabel">🏠 首頁</span>
+        <span class="page-switch-hint" id="topCurrentPageHint">首頁</span>
       </button>
 
       <button type="button" class="top-status-btn" id="topStatusBtn" title="查看雲端資料庫與系統即時狀態">
@@ -1594,40 +1585,26 @@
       <div style="width:min(1040px, 100%);margin:0 auto">
         <div class="mission-banner">
           <div class="mission-head">
-            <h1 class="mission-title">✦ KKNews 校園共創與 DFC 思維探究中樞</h1>
-            <span class="device-profile-badge" id="homeDeviceBadge">💻 電腦版面 · 自動適配</span>
+            <h1 class="mission-title">KKNews 校園共創與學習平台</h1>
+            <span class="device-profile-badge" id="homeDeviceBadge" style="display:none"></span>
           </div>
           <p class="mission-desc">
-            <strong>平台宗旨：</strong>凝聚校園正向文字力量，並結合 DFC 四步驟（感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share）互動影音教學，打造兼具創作美學、流暢串流與嚴密防暴雷保護的最高規格校園平台。
+            凝聚校園正向文字力量 · 結合 DFC 設計思考互動學習
           </p>
-          <div class="mission-pillars">
-            <div class="mission-pillar">
-              <b>✍️ 諺語牌卡即時合成</b>
-              <span>支援經典居中、文青直排、現代引言、典雅雙框、潮流海報 5 種版面與 7 款色票。</span>
-            </div>
-            <div class="mission-pillar">
-              <b>🎬 智慧漸進畫質與防暴雷</b>
-              <span>低畫質極速預載啟動、緩衝充足自動升 HD，且僅限授權名單帳號觀看，杜絕劇透。</span>
-            </div>
-            <div class="mission-pillar">
-              <b>📱 跨裝置像素級自動版面</b>
-              <span>自動偵測登入裝置像素與螢幕比例，動態切換電腦、平板與手機專屬防破圖版面。</span>
-            </div>
-          </div>
         </div>
 
         <div class="hub-square-grid">
           <button type="button" class="hub-square-btn" id="hubBtnPost">
             <div class="hub-square-top">
               <div class="hub-square-icon">✍️</div>
-              <span class="hub-square-badge ok">全校開放創作</span>
+              <span class="hub-square-badge ok">開放創作</span>
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">諺語工坊</h2>
-              <p class="hub-square-desc">寫下一句諺語或校園格言並加上署名，60fps 即時預覽專屬排版卡片，一鍵投稿或下載高清 PNG。</p>
+              <p class="hub-square-desc">寫下一句格言與署名，即時排版專屬卡片並下載分享。</p>
             </div>
             <div class="hub-square-foot">
-              <span>進入方形工作區</span>
+              <span>開始製作</span>
               <span>→</span>
             </div>
           </button>
@@ -1635,14 +1612,14 @@
           <button type="button" class="hub-square-btn" id="hubBtnDfc">
             <div class="hub-square-top">
               <div class="hub-square-icon">🎬</div>
-              <span class="hub-square-badge lock" id="hubDfcAccessBadge">🔒 防暴雷驗證中</span>
+              <span class="hub-square-badge lock" id="hubDfcAccessBadge">🔒 權限驗證中</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">DFC 互動影音問卷</h2>
-              <p class="hub-square-desc">觀看 DFC 探究影片並於指定時間標記展開互動問答；搭載先低後高智慧串流引擎與防暴雷保護。</p>
+              <h2 class="hub-square-title">DFC 互動影音</h2>
+              <p class="hub-square-desc">觀看設計思考探究影片，在關鍵時間點思考作答。</p>
             </div>
             <div class="hub-square-foot">
-              <span id="hubDfcFootText">進入互動劇院</span>
+              <span id="hubDfcFootText">進入劇院</span>
               <span>→</span>
             </div>
           </button>
@@ -1650,39 +1627,41 @@
           <button type="button" class="hub-square-btn" id="hubBtnStatus">
             <div class="hub-square-top">
               <div class="hub-square-icon">📊</div>
-              <span class="hub-square-badge ok" id="hubStatusBadge">雲端連線正常</span>
+              <span class="hub-square-badge ok" id="hubStatusBadge">連線正常</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">系統即時狀態</h2>
-              <p class="hub-square-desc">即時觀測 Supabase 雲端資料庫連線延遲、服務健康狀態與全站累積創作量。</p>
+              <h2 class="hub-square-title">系統狀態</h2>
+              <p class="hub-square-desc">即時觀測資料庫健康、API 延遲與全站統計指標。</p>
             </div>
             <div class="hub-square-foot">
-              <span>檢視即時遙測</span>
+              <span>檢視狀態</span>
               <span>→</span>
             </div>
           </button>
         </div>
 
         <!-- 首頁精選卡片與 DFC 學習指引 -->
-        <div class="home-guide-strip" style="margin-top:28px;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
-          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;backdrop-filter:blur(20px)">
-            <div style="font-size:12px;font-weight:700;color:var(--blue);letter-spacing:0.08em;margin-bottom:6px">💡 探索指引 · 三步驟開始學習</div>
-            <h3 style="margin:0 0 10px;font-size:17px;font-weight:700">在 KKNews 你可以這樣做：</h3>
-            <ol style="margin:0;padding-left:20px;font-size:13.5px;color:var(--ink-secondary);line-height:1.7">
-              <li><strong>創作品牌金句</strong>：運用 5 款排版風格與色票，排版出屬於你的校園格言卡。</li>
-              <li><strong>觀看 DFC 案例</strong>：跟著影片走入設計思考情境，在關鍵時間點回答探究問題。</li>
-              <li><strong>實踐改變行動</strong>：串接 Google 表單記錄你的想法，與全校同學共同激盪。</li>
-            </ol>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;backdrop-filter:blur(20px);display:flex;flex-direction:column;justify-content:space-between">
+        <div class="home-guide-strip">
+          <div class="home-guide-card">
             <div>
-              <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:0.08em;margin-bottom:6px">🎬 DFC 近期主題 · 設計思考</div>
-              <h3 style="margin:0 0 8px;font-size:17px;font-weight:700">「從生活痛點出發，把『我做不到』變成『我們可以怎麼做』」</h3>
-              <p style="margin:0;font-size:13.5px;color:var(--ink-secondary);line-height:1.6">透過感受、想像、實踐與分享四大階段，探索身邊可以被改善的校園細節。</p>
+              <div class="home-guide-tag blue">💡 學習流程</div>
+              <h3 class="home-guide-title">三步驟開啟創作與探究</h3>
+              <ul class="home-guide-list">
+                <li><strong>1. 製作格言卡</strong>：挑選排版風格與色彩，客製校園金句。</li>
+                <li><strong>2. 探索 DFC 影音</strong>：沉浸情境，在關鍵時間點回答探究問題。</li>
+                <li><strong>3. 實踐與分享</strong>：記錄想法並同步表單，與同學交流激盪。</li>
+              </ul>
             </div>
-            <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line-subtle)">
-              <span style="font-size:12.5px;color:var(--ink-tertiary)">學生自主學習特輯</span>
-              <button type="button" class="btn ghost sm" id="homeQuickStartDfc" style="padding:4px 12px;font-size:12.5px">立即前往 DFC →</button>
+          </div>
+          <div class="home-guide-card">
+            <div>
+              <div class="home-guide-tag green">🎬 近期主題</div>
+              <h3 class="home-guide-title">DFC 設計思考探究</h3>
+              <p class="home-guide-quote">「從生活痛點出發，把『我做不到』變成『我們可以怎麼做』」</p>
+            </div>
+            <div class="home-guide-action">
+              <span class="home-guide-subtext">感受 · 想像 · 實踐 · 分享</span>
+              <button type="button" class="btn ghost sm" id="homeQuickStartDfc">前往 DFC 影音 →</button>
             </div>
           </div>
         </div>
@@ -1878,7 +1857,7 @@
                   <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
                 </div>
               </div>
-              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片採「先低畫質極速預載、後自動升 HD」串流技術，抵達時間標記時將自動於右側展開問答。</p>
+              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至時間標記時將展開互動問答，請依序觀看並作答。</p>
             </div>
             <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
@@ -2368,10 +2347,10 @@
     };
 
     const PAGE_LABELS = {
-      home: { title: "🏠 首頁主選單", hint: "點此快速切換" },
-      post: { title: "✍️ 諺語工坊", hint: "點此回主選單" },
-      dfc: { title: "🎬 DFC 影音問卷", hint: "點此回主選單" },
-      status: { title: "📊 系統即時狀態", hint: "點此回主選單" },
+      home: { title: "🏠 首頁", hint: "切換頁面" },
+      post: { title: "✍️ 諺語工坊", hint: "返回首頁" },
+      dfc: { title: "🎬 DFC 影音問卷", hint: "返回首頁" },
+      status: { title: "📊 系統狀態", hint: "返回首頁" },
     };
 
     let currentTab = "home";
@@ -2458,8 +2437,6 @@
       videoUrl: "",
       videoVersion: "",
       fallbackDuration: 363,
-      googleFormUrl: "YOUR_GOOGLE_FORM_URL",
-      emailEntryId: "",
       submitMode: "end",
       allowSeek: "watched",
       allowRewind: true,
@@ -3714,7 +3691,7 @@
       renderDfcMarkers();
     }
 
-    async function submitDfcToGoogleForm(payloadAnswers) {
+    async function submitDfcAnswers(payloadAnswers) {
       const dur = Math.max(1, Math.round(dfcState.duration || DFC_CONFIG.fallbackDuration || 363));
       const watchedSec = Math.min(dur, Math.round(dfcState.maxWatchedTime || dfcState.currentTime || 0));
       const watchPct = Math.min(100, Math.round((watchedSec / dur) * 100));
@@ -3745,8 +3722,6 @@
 
       const r = await api("/api/dfc/submit", {
         formId: DFC_CONFIG.id || "default-dfc",
-        formUrl: DFC_CONFIG.googleFormUrl,
-        emailEntryId: DFC_CONFIG.emailEntryId,
         answers: payloadAnswers,
         telemetry,
         engagement,
@@ -3789,7 +3764,8 @@
         return;
       }
 
-      dfcState.answers[cp.entryId] = val;
+      dfcState.answers[cp.id] = val;
+      if (cp.entryId) dfcState.answers[cp.entryId] = val;
       dfcState.answeredIds.add(cp.id);
       if (dfcEngagement.checkpointOpenTs) {
         const spentSec = Math.max(1, Math.round((Date.now() - dfcEngagement.checkpointOpenTs) / 1000));
@@ -3805,15 +3781,13 @@
       try {
         const allDone = DFC_CONFIG.checkpoints.every(c => dfcState.answeredIds.has(c.id));
         if (DFC_CONFIG.submitMode === "each" && !allDone) {
-          await submitDfcToGoogleForm({ [cp.entryId]: val });
+          await submitDfcAnswers({ [cp.id]: val, ...(cp.entryId ? { [cp.entryId]: val } : {}) });
         } else if (allDone && !dfcState.submitted) {
-          const res = await submitDfcToGoogleForm(dfcState.answers);
+          await submitDfcAnswers(dfcState.answers);
           dfcState.submitted = true;
           logAction("送出 DFC 問卷", `完成表單 [${DFC_CONFIG.title}] 全部 ${DFC_CONFIG.checkpoints.length} 題作答`);
           $("dfcCompleteBox").classList.remove("hide");
-          $("dfcCompleteDesc").textContent = res.demo
-            ? "目前為示範模式（尚未填入實際 Google Form 網址），作答已驗證並保存於本站紀錄！"
-            : "所有時間點的問題皆已成功透過 Google Form API 串接送出！";
+          $("dfcCompleteDesc").textContent = "所有時間點的問題皆已成功儲存至雲端資料庫！感謝你的參與！";
 
           // 渲染作答摘要
           const summaryCard = $("dfcSummaryCard");
@@ -3823,7 +3797,7 @@
             DFC_CONFIG.checkpoints.forEach((c, i) => {
               const row = document.createElement("div");
               row.className = "dfc-summary-row";
-              const a = dfcState.answers[c.entryId];
+              const a = dfcState.answers[c.id] ?? (c.entryId ? dfcState.answers[c.entryId] : null);
               let aText = Array.isArray(a) ? a.join("、 ") : (a || "(未作答)");
               if (c.type === "rating" && a) aText = "★".repeat(Number(a)) + ` (${a} 分)`;
               row.innerHTML = `
@@ -3837,7 +3811,11 @@
         }
       } catch (e) {
         const errEl = $("dfcQErr");
-        errEl.textContent = e.message || "Google 表單串接送出失敗";
+        errEl.textContent = e.message || "問卷送出失敗，請檢查網路後再試";
+        errEl.classList.add("show");
+        btn.disabled = false;
+        return;
+      }
         errEl.classList.add("show");
         btn.disabled = false;
         return;

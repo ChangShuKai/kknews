@@ -65,7 +65,7 @@
   4. 是非題（二擇一按鈕切換）
   5. 簡答／詳答題（字數統計）
   6. 下拉選單題
-- **Google Forms 雙向串接**：支援自訂 Google 表單 Entry ID 映射，作答紀錄自動寫入 Supabase 資料庫並非同步轉送至 Google 表單。
+- **原生 Supabase 雲端資料庫儲存**：問卷問題題目、時間點標記、填答成果與深度行為數據均原生儲存於 Supabase 資料表（`public.dfc_forms` 與 `public.dfc_responses`），免 Google Form、免第三方外掛，後台一站式自主控管。
 - **問卷工作室**：後台提供視覺化時間點調整、新增/複製問卷、CSV 題目匯入/匯出與前台主推問卷切換。
 
 ---
@@ -92,22 +92,20 @@ flowchart TD
     Turnstile["Cloudflare Turnstile (人機防護)"]
     GoogleAuth["Google Identity Services (@hlc.edu.tw)"]
     Express["Node.js / Express 5 API 伺服器 (Vercel Serverless)"]
-    SupabaseDB["Supabase PostgreSQL (RLS / Audit / Rate Limit)"]
+    SupabaseDB["Supabase PostgreSQL (DFC 表單、作答、審計、RLS)"]
     SupabaseStore["Supabase Storage (驗證資料與設定)"]
-    GoogleForm["Google Forms API (非同步表單同步)"]
 
     Client -->|人機驗證| Turnstile
     Client -->|OAuth 登入| GoogleAuth
     Client -->|HTTPS / HttpOnly Cookie| Express
     Express -->|service_role 隔離訪問| SupabaseDB
     Express -->|持久化存取| SupabaseStore
-    Express -->|非同步轉發| GoogleForm
 ```
 
 - **Runtime & 框架**：Node.js (CommonJS), Express.js 5.3+
 - **資料庫與雲端服務**：Supabase (PostgreSQL 15+ & Storage)
 - **前端核心**：純原生 JavaScript (Vanilla ES6+), HTML5 Canvas, CSS Variables, JSZip
-- **外部整合**：Google OAuth 2.0, Google Forms API, Cloudflare Turnstile, Google Drive Video Streaming
+- **外部整合**：Google OAuth 2.0 (@hlc.edu.tw), Cloudflare Turnstile, Google Drive Video Streaming
 
 ---
 

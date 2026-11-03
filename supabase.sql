@@ -152,3 +152,95 @@ alter table public.dfc_access_list enable row level security;
 revoke all on public.dfc_access_list from anon, authenticated;
 drop policy if exists "allow service_role dfc_access" on public.dfc_access_list;
 create policy "allow service_role dfc_access" on public.dfc_access_list for all to service_role using (true) with check (true);
+
+
+-- ===== DFC 互動問卷設定資料表（問卷題目、時間點與設定原生儲存於 Supabase，完全免 Google Form） =====
+create table if not exists public.dfc_forms (
+  id text primary key,
+  title text not null default 'DFC 互動影片探究問卷',
+  description text default '',
+  video_url text default '',
+  fallback_duration integer default 363,
+  submit_mode text default 'end' check (submit_mode in ('end', 'each')),
+  allow_seek text default 'watched' check (allow_seek in ('watched', 'locked', 'free')),
+  allow_rewind boolean default true,
+  allow_speed boolean default false,
+  pause_on_blur boolean default true,
+  is_active boolean default false,
+  checkpoints jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.dfc_forms enable row level security;
+alter table public.dfc_forms force row level security;
+revoke all on public.dfc_forms from anon, authenticated;
+drop policy if exists "allow service_role dfc_forms" on public.dfc_forms;
+create policy "allow service_role dfc_forms" on public.dfc_forms for all to service_role using (true) with check (true);
+
+-- ===== DFC 學生問卷填答與統計結果資料表（原生儲存於 Supabase，後台直接檢視分析與匯出 CSV） =====
+create table if not exists public.dfc_responses (
+  id uuid primary key default gen_random_uuid(),
+  form_id text references public.dfc_forms(id) on delete cascade,
+  form_title text not null default '',
+  user_id uuid references auth.users(id) on delete set null,
+  user_email text not null default '',
+  user_name text default '',
+  user_class text default '',
+  answers jsonb not null default '{}'::jsonb,
+  telemetry jsonb default '{}'::jsonb,
+  engagement jsonb default '{}'::jsonb,
+  device text default '',
+  ip_address text default '',
+  submitted_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists dfc_responses_form_time on public.dfc_responses (form_id, submitted_at desc);
+create index if not exists dfc_responses_user_time on public.dfc_responses (user_email, submitted_at desc);
+
+alter table public.dfc_responses enable row level security;
+alter table public.dfc_responses force row level security;
+revoke all on public.dfc_responses from anon, authenticated;
+drop policy if exists "allow service_role dfc_responses" on public.dfc_responses;
+create policy "allow service_role dfc_responses" on public.dfc_responses for all to service_role using (true) with check (true);
+
+-- ===== 系統全域設定資料表（後台管理員清單、全域模式等儲存於 Supabase） =====
+create table if not exists public.sys_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.sys_settings enable row level security;
+alter table public.sys_settings force row level security;
+revoke all on public.sys_settings from anon, authenticated;
+drop policy if exists "allow service_role sys_settings" on public.sys_settings;
+create policy "allow service_role sys_settings" on public.sys_settings for all to service_role using (true) with check (true);
+
+-- 預設 DFC 表單種子資料（若無資料時建立）
+insert into public.dfc_forms (
+  id, title, description, video_url, fallback_duration,
+  submit_mode, allow_seek, allow_rewind, allow_speed, pause_on_blur, is_active, checkpoints
+) values (
+  'default-dfc',
+  'DFC 互動影片探究問卷',
+  'DFC 四步驟互動影片探究與反思問卷',
+  'https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview',
+  363,
+  'end',
+  'watched',
+  true,
+  false,
+  true,
+  true,
+  '[
+    {"id": "q1", "time": 4, "stepLabel": "階段一 · 感受 Feel (第1題)", "title": "在剛才影片片段中，你觀察到最核心的校園問題是什麼？", "type": "radio", "options": ["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"], "desc": "請選擇一個最貼近你觀察到的現象。", "required": true},
+    {"id": "q2", "time": 4, "stepLabel": "階段一 · 感受 Feel (第2題)", "title": "你認為這個問題對哪一群體的影響最大？", "type": "checkbox", "options": ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], "desc": "支援同時間點連續提問。", "required": true},
+    {"id": "q3", "time": 10, "stepLabel": "階段二 · 想像 Imagine (第1題)", "title": "針對這個問題，你認為哪些創意解方最值得嘗試？", "type": "checkbox", "options": ["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"], "desc": "此題為多選題，可勾選一或多項方案。", "required": true},
+    {"id": "q4", "time": 10, "stepLabel": "階段二 · 想像 Imagine (第2題)", "title": "你認為以上解方的實施難易度為何？", "type": "dropdown", "options": ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], "desc": "評估解方可行性。", "required": false},
+    {"id": "q5", "time": 18, "stepLabel": "階段三 · 實踐 Do", "title": "請簡述你在本次行動中擔任的角色或預計實踐的項目", "type": "textarea", "options": [], "desc": "限 50 字以內，簡要描述即可。", "required": false},
+    {"id": "q6", "time": 22, "stepLabel": "階段四 · 分享 Share (第1題)", "title": "你是否願意將本次成果分享於全校互動成果牆？", "type": "boolean", "options": [], "desc": "二選一是非題", "required": true},
+    {"id": "q7", "time": 22, "stepLabel": "階段四 · 分享 Share (第2題)", "title": "你對本次校園 DFC 方案的整體推薦評分？", "type": "rating", "options": [], "desc": "1~5 星評分量表，作答後表單即完成！", "min": 1, "max": 5, "required": true}
+  ]'::jsonb
+) on conflict (id) do nothing;

@@ -185,6 +185,7 @@
 [data-theme="dark"] .modal,
 [data-theme="dark"] .panel-surface,
 [data-theme="dark"] .hub-square-btn,
+[data-theme="dark"] .home-guide-card,
 [data-theme="dark"] .user-item-card,
 [data-theme="dark"] .post-item-card,
 [data-theme="dark"] .mission-banner {
@@ -1610,7 +1611,31 @@ img, video, canvas, svg {
   max-width: 100%;
 }
 img {
+  height: auto;
+  vertical-align: middle;
   object-fit: cover;
+}
+img.brand-icon, img.entry-gate-icon {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+img.av, img.user-avatar-circle {
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.hub-square-grid,
+.post-studio-layout,
+.home-guide-strip,
+.kpi-row,
+.meters-row {
+  min-width: 0;
+}
+.hub-square-grid > *,
+.post-studio-layout > *,
+.home-guide-strip > *,
+.kpi-row > *,
+.meters-row > * {
+  min-width: 0;
 }
 .table-wrap, .q-analytics-card, .card, .hero, .user-full-card {
   max-width: 100%;
@@ -1623,6 +1648,11 @@ img {
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
+}
+.top-page-btn .page-switch-hint,
+#homeDeviceBadge,
+#loginDeviceBadge {
+  display: none !important;
 }
 .top-page-btn {
   display: inline-flex;
@@ -1701,10 +1731,10 @@ img {
 .mission-banner {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #eff6ff 100%);
   border: 1px solid rgba(0, 113, 227, 0.16);
-  border-radius: 22px;
-  padding: 24px 28px;
-  margin-bottom: 22px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  border-radius: 20px;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 .mission-head {
   display: flex;
@@ -1712,10 +1742,10 @@ img {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .mission-title {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1724,13 +1754,11 @@ img {
 .mission-desc {
   font-size: 14px;
   color: var(--ink-secondary);
-  line-height: 1.65;
-  margin: 0 0 16px;
+  line-height: 1.6;
+  margin: 0;
 }
 .mission-pillars {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  display: none;
 }
 .mission-pillar {
   background: rgba(255, 255, 255, 0.88);
@@ -1762,12 +1790,13 @@ img {
   margin-top: 8px;
 }
 .hub-square-btn {
-  aspect-ratio: 1 / 0.92;
-  min-height: 230px;
+  aspect-ratio: auto;
+  min-height: 180px;
+  height: 100%;
   background: #ffffff;
   border: 1.5px solid rgba(15, 23, 42, 0.09);
-  border-radius: 26px;
-  padding: 26px 24px;
+  border-radius: 20px;
+  padding: 22px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1776,7 +1805,7 @@ img {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
   transition: transform 0.24s var(--ease-out), box-shadow 0.24s var(--ease-out), border-color 0.22s ease;
 }
 .hub-square-btn::before {
@@ -1891,6 +1920,85 @@ img {
   border-color: var(--blue);
   color: var(--blue);
   background: var(--blue-soft);
+}
+
+/* 首頁精選導引卡片 */
+.home-guide-strip {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.home-guide-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+.home-guide-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  width: fit-content;
+}
+.home-guide-tag.blue {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.home-guide-tag.green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.home-guide-title {
+  margin: 4px 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.home-guide-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.55;
+}
+.home-guide-list li strong {
+  color: var(--ink);
+}
+.home-guide-quote {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-secondary);
+  line-height: 1.55;
+}
+.home-guide-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-subtle);
+}
+.home-guide-subtext {
+  font-size: 12px;
+  color: var(--ink-tertiary);
 }
 
 /* DFC 防暴雷保護艙 (Anti-Spoiler Vault) */

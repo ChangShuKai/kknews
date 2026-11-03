@@ -150,6 +150,9 @@ const sysCache = new Map();
 const queryCache = new Map();
 let bucketEnsured = false;
 let adminAuditTableOk = true;
+let sysSettingsTableOk = true;
+let dfcFormsTableOk = true;
+let dfcResponsesTableOk = true;
 const SYS_STORE_PREFIX = "__sys_store__:";
 
 function localStorePath(name) {
@@ -202,7 +205,23 @@ async function readSysStore(name, fallback, forceFresh = false) {
     if (!best || candidate.rev >= best.rev) best = candidate;
   };
 
-  // 1. 若 PostgreSQL admin_audit 資料表存在，讀取系統設定列
+  // 1. 若 PostgreSQL sys_settings 資料表存在，優先讀取系統設定
+  if (sysSettingsTableOk) {
+    try {
+      const { data: row, error } = await db
+        .from("sys_settings")
+        .select("value, updated_at")
+        .eq("key", name)
+        .maybeSingle();
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) {
+        sysSettingsTableOk = false;
+      } else if (!error && row && row.value) {
+        consider(row.value);
+      }
+    } catch {}
+  }
+
+  // 2. 若 PostgreSQL admin_audit 資料表存在，讀取系統設定備用列
   if (adminAuditTableOk) {
     try {
       const { data: rows, error } = await db
@@ -219,7 +238,7 @@ async function readSysStore(name, fallback, forceFresh = false) {
     } catch {}
   }
 
-  // 2. 永遠同步檢查私有 Supabase Storage，確保多實例 Serverless 之間版本強一致、絕不鎖死在舊記憶體快取
+  // 3. 檢查私有 Supabase Storage
   try {
     await ensureVerifyBucket();
     const { data: blob, error } = await db.storage.from("kknews-verify").download(`_sys_${name}.json`);
@@ -228,7 +247,7 @@ async function readSysStore(name, fallback, forceFresh = false) {
     }
   } catch {}
 
-  // 3. 檢查本機暫存檔（單機重啟或離線保護）
+  // 4. 檢查本機暫存檔（單機重啟或離線保護）
   try {
     const p = localStorePath(name);
     if (fs.existsSync(p)) {
@@ -255,7 +274,22 @@ async function writeSysStore(name, data) {
   // 1. 寫入本機暫存檔
   try { fs.writeFileSync(localStorePath(name), payloadStr, "utf8"); } catch {}
 
-  // 2. 寫入 PostgreSQL 強一致儲存並清理舊版本列（若資料表存在）
+  // 2. 寫入 PostgreSQL sys_settings 資料表
+  const sysSettingsWrite = (async () => {
+    if (!sysSettingsTableOk) return;
+    try {
+      const { error } = await db.from("sys_settings").upsert({
+        key: name,
+        value: { __kk_rev: rev, data: cloned },
+        updated_at: new Date().toISOString(),
+      });
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) {
+        sysSettingsTableOk = false;
+      }
+    } catch {}
+  })();
+
+  // 3. 寫入 PostgreSQL admin_audit 儲存並清理舊版本列
   const storeKey = SYS_STORE_PREFIX + name;
   const dbWrite = (async () => {
     if (!adminAuditTableOk) return;
@@ -273,7 +307,7 @@ async function writeSysStore(name, data) {
     } catch {}
   })();
 
-  // 3. 同步備份至 Supabase Storage（設定 cacheControl: "0" 防止快取舊檔）
+  // 4. 同步備份至 Supabase Storage
   const storageWrite = (async () => {
     try {
       await ensureVerifyBucket();
@@ -286,8 +320,187 @@ async function writeSysStore(name, data) {
     } catch {}
   })();
 
-  await Promise.allSettled([dbWrite, storageWrite]);
+  await Promise.allSettled([sysSettingsWrite, dbWrite, storageWrite]);
   return JSON.parse(JSON.stringify(cloned));
+}
+
+/* ---------- Supabase 原生 DFC 資料表 (dfc_forms & dfc_responses) 直接存取層 ---------- */
+async function getDfcFormsFromSupabase() {
+  if (!dfcFormsTableOk) return null;
+  try {
+    const { data, error } = await db.from("dfc_forms").select("*").order("created_at", { ascending: true });
+    if (error) {
+      if (error.code === "PGRST205" || error.code === "42P01") dfcFormsTableOk = false;
+      return null;
+    }
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map(f => ({
+        id: f.id,
+        title: f.title || "DFC 互動影片探究問卷",
+        description: f.description || "",
+        videoUrl: f.video_url || "",
+        fallbackDuration: Number(f.fallback_duration) || 363,
+        submitMode: f.submit_mode || "end",
+        allowSeek: f.allow_seek || "watched",
+        allowRewind: f.allow_rewind !== false,
+        allowSpeed: Boolean(f.allow_speed),
+        pauseOnBlur: f.pause_on_blur !== false,
+        isDefault: Boolean(f.is_active),
+        checkpoints: Array.isArray(f.checkpoints) ? f.checkpoints : [],
+        updatedAt: f.updated_at || f.created_at || new Date().toISOString(),
+      }));
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function upsertDfcFormInSupabase(formObj) {
+  if (!dfcFormsTableOk) return false;
+  try {
+    const payload = {
+      id: formObj.id,
+      title: formObj.title,
+      description: formObj.description || "",
+      video_url: formObj.videoUrl || "",
+      fallback_duration: formObj.fallbackDuration || 363,
+      submit_mode: formObj.submitMode || "end",
+      allow_seek: formObj.allowSeek || "watched",
+      allow_rewind: formObj.allowRewind !== false,
+      allow_speed: Boolean(formObj.allowSpeed),
+      pause_on_blur: formObj.pauseOnBlur !== false,
+      is_active: Boolean(formObj.isDefault),
+      checkpoints: Array.isArray(formObj.checkpoints) ? formObj.checkpoints : [],
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await db.from("dfc_forms").upsert(payload);
+    if (error) {
+      if (error.code === "PGRST205" || error.code === "42P01") dfcFormsTableOk = false;
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteDfcFormInSupabase(formId) {
+  if (!dfcFormsTableOk) return false;
+  try {
+    const { error } = await db.from("dfc_forms").delete().eq("id", formId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+async function setActiveDfcFormInSupabase(formId) {
+  if (!dfcFormsTableOk) return false;
+  try {
+    await db.from("dfc_forms").update({ is_active: false }).neq("id", "__never__");
+    await db.from("dfc_forms").update({ is_active: true }).eq("id", formId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function getDfcResponsesFromSupabase(formId) {
+  if (!dfcResponsesTableOk) return null;
+  try {
+    let query = db.from("dfc_responses").select("*").order("submitted_at", { ascending: false }).limit(2000);
+    if (formId && formId !== "all") {
+      query = query.eq("form_id", formId);
+    }
+    const { data, error } = await query;
+    if (error) {
+      if (error.code === "PGRST205" || error.code === "42P01") dfcResponsesTableOk = false;
+      return null;
+    }
+    if (Array.isArray(data)) {
+      return data.map(r => ({
+        id: r.id,
+        formId: r.form_id,
+        formTitle: r.form_title || "",
+        userEmail: r.user_email || "",
+        userName: r.user_name || "",
+        userClass: r.user_class || "",
+        answers: r.answers || {},
+        telemetry: r.telemetry || {},
+        engagement: r.engagement || {},
+        device: r.device || "",
+        ip: r.ip_address || "",
+        syncedToGoogle: false,
+        demo: false,
+        submittedAt: r.submitted_at || r.created_at,
+      }));
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function insertDfcResponseInSupabase(respObj) {
+  if (!dfcResponsesTableOk) return false;
+  try {
+    const payload = {
+      form_id: respObj.formId || "default-dfc",
+      form_title: respObj.formTitle || "",
+      user_id: respObj.userId || null,
+      user_email: respObj.userEmail || "",
+      user_name: respObj.userName || "",
+      user_class: respObj.userClass || "",
+      answers: respObj.answers || {},
+      telemetry: respObj.telemetry || {},
+      engagement: respObj.engagement || {},
+      device: respObj.device || "",
+      ip_address: respObj.ip || "",
+      submitted_at: respObj.submittedAt || new Date().toISOString(),
+    };
+    const { error } = await db.from("dfc_responses").insert(payload);
+    if (error) {
+      if (error.code === "PGRST205" || error.code === "42P01") dfcResponsesTableOk = false;
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteDfcResponsesInSupabase(id, formId) {
+  if (!dfcResponsesTableOk) return false;
+  try {
+    if (id === "all") {
+      let q = db.from("dfc_responses").delete();
+      if (formId) q = q.eq("form_id", formId);
+      else q = q.neq("user_email", "__never__");
+      const { error } = await q;
+      return !error;
+    } else {
+      const { error } = await db.from("dfc_responses").delete().eq("id", id);
+      return !error;
+    }
+  } catch {
+    return false;
+  }
+}
+
+async function getDfcStoreWithDb(forceFresh = false) {
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, forceFresh);
+  const dbForms = await getDfcFormsFromSupabase();
+  if (Array.isArray(dbForms) && dbForms.length > 0) {
+    store.forms = dbForms;
+    const active = dbForms.find(f => f.isDefault) || dbForms[0];
+    if (active) store.activeFormId = active.id;
+  }
+  const dbResponses = await getDfcResponsesFromSupabase(null);
+  if (Array.isArray(dbResponses)) {
+    store.responses = dbResponses;
+  }
+  return store;
 }
 
 function normalizeEmailRule(v = "") {
@@ -312,6 +525,16 @@ const DEFAULT_DFC_ACCESS_MODE = ["whitelist", "all_school", "closed"].includes(S
   ? String(DFC_ACCESS_MODE).trim().toLowerCase()
   : "whitelist";
 
+const DEFAULT_DFC_CHECKPOINTS = [
+  { id: "q1", time: 4, stepLabel: "階段一 · 感受 Feel (第1題)", title: "在剛才影片片段中，你觀察到最核心的校園問題是什麼？", type: "radio", options: ["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"], desc: "請選擇一個最貼近你觀察到的現象。", required: true },
+  { id: "q2", time: 4, stepLabel: "階段一 · 感受 Feel (第2題)", title: "你認為這個問題對哪一群體的影響最大？", type: "checkbox", options: ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], desc: "支援同時間點連續提問。", required: true },
+  { id: "q3", time: 10, stepLabel: "階段二 · 想像 Imagine (第1題)", title: "針對這個問題，你認為哪些創意解方最值得嘗試？", type: "checkbox", options: ["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"], desc: "此題為多選題，可勾選一或多項方案。", required: true },
+  { id: "q4", time: 10, stepLabel: "階段二 · 想像 Imagine (第2題)", title: "你認為以上解方的實施難易度為何？", type: "dropdown", options: ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], desc: "評估解方可行性。", required: false },
+  { id: "q5", time: 18, stepLabel: "階段三 · 實踐 Do", title: "請簡述你在本次行動中擔任的角色或預計實踐的項目", type: "textarea", options: [], desc: "限 50 字以內，簡要描述即可。", required: false },
+  { id: "q6", time: 22, "stepLabel": "階段四 · 分享 Share (第1題)", title: "你是否願意將本次成果分享於全校互動成果牆？", type: "boolean", options: [], desc: "二選一是非題", required: true },
+  { id: "q7", time: 22, "stepLabel": "階段四 · 分享 Share (第2題)", title: "你對本次校園 DFC 方案的整體推薦評分？", type: "rating", options: [], desc: "1~5 星評分量表，作答後表單即完成！", min: 1, max: 5, required: true }
+];
+
 const DEFAULT_DFC_STORE = {
   activeFormId: "default-dfc",
   accessMode: DEFAULT_DFC_ACCESS_MODE,
@@ -323,9 +546,6 @@ const DEFAULT_DFC_STORE = {
       description: "DFC 四步驟互動影片探究與反思問卷",
       videoUrl: "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview",
       fallbackDuration: 363,
-      googleFormUrl: process.env.GOOGLE_FORM_ACTION_URL || "YOUR_GOOGLE_FORM_URL",
-      csvUrl: process.env.GOOGLE_FORM_CSV_URL || "",
-      emailEntryId: "",
       submitMode: "end",
       allowSeek: "watched",
       allowRewind: true,
@@ -333,29 +553,24 @@ const DEFAULT_DFC_STORE = {
       pauseOnBlur: true,
       isDefault: true,
       updatedAt: new Date().toISOString(),
-      checkpoints: [],
+      checkpoints: DEFAULT_DFC_CHECKPOINTS,
     },
   ],
   responses: [],
 };
 
-// 自動清理可能殘留的舊版示範題目 (q1~q4) 並確保防暴雷觀看權限欄位完整
+// 確保防暴雷觀看權限欄位完整與表單格式標準
 function sanitizeDfcStore(store) {
   if (!store || typeof store !== "object") return JSON.parse(JSON.stringify(DEFAULT_DFC_STORE));
   if (!["whitelist", "all_school", "closed"].includes(store.accessMode)) {
     store.accessMode = DEFAULT_DFC_ACCESS_MODE;
   }
   store.allowedEmails = parseEmailListInput(store.allowedEmails || []);
-  if (!Array.isArray(store.forms)) store.forms = [];
+  if (!Array.isArray(store.forms) || store.forms.length === 0) {
+    store.forms = JSON.parse(JSON.stringify(DEFAULT_DFC_STORE.forms));
+  }
   store.forms = store.forms.map(f => {
-    if (Array.isArray(f.checkpoints)) {
-      const isLegacyMock = f.checkpoints.length === 4 &&
-        f.checkpoints[0]?.id === "q1" &&
-        f.checkpoints[0]?.title?.includes("第一階段「感受 Feel」");
-      if (isLegacyMock) {
-        f.checkpoints = [];
-      }
-    } else {
+    if (!Array.isArray(f.checkpoints)) {
       f.checkpoints = [];
     }
     return f;
@@ -1613,7 +1828,7 @@ app.get("/api/dfc/forms", async (req, res) => {
 app.get("/api/dfc/config", async (req, res) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   const formId = String(req.query.formId || "").trim();
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.json({
@@ -1653,16 +1868,16 @@ app.get("/api/dfc/config", async (req, res) => {
   });
 });
 
-/* --- DFC 互動影片表單：串接 Google Form (formResponse / Apps Script API) 並寫入後台統計 --- */
+/* --- DFC 互動影片表單：作答結果原生儲存於 Supabase 資料表 (dfc_responses) 並寫入後台統計與審計 --- */
 app.post("/api/dfc/submit", async (req, res) => {
   if (await limited("dfc:" + clientIp(req), 30, 600e3)) return res.status(429).json({ error: "送出太頻繁，請稍後再試" });
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：僅限規定授權帳號提交問卷" });
   }
 
-  const { formId = "default-dfc", formUrl = "", answers = {}, emailEntryId = "", telemetry = {}, engagement = {}, userInfo = {} } = req.body || {};
+  const { formId = "default-dfc", answers = {}, telemetry = {}, engagement = {}, userInfo = {} } = req.body || {};
   if (!answers || typeof answers !== "object") return res.status(400).json({ error: "格式不正確" });
 
   const u = userOf(req) || adminOf(req);
@@ -1671,81 +1886,12 @@ app.post("/api/dfc/submit", async (req, res) => {
   const ip = clientIp(req);
 
   const matchedForm = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0] || DEFAULT_DFC_STORE.forms[0];
-  const targetUrl = String(formUrl || matchedForm?.googleFormUrl || process.env.GOOGLE_FORM_ACTION_URL || "").trim();
-  const activeApiKey = String(matchedForm?.googleApiKey || GOOGLE_FORM_API_KEY || "").trim();
-  const isDemo = !targetUrl || targetUrl.includes("YOUR_GOOGLE_FORM");
 
-  let syncedToGoogle = false;
-  let syncErr = "";
-
-  if (!isDemo) {
-    if (!isAllowedGoogleUrl(targetUrl)) {
-      return res.status(400).json({ error: "不安全的目標網址：僅支援 Google 官方網域 (docs.google.com, script.google.com, sheets.googleapis.com)" });
-    }
-    try {
-      const apiHeaders = activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {};
-      const parsedUrl = new URL(targetUrl);
-      if (parsedUrl.hostname === "docs.google.com" && parsedUrl.pathname.includes("/forms")) {
-        let actionUrl = targetUrl.replace(/\/viewform(\?.*)?$/i, "/formResponse");
-        if (activeApiKey && !/[?&]key=/i.test(actionUrl)) {
-          actionUrl += (actionUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
-        }
-        const params = new URLSearchParams();
-        for (const [entryKey, val] of Object.entries(answers)) {
-          if (!entryKey) continue;
-          const key = entryKey.startsWith("entry.") ? entryKey : `entry.${entryKey}`;
-          if (Array.isArray(val)) {
-            for (const item of val) params.append(key, String(item));
-          } else if (val != null && String(val).trim() !== "") {
-            params.append(key, String(val).trim());
-          }
-        }
-        const eId = emailEntryId || matchedForm?.emailEntryId || "";
-        if (eId && u?.email) {
-          const eKey = eId.startsWith("entry.") ? eId : `entry.${eId}`;
-          params.append(eKey, u.email);
-        }
-        const gRes = await fetch(actionUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded", ...apiHeaders },
-          body: params.toString(),
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!gRes.ok && gRes.status >= 500) throw new Error("Google Form HTTP " + gRes.status);
-        syncedToGoogle = true;
-      } else if (/^https:\/\/(?:script\.google\.com|(?:forms|sheets)\.googleapis\.com)\//i.test(targetUrl)) {
-        let reqUrl = targetUrl;
-        if (activeApiKey && !/[?&]key=/i.test(reqUrl)) {
-          reqUrl += (reqUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
-        }
-        const gRes = await fetch(reqUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...apiHeaders },
-          body: JSON.stringify({
-            formId: matchedForm?.id || formId,
-            apiKey: activeApiKey || undefined,
-            answers,
-            user: u ? { email: u.email, name: u.name } : null,
-            submittedAt: new Date().toISOString(),
-          }),
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!gRes.ok) throw new Error("Google API HTTP " + gRes.status);
-        syncedToGoogle = true;
-      } else {
-        syncErr = "僅支援 Google Form、Google API 或 Google Apps Script 網址";
-      }
-    } catch (e) {
-      syncErr = e.message || "Google 表單同步失敗";
-    }
-  }
-
-  // 同步保存至系統後台紀錄（含完整互動行為與設備搖測資料），供 Super Admin 與一般 Admin 查看及匯出 CSV
-  if (!Array.isArray(store.responses)) store.responses = [];
-  store.responses.unshift({
+  const respRecord = {
     id: crypto.randomUUID(),
     formId: matchedForm?.id || "default-dfc",
     formTitle: matchedForm?.title || "DFC 互動影片表單",
+    userId: u?.id || null,
     userEmail: u?.email || String(userInfo?.email || "未知帳號"),
     userName: u?.name || String(userInfo?.name || ""),
     userClass: str(String(userInfo?.classSeat || telemetry?.classSeat || ""), 60),
@@ -1754,18 +1900,23 @@ app.post("/api/dfc/submit", async (req, res) => {
     answers,
     telemetry: (telemetry && typeof telemetry === "object") ? telemetry : {},
     engagement: (engagement && typeof engagement === "object") ? engagement : {},
-    syncedToGoogle,
-    demo: isDemo,
+    syncedToGoogle: false,
+    demo: false,
     submittedAt: new Date().toISOString(),
-  });
+  };
+
+  // 1. 原生儲存至 Supabase dfc_responses 資料表
+  await insertDfcResponseInSupabase(respRecord);
+
+  // 2. 同步保存至系統快取，供後台即時檢視與分析
+  if (!Array.isArray(store.responses)) store.responses = [];
+  store.responses.unshift(respRecord);
   if (store.responses.length > 2000) store.responses.length = 2000;
   await writeSysStore("dfc", store);
-  audit(req, "[DFC作答] 送出問卷作答", `${u?.email || "未知"} (${u?.name || ""}) | 表單: ${matchedForm?.title || formId} (${syncedToGoogle ? "已同步Google表單" : "本地保存"})`);
 
-  if (syncErr && !isDemo) {
-    return res.status(502).json({ error: "已記錄於後台，但串接 Google 表單失敗：" + syncErr });
-  }
-  res.json({ ok: true, demo: isDemo, syncedToGoogle });
+  audit(req, "[DFC作答] 送出問卷作答", `${u?.email || "未知"} (${u?.name || ""}) | 表單: ${matchedForm?.title || formId} (已原生儲存至 Supabase)`);
+
+  res.json({ ok: true, savedToSupabase: true, demo: false });
 });
 
 /* --- 後台（未驗證一律回 404，不洩漏存在與否） --- */
@@ -1988,11 +2139,11 @@ app.delete("/api/admin/accounts/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-/* --- 後台 Google 表單 API 資訊、防暴雷觀看名單與 CSV 回傳數據管理 --- */
+/* --- 後台 DFC 互動問卷設定、防暴雷觀看名單與作答數據管理（全量儲存於 Supabase） --- */
 app.get("/api/admin/dfc", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const accessCfg = await getMergedDfcAccessConfig(store);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   res.json({
@@ -2004,8 +2155,7 @@ app.get("/api/admin/dfc", async (req, res) => {
     envAllowedEmails: accessCfg.envAllowedEmails,
     forms,
     responses: Array.isArray(store.responses) ? store.responses : [],
-    googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
-    googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
+    storageType: "supabase_postgresql",
   });
 });
 
@@ -2054,10 +2204,12 @@ app.post("/api/admin/dfc/set-active-form", async (req, res) => {
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const { formId } = req.body || {};
   if (!formId) return res.status(400).json({ error: "缺少表單 ID" });
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const target = (store.forms || []).find(f => f.id === formId);
   if (!target) return res.status(404).json({ error: "找不到指定表單" });
   store.activeFormId = formId;
+  store.forms = (store.forms || []).map(f => ({ ...f, isDefault: f.id === formId }));
+  await setActiveDfcFormInSupabase(formId);
   await writeSysStore("dfc", store);
   invalidateDriveVideoCache();
   audit(req, "set_active_dfc_form", formId);
@@ -2069,7 +2221,7 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const { formId } = req.body || {};
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const src = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0];
   if (!src) return res.status(404).json({ error: "找不到來源問卷" });
 
@@ -2077,6 +2229,7 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
   const clonedForm = JSON.parse(JSON.stringify(src));
   clonedForm.id = newId;
   clonedForm.title = (clonedForm.title || "問卷") + " (副本)";
+  clonedForm.isDefault = false;
   clonedForm.updatedAt = new Date().toISOString();
   if (Array.isArray(clonedForm.checkpoints)) {
     clonedForm.checkpoints = clonedForm.checkpoints.map((cp, idx) => ({
@@ -2087,6 +2240,7 @@ app.post("/api/admin/dfc/duplicate-form", async (req, res) => {
 
   if (!Array.isArray(store.forms)) store.forms = [];
   store.forms.push(clonedForm);
+  await upsertDfcFormInSupabase(clonedForm);
   await writeSysStore("dfc", store);
   audit(req, "duplicate_dfc_form", `${src.id} -> ${newId}`);
   res.json({ ok: true, form: clonedForm });
@@ -2102,7 +2256,7 @@ function buildComprehensiveDfcCsv(form, responses) {
     "填答者姓名",
     "填答者信箱",
     "班級學號",
-    "Google同步狀態",
+    "資料儲存狀態",
     "影片觀看率(%)",
     "實際觀看秒數",
     "影片總時長(秒)",
@@ -2149,7 +2303,7 @@ function buildComprehensiveDfcCsv(form, responses) {
       r.userName || "",
       r.userEmail || "",
       r.userClass || "",
-      r.syncedToGoogle ? "已同步 Google 表單" : (r.demo ? "示範模式(本地記錄)" : "本地保存"),
+      "Supabase 雲端資料庫",
       eng.watchPercentage != null ? `${eng.watchPercentage}%` : "—",
       eng.watchedSeconds != null ? String(eng.watchedSeconds) : "—",
       eng.duration != null ? String(eng.duration) : String(form?.fallbackDuration || "—"),
@@ -2168,7 +2322,7 @@ function buildComprehensiveDfcCsv(form, responses) {
     ];
 
     checkpoints.forEach((cp) => {
-      const ansVal = r.answers ? (r.answers[cp.entryId] ?? r.answers[cp.id] ?? "") : "";
+      const ansVal = r.answers ? (r.answers[cp.id] ?? r.answers[cp.entryId] ?? "") : "";
       const textVal = Array.isArray(ansVal) ? ansVal.join("、") : String(ansVal ?? "");
       row.push(textVal);
 
@@ -2211,104 +2365,27 @@ app.get("/api/admin/dfc/csv", async (req, res) => {
   const adm = adminOf(req);
   if (!adm) return notFound(res);
   const formId = String(req.query.formId || "default-dfc");
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  const store = await getDfcStoreWithDb(true);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
   const form = forms.find(f => f.id === formId) || forms[0];
   const responses = (store.responses || []).filter(r => !formId || formId === "all" || r.formId === form.id);
 
-  // 1. 若有設定 Google 試算表 CSV 網址，優先結合 GOOGLE_FORM_API_KEY 或直接抓取最新回傳數據
-  let remoteCsv = null;
-  let remoteError = "";
-  const activeApiKey = String(form?.googleApiKey || GOOGLE_FORM_API_KEY || "").trim();
-  const normalizedCsvUrl = normalizeGoogleCsvUrl(form?.csvUrl || "");
-  if (normalizedCsvUrl && /^https:\/\/docs\.google\.com\/spreadsheets\//i.test(normalizedCsvUrl)) {
-    const sheetId = extractGoogleSheetId(form?.csvUrl || normalizedCsvUrl);
-    if (sheetId && activeApiKey) {
-      try {
-        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/A1:ZZ2000?key=${encodeURIComponent(activeApiKey)}`;
-        const apiRes = await fetch(sheetsApiUrl, { signal: AbortSignal.timeout(8000) });
-        if (apiRes.ok) {
-          const sj = await apiRes.json();
-          if (Array.isArray(sj?.values) && sj.values.length) {
-            remoteCsv = { headers: sj.values[0] || [], rows: sj.values.slice(1) };
-          }
-        }
-      } catch {}
-    }
-    if (!remoteCsv) {
-      try {
-        const gRes = await fetch(normalizedCsvUrl, {
-          headers: activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {},
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!gRes.ok) throw new Error(`HTTP ${gRes.status}`);
-        const text = await gRes.text();
-        remoteCsv = parseCsvText(text);
-      } catch (e) {
-        remoteError = "無法從 Google 試算表拉取 CSV（請確認試算表已開啟「檔案 > 共用 > 發佈到網路 (CSV)」或權限為知道連結者可檢視）：" + (e.message || "");
-      }
-    }
-  } else if (normalizedCsvUrl && /^https:\/\/(?:script\.google\.com|(?:sheets|forms)\.googleapis\.com)\//i.test(normalizedCsvUrl)) {
-    try {
-      let reqUrl = normalizedCsvUrl;
-      if (activeApiKey && !/[?&]key=/i.test(reqUrl)) {
-        reqUrl += (reqUrl.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(activeApiKey);
-      }
-      const gRes = await fetch(reqUrl, {
-        headers: activeApiKey ? { "X-Goog-Api-Key": activeApiKey } : {},
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!gRes.ok) throw new Error(`HTTP ${gRes.status}`);
-      const ct = gRes.headers.get("content-type") || "";
-      const text = await gRes.text();
-      if (ct.includes("json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
-        const j = JSON.parse(text);
-        if (Array.isArray(j?.values) && j.values.length) {
-          remoteCsv = { headers: j.values[0] || [], rows: j.values.slice(1) };
-        } else {
-          const arr = Array.isArray(j) ? j : (Array.isArray(j.rows) ? j.rows : []);
-          if (arr.length && typeof arr[0] === "object" && !Array.isArray(arr[0])) {
-            const headers = Object.keys(arr[0]);
-            const rows = arr.map(item => headers.map(h => String(item[h] ?? "")));
-            remoteCsv = { headers, rows };
-          } else if (Array.isArray(j.headers) && Array.isArray(j.rows)) {
-            remoteCsv = { headers: j.headers, rows: j.rows };
-          }
-        }
-      } else {
-        remoteCsv = parseCsvText(text);
-      }
-    } catch (e) {
-      remoteError = "無法從 Google API / Apps Script 拉取數據：" + (e.message || "");
-    }
-  }
-
-  // 2. 產生本站收集紀錄的精細化完整 CSV 表格結構
   const comp = buildComprehensiveDfcCsv(form, responses);
-  const localHeaders = comp.headers;
-  const localRows = comp.rows;
-
-  const activeHeaders = remoteCsv && remoteCsv.headers.length ? remoteCsv.headers : localHeaders;
-  const activeRows = remoteCsv && remoteCsv.headers.length ? remoteCsv.rows : localRows;
-  const csvLines = [activeHeaders.map(toCsvCell).join(","), ...activeRows.map(r => r.map(toCsvCell).join(","))];
-  const finalRawCsv = remoteCsv && remoteCsv.headers.length ? "\uFEFF" + csvLines.join("\r\n") : comp.rawCsv;
-
   res.json({
     formId: form?.id || formId,
     formTitle: form?.title || "",
-    source: remoteCsv && remoteCsv.headers.length ? "google_remote" : "local_store",
-    remoteError,
-    headers: activeHeaders,
-    rows: activeRows,
-    localHeaders,
-    localRows,
-    remoteHeaders: remoteCsv?.headers || [],
-    remoteRows: remoteCsv?.rows || [],
-    rawCsv: finalRawCsv,
+    source: "supabase_db",
+    headers: comp.headers,
+    rows: comp.rows,
+    localHeaders: comp.headers,
+    localRows: comp.rows,
+    remoteHeaders: [],
+    remoteRows: [],
+    rawCsv: comp.rawCsv,
   });
 });
 
-// Super Admin 新增或更新 Google 表單 API 資訊與題目設定
+// Super Admin 新增或更新 DFC 互動問卷設定與時間點題目（原生儲存於 Supabase）
 app.post("/api/admin/dfc/forms", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
@@ -2319,21 +2396,11 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   const description = str(body.description || "", 300).trim();
   const videoUrl = str(body.videoUrl || "/assets/dfc.mp4", 300).trim();
   const fallbackDuration = Math.max(5, Math.min(7200, Number(body.fallbackDuration) || 18));
-  const googleFormUrl = str(body.googleFormUrl || "", 400).trim();
-  const csvUrl = str(body.csvUrl || "", 400).trim();
-  const emailEntryId = str(body.emailEntryId || "", 60).trim();
   const submitMode = body.submitMode === "each" ? "each" : "end";
   const allowSeek = ["watched", "locked", "free"].includes(body.allowSeek) ? body.allowSeek : "watched";
   const allowRewind = body.allowRewind !== false;
   const allowSpeed = Boolean(body.allowSpeed);
   const pauseOnBlur = body.pauseOnBlur !== false;
-
-  if (googleFormUrl && !googleFormUrl.includes("YOUR_GOOGLE_FORM") && !isAllowedGoogleUrl(googleFormUrl)) {
-    return res.status(400).json({ error: "不安全的 Google 表單網址：僅支援 Google 官方網域 (docs.google.com, forms.googleapis.com, script.google.com)" });
-  }
-  if (csvUrl && !isAllowedGoogleUrl(csvUrl, ["docs.google.com", "script.google.com", "sheets.googleapis.com"])) {
-    return res.status(400).json({ error: "不安全的 Google 試算表 CSV 網址：僅支援 Google 官方網域 (docs.google.com, script.google.com, sheets.googleapis.com)" });
-  }
 
   let checkpoints = [];
   const ALLOWED_TYPES = ["radio", "checkbox", "rating", "dropdown", "boolean", "text", "textarea"];
@@ -2341,10 +2408,11 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
     checkpoints = body.checkpoints.map((cp, idx) => {
       const rawTime = Number(cp.time);
       const safeTime = Number.isFinite(rawTime) && rawTime >= 0 ? rawTime : (idx + 1) * 5;
+      const cpId = str(cp.id || `q${idx + 1}`, 40);
       return {
-        id: str(cp.id || `q${idx + 1}`, 40),
+        id: cpId,
         time: safeTime,
-        entryId: str(cp.entryId || `entry.${idx + 1}`, 60).trim(),
+        entryId: str(cp.entryId || cpId, 60).trim(),
         stepLabel: str(cp.stepLabel || `階段 ${idx + 1}`, 40).trim(),
         title: str(cp.title || `問題 ${idx + 1}`, 200).trim(),
         desc: str(cp.desc || "", 300).trim(),
@@ -2358,12 +2426,13 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
     }).sort((a, b) => a.time - b.time);
   }
 
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   if (!Array.isArray(store.forms)) store.forms = [];
   const existingIdx = store.forms.findIndex(f => f.id === id);
   const formObj = {
-    id, title, description, videoUrl, fallbackDuration, googleFormUrl, csvUrl, emailEntryId, submitMode,
+    id, title, description, videoUrl, fallbackDuration, submitMode,
     allowSeek, allowRewind, allowSpeed, pauseOnBlur,
+    isDefault: Boolean(body.isDefault),
     checkpoints: Array.isArray(body.checkpoints) ? checkpoints : (existingIdx >= 0 ? (store.forms[existingIdx].checkpoints || []) : []),
     updatedAt: new Date().toISOString(),
   };
@@ -2371,8 +2440,13 @@ app.post("/api/admin/dfc/forms", async (req, res) => {
   if (existingIdx >= 0) store.forms[existingIdx] = formObj;
   else store.forms.push(formObj);
 
-  if (body.isDefault) store.activeFormId = id;
+  if (body.isDefault) {
+    store.activeFormId = id;
+    store.forms.forEach(f => { f.isDefault = (f.id === id); });
+    await setActiveDfcFormInSupabase(id);
+  }
 
+  await upsertDfcFormInSupabase(formObj);
   await writeSysStore("dfc", store);
   invalidateDriveVideoCache();
   audit(req, "save_dfc_form", id);
@@ -2383,20 +2457,22 @@ app.delete("/api/admin/dfc/forms/:id", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const id = String(req.params.id);
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   if ((store.forms || []).length <= 1) {
     return res.status(400).json({ error: "系統至少需保留一份 DFC 表單，不可全數刪除" });
   }
   store.forms = (store.forms || []).filter(f => f.id !== id);
   if (store.activeFormId === id) {
     store.activeFormId = store.forms[0]?.id || "default-dfc";
+    await setActiveDfcFormInSupabase(store.activeFormId);
   }
+  await deleteDfcFormInSupabase(id);
   await writeSysStore("dfc", store);
   audit(req, "delete_dfc_form", id);
   res.json({ ok: true, activeFormId: store.activeFormId });
 });
 
-// Super Admin 匯入 Google 表單 CSV 數據
+// Super Admin 匯入問卷 CSV 作答數據至 Supabase
 app.post("/api/admin/dfc/import-csv", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
   if (!superAdminOf(req)) return forbidReadOnly(res);
@@ -2405,7 +2481,7 @@ app.post("/api/admin/dfc/import-csv", async (req, res) => {
   if (!parsed.headers.length || !parsed.rows.length) {
     return res.status(400).json({ error: "CSV 內容為空或格式無法解析" });
   }
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
   const form = (store.forms || []).find(f => f.id === formId) || (store.forms || [])[0] || DEFAULT_DFC_STORE.forms[0];
   const checkpoints = Array.isArray(form?.checkpoints) ? form.checkpoints : [];
 
@@ -2414,28 +2490,33 @@ app.post("/api/admin/dfc/import-csv", async (req, res) => {
     const answers = {};
     parsed.headers.forEach((h, colIdx) => {
       const val = r[colIdx] ?? "";
-      const matchedCp = checkpoints.find((cp, cIdx) => h.includes(cp.entryId) || h.includes(cp.title) || colIdx === cIdx + 1);
-      if (matchedCp && !answers[matchedCp.entryId]) answers[matchedCp.entryId] = val;
+      const matchedCp = checkpoints.find((cp, cIdx) => (cp.id && h.includes(cp.id)) || (cp.entryId && h.includes(cp.entryId)) || h.includes(cp.title) || colIdx === cIdx + 1);
+      if (matchedCp) {
+        if (!answers[matchedCp.id]) answers[matchedCp.id] = val;
+        if (matchedCp.entryId && !answers[matchedCp.entryId]) answers[matchedCp.entryId] = val;
+      }
       answers[h] = val;
     });
-    store.responses.unshift({
+    const respObj = {
       id: crypto.randomUUID(),
       formId: form?.id || formId,
       formTitle: form?.title || "CSV 匯入表單",
-      userEmail: r[1] && String(r[1]).includes("@") ? r[1] : "CSV 匯入紀錄",
-      userName: "",
+      userEmail: r[1] && String(r[1]).includes("@") ? r[1] : (r[3] && String(r[3]).includes("@") ? r[3] : "CSV 匯入紀錄"),
+      userName: r[2] || "",
       ip: "CSV Import",
-      device: "Google Form CSV",
+      device: "CSV 匯入",
       answers,
-      syncedToGoogle: true,
+      syncedToGoogle: false,
       demo: false,
-      submittedAt: r[0] && !Number.isNaN(Date.parse(r[0])) ? new Date(r[0]).toISOString() : new Date().toISOString(),
-    });
+      submittedAt: r[1] && !Number.isNaN(Date.parse(r[1])) ? new Date(r[1]).toISOString() : new Date().toISOString(),
+    };
+    await insertDfcResponseInSupabase(respObj);
+    store.responses.unshift(respObj);
     importedCount++;
   }
   if (store.responses.length > 2000) store.responses.length = 2000;
   await writeSysStore("dfc", store);
-  audit(req, "import_dfc_csv", `${formId} (${importedCount} rows)`);
+  audit(req, "import_dfc_csv", `${formId} (${importedCount} 筆作答已匯入 Supabase)`);
   res.json({ ok: true, importedCount });
 });
 
@@ -2444,7 +2525,8 @@ app.delete("/api/admin/dfc/responses/:id", async (req, res) => {
   if (!superAdminOf(req)) return forbidReadOnly(res);
   const id = String(req.params.id);
   const formId = String(req.query.formId || "");
-  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const store = await getDfcStoreWithDb(true);
+  await deleteDfcResponsesInSupabase(id, formId);
   if (id === "all") {
     store.responses = formId ? (store.responses || []).filter(r => r.formId !== formId) : [];
   } else {
@@ -2838,7 +2920,7 @@ app.get("/api/admin/sync", async (req, res) => {
     const [users, m, dfcStore, adminList, auditLogs] = await Promise.all([
       fetchEnrichedUsersList(proverbs),
       fetchSupabaseRealMetrics(),
-      readSysStore("dfc", DEFAULT_DFC_STORE, forceFresh),
+      getDfcStoreWithDb(forceFresh),
       readSysStore("admins", [], forceFresh),
       fetchAdminAuditLogs().catch(() => []),
     ]);
@@ -2860,8 +2942,7 @@ app.get("/api/admin/sync", async (req, res) => {
         envAllowedEmails: accessCfg.envAllowedEmails,
         forms,
         responses: Array.isArray(dfcStore.responses) ? dfcStore.responses : [],
-        googleApiKeyConfigured: Boolean(GOOGLE_FORM_API_KEY),
-        googleApiKeyMasked: maskApiKey(GOOGLE_FORM_API_KEY),
+        storageType: "supabase_postgresql",
       },
       accounts: {
         me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },

@@ -450,7 +450,7 @@
       <span class="dock-badge" id="uCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockForms">
-      <span>Google 表單</span>
+      <span>DFC 問卷管理</span>
       <span class="dock-badge" id="fCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockAdmins">
@@ -478,7 +478,7 @@
 <main class="admin-main">
   <!-- 唯讀權限提示橫幅 -->
   <div id="readOnlyBanner" class="banner-notice hide">
-    <span>您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號資料與表單 CSV 回傳結果，但無法修改或刪除。</span>
+    <span>您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號資料與問卷作答結果，但無法修改或刪除。</span>
     <span style="font-size:12.5px;color:var(--ink-secondary)">系統設定由 Super Admin 管理</span>
   </div>
 
@@ -501,13 +501,13 @@
   <!-- 分頁 2：已登入帳號列表 -->
   <div id="usersGrid" class="users-list-grid hide"></div>
 
-  <!-- 分頁 3：Google 表單 API 資訊與 CSV 回傳數據管理 -->
+  <!-- 分頁 3：DFC 互動問卷管理與作答數據中心（原生儲存於 Supabase） -->
   <section id="formsPanel" class="hide" aria-label="DFC 互動問卷與數據管理">
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <h3 style="display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷管理與時間點工作室</h3>
-          <p>管理所有 DFC 影片互動問卷、可視化調整各時間點題目與 Google 表單串接，並指定前台主推發布的問卷。</p>
+          <h3 style="display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷管理與題庫工作室</h3>
+          <p>所有問卷題目、時間點與學生填答數據均原生儲存於 Supabase PostgreSQL 雲端資料庫，自主管理免 Google Form。</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="superFormActions">
           <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增 DFC 問卷</button>
@@ -588,14 +588,14 @@ s1120002
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <h3>回傳結果與 CSV 數據檢視</h3>
-          <p id="csvSourceHint">顯示收集之表單回應與 Google 試算表 CSV 回傳結果。</p>
+          <h3>回傳結果與作答數據檢視</h3>
+          <p id="csvSourceHint">顯示儲存於 Supabase 雲端資料庫 (<code>public.dfc_responses</code>) 之填答紀錄、行為歷程與設備數據。</p>
         </div>
         <div style="display:flex;gap:8px">
-          <button type="button" class="btn ghost sm" id="syncCsvBtn">同步最新 CSV</button>
-          <button type="button" class="btn primary sm" id="exportCsvBtn">匯出下載 CSV</button>
-          <button type="button" class="btn ghost sm" id="openImportCsvBtn">匯入 CSV 數據</button>
-          <button type="button" class="btn danger sm" id="clearResponsesBtn">清空本表單紀錄</button>
+          <button type="button" class="btn ghost sm" id="syncCsvBtn">🔄 同步最新作答</button>
+          <button type="button" class="btn primary sm" id="exportCsvBtn">📥 匯出下載 CSV</button>
+          <button type="button" class="btn ghost sm" id="openImportCsvBtn">📤 匯入 CSV 數據</button>
+          <button type="button" class="btn danger sm" id="clearResponsesBtn">🗑️ 清空本表單紀錄</button>
         </div>
       </div>
 
@@ -823,11 +823,11 @@ s1120002
     <div class="studio-head">
       <div>
         <h3 id="formConfigModalTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷與時間點編輯工作室</h3>
-        <p class="sub" style="margin:2px 0 0;font-size:12.5px">可視化預覽影片、即時標記時間點題目、調整選項與 Google Form 串接。</p>
+        <p class="sub" style="margin:2px 0 0;font-size:12.5px">可視化預覽影片、即時標記時間點題目與調整選項，設定均直接儲存於 Supabase 資料表。</p>
       </div>
       <div class="studio-tabs">
         <button type="button" class="studio-tab-btn active" id="tabStudioTimeline">⏱️ 時間點題目工作室</button>
-        <button type="button" class="studio-tab-btn" id="tabStudioGeneral">📌 基本設定與 Google 表單</button>
+        <button type="button" class="studio-tab-btn" id="tabStudioGeneral">📌 基本設定與問卷屬性</button>
       </div>
     </div>
 
@@ -935,22 +935,17 @@ s1120002
           </label>
         </div>
 
-        <label class="field">
-          <span class="lbl">Google Form 提交網址（選填） <span>支援 /viewform、/formResponse 或 Apps Script 網址</span></span>
-          <input class="input" id="cfgGoogleFormUrl" placeholder="https://docs.google.com/forms/d/e/1FAIpQLS.../formResponse">
-        </label>
-
-        <label class="field">
-          <span class="lbl">Google 試算表結果 CSV 連結（選填） <span>貼上 Google 試算表「發佈到網路 (CSV)」網址即可即時同步雲端數據</span></span>
-          <input class="input" id="cfgCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
-        </label>
+        <div style="background:var(--bg);padding:14px 16px;border-radius:var(--r-md);margin:14px 0;border-left:4px solid var(--green, #10b981)">
+          <div style="font-weight:700;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:6px">
+            <span>🟢 原生 Supabase 雲端資料庫儲存</span>
+          </div>
+          <p style="margin:4px 0 0;font-size:12.5px;color:var(--ink-secondary);line-height:1.6">
+            本系統已全面原生整合 Supabase PostgreSQL（<code>public.dfc_forms</code> 與 <code>public.dfc_responses</code>），問卷題目與學生作答成果均直接於本後台自主管理與深度分析，完全無需 Google Form 或第三方試算表串接。
+          </p>
+        </div>
 
         <div class="grid-2">
-          <label class="field">
-            <span class="lbl">自動帶入登入者信箱之 Entry ID <span>選填</span></span>
-            <input class="input" id="cfgEmailEntryId" placeholder="例如：entry.987654321">
-          </label>
-          <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:28px">
+          <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
             <input type="checkbox" id="cfgIsDefault" style="transform:scale(1.3);accent-color:var(--ink)">
             <span style="font-size:13.5px;font-weight:600">將此問卷設為前台預設發布問卷 (Active)</span>
           </label>
@@ -1022,8 +1017,8 @@ s1120002
     </div>
     
     <p style="font-size:13px;color:var(--ink-secondary);margin:0 0 14px;line-height:1.6">
-      支援直接選擇 <b>.csv / .tsv / .txt</b> 檔案，或由 <b>Excel / Google 試算表</b> 複製表格儲存格後直接貼入下方文字框。<br>
-      欄位順序：<b>時間、階段標籤、題目內容、題型、選項清單、補充說明、是否必填、Google表單EntryID</b>。
+      支援直接選擇 <b>.csv / .tsv / .txt</b> 檔案，或由 <b>Excel</b> 複製表格儲存格後直接貼入下方文字框。<br>
+      欄位順序：<b>時間、階段標籤、題目內容、題型、選項清單、補充說明、是否必填</b>。
     </p>
 
     <!-- 檔案上傳與模式設定列 -->
@@ -1048,7 +1043,7 @@ s1120002
     <!-- 文字貼入區 -->
     <label class="field" style="margin-top:0">
       <span class="lbl">貼上 CSV 或由 Excel 複製的內容（含或不含標題列皆可）：</span>
-      <textarea id="importQTextarea" class="input" rows="7" placeholder="時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填,Google表單EntryID&#10;00:04,階段一 · 感受 Feel,你在影片中觀察到什麼校園問題？,單選,資訊宣傳分散 | 動線需改善 | 回饋管道不足,請選擇一個最符合的,是,entry.111111111&#10;00:10,階段二 · 想像 Imagine,有哪些值得嘗試的創意解方？,多選,互動影音表單 | 一句話共創牆 | 跨班級工作坊,可複選多項,是,entry.222222222" style="font-family:monospace;font-size:12.5px"></textarea>
+      <textarea id="importQTextarea" class="input" rows="7" placeholder="時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填&#10;00:04,階段一 · 感受 Feel,你在影片中觀察到什麼校園問題？,單選,資訊宣傳分散 | 動線需改善 | 回饋管道不足,請選擇一個最符合的,是&#10;00:10,階段二 · 想像 Imagine,有哪些值得嘗試的創意解方？,多選,互動影音表單 | 一句話共創牆 | 跨班級工作坊,可複選多項,是" style="font-family:monospace;font-size:12.5px"></textarea>
     </label>
 
     <!-- 即時預覽區 -->
@@ -1097,7 +1092,7 @@ s1120002
 <!-- 匯入 CSV 彈窗 -->
 <div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
   <div class="modal" style="max-width:540px">
-    <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入 Google 表單結果 CSV</h3>
+    <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入問卷作答成果 CSV 至 Supabase</h3>
     <p class="sub" style="margin-bottom:12px;font-size:13.5px">選擇 <code>.csv</code> 檔案或直接貼上 CSV 內容。</p>
     <label class="field" style="margin-top:0">
       <span class="lbl">選擇 CSV 檔案</span>
@@ -2058,7 +2053,7 @@ async function loadAndRenderCsv(showToast = false) {
     if (!r.ok) return;
     currentCsvData = await r.json();
     renderDfcCsvTable();
-    if (showToast) toast("已同步最新 Google 表單 CSV 與回傳數據");
+    if (showToast) toast("已同步最新 Supabase 作答成果與數據");
   } catch {}
 }
 
@@ -2246,13 +2241,7 @@ function renderDfcPanel() {
     };
   }
 
-  const isDemoUrl = !activeForm.googleFormUrl || activeForm.googleFormUrl.includes("YOUR_GOOGLE_FORM");
-  const apiStatusHtml = isDemoUrl
-    ? `<span style="color:#b45309">● 示範模式（尚未填入實際 Google Form 網址，作答將儲存於本站雲端資料庫與 CSV）</span>`
-    : `<span style="color:var(--green, var(--ok))">● 已串接 Google Form API（${esc(activeForm.googleFormUrl)}）</span>`;
-  const apiKeyHtml = googleApiKeyConfigured
-    ? `<span style="color:var(--green, var(--ok))">● 已載入環境變數 <code>GOOGLE_FORM_API_KEY</code>（${esc(googleApiKeyMasked)}）</span>`
-    : `<span style="color:var(--ink-tertiary)">尚未設定環境變數 <code>GOOGLE_FORM_API_KEY</code></span>`;
+  const totalQCount = (activeForm.checkpoints || []).length;
 
   $("activeFormApiGrid").innerHTML = `
     <div class="api-kv">
@@ -2264,20 +2253,20 @@ function renderDfcPanel() {
       <div>${isDefaultActive ? `<b style="color:var(--green, var(--ok))">🌟 前台首頁預設展示中</b>` : `<span style="color:var(--ink-tertiary)">📁 備用問卷活動</span>`}</div>
     </div>
     <div class="api-kv">
-      <small>Google Form API Key 狀態</small>
-      <div>${apiKeyHtml}</div>
+      <small>雲端資料庫儲存狀態</small>
+      <div><span style="color:var(--green, var(--ok));font-weight:600">🟢 Supabase PostgreSQL 原生資料表</span> <span style="color:var(--ink-tertiary);font-size:11.5px">(免 Google Form)</span></div>
     </div>
     <div class="api-kv">
-      <small>Google Form API 提交網址 (formResponse / Apps Script)</small>
-      <div>${apiStatusHtml}</div>
+      <small>題庫總數與時間點</small>
+      <div>📝 <b>${totalQCount}</b> 題時間點題目</div>
     </div>
     <div class="api-kv">
-      <small>Google 試算表結果 CSV 同步網址</small>
-      <div>${activeForm.csvUrl ? `<a href="${esc(activeForm.csvUrl)}" target="_blank" rel="noopener">${esc(activeForm.csvUrl)}</a>` : `<span style="color:var(--ink-tertiary)">未設定遠端 CSV 網址（直接顯示本站收集之回傳數據）</span>`}</div>
+      <small>互動影片來源路徑</small>
+      <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code></div>
     </div>
     <div class="api-kv">
-      <small>互動影片路徑 & 送出模式</small>
-      <div>🎬 <code>${esc(activeForm.videoUrl || "/assets/dfc.mp4")}</code> · ${activeForm.submitMode === "each" ? "逐題即時送出" : "全數答完統一送出"}</div>
+      <small>作答送出模式</small>
+      <div>${activeForm.submitMode === "each" ? "⚡ 逐題即時送出" : "📦 全數答完統一送出"}</div>
     </div>
   `;
 
@@ -3228,10 +3217,7 @@ function openFormConfigModal(formObj) {
   $("cfgFormDesc").value = editingFormObj.description || "";
   $("cfgVideoUrl").value = editingFormObj.videoUrl || "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview";
   $("cfgFallbackDuration").value = Number(editingFormObj.fallbackDuration) || 18;
-  $("cfgGoogleFormUrl").value = editingFormObj.googleFormUrl || "";
-  $("cfgCsvUrl").value = editingFormObj.csvUrl || "";
   $("cfgSubmitMode").value = editingFormObj.submitMode || "end";
-  $("cfgEmailEntryId").value = editingFormObj.emailEntryId || "";
   $("cfgIsDefault").checked = editingFormObj.id === activeDfcFormId;
   $("cfgAllowSeek").value = editingFormObj.allowSeek || "watched";
   $("cfgAllowSpeed").value = String(Boolean(editingFormObj.allowSpeed));
@@ -3617,8 +3603,9 @@ function renderCheckpointEditors() {
           <span>此題為必填題</span>
         </label>
         <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-tertiary)">
-          <span>Google Form Entry ID (選填):</span>
-          <input class="input cp-entry-inp" style="width:140px;padding:4px 8px;font-size:12px" value="${esc(cp.entryId || "")}" placeholder="entry.123456789">
+          <span>題目 ID:</span>
+          <code style="padding:2px 8px;border-radius:4px;background:var(--bg)">${esc(cp.id || ("q" + (idx + 1)))}</code>
+          <input type="hidden" class="cp-entry-inp" value="${esc(cp.entryId || cp.id || ("q" + (idx + 1)))}">
         </div>
       </div>
     `;
@@ -3889,10 +3876,7 @@ $("saveFormCfgBtn").onclick = async () => {
   editingFormObj.description = $("cfgFormDesc").value.trim();
   editingFormObj.videoUrl = $("cfgVideoUrl").value.trim() || "https://drive.google.com/file/d/1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe/preview";
   editingFormObj.fallbackDuration = Math.max(5, Number($("cfgFallbackDuration").value) || 18);
-  editingFormObj.googleFormUrl = $("cfgGoogleFormUrl").value.trim();
-  editingFormObj.csvUrl = $("cfgCsvUrl").value.trim();
   editingFormObj.submitMode = $("cfgSubmitMode").value;
-  editingFormObj.emailEntryId = $("cfgEmailEntryId").value.trim();
   editingFormObj.isDefault = $("cfgIsDefault").checked;
   editingFormObj.allowSeek = $("cfgAllowSeek").value;
   editingFormObj.allowSpeed = $("cfgAllowSpeed").value === "true";
@@ -4000,14 +3984,14 @@ $("confirmImportCsvBtn").onclick = async () => {
 
 function downloadQuestionsTemplate() {
   const tplCsv = "\uFEFF" + [
-    "時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填,Google表單EntryID",
-    "00:04,階段一 · 感受 Feel (第1題),在剛才的影片片段中，你觀察到最核心的校園問題是什麼？,單選,資訊傳遞分散 | 空間與動線規劃需更直覺 | 缺乏即時回饋管道,請選擇一個最貼近你觀察到的現象。,是,entry.111111111",
-    "00:04,階段一 · 感受 Feel (第2題),你認為這個問題對哪一群體的影響最大？,多選,全體學生 | 導師與行政組長 | 家長與校友 | 學校訪客,本題與上一題同為 00:04 時段問題，支援同時間點連續提問。,是,entry.111111112",
-    "00:10,階段二 · 想像 Imagine (第1題),針對這個問題，你認為哪些創意解方最值得嘗試？,多選,導入互動式影音表單 | 建立校園專屬的一句話共創牆 | 結合跨班級工作坊快速製作原型,此題為多選題，可勾選一項或多項方案。,是,entry.222222222",
-    "00:10,階段二 · 想像 Imagine (第2題),你認為以上解方的實施難易度為何？,下拉,非常容易立即推行 | 需要跨處室合作 | 需要較多經費與時間,同屬 00:10 時段問題，評估解方可行性。,否,entry.222222223",
-    "00:18,階段三 · 實踐 Do,請簡述你在本次行動中擔任的角色或預計實踐的項目,簡答,,限 50 字以內，簡要描述即可。,否,entry.333333333",
-    "00:22,階段四 · 分享 Share (第1題),你是否願意將本次成果分享於全校互動成果牆？,是非,,二選一是非題,是,entry.555555555",
-    "00:22,階段四 · 分享 Share (第2題),你對本次校園 DFC 方案的整體推薦評分？,評分,,1~5 星評分量表，作答後表單即完成！,是,entry.666666666"
+    "時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填",
+    "00:04,階段一 · 感受 Feel (第1題),在剛才的影片片段中，你觀察到最核心的校園問題是什麼？,單選,資訊傳遞分散 | 空間與動線規劃需更直覺 | 缺乏即時回饋管道,請選擇一個最貼近你觀察到的現象。,是",
+    "00:04,階段一 · 感受 Feel (第2題),你認為這個問題對哪一群體的影響最大？,多選,全體學生 | 導師與行政組長 | 家長與校友 | 學校訪客,本題與上一題同為 00:04 時段問題，支援同時間點連續提問。,是",
+    "00:10,階段二 · 想像 Imagine (第1題),針對這個問題，你認為哪些創意解方最值得嘗試？,多選,導入互動式影音表單 | 建立校園專屬的一句話共創牆 | 結合跨班級工作坊快速製作原型,此題為多選題，可勾選一項或多項方案。,是",
+    "00:10,階段二 · 想像 Imagine (第2題),你認為以上解方的實施難易度為何？,下拉,非常容易立即推行 | 需要跨處室合作 | 需要較多經費與時間,同屬 00:10 時段問題，評估解方可行性。,否",
+    "00:18,階段三 · 實踐 Do,請簡述你在本次行動中擔任的角色或預計實踐的項目,簡答,,限 50 字以內，簡要描述即可。,否",
+    "00:22,階段四 · 分享 Share (第1題),你是否願意將本次成果分享於全校互動成果牆？,是非,,二選一是非題,是",
+    "00:22,階段四 · 分享 Share (第2題),你對本次校園 DFC 方案的整體推薦評分？,評分,,1~5 星評分量表，作答後表單即完成！,是"
   ].join("\r\n");
 
   const blob = new Blob([tplCsv], { type: "text/csv;charset=utf-8" });
@@ -4098,8 +4082,9 @@ function parseQuestionsCsv(rawText) {
     const required = mapRequired(r[6]);
     const entryId = String(r[7] ?? "").trim();
 
+    const qId = `q${idx + 1}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
     return {
-      id: `q${idx + 1}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      id: qId,
       time: parseTimeSec(timeVal),
       stepLabel,
       title,
@@ -4107,7 +4092,7 @@ function parseQuestionsCsv(rawText) {
       options,
       desc,
       required,
-      entryId: entryId || `entry.${idx + 1}1111111`,
+      entryId: entryId || qId,
       min: 1,
       max: 5,
     };
