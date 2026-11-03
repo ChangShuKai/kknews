@@ -121,6 +121,16 @@
     </div>
   </div>
 
+  <!-- 投稿版面風格篩選標籤列 (Layout Filter Strip) -->
+  <div class="layout-filter-strip" id="postLayoutFilterStrip">
+    <button type="button" class="filter-chip active" data-filter="all">全部投稿 (<span id="chipAllCount">0</span>)</button>
+    <button type="button" class="filter-chip" data-filter="classic">🏛️ 經典居中</button>
+    <button type="button" class="filter-chip" data-filter="vertical">📜 文青直排</button>
+    <button type="button" class="filter-chip" data-filter="quote">💬 現代引言</button>
+    <button type="button" class="filter-chip" data-filter="framed">🖼️ 典雅雙框</button>
+    <button type="button" class="filter-chip" data-filter="poster">🎨 潮流海報</button>
+  </div>
+
   <!-- 分頁 1：投稿管理網格 -->
   <div id="grid" class="submissions-grid"></div>
 
@@ -1096,7 +1106,11 @@ function drawCard(canvas, text, author, style = {}) {
     colChars.forEach((col, cIdx) => {
       const x = startX - cIdx * colSpacing;
       col.forEach((ch, rIdx) => {
-        ctx.fillText(ch, x, startY + rIdx * charSpacing + charSpacing / 2);
+        if (/[，。、；：？！]/.test(ch)) {
+          ctx.fillText(ch, x + vSize * 0.28, startY + rIdx * charSpacing + charSpacing * 0.3);
+        } else {
+          ctx.fillText(ch, x, startY + rIdx * charSpacing + charSpacing / 2);
+        }
       });
     });
 
@@ -1457,21 +1471,41 @@ function matchSearch(fields) {
   return fields.some(f => String(f || "").toLowerCase().includes(q));
 }
 
+let currentLayoutFilter = "all";
+
+function initLayoutFilterChips() {
+  const strip = $("postLayoutFilterStrip");
+  if (!strip || strip._inited) return;
+  strip._inited = true;
+  strip.querySelectorAll(".filter-chip").forEach(chip => {
+    chip.onclick = () => {
+      strip.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      currentLayoutFilter = chip.dataset.filter || "all";
+      render();
+    };
+  });
+}
+
 async function render() {
+  initLayoutFilterChips();
+  if ($("chipAllCount")) $("chipAllCount").textContent = rows.length;
   const filtered = rows.map(unpackRow).filter(r => {
     let metaObj = r.user_meta;
     if (typeof metaObj === "string") {
       try { metaObj = JSON.parse(metaObj); } catch {}
     }
     const cardStyle = metaObj?.cardStyle || {};
-    const layoutName = { classic: "經典居中", vertical: "文青直排", quote: "現代引言", framed: "典雅雙框", poster: "潮流海報" }[cardStyle.layout] || "";
-    return matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info, cardStyle.layout, layoutName]);
+    const layout = cardStyle.layout || "classic";
+    if (currentLayoutFilter !== "all" && layout !== currentLayoutFilter) return false;
+    const layoutName = { classic: "經典居中", vertical: "文青直排", quote: "現代引言", framed: "典雅雙框", poster: "潮流海報" }[layout] || "";
+    return matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info, layout, layoutName]);
   });
-  $("pCount").textContent = searchQuery ? `${filtered.length}/${rows.length}` : rows.length;
+  $("pCount").textContent = (searchQuery || currentLayoutFilter !== "all") ? `${filtered.length}/${rows.length}` : rows.length;
   if (typeof updateAdminDockGlider === "function") updateAdminDockGlider(activeTab, false);
   const grid = $("grid"); grid.innerHTML = "";
   if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery || currentLayoutFilter !== "all" ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</div>`;
     return;
   }
   await ensureFont(filtered.map(r => r.content + r.author).join(""));
@@ -1498,6 +1532,7 @@ async function render() {
       <textarea rows="2" class="input" aria-label="內容" ${canEdit ? "" : "readonly"} style="margin-top:6px"></textarea>
       <input class="input" placeholder="署名" aria-label="署名" ${canEdit ? "" : "readonly"} style="margin-top:6px">
       <div class="post-item-actions">
+        <button type="button" class="btn ghost sm copy-text" title="複製金句與署名文字">複製文字</button>
         <button type="button" class="btn ghost sm dl">下載 PNG</button>
         ${canEdit ? `<button type="button" class="btn ghost sm save-edit">儲存</button><button type="button" class="btn danger sm del">刪除</button>` : ""}
       </div>`;
@@ -1515,6 +1550,14 @@ async function render() {
     };
     if (canEdit) ta.oninput = au.oninput = scheduleRedraw;
     drawCard(cv, r.content, r.author, cardStyle);
+    el.querySelector(".copy-text").onclick = () => {
+      const txt = `「${ta.value.trim()}」—— ${au.value.trim()}`;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txt).then(() => toast("✓ 已複製金句文字至剪貼簿"));
+      } else {
+        toast("請手動複製文字", true);
+      }
+    };
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
     if (canEdit) {
       const saveBtn = el.querySelector(".save-edit");

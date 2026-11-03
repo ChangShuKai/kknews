@@ -3265,6 +3265,69 @@ nav.admin-dock {
   flex-wrap: wrap;
 }
 
+/* 投稿版面快選標籤列 (Layout Filter Chips) */
+.layout-filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--spring-smooth);
+  box-shadow: var(--shadow-subtle);
+  user-select: none;
+}
+.filter-chip:hover {
+  background: var(--surface-muted);
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateY(-1.5px);
+}
+.filter-chip.active {
+  background: var(--blue);
+  color: #ffffff;
+  border-color: var(--blue);
+  box-shadow: 0 4px 12px var(--blue-glow);
+}
+[data-theme="dark"] .filter-chip {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .filter-chip.active {
+  background: var(--blue);
+  color: #ffffff;
+}
+
+/* DFC 題目作答進度指示條 (Question Mini Progress Bar) */
+.dfc-q-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+[data-theme="dark"] .dfc-q-progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+.dfc-q-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  border-radius: var(--r-pill);
+  transition: width 0.4s var(--spring-smooth);
+}
+
 /* 後台投稿卡片精緻度增強 */
 .post-item-card {
   position: relative;

@@ -516,6 +516,9 @@
             <!-- 右側動態問題卡片 -->
             <div class="dfc-q-pane" id="dfcQuestionCol">
               <div class="dfc-question-card">
+                <div class="dfc-q-progress-bar" title="問卷作答進度">
+                  <div class="dfc-q-progress-fill" id="dfcQProgressFill"></div>
+                </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
                   <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
                   <button type="button" class="btn ghost sm" id="dfcRewindForQuestionBtn" style="font-size:11.5px;padding:2px 8px" title="沒聽清剛才影片對話？倒退 10 秒重新觀看">↺ 倒退 10 秒重看</button>
@@ -1653,7 +1656,11 @@
         colChars.forEach((col, cIdx) => {
           const x = startX - cIdx * colSpacing;
           col.forEach((ch, rIdx) => {
-            ctx.fillText(ch, x, startY + rIdx * charSpacing + charSpacing / 2);
+            if (/[，。、；：？！]/.test(ch)) {
+              ctx.fillText(ch, x + vSize * 0.28, startY + rIdx * charSpacing + charSpacing * 0.3);
+            } else {
+              ctx.fillText(ch, x, startY + rIdx * charSpacing + charSpacing / 2);
+            }
           });
         });
 
@@ -2543,6 +2550,9 @@
       const stepText = cp.stepLabel || ("STEP " + (idx + 1));
       const multiHint = groupTotal > 1 ? ` [本時段第 ${subIdx}/${groupTotal} 題]` : "";
       $("dfcQStepBadge").textContent = `${stepText} · QUESTION ${idx + 1}/${DFC_CONFIG.checkpoints.length}${multiHint}`;
+      const totalQ = Math.max(1, DFC_CONFIG.checkpoints.length);
+      const progressPct = Math.min(100, Math.round(((idx + 1) / totalQ) * 100));
+      if ($("dfcQProgressFill")) $("dfcQProgressFill").style.width = progressPct + "%";
       $("dfcQTitle").textContent = cp.title;
       $("dfcQDesc").textContent = cp.desc || "";
       $("dfcQErr").classList.remove("show");
