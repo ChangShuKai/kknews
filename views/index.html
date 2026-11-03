@@ -215,6 +215,10 @@
                 <li><strong>3. 實踐與分享</strong>：記錄想法並同步表單，與同學交流激盪。</li>
               </ul>
             </div>
+            <div class="home-guide-action" style="margin-top:14px">
+              <span class="home-guide-subtext">排版 · 繪圖 · 下載 · 分享</span>
+              <button type="button" class="btn ghost sm" id="homeQuickStartPost">開始製作卡片 →</button>
+            </div>
           </div>
           <div class="home-guide-card">
             <div>
@@ -385,6 +389,7 @@
                 </span>
                 <div style="display:flex;align-items:center;gap:8px">
                   <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:2px 8px;font-size:12px" title="複製當前金句文字與署名">複製文字</button>
+                  <button type="button" class="btn ghost sm" id="copyCardImgBtn" style="padding:2px 8px;font-size:12px" title="複製卡片圖片至剪貼簿，可直接貼上至 Line 或社群">複製圖片</button>
                   <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:2px 8px;font-size:12px" title="重設回預設經典米白排版">重設版型</button>
                   <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
                 </div>
@@ -1950,6 +1955,35 @@
         }
       }
       syncCardStyleUi();
+    }
+
+    if ($("copyCardImgBtn")) {
+      $("copyCardImgBtn").onclick = () => {
+        renderLivePreviewCard();
+        const cv = $("liveCardCanvas");
+        if (!cv) return;
+        cv.toBlob(blob => {
+          if (!blob) return;
+          if (navigator.clipboard && window.ClipboardItem) {
+            navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob })
+            ]).then(() => {
+              const btn = $("copyCardImgBtn");
+              const origText = btn.textContent;
+              btn.textContent = "✓ 已複製";
+              setTimeout(() => { btn.textContent = origText; }, 1800);
+              say("✓ 已複製卡片圖片至剪貼簿！可直接於 Line 或 Google Classroom 貼上分享", true);
+              logAction("複製卡片圖片", "複製卡片 PNG 至剪貼簿");
+            }).catch(() => {
+              $("dlPreviewBtn").click();
+              say("已為你下載卡片圖片");
+            });
+          } else {
+            $("dlPreviewBtn").click();
+            say("瀏覽器不支援直接複製圖片，已自動為你下載卡片圖片");
+          }
+        });
+      };
     }
 
     $("dlPreviewBtn").onclick = () => {
@@ -4712,6 +4746,10 @@
         logAction("使用靈感金句", `點選: ${chip.textContent.trim()}`);
       });
     });
+
+    if ($("homeQuickStartPost")) {
+      $("homeQuickStartPost").onclick = () => navigateToTab("post", true);
+    }
 
     if ($("homeQuickStartDfc")) {
       $("homeQuickStartDfc").onclick = () => navigateToTab("dfc", true);

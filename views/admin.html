@@ -107,7 +107,7 @@
   <!-- 工具列 -->
   <div class="action-toolbar" id="mainToolbar">
     <div class="action-toolbar-group" style="flex:1;min-width:280px">
-      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋諺語、作者、姓名、信箱、回答或 IP..." style="width:100%;max-width:440px">
+      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋諺語、作者、姓名、信箱、版面風格 (如 直排、居中) 或 IP..." style="width:100%;max-width:440px">
       <label class="font-size-control" id="szWrap">
         <span>卡片字級</span>
         <input id="size" type="number" min="24" max="200" step="2">
@@ -1458,7 +1458,15 @@ function matchSearch(fields) {
 }
 
 async function render() {
-  const filtered = rows.map(unpackRow).filter(r => matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info]));
+  const filtered = rows.map(unpackRow).filter(r => {
+    let metaObj = r.user_meta;
+    if (typeof metaObj === "string") {
+      try { metaObj = JSON.parse(metaObj); } catch {}
+    }
+    const cardStyle = metaObj?.cardStyle || {};
+    const layoutName = { classic: "經典居中", vertical: "文青直排", quote: "現代引言", framed: "典雅雙框", poster: "潮流海報" }[cardStyle.layout] || "";
+    return matchSearch([r.content, r.author, r.display_name, r.user_email, r.ip_address, r.device_info, cardStyle.layout, layoutName]);
+  });
   $("pCount").textContent = searchQuery ? `${filtered.length}/${rows.length}` : rows.length;
   if (typeof updateAdminDockGlider === "function") updateAdminDockGlider(activeTab, false);
   const grid = $("grid"); grid.innerHTML = "";
