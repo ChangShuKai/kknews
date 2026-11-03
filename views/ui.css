@@ -5751,6 +5751,7 @@ table.data-tbl td {
 table.data-tbl tr:last-child td { border-bottom: 0; }
 table.data-tbl tr:hover td { background: var(--surface-tint); }
 
+/* 管理員帳號卡片與操作條目 */
 .admin-account-row {
   display: flex;
   align-items: center;
@@ -5758,10 +5759,71 @@ table.data-tbl tr:hover td { background: var(--surface-tint); }
   gap: 14px;
   padding: 16px 20px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   background: var(--bg);
   margin-bottom: 12px;
   flex-wrap: wrap;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+.admin-account-row:hover {
+  border-color: rgba(0, 113, 227, 0.3);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .admin-account-row {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 審計紀錄專屬美化樣式 (Audit Logs Table Styling) */
+.audit-time-col {
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--ink-tertiary);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.audit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 8px;
+  border-radius: var(--r-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.audit-badge-user {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border: 1px solid rgba(0, 113, 227, 0.18);
+}
+
+.audit-badge-admin {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .audit-badge-admin {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.audit-target-col {
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.audit-ip-col {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11.5px;
+  color: var(--ink-secondary);
+  white-space: nowrap;
 }
 .cp-list {
   display: grid;
