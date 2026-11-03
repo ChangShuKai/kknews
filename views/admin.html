@@ -823,10 +823,18 @@ function genRandomPw(len = 10) {
 
 function toast(msg, isErr = false) {
   const t = $("toast");
-  t.textContent = msg;
-  t.className = "toast" + (isErr ? " err" : "");
+  if (!t) return;
+  t.innerHTML = "";
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "toast-icon";
+  iconSpan.textContent = isErr ? "⚠️" : "✓";
+  const textSpan = document.createElement("span");
+  textSpan.className = "toast-text";
+  textSpan.textContent = msg;
+  t.append(iconSpan, textSpan);
+  t.className = "toast" + (isErr ? " err" : " ok");
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.add("hide"), 2800);
+  toast._t = setTimeout(() => t.classList.add("hide"), 3000);
 }
 
 function safeImgSrc(url) {

@@ -88,6 +88,9 @@
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Noto Sans TC", sans-serif;
   --font-serif: "Noto Serif TC", "Songti TC", "Source Han Serif TC", Georgia, serif;
+  --sans: var(--font);
+  --muted: var(--ink-secondary);
+  --ease-out: var(--ease-out-apple);
 }
 
 /* ============================================================================
@@ -144,6 +147,7 @@
   --err-bg: rgba(239, 68, 68, 0.16);
   --paper: #0c1322;
   --white: #131d33;
+  --muted: var(--ink-secondary);
 
   --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5), 0 1px 3px -1px rgba(0, 0, 0, 0.4);
@@ -1053,28 +1057,47 @@ h1, h2, h3 {
 
 .toast {
   position: fixed;
+  top: max(24px, env(safe-area-inset-top, 24px));
   left: 50%;
-  bottom: 28px;
   transform: translateX(-50%) translateY(0);
-  background: rgba(29, 29, 31, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  color: #fff;
-  padding: 10px 22px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  color: #ffffff;
+  padding: 12px 24px;
   border-radius: var(--r-pill);
-  font-size: 13.5px;
-  font-weight: 500;
-  z-index: 999;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  animation: toastUp 0.35s var(--spring-bounce) both;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10000;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 560px);
+  pointer-events: auto;
+  animation: toastSlideDown 0.34s var(--spring-bounce) both;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.toast.ok {
+  background: rgba(5, 150, 105, 0.96);
+  box-shadow: 0 16px 40px -8px rgba(5, 150, 105, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 .toast.err {
-  background: rgba(224, 49, 49, 0.94);
+  background: rgba(220, 38, 38, 0.96);
+  box-shadow: 0 16px 40px -8px rgba(220, 38, 38, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.toast-icon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+.toast-text {
+  line-height: 1.45;
+  word-break: break-word;
 }
 
-@keyframes toastUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.95); }
+@keyframes toastSlideDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-24px) scale(0.92); }
   to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
@@ -3064,6 +3087,74 @@ html[data-layout="mobile"] .spoiler-vault-card {
 
 .inspire-chip:active {
   transform: scale(0.96);
+}
+
+.inspire-chip.surprise-btn {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.15));
+  border-color: rgba(124, 58, 237, 0.35);
+  color: var(--purple, #7c3aed);
+  font-weight: 700;
+}
+.inspire-chip.surprise-btn:hover {
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* 字數統計動態回饋 (Character Counter Dynamic Feedback) */
+#cc.warn, #ac.warn {
+  color: var(--orange);
+  font-weight: 700;
+}
+#cc.limit, #ac.limit {
+  color: var(--red);
+  font-weight: 800;
+  animation: pulseLimit 0.35s ease;
+}
+@keyframes pulseLimit {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* 自訂配色色票按鈕 (Custom Palette Swatch & Panel) */
+.color-swatch-btn.color-swatch-custom {
+  position: relative;
+  overflow: hidden;
+}
+.color-swatch-btn.color-swatch-custom .swatch-fill {
+  background: conic-gradient(from 180deg at 50% 50%, #ef4444, #f59e0b, #10b981, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444) !important;
+}
+.custom-color-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  background: var(--bg);
+  border: 1px dashed var(--line-strong);
+  animation: applePop 0.25s var(--spring-smooth) both;
+}
+.color-pick-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+.color-pick-item input[type="color"] {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 /* 畫布藝廊裝裱感 (Canvas Gallery Frame) */

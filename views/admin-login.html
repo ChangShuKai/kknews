@@ -80,7 +80,10 @@
       <span>KKNEWS</span>
       <small>CONSOLE</small>
     </div>
-    <span class="device-profile-badge" id="adminLoginDeviceBadge">💻 電腦版面</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
+      <span class="device-profile-badge" id="adminLoginDeviceBadge">💻 電腦版面</span>
+    </div>
   </div>
 
   <h1 style="margin:0 0 8px;font-size:24px;font-weight:800">管理員安全登入</h1>
@@ -95,7 +98,10 @@
     <label class="field">
       <span class="lbl">
         <span>安全密碼</span>
-        <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">顯示密碼</button>
+        <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px">
+          <span id="togglePwIcon">👁️</span>
+          <span id="togglePwText">顯示密碼</span>
+        </button>
       </span>
       <input class="input" id="pw" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
     </label>
@@ -159,10 +165,26 @@ if (urlK) {
 }
 const k = urlK || (() => { try { return sessionStorage.getItem("kk_admin_k") || ""; } catch { return ""; } })();
 
+const themeBtn = $("themeToggleBtn");
+if (themeBtn) {
+  const updateThemeBtn = () => {
+    themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "dark" ? "☀️" : "🌙";
+  };
+  updateThemeBtn();
+  themeBtn.onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme") || "light";
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("kk_theme", next); } catch {}
+    updateThemeBtn();
+  };
+}
+
 $("togglePwBtn").onclick = () => {
   const isPw = $("pw").type === "password";
   $("pw").type = isPw ? "text" : "password";
-  $("togglePwBtn").textContent = isPw ? "隱藏密碼" : "顯示密碼";
+  if ($("togglePwText")) $("togglePwText").textContent = isPw ? "隱藏密碼" : "顯示密碼";
+  if ($("togglePwIcon")) $("togglePwIcon").textContent = isPw ? "🔒" : "👁️";
 };
 
 function sayErr(t) {

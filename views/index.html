@@ -14,6 +14,9 @@
 
 <body>
 
+  <!-- 全域浮動通知 (Universal Floating Toast) -->
+  <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
+
   <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩（預設隱藏，僅在需要挑戰時啟動） -->
   <div id="turnstileOverlay" class="turnstile-backdrop hide" aria-modal="true" role="dialog">
     <div class="turnstile-box">
@@ -280,6 +283,7 @@
                 <button type="button" class="inspire-chip" data-quote="千里之行，始於足下；勇於探索，收穫微光。" data-author="勵志格言">🌱 始於足下</button>
                 <button type="button" class="inspire-chip" data-quote="心之所向，素履以往；生如逆旅，一葦以航。" data-author="七堇年">⛵ 素履以往</button>
                 <button type="button" class="inspire-chip" data-quote="把『我做不到』變成『我們可以怎麼做』。" data-author="DFC 設計思考">💡 思考轉念</button>
+                <button type="button" class="inspire-chip surprise-btn" id="randomQuoteBtn" title="隨機挑選一句校園金句與風格">🎲 隨機靈感</button>
               </div>
 
               <label class="field">
@@ -718,12 +722,27 @@
       }
     }, true);
     const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    let globalToastTimer = null;
     function say(t, ok) {
       for (const id of ["msg", "entryLoginAlert"]) {
         const m = $(id);
         if (!m) continue;
         m.textContent = t;
         m.className = t ? "alert show " + (ok ? "ok" : "err") : "alert";
+      }
+      const toast = $("toast");
+      if (toast) {
+        if (!t) {
+          toast.classList.add("hide");
+        } else {
+          const icon = ok ? "✓" : "⚠️";
+          toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-text">${escapeHtml(t)}</span>`;
+          toast.className = "toast" + (ok ? " ok" : " err");
+          clearTimeout(globalToastTimer);
+          globalToastTimer = setTimeout(() => {
+            toast.classList.add("hide");
+          }, 3200);
+        }
       }
     }
     const api = (url, body) => fetch(url, {
@@ -1828,49 +1847,109 @@
       drawCardCanvas(cv, text, author, currentCardStyle);
     }
 
-    function initCardStyleControls() {
+    function syncCardStyleUi() {
       const palWrap = $("palettePicker");
-      if (!palWrap || palWrap._inited) return;
-      palWrap._inited = true;
-      palWrap.innerHTML = "";
-
-      CARD_PALETTES.forEach(p => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "color-swatch-btn" + (p.id === currentCardStyle.themeId ? " active" : "");
-        btn.dataset.themeId = p.id;
-        btn.title = p.name;
-        btn.innerHTML = `<div class="swatch-fill" style="background:${p.bg}"><span class="swatch-inner-dot" style="background:${p.text}"></span></div>`;
-        btn.onclick = () => {
-          palWrap.querySelectorAll(".color-swatch-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          $("customColorRow")?.classList.add("hide");
-          currentCardStyle.themeId = p.id;
-          currentCardStyle.bg = p.bg;
-          currentCardStyle.text = p.text;
-          currentCardStyle.sub = p.sub;
-          currentCardStyle.accent = p.accent;
-          if ($("colorBadge")) $("colorBadge").textContent = p.name;
-          renderLivePreviewCard();
-          logAction("切換卡片配色", `選擇主題: ${p.name}`);
-        };
-        palWrap.appendChild(btn);
-      });
-
-      // 版面切換
-      const layoutWrap = $("layoutPicker");
-      if (layoutWrap) {
-        layoutWrap.querySelectorAll(".layout-card-btn").forEach(btn => {
-          btn.onclick = () => {
-            layoutWrap.querySelectorAll(".layout-card-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            currentCardStyle.layout = btn.dataset.layout || "classic";
-            if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
-            renderLivePreviewCard();
-            logAction("切換卡片版面", `選擇版面: ${CARD_LAYOUT_NAMES[currentCardStyle.layout] || currentCardStyle.layout}`);
-          };
+      if (palWrap) {
+        palWrap.querySelectorAll(".color-swatch-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.themeId === currentCardStyle.themeId);
         });
       }
+      const layoutWrap = $("layoutPicker");
+      if (layoutWrap) {
+        layoutWrap.querySelectorAll(".layout-card-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.layout === currentCardStyle.layout);
+        });
+      }
+      if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
+      if ($("colorBadge")) {
+        const p = CARD_PALETTES.find(item => item.id === currentCardStyle.themeId);
+        $("colorBadge").textContent = p ? p.name : (currentCardStyle.themeId === "custom" ? "自訂配色" : "經典米白");
+      }
+      if ($("customColorRow")) {
+        $("customColorRow").classList.toggle("hide", currentCardStyle.themeId !== "custom");
+      }
+    }
+
+    function initCardStyleControls() {
+      const palWrap = $("palettePicker");
+      if (!palWrap) return;
+      if (!palWrap._inited) {
+        palWrap._inited = true;
+        palWrap.innerHTML = "";
+
+        CARD_PALETTES.forEach(p => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "color-swatch-btn" + (p.id === currentCardStyle.themeId ? " active" : "");
+          btn.dataset.themeId = p.id;
+          btn.title = p.name;
+          btn.innerHTML = `<div class="swatch-fill" style="background:${p.bg}"><span class="swatch-inner-dot" style="background:${p.text}"></span></div>`;
+          btn.onclick = () => {
+            currentCardStyle.themeId = p.id;
+            currentCardStyle.bg = p.bg;
+            currentCardStyle.text = p.text;
+            currentCardStyle.sub = p.sub;
+            currentCardStyle.accent = p.accent;
+            syncCardStyleUi();
+            renderLivePreviewCard();
+            logAction("切換卡片配色", `選擇主題: ${p.name}`);
+          };
+          palWrap.appendChild(btn);
+        });
+
+        // 自訂色票按鈕
+        const customBtn = document.createElement("button");
+        customBtn.type = "button";
+        customBtn.className = "color-swatch-btn color-swatch-custom" + (currentCardStyle.themeId === "custom" ? " active" : "");
+        customBtn.dataset.themeId = "custom";
+        customBtn.title = "自訂色票選取器";
+        customBtn.innerHTML = `<div class="swatch-fill"><span class="swatch-inner-dot" style="background:#fff"></span></div>`;
+        customBtn.onclick = () => {
+          currentCardStyle.themeId = "custom";
+          currentCardStyle.bg = $("customBg")?.value || "#f4f2ee";
+          currentCardStyle.text = $("customText")?.value || "#1c1917";
+          syncCardStyleUi();
+          renderLivePreviewCard();
+          logAction("開啟自訂卡片配色");
+        };
+        palWrap.appendChild(customBtn);
+
+        // 自訂色票監聽
+        if ($("customBg")) {
+          $("customBg").oninput = (e) => {
+            const v = e.target.value;
+            if ($("customBgVal")) $("customBgVal").textContent = v;
+            if (currentCardStyle.themeId === "custom") {
+              currentCardStyle.bg = v;
+              renderLivePreviewCard();
+            }
+          };
+        }
+        if ($("customText")) {
+          $("customText").oninput = (e) => {
+            const v = e.target.value;
+            if ($("customTextVal")) $("customTextVal").textContent = v;
+            if (currentCardStyle.themeId === "custom") {
+              currentCardStyle.text = v;
+              renderLivePreviewCard();
+            }
+          };
+        }
+
+        // 版面切換
+        const layoutWrap = $("layoutPicker");
+        if (layoutWrap) {
+          layoutWrap.querySelectorAll(".layout-card-btn").forEach(btn => {
+            btn.onclick = () => {
+              currentCardStyle.layout = btn.dataset.layout || "classic";
+              syncCardStyleUi();
+              renderLivePreviewCard();
+              logAction("切換卡片版面", `選擇版面: ${CARD_LAYOUT_NAMES[currentCardStyle.layout] || currentCardStyle.layout}`);
+            };
+          });
+        }
+      }
+      syncCardStyleUi();
     }
 
     $("dlPreviewBtn").onclick = () => {
@@ -4500,17 +4579,30 @@
     $("googleLoginBtn")?.addEventListener("click", loginWithGoogleOAuth);
     if ($("topLogoutBtn")) $("topLogoutBtn").onclick = doLogout;
 
+    function updateCharCounters() {
+      const c = $("content")?.value || "";
+      const a = $("author")?.value || "";
+      const cc = $("cc"), ac = $("ac");
+      if (cc) {
+        cc.textContent = `${c.length}/100`;
+        cc.className = c.length >= 100 ? "limit" : c.length >= 85 ? "warn" : "";
+      }
+      if (ac) {
+        ac.textContent = `${a.length}/30`;
+        ac.className = a.length >= 30 ? "limit" : a.length >= 25 ? "warn" : "";
+      }
+    }
+
     // 草稿恢復
     try {
       const savedDraft = JSON.parse(localStorage.getItem("kk_proverb_draft") || "{}");
       if (savedDraft.content) {
         $("content").value = savedDraft.content;
-        $("cc").textContent = savedDraft.content.length + "/100";
       }
       if (savedDraft.author) {
         $("author").value = savedDraft.author;
-        $("ac").textContent = savedDraft.author.length + "/30";
       }
+      updateCharCounters();
     } catch {}
 
     const saveProverbDraft = () => {
@@ -4523,12 +4615,12 @@
     };
 
     $("content").oninput = () => {
-      $("cc").textContent = $("content").value.length + "/100";
+      updateCharCounters();
       saveProverbDraft();
       renderLivePreviewCard();
     };
     $("author").oninput = () => {
-      $("ac").textContent = $("author").value.length + "/30";
+      updateCharCounters();
       saveProverbDraft();
       renderLivePreviewCard();
     };
@@ -4566,7 +4658,7 @@
         const btn = $("resetCardStyleBtn");
         const origText = btn.textContent;
         currentCardStyle = { layout: "classic", themeId: "ivory", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
-        initCardStyleControls();
+        syncCardStyleUi();
         renderLivePreviewCard();
         btn.textContent = "✓ 已重設";
         setTimeout(() => { btn.textContent = origText; }, 1800);
@@ -4574,19 +4666,47 @@
       };
     }
 
+    const CURATED_INSPIRATIONS = [
+      { quote: "生活不是等待風暴過去，而是學會在雨中跳舞。", author: "校園生活", layout: "classic", theme: "azure" },
+      { quote: "每一個不曾起舞的日子，都是對生命的辜負。", author: "尼采", layout: "quote", theme: "obsidian" },
+      { quote: "千里之行，始於足下；勇於探索，收穫微光。", author: "勵志格言", layout: "vertical", theme: "sage" },
+      { quote: "心之所向，素履以往；生如逆旅，一葦以航。", author: "七堇年", layout: "framed", theme: "sunset" },
+      { quote: "把『我做不到』變成『我們可以怎麼做』。", author: "DFC 設計思考", layout: "poster", theme: "lavender" },
+      { quote: "教育不是注滿一桶水，而是點燃一把火。", author: "葉慈", layout: "quote", theme: "ivory" },
+      { quote: "在星空下種一顆夢想的種子，讓它在日光中發芽。", author: "花蓮學子", layout: "poster", theme: "sakura" },
+      { quote: "行動是治癒恐懼的良藥，而猶豫將不斷滋養恐懼。", author: "實踐格言", layout: "classic", theme: "obsidian" }
+    ];
+
+    if ($("randomQuoteBtn")) {
+      $("randomQuoteBtn").onclick = () => {
+        const pick = CURATED_INSPIRATIONS[Math.floor(Math.random() * CURATED_INSPIRATIONS.length)];
+        const matchedPalette = CARD_PALETTES.find(p => p.id === pick.theme) || CARD_PALETTES[0];
+        $("content").value = pick.quote;
+        $("author").value = pick.author;
+        currentCardStyle.layout = pick.layout;
+        currentCardStyle.themeId = matchedPalette.id;
+        currentCardStyle.bg = matchedPalette.bg;
+        currentCardStyle.text = matchedPalette.text;
+        currentCardStyle.sub = matchedPalette.sub;
+        currentCardStyle.accent = matchedPalette.accent;
+        updateCharCounters();
+        saveProverbDraft();
+        syncCardStyleUi();
+        renderLivePreviewCard();
+        say("🎲 已為你隨機挑選靈感金句與專屬排版！", true);
+        logAction("使用隨機靈感", `"${pick.quote.slice(0, 20)}" - ${pick.author}`);
+      };
+    }
+
     // 靈感隨手選金句點選帶入
-    document.querySelectorAll(".inspire-chip").forEach(chip => {
+    document.querySelectorAll(".inspire-chip:not(.surprise-btn)").forEach(chip => {
       chip.addEventListener("click", () => {
         const q = chip.getAttribute("data-quote");
         const a = chip.getAttribute("data-author");
-        if (q && $("content")) {
-          $("content").value = q;
-          if ($("cc")) $("cc").textContent = `${q.length}/100`;
-        }
-        if (a && $("author")) {
-          $("author").value = a;
-          if ($("ac")) $("ac").textContent = `${a.length}/30`;
-        }
+        if (q && $("content")) $("content").value = q;
+        if (a && $("author")) $("author").value = a;
+        updateCharCounters();
+        saveProverbDraft();
         renderLivePreviewCard();
         say(`已套用靈感金句：${chip.textContent.trim()}`, true);
         logAction("使用靈感金句", `點選: ${chip.textContent.trim()}`);
