@@ -4646,18 +4646,27 @@
     $("submit").onclick = async () => {
       const content = $("content").value.trim(), author = $("author").value.trim();
       if (!content || !author) return say("請填寫諺語與來源");
-      $("submit").disabled = true;
-      const clientMeta = await collectClientMeta(true);
-      const r = await api("/api/proverbs", { content, author, clientMeta, cardStyle: currentCardStyle });
-      const j = await r.json().catch(() => ({}));
-      $("submit").disabled = false;
-      if (!r.ok) return say(j.error || "送出失敗");
-      try { localStorage.removeItem("kk_proverb_draft"); } catch {}
-      $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
-      renderLivePreviewCard();
-      refreshPublicStatus(true);
-      say("🎉 投稿已成功送出！卡片已收錄於校園資料庫，歡迎前往「DFC 互動影音」繼續學習。", true);
-      logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}`);
+      const submitBtn = $("submit");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "正在安全製作卡片與送出...";
+      try {
+        const clientMeta = await collectClientMeta(true);
+        const r = await api("/api/proverbs", { content, author, clientMeta, cardStyle: currentCardStyle });
+        const j = await r.json().catch(() => ({}));
+        submitBtn.disabled = false;
+        submitBtn.textContent = "送出投稿製作卡片";
+        if (!r.ok) return say(j.error || "送出失敗，請重試");
+        try { localStorage.removeItem("kk_proverb_draft"); } catch {}
+        $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
+        renderLivePreviewCard();
+        refreshPublicStatus(true);
+        say("🎉 投稿已成功送出！卡片已收錄於校園資料庫，歡迎前往「DFC 互動影音」繼續學習。", true);
+        logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}`);
+      } catch {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "送出投稿製作卡片";
+        say("連線逾時，請檢查網路連線後再試");
+      }
     };
   </script>
 </body>
