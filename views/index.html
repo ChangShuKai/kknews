@@ -354,6 +354,28 @@
                 </div>
               </div>
 
+              <!-- 字體風格選擇 -->
+              <div class="style-block">
+                <div class="style-head">
+                  <span class="style-title">字體風格</span>
+                  <span class="style-active-badge" id="fontBadge">律動書風</span>
+                </div>
+                <div class="layout-picker-grid" id="fontPicker">
+                  <button type="button" class="layout-card-btn active" data-font="reggae" title="律動書風：活潑書法手寫感">
+                    <div class="layout-icon-thumb" style="font-family:'Reggae One',cursive;font-size:18px">筆</div>
+                    <span class="layout-name">律動書風</span>
+                  </button>
+                  <button type="button" class="layout-card-btn" data-font="serif" title="典雅宋體：典雅人文宋體">
+                    <div class="layout-icon-thumb" style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700">文</div>
+                    <span class="layout-name">典雅宋體</span>
+                  </button>
+                  <button type="button" class="layout-card-btn" data-font="sans" title="現代黑體：乾淨俐落黑體">
+                    <div class="layout-icon-thumb" style="font-family:sans-serif;font-size:18px;font-weight:800">雅</div>
+                    <span class="layout-name">現代黑體</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- 配色選擇 -->
               <div class="style-block">
                 <div class="style-head">
@@ -496,6 +518,11 @@
                 <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
                   style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
                   填寫問卷</button>
+              </div>
+
+              <!-- 播放器鍵盤快捷鍵提示條 (Keyboard Shortcuts Hint) -->
+              <div class="cinema-shortcuts-bar">
+                <span>⌨️ 播放快捷鍵：<b>空白鍵</b> 播放/暫停 · <b>←/→</b> 快退快進 5 秒 · <b>F</b> 全螢幕 · <b>M</b> 靜音</span>
               </div>
 
               <!-- YouTube ABR 畫質演進與雲端最新版全片本機暫存狀態列（收合摺疊，保持畫面焦點） -->
@@ -1445,6 +1472,16 @@
      * 諺語卡片即時排版與 60fps 渲染器
      * ============================================================================ */
     const CARD_FONT = '"Reggae One","Noto Serif TC",serif';
+    const CARD_FONT_MAP = {
+      reggae: '"Reggae One","Noto Serif TC",cursive,serif',
+      serif: '"Noto Serif TC","Songti TC","Source Han Serif TC",Georgia,serif',
+      sans: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang TC","Noto Sans TC",sans-serif',
+    };
+    const CARD_FONT_NAMES = {
+      reggae: "律動書風",
+      serif: "典雅宋體",
+      sans: "現代黑體",
+    };
 
     const CARD_PALETTES = [
       { id: "ivory", name: "經典米白", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" },
@@ -1467,6 +1504,7 @@
     let currentCardStyle = {
       layout: "classic",
       themeId: "ivory",
+      font: "reggae",
       bg: "#f4f2ee",
       text: "#1c1917",
       sub: "#6b665d",
@@ -1582,6 +1620,7 @@
       ctx.clearRect(0, 0, W, H);
 
       const layout = style.layout || "classic";
+      const cardFont = (CARD_FONT_MAP && CARD_FONT_MAP[style.font]) || CARD_FONT;
       const bg = style.bg || "#f4f2ee";
       const dark = isColorDark(bg);
       const textClr = style.text || (dark ? "#f4f4f5" : "#1c1917");
@@ -1648,7 +1687,7 @@
         const totalH = maxColLength * charSpacing;
         const startY = CY + CH / 2 - totalH / 2;
 
-        ctx.font = `${vSize}px ${CARD_FONT}`;
+        ctx.font = `${vSize}px ${cardFont}`;
         ctx.fillStyle = isPlaceholder ? subClr : textClr;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -1666,7 +1705,7 @@
 
         const authorColX = startX - colChars.length * colSpacing;
         const aSize = Math.max(22, Math.round(vSize * 0.52));
-        ctx.font = `${aSize}px ${CARD_FONT}`;
+        ctx.font = `${aSize}px ${cardFont}`;
         ctx.fillStyle = subClr;
         const authorChars = Array.from("—" + displayAuthor);
         const authorH = authorChars.length * (aSize * 1.25);
@@ -1681,7 +1720,7 @@
       } else if (layout === "quote") {
         const contentX = CX + 72, contentW = CW - 144;
         let qSize = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
-        ctx.font = `${qSize}px ${CARD_FONT}`;
+        ctx.font = `${qSize}px ${cardFont}`;
         const qLines = wrapText(ctx, displayText, contentW);
         const qLh = qSize * 1.44;
         const qTotalH = qLines.length * qLh;
@@ -1733,7 +1772,7 @@
         ctx.restore();
 
         let fSize = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
-        ctx.font = `${fSize}px ${CARD_FONT}`;
+        ctx.font = `${fSize}px ${cardFont}`;
         const fLines = wrapText(ctx, displayText, FW - 80);
         const fLh = fSize * 1.4;
         const fTotalH = fLines.length * fLh;
@@ -1747,7 +1786,7 @@
         });
 
         const fas = Math.max(24, Math.round(fSize * 0.48));
-        ctx.font = `${fas}px ${CARD_FONT}`;
+        ctx.font = `${fas}px ${cardFont}`;
         ctx.fillStyle = subClr;
         ctx.textAlign = 'center';
         ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
@@ -1781,7 +1820,7 @@
         ctx.restore();
 
         let pSize = displayText.length > 60 ? 44 : displayText.length > 35 ? 52 : 64;
-        ctx.font = `${pSize}px ${CARD_FONT}`;
+        ctx.font = `${pSize}px ${cardFont}`;
         const pLines = wrapText(ctx, displayText, CW - 130);
         const pLh = pSize * 1.38;
         const pTotalH = pLines.length * pLh;
@@ -1817,7 +1856,7 @@
         // classic
         let size = displayText.length > 65 ? 44 : displayText.length > 40 ? 52 : displayText.length > 25 ? 60 : 68;
         const maxLineW = CW - 120;
-        ctx.font = `${size}px ${CARD_FONT}`;
+        ctx.font = `${size}px ${cardFont}`;
         const lines = wrapText(ctx, displayText, maxLineW);
         const lh = size * 1.38;
         const totalH = lines.length * lh;
@@ -1834,7 +1873,7 @@
         });
 
         const as = Math.max(24, Math.round(size * 0.48));
-        ctx.font = `${as}px ${CARD_FONT}`;
+        ctx.font = `${as}px ${cardFont}`;
         ctx.textAlign = "right";
         ctx.fillStyle = subClr;
         ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
@@ -1872,7 +1911,14 @@
           b.classList.toggle("active", b.dataset.layout === currentCardStyle.layout);
         });
       }
+      const fontWrap = $("fontPicker");
+      if (fontWrap) {
+        fontWrap.querySelectorAll(".layout-card-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.font === (currentCardStyle.font || "reggae"));
+        });
+      }
       if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
+      if ($("fontBadge")) $("fontBadge").textContent = CARD_FONT_NAMES[currentCardStyle.font || "reggae"] || "律動書風";
       if ($("colorBadge")) {
         const p = CARD_PALETTES.find(item => item.id === currentCardStyle.themeId);
         $("colorBadge").textContent = p ? p.name : (currentCardStyle.themeId === "custom" ? "自訂配色" : "經典米白");
@@ -1946,6 +1992,19 @@
               renderLivePreviewCard();
             }
           };
+        }
+
+        // 字體切換
+        const fontWrap = $("fontPicker");
+        if (fontWrap) {
+          fontWrap.querySelectorAll(".layout-card-btn").forEach(btn => {
+            btn.onclick = () => {
+              currentCardStyle.font = btn.dataset.font || "reggae";
+              syncCardStyleUi();
+              renderLivePreviewCard();
+              logAction("切換卡片字體", `選擇字體: ${CARD_FONT_NAMES[currentCardStyle.font] || currentCardStyle.font}`);
+            };
+          });
         }
 
         // 版面切換
@@ -4701,7 +4760,7 @@
       $("resetCardStyleBtn").onclick = () => {
         const btn = $("resetCardStyleBtn");
         const origText = btn.textContent;
-        currentCardStyle = { layout: "classic", themeId: "ivory", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
+        currentCardStyle = { layout: "classic", themeId: "ivory", font: "reggae", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
         syncCardStyleUi();
         renderLivePreviewCard();
         btn.textContent = "✓ 已重設";
@@ -4711,14 +4770,14 @@
     }
 
     const CURATED_INSPIRATIONS = [
-      { quote: "生活不是等待風暴過去，而是學會在雨中跳舞。", author: "校園生活", layout: "classic", theme: "azure" },
-      { quote: "每一個不曾起舞的日子，都是對生命的辜負。", author: "尼采", layout: "quote", theme: "obsidian" },
-      { quote: "千里之行，始於足下；勇於探索，收穫微光。", author: "勵志格言", layout: "vertical", theme: "sage" },
-      { quote: "心之所向，素履以往；生如逆旅，一葦以航。", author: "七堇年", layout: "framed", theme: "sunset" },
-      { quote: "把『我做不到』變成『我們可以怎麼做』。", author: "DFC 設計思考", layout: "poster", theme: "lavender" },
-      { quote: "教育不是注滿一桶水，而是點燃一把火。", author: "葉慈", layout: "quote", theme: "ivory" },
-      { quote: "在星空下種一顆夢想的種子，讓它在日光中發芽。", author: "花蓮學子", layout: "poster", theme: "sakura" },
-      { quote: "行動是治癒恐懼的良藥，而猶豫將不斷滋養恐懼。", author: "實踐格言", layout: "classic", theme: "obsidian" }
+      { quote: "生活不是等待風暴過去，而是學會在雨中跳舞。", author: "校園生活", layout: "classic", theme: "azure", font: "serif" },
+      { quote: "每一個不曾起舞的日子，都是對生命的辜負。", author: "尼采", layout: "quote", theme: "obsidian", font: "serif" },
+      { quote: "千里之行，始於足下；勇於探索，收穫微光。", author: "勵志格言", layout: "vertical", theme: "sage", font: "reggae" },
+      { quote: "心之所向，素履以往；生如逆旅，一葦以航。", author: "七堇年", layout: "framed", theme: "sunset", font: "reggae" },
+      { quote: "把『我做不到』變成『我們可以怎麼做』。", author: "DFC 設計思考", layout: "poster", theme: "lavender", font: "sans" },
+      { quote: "教育不是注滿一桶水，而是點燃一把火。", author: "葉慈", layout: "quote", theme: "ivory", font: "serif" },
+      { quote: "在星空下種一顆夢想的種子，讓它在日光中發芽。", author: "花蓮學子", layout: "poster", theme: "sakura", font: "reggae" },
+      { quote: "行動是治癒恐懼的良藥，而猶豫將不斷滋養恐懼。", author: "實踐格言", layout: "classic", theme: "obsidian", font: "sans" }
     ];
 
     if ($("randomQuoteBtn")) {
@@ -4728,6 +4787,7 @@
         $("content").value = pick.quote;
         $("author").value = pick.author;
         currentCardStyle.layout = pick.layout;
+        currentCardStyle.font = pick.font || (["reggae", "serif", "sans"][Math.floor(Math.random() * 3)]);
         currentCardStyle.themeId = matchedPalette.id;
         currentCardStyle.bg = matchedPalette.bg;
         currentCardStyle.text = matchedPalette.text;
