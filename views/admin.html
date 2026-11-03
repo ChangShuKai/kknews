@@ -1629,7 +1629,26 @@ async function render() {
   if (typeof updateAdminDockGlider === "function") updateAdminDockGlider(activeTab, false);
   const grid = $("grid"); grid.innerHTML = "";
   if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery || currentLayoutFilter !== "all" ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</div>`;
+    const isFiltered = Boolean(searchQuery || currentLayoutFilter !== "all");
+    grid.innerHTML = `
+      <div class="admin-empty-state">
+        <div class="admin-empty-icon">${isFiltered ? "🔍" : "📭"}</div>
+        <h4 class="admin-empty-title">${isFiltered ? "找不到符合條件的投稿" : "目前尚無投稿紀錄"}</h4>
+        <p class="admin-empty-sub">${isFiltered ? "請嘗試調整或清除搜尋關鍵字、切換版面風格分類" : "當前系統中尚未有使用者送出名言投稿"}</p>
+        ${isFiltered ? `<button type="button" class="btn ghost sm" id="resetPostFilterBtn">🔄 清除篩選條件</button>` : ""}
+      </div>`;
+    const rBtn = $("resetPostFilterBtn");
+    if (rBtn) {
+      rBtn.onclick = () => {
+        searchQuery = "";
+        if ($("searchInput")) $("searchInput").value = "";
+        currentLayoutFilter = "all";
+        if ($("postLayoutFilterStrip")) {
+          $("postLayoutFilterStrip").querySelectorAll(".filter-chip").forEach(c => c.classList.toggle("active", c.dataset.filter === "all"));
+        }
+        render();
+      };
+    }
     return;
   }
   await ensureFont(filtered.map(r => r.content + r.author).join(""));
@@ -1793,7 +1812,22 @@ function renderUsers() {
   $("uCount").textContent = searchQuery ? `${filtered.length}/${users.length}` : users.length;
   const ug = $("usersGrid"); ug.innerHTML = "";
   if (!filtered.length) {
-    ug.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--ink-tertiary);padding:60px 0">${searchQuery ? "找不到符合條件的帳號" : "目前尚無任何登入帳號"}</div>`;
+    const isFiltered = Boolean(searchQuery);
+    ug.innerHTML = `
+      <div class="admin-empty-state">
+        <div class="admin-empty-icon">${isFiltered ? "🔍" : "👥"}</div>
+        <h4 class="admin-empty-title">${isFiltered ? "找不到符合條件的帳號" : "目前尚無任何登入帳號"}</h4>
+        <p class="admin-empty-sub">${isFiltered ? "請確認輸入的姓名、信箱或設備關鍵字是否正確" : "尚未有使用者透過 Google OAuth 登入系統"}</p>
+        ${isFiltered ? `<button type="button" class="btn ghost sm" id="resetUserFilterBtn">🔄 清除搜尋關鍵字</button>` : ""}
+      </div>`;
+    const rBtn = $("resetUserFilterBtn");
+    if (rBtn) {
+      rBtn.onclick = () => {
+        searchQuery = "";
+        if ($("searchInput")) $("searchInput").value = "";
+        renderUsers();
+      };
+    }
     return;
   }
   const adminByEmail = Object.fromEntries(adminAccounts.map(a => [String(a.email || "").toLowerCase(), a]));
