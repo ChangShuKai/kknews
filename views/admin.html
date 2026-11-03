@@ -107,7 +107,10 @@
   <!-- 工具列 -->
   <div class="action-toolbar" id="mainToolbar">
     <div class="action-toolbar-group" style="flex:1;min-width:280px">
-      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋投稿內容、作者、帳號或風格..." style="width:100%;max-width:400px">
+      <div style="position:relative;width:100%;max-width:400px;display:flex;align-items:center">
+        <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋投稿內容、作者、帳號或風格..." style="width:100%;padding-right:42px">
+        <kbd class="search-kbd-pill" title="快捷鍵：按下 / 或 ⌘K 快速聚焦搜尋">⌘K</kbd>
+      </div>
       <label class="font-size-control" id="szWrap" title="調整卡片預覽字級大小">
         <span>卡片字級</span>
         <input id="size" type="number" min="24" max="200" step="2">
@@ -954,6 +957,23 @@ window.addEventListener("keydown", (e) => {
     } else if (!$("editAdminModal")?.classList.contains("hide")) {
       $("editAdminModal").classList.add("hide");
     }
+    return;
+  }
+
+  const isEditing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
+  if ((e.key === "/" && !isEditing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) {
+    e.preventDefault();
+    $("searchInput")?.focus();
+    $("searchInput")?.select();
+    return;
+  }
+
+  if (!isEditing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    if (e.key === "1") switchAdminDock("posts");
+    else if (e.key === "2") switchAdminDock("users");
+    else if (e.key === "3") switchAdminDock("forms");
+    else if (e.key === "4") switchAdminDock("admins");
+    else if (e.key === "5") switchAdminDock("status");
   }
 });
 
