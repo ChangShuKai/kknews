@@ -1473,23 +1473,20 @@
       .entry-gate-card {
         position: relative;
         width: 100%;
-        max-width: 380px;
-        background: rgba(255, 255, 255, 0.94);
-        backdrop-filter: blur(28px) saturate(190%);
-        -webkit-backdrop-filter: blur(28px) saturate(190%);
-        border: 1px solid rgba(255, 255, 255, 0.95);
-        border-radius: 24px;
-        box-shadow:
-          0 24px 64px -12px rgba(0, 0, 0, 0.14),
-          0 8px 24px -4px rgba(0, 0, 0, 0.05),
-          0 0 0 1px rgba(0, 0, 0, 0.04);
-        padding: 40px 32px 34px;
+        max-width: 400px;
+        background: var(--surface-solid);
+        backdrop-filter: blur(32px) saturate(200%);
+        -webkit-backdrop-filter: blur(32px) saturate(200%);
+        border: 1px solid var(--line);
+        border-radius: var(--r-xl);
+        box-shadow: var(--shadow-floating), var(--shadow-inner-glow);
+        padding: 42px 36px 36px;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
         transform: scale(0.96) translateY(12px);
-        transition: transform 0.45s var(--spring-smooth);
+        transition: transform 0.45s var(--spring-smooth), box-shadow 0.3s ease, border-color 0.3s ease;
       }
 
       .entry-gate-overlay.active .entry-gate-card {
@@ -1501,18 +1498,16 @@
         flex-direction: column;
         align-items: center;
         gap: 12px;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
       }
 
       .entry-gate-icon-wrap {
-        width: 60px;
-        height: 60px;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f4f9 100%);
-        box-shadow:
-          0 6px 18px -4px rgba(0, 113, 227, 0.16),
-          0 2px 6px rgba(0, 0, 0, 0.04),
-          inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.8);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1520,28 +1515,50 @@
       }
 
       .entry-gate-icon-wrap:hover {
-        transform: scale(1.06) rotate(3deg);
+        transform: scale(1.08) rotate(4deg);
       }
 
       .entry-gate-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        object-fit: contain;
+      }
+
+      .brand-icon-fallback {
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--gradient-brand);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 800;
+        display: inline-grid;
+        place-items: center;
+        letter-spacing: -0.05em;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      }
+      .entry-gate-icon-wrap .brand-icon-fallback {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 16px;
       }
 
       .entry-gate-title {
-        margin: 14px 0 22px;
-        font-size: 24px;
+        margin: 14px 0 20px;
+        font-size: 25px;
         font-weight: 800;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
         color: var(--ink);
+        line-height: 1.3;
       }
 
       .entry-gate-sub {
         margin: 0 0 24px;
         font-size: 13.5px;
         color: var(--ink-secondary);
-        line-height: 1.5;
+        line-height: 1.55;
       }
 
       .entry-action-box {
@@ -1549,37 +1566,34 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
       }
 
       .entry-google-btn {
         width: 100%;
+        min-height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 13px 20px;
+        gap: 12px;
+        padding: 13px 22px;
         border-radius: var(--r-md);
-        background: #ffffff;
+        background: var(--surface-solid);
         border: 1.5px solid var(--line-strong);
-        box-shadow:
-          0 2px 8px rgba(0, 0, 0, 0.04),
-          0 1px 2px rgba(0, 0, 0, 0.02);
+        box-shadow: var(--shadow-sm);
         color: var(--ink);
         font-size: 15px;
         font-weight: 700;
         cursor: pointer;
         user-select: none;
-        transition: transform 0.18s var(--spring-smooth), box-shadow 0.18s, border-color 0.18s, background 0.18s;
+        transition: transform 0.2s var(--spring-smooth), box-shadow 0.2s, border-color 0.2s, background 0.2s;
       }
 
       .entry-google-btn:hover {
         border-color: var(--blue);
-        background: #fafcff;
-        box-shadow:
-          0 6px 20px -3px rgba(0, 113, 227, 0.2),
-          0 2px 6px rgba(0, 0, 0, 0.04);
-        transform: translateY(-1.5px);
+        background: var(--surface-muted);
+        box-shadow: 0 8px 24px -4px var(--blue-glow), var(--shadow-sm);
+        transform: translateY(-2px);
       }
 
       .entry-google-btn:active {
@@ -1587,18 +1601,39 @@
       }
 
       .entry-domain-note {
-        font-size: 12px;
+        font-size: 12.5px;
         color: var(--ink-tertiary);
+        line-height: 1.5;
       }
 
       .entry-domain-note strong {
         color: var(--blue);
+        font-weight: 700;
+      }
+
+      /* 深色模式專屬調校 (Dark Mode Precision) */
+      [data-theme="dark"] .entry-gate-card {
+        background: rgba(19, 29, 51, 0.88);
+        border-color: rgba(255, 255, 255, 0.14);
+      }
+      [data-theme="dark"] .entry-gate-icon-wrap {
+        background: #0f172a;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      [data-theme="dark"] .entry-google-btn {
+        background: #1e293b;
+        color: #f8fafc;
+        border-color: rgba(255, 255, 255, 0.16);
+      }
+      [data-theme="dark"] .entry-google-btn:hover {
+        background: #27354f;
+        border-color: var(--blue);
       }
 
       @media (max-width: 600px) {
         .entry-gate-card {
           padding: 32px 24px 28px;
-          border-radius: 20px;
+          border-radius: 22px;
         }
 
         .entry-gate-title {
@@ -1635,7 +1670,7 @@
     <div class="entry-gate-card">
       <div class="entry-gate-brand">
         <div class="entry-gate-icon-wrap">
-          <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo">
+          <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('beforeend','<div class=\'brand-icon-fallback\'>KK</div>');">
         </div>
         <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
       </div>
@@ -1669,7 +1704,7 @@
   <!-- 頂部極簡導覽列：移除頂部 Dock 欄，僅保留「目前頁面標籤名稱按鈕(自動切換)」與「系統狀態按鈕」 -->
   <header class="top-header">
     <div class="brand-logo" id="brandHomeBtn" title="返回方形主選單">
-      <img src="/icon.svg" class="brand-icon" alt="KKNews Logo">
+      <img src="/icon.svg" class="brand-icon" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
       <span>KKNEWS</span>
     </div>
 
@@ -2285,6 +2320,25 @@
       } catch (e) {}
     }
     initThemeController();
+
+    // 全域圖片與媒體防破圖容錯保護 (Universal Broken Image & Media Resilience)
+    window.addEventListener("error", function(ev) {
+      const target = ev.target;
+      if (target && target.tagName === "IMG") {
+        target.classList.add("img-load-error");
+        if (target.id === "topAvImg") {
+          target.classList.add("hide");
+          const av = $("topAv");
+          if (av) av.classList.remove("hide");
+        } else if (target.classList.contains("brand-icon") || target.classList.contains("entry-gate-icon")) {
+          target.classList.add("hide");
+          const p = target.parentElement;
+          if (p && !p.querySelector(".brand-icon-fallback")) {
+            p.insertAdjacentHTML("afterbegin", '<div class="brand-icon-fallback">KK</div>');
+          }
+        }
+      }
+    }, true);
     const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     function say(t, ok) {
       for (const id of ["msg", "entryLoginAlert"]) {
