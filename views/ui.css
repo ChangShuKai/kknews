@@ -6135,3 +6135,95 @@ table.data-tbl tr:hover td { background: var(--surface-tint); }
   font-weight: 600;
 }
 
+/* ============================================================================
+ * 響應式裝置與行動端最佳化排版 (Responsive Adaptive Polish)
+ * 涵蓋寬螢幕、筆電、平板、摺疊機與手機自適應佈局
+ * ============================================================================ */
+@media (max-width: 1180px) {
+  header.admin-header {
+    height: auto;
+    min-height: 58px;
+    padding: 8px 18px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  nav.admin-dock {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav.admin-dock::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  main.admin-main {
+    padding: 16px 14px 60px;
+  }
+  .sync-indicator span:last-child {
+    display: none;
+  }
+  .action-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .action-toolbar-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .action-toolbar-group:first-child {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  .font-size-control {
+    width: fit-content;
+    align-self: flex-start;
+  }
+  .submissions-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .users-list-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .sys-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .layout-filter-strip {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .layout-filter-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .dfc-access-cols-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .acct-info, #adminRoleBadge {
+    display: none;
+  }
+  .acct-pill {
+    padding: 2px 6px;
+  }
+  .dock-item {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
