@@ -89,12 +89,28 @@
 const $ = id => document.getElementById(id);
 
 function applyLoginDeviceProfile() {
+  const sw = Math.round(window.screen?.width || window.innerWidth);
+  const sh = Math.round(window.screen?.height || window.innerHeight);
+  const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
+  const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(navigator.userAgent || "");
   const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
   const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+
+  let zoom = 1.0;
+  if (vw >= 3000 || sw >= 3400) zoom = 1.35;
+  else if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) zoom = 1.20;
+  else if (vw >= 1950) zoom = 1.12;
+  else if (vw >= 1750 && vh >= 940) zoom = 1.05;
+  else if (vh < 740 && vw >= 1024) zoom = 0.92;
+  else if (vw < 680 || isMobileUA) zoom = 1.0;
+
+  document.documentElement.style.zoom = String(zoom);
+  document.documentElement.style.setProperty("--app-zoom", String(zoom));
+
   const layout = vw < 680 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
   document.documentElement.setAttribute("data-layout", layout);
   const label = layout === "mobile" ? "📱 手機版面" : layout === "tablet" ? "📟 平板版面" : "💻 電腦版面";
-  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = `${label} · ${vw}×${vh}`;
+  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = `${label} · ${vw}×${vh} (${Math.round(zoom * 100)}% 自適應)`;
 }
 applyLoginDeviceProfile();
 window.addEventListener("resize", applyLoginDeviceProfile);

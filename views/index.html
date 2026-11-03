@@ -836,6 +836,9 @@
     /* 全螢幕劇院支援（包含右側互動題目卡同步全螢幕） */
     .dfc-stage-wrap:fullscreen,
     .dfc-stage-wrap:-webkit-full-screen {
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
       background: #0b0f19;
       padding: 28px;
       align-items: center;
@@ -856,6 +859,124 @@
     .dfc-stage-wrap.split-active:fullscreen .dfc-q-pane,
     .dfc-stage-wrap.split-active:-webkit-full-screen .dfc-q-pane {
       width: 44%;
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    /* 強制全螢幕鎖定提示遮罩 */
+    .dfc-fs-lock-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+      border-radius: inherit;
+      animation: dfcFsFadeIn 0.25s ease-out;
+      cursor: pointer;
+    }
+
+    .dfc-fs-lock-overlay.hide {
+      display: none !important;
+    }
+
+    @keyframes dfcFsFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .dfc-fs-lock-box {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 22px;
+      padding: 32px 36px;
+      max-width: 500px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      cursor: default;
+    }
+
+    .dfc-fs-lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      margin-bottom: 14px;
+    }
+
+    .dfc-fs-lock-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+    }
+
+    .dfc-fs-lock-title {
+      font-size: 21px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.3px;
+    }
+
+    .dfc-fs-lock-desc {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.65;
+      margin: 0 0 22px 0;
+    }
+
+    .dfc-fs-lock-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px rgba(37, 99, 235, 0.45);
+      transition: all 0.18s ease;
+    }
+
+    .dfc-fs-lock-btn:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.6);
+    }
+
+    .dfc-fs-lock-quit {
+      margin-top: 14px;
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 12.5px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 4px 8px;
+      transition: color 0.18s;
+    }
+
+    .dfc-fs-lock-quit:hover {
+      color: #fff;
     }
 
     /* 影片自訂控制列 */
@@ -1567,6 +1688,41 @@
 
     <!-- 右上角已登入帳號區（無訪客狀態） -->
     <div class="acct-zone">
+      <!-- 裝置解析度智慧縮放控制器 (Auto Resolution Zoom Control) -->
+      <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依螢幕解析度縮放頁面">
+        <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小頁面 (Alt + -)" aria-label="縮小頁面">−</button>
+        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="點擊設定頁面縮放比例與解析度適配" aria-haspopup="true" aria-expanded="false">
+          <span class="zoom-icon">🔍</span>
+          <span class="zoom-text" id="zoomText">100%</span>
+          <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
+        </button>
+        <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大頁面 (Alt + +)" aria-label="放大頁面">+</button>
+
+        <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
+          <div class="zoom-dropdown-header">
+            <span class="zoom-res-title">裝置螢幕解析度</span>
+            <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
+          </div>
+          <div class="zoom-dropdown-divider"></div>
+          <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
+            <span>✨ 依解析度自動最適縮放</span>
+            <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
+          </button>
+          <div class="zoom-dropdown-divider"></div>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">🔍 80% (超小視野)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">🔍 90% (筆電緊湊)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">🔍 100% (標準原始)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">🔍 110% (舒適放大)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">🔍 120% (大螢幕/2K)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">🔍 135% (4K / 觸控大屏)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">🔍 150% (超大投影)</button>
+          <div class="zoom-dropdown-divider"></div>
+          <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
+            <span>🔄 重設為自動適配</span>
+          </button>
+        </div>
+      </div>
+
       <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
       <div class="acct-pill hide" id="acctUser">
         <div class="av" id="topAv">U</div>
@@ -1586,7 +1742,7 @@
         <div class="mission-banner">
           <div class="mission-head">
             <h1 class="mission-title">KKNews 校園共創與學習平台</h1>
-            <span class="device-profile-badge" id="homeDeviceBadge" style="display:none"></span>
+            <span class="device-profile-badge" id="homeDeviceBadge"></span>
           </div>
           <p class="mission-desc">
             凝聚校園正向文字力量 · 結合 DFC 設計思考互動學習
@@ -1616,7 +1772,7 @@
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">DFC 互動影音</h2>
-              <p class="hub-square-desc">觀看設計思考探究影片，在關鍵時間點思考作答。</p>
+              <p class="hub-square-desc">觀看設計思考探究影片，在關鍵時間點思考作答（全程強制全螢幕）。</p>
             </div>
             <div class="hub-square-foot">
               <span id="hubDfcFootText">進入劇院</span>
@@ -1648,7 +1804,7 @@
               <h3 class="home-guide-title">三步驟開啟創作與探究</h3>
               <ul class="home-guide-list">
                 <li><strong>1. 製作格言卡</strong>：挑選排版風格與色彩，客製校園金句。</li>
-                <li><strong>2. 探索 DFC 影音</strong>：沉浸情境，在關鍵時間點回答探究問題。</li>
+                <li><strong>2. 探索 DFC 影音</strong>：沉浸情境，全程強制全螢幕進行專注觀看與作答。</li>
                 <li><strong>3. 實踐與分享</strong>：記錄想法並同步表單，與同學交流激盪。</li>
               </ul>
             </div>
@@ -1826,7 +1982,7 @@
       <div class="dfc-container">
         <div class="subpage-nav">
           <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音 · 智慧漸進串流</span>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音 · 觀看時全程強制全螢幕</span>
         </div>
 
         <!-- 防暴雷保護艙：當帳號未列入授權名單時顯示，完全隱藏影片與題目避免暴雷 -->
@@ -1857,7 +2013,7 @@
                   <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
                 </div>
               </div>
-              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至時間標記時將展開互動問答，請依序觀看並作答。</p>
+              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至時間標記時將展開互動問答，請依序觀看並作答（觀看過程全程強制全螢幕直到結束）。</p>
             </div>
             <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
@@ -1866,13 +2022,13 @@
             <!-- 影片劇院區塊 -->
             <div class="dfc-video-pane">
               <div class="video-cinema-box" id="dfcCinemaBox">
-                <div class="video-floating-badge" id="dfcVideoBadge">準備播放</div>
+                <div class="video-floating-badge" id="dfcVideoBadge">準備播放 · 點擊進入全螢幕</div>
                 <div class="video-mode-badge" id="dfcModeBadge">⚡ 智慧漸進畫質 (360p ➔ HD)</div>
                 <div class="video-loading-overlay hide" id="dfcVideoLoading">
                   <div class="video-spinner"></div>
                   <span id="dfcLoadingText">⚡ 正在以低畫質極速預載緩衝，確保播放不卡頓...</span>
                 </div>
-                <div class="video-center-play" id="dfcCenterPlay" title="點擊播放 / 暫停">
+                <div class="video-center-play" id="dfcCenterPlay" title="點擊全螢幕開始觀看">
                   <div class="video-center-play-circle">▶</div>
                 </div>
                 <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
@@ -1932,6 +2088,23 @@
                 <div id="dfcQInputArea"></div>
                 <div id="dfcQErr" class="alert err" style="margin-top:0;margin-bottom:12px"></div>
                 <button type="button" class="btn primary block" id="dfcAnswerBtn">確認作答，繼續觀看 →</button>
+              </div>
+            </div>
+
+            <!-- 強制全螢幕鎖定提示遮罩：若觀看中意外退出全螢幕，強制暫停並提示點擊恢復 -->
+            <div class="dfc-fs-lock-overlay hide" id="dfcFsLockOverlay">
+              <div class="dfc-fs-lock-box">
+                <span class="dfc-fs-lock-badge">🔒 測驗模式 · 全程強制全螢幕</span>
+                <div class="dfc-fs-lock-icon">📺</div>
+                <h3 class="dfc-fs-lock-title">請保持全螢幕觀看與作答</h3>
+                <p class="dfc-fs-lock-desc">
+                  依本問卷影片測驗規範，觀看影片及題目作答期間必須全程保持全螢幕模式，直到全部結束為止。<br>
+                  請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。
+                </p>
+                <button type="button" class="dfc-fs-lock-btn" id="dfcFsResumeBtn">
+                  <span>⛶</span> 立即恢復全螢幕並繼續播放
+                </button>
+                <button type="button" class="dfc-fs-lock-quit" id="dfcFsQuitBtn">暫停並放棄當次作答返回首頁</button>
               </div>
             </div>
           </div>
@@ -2302,11 +2475,19 @@
     setupTurnstile();
 
     /* ============================================================================
-     * 跨裝置像素偵測與多版面自動切換引擎 (Desktop 不動 / Tablet / Mobile 自動切換)
+     * 跨裝置解析度智慧自動縮放系統 (Apple-Grade Auto Resolution Zoom & Device Adapter)
+     * 自動依據裝置解析度（4K、2K、1080p、筆電、平板、手機）放大或縮小頁面，支援自訂手動縮放與快捷鍵
      * ============================================================================ */
-    function detectAndApplyDeviceLayout() {
-      const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
-      const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+    let currentAppliedZoom = 1.0;
+    let userZoomPreference = (() => {
+      try { return localStorage.getItem("kk_resolution_zoom") || "auto"; } catch { return "auto"; }
+    })();
+
+    function getDeviceMetrics() {
+      const zoom = currentAppliedZoom || 1.0;
+      // 計算未縮放前的真實可視區與螢幕物理尺寸，避免多次縮放反饋跳動
+      const vw = Math.round((window.innerWidth || document.documentElement.clientWidth || 1280) * zoom);
+      const vh = Math.round((window.innerHeight || document.documentElement.clientHeight || 800) * zoom);
       const sw = Math.round(window.screen?.width || vw);
       const sh = Math.round(window.screen?.height || vh);
       const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
@@ -2315,26 +2496,227 @@
       const isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
 
       let layout = "desktop";
-      let label = "💻 電腦標準版面";
+      let label = "💻 電腦版面";
       if (vw < 680 || (isMobileUA && vw < 900)) {
         layout = "mobile";
-        label = "📱 手機防破圖版面";
+        label = "📱 手機版面";
       } else if (vw < 1024 || isTabletUA) {
         layout = "tablet";
-        label = "📟 平板自適應版面";
+        label = "📟 平板版面";
       }
 
-      document.documentElement.setAttribute("data-layout", layout);
-      document.documentElement.setAttribute("data-orientation", vw >= vh ? "landscape" : "portrait");
-
-      const badgeText = `${label} · ${vw}×${vh}px (@${dpr}x)`;
-      if ($("loginDeviceBadge")) $("loginDeviceBadge").textContent = badgeText;
-      if ($("homeDeviceBadge")) $("homeDeviceBadge").textContent = badgeText;
-      return { layout, vw, vh, sw, sh, dpr };
+      return { layout, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA };
     }
+
+    function calculateOptimalZoom(metrics) {
+      const { vw, vh, sw, sh, dpr, isMobileUA } = metrics;
+      // 1. 行動裝置：維持 1.0x 原始比例，依靠自適應版面確保點擊目標 >= 44px
+      if (vw < 680 || (isMobileUA && vw < 860)) {
+        return 1.0;
+      }
+      // 2. 4K Ultra HD 或超寬螢幕 (3840×2160, 3440×1440, 或大於 3000px)
+      if (vw >= 3000 || sw >= 3400) {
+        return 1.35; // 放大 135%
+      }
+      // 3. 2K QHD 螢幕 (2560×1440 或 2200px 以上)
+      if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) {
+        return 1.20; // 放大 120%
+      }
+      if (vw >= 1950) {
+        return 1.12; // 放大 112%
+      }
+      // 4. 標準 Full HD (1920×1080 全螢幕且高度充足)
+      if (vw >= 1750 && vh >= 940) {
+        return 1.05; // 舒適放大 105%
+      }
+      // 5. 一般桌機 (1360px ~ 1749px, 正常高度)
+      if (vw >= 1360 && vh >= 740) {
+        return 1.0; // 基準 100%
+      }
+      // 6. 緊湊筆電或受限高度 (1366×768, 1280×720，高度 < 740px)
+      // 微縮至 92%~95%，避免工作室與大卡片垂直截斷
+      if (vh < 740 && vw >= 1024) {
+        return 0.92; // 縮小 92%
+      }
+      if (vw >= 900 && vw < 1200) {
+        return 0.95; // 縮小 95%
+      }
+      return 1.0;
+    }
+
+    function applyResolutionZoom(zoomVal, isAuto = false) {
+      const zoomNum = Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
+      currentAppliedZoom = zoomNum;
+
+      // 同步設定 CSS zoom 與自訂變數
+      document.documentElement.style.zoom = String(zoomNum);
+      document.documentElement.style.setProperty("--app-zoom", String(zoomNum));
+      document.documentElement.setAttribute("data-zoom", Math.round(zoomNum * 100));
+      document.documentElement.setAttribute("data-zoom-auto", isAuto ? "1" : "0");
+
+      // 更新頂部按鈕文字與標籤
+      const pct = Math.round(zoomNum * 100);
+      if ($("zoomText")) $("zoomText").textContent = `${pct}%`;
+      const autoBadge = $("zoomAutoBadge");
+      if (autoBadge) {
+        autoBadge.textContent = isAuto ? "自動" : "自訂";
+        autoBadge.className = `zoom-auto-badge ${isAuto ? "auto" : "manual"}`;
+      }
+
+      // 更新選單項目的啟用狀態
+      const autoHint = $("zoomAutoCalcHint");
+      if (autoHint) autoHint.textContent = `${pct}%`;
+      document.querySelectorAll(".zoom-opt-btn").forEach(btn => {
+        const val = btn.getAttribute("data-zoom-val");
+        if (isAuto && val === "auto") btn.classList.add("active");
+        else if (!isAuto && val === zoomNum.toFixed(2)) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+
+      // 更新版面資訊標籤
+      updateDeviceBadges();
+    }
+
+    function detectAndApplyDeviceLayout() {
+      const metrics = getDeviceMetrics();
+      document.documentElement.setAttribute("data-layout", metrics.layout);
+      document.documentElement.setAttribute("data-orientation", metrics.vw >= metrics.vh ? "landscape" : "portrait");
+
+      const optimal = calculateOptimalZoom(metrics);
+      if (userZoomPreference === "auto") {
+        applyResolutionZoom(optimal, true);
+      } else {
+        const manualVal = parseFloat(userZoomPreference);
+        applyResolutionZoom(isNaN(manualVal) ? optimal : manualVal, false);
+      }
+
+      if ($("zoomResDetail")) {
+        $("zoomResDetail").textContent = `${metrics.sw} × ${metrics.sh} (@${metrics.dpr}x) · 視窗 ${metrics.vw}×${metrics.vh}`;
+      }
+
+      return {
+        layout: metrics.layout,
+        vw: metrics.vw,
+        vh: metrics.vh,
+        sw: metrics.sw,
+        sh: metrics.sh,
+        dpr: metrics.dpr,
+        zoom: currentAppliedZoom,
+        isAuto: userZoomPreference === "auto"
+      };
+    }
+
+    function updateDeviceBadges() {
+      const metrics = getDeviceMetrics();
+      const pct = Math.round(currentAppliedZoom * 100);
+      const isAuto = userZoomPreference === "auto";
+      const badgeText = `${metrics.label} · ${metrics.vw}×${metrics.vh}px (${pct}% ${isAuto ? "自動適配" : "自訂"})`;
+
+      if ($("loginDeviceBadge")) {
+        $("loginDeviceBadge").textContent = badgeText;
+        $("loginDeviceBadge").style.display = "inline-flex";
+      }
+      if ($("homeDeviceBadge")) {
+        $("homeDeviceBadge").textContent = badgeText;
+        $("homeDeviceBadge").style.display = "inline-flex";
+      }
+    }
+
+    function initResolutionZoomControls() {
+      const pill = $("resolutionZoomPill");
+      const dropdown = $("zoomDropdown");
+      const displayBtn = $("zoomDisplayBtn");
+      const outBtn = $("zoomOutBtn");
+      const inBtn = $("zoomInBtn");
+      if (!pill) return;
+
+      const toggleDropdown = (show) => {
+        if (!dropdown) return;
+        const willShow = show !== undefined ? show : dropdown.classList.contains("hide");
+        if (willShow) {
+          dropdown.classList.remove("hide");
+          displayBtn?.setAttribute("aria-expanded", "true");
+        } else {
+          dropdown.classList.add("hide");
+          displayBtn?.setAttribute("aria-expanded", "false");
+        }
+      };
+
+      displayBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleDropdown();
+      });
+
+      outBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const next = Math.max(0.6, Number((currentAppliedZoom - 0.05).toFixed(2)));
+        userZoomPreference = next.toFixed(2);
+        try { localStorage.setItem("kk_resolution_zoom", userZoomPreference); } catch {}
+        applyResolutionZoom(next, false);
+      });
+
+      inBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const next = Math.min(2.0, Number((currentAppliedZoom + 0.05).toFixed(2)));
+        userZoomPreference = next.toFixed(2);
+        try { localStorage.setItem("kk_resolution_zoom", userZoomPreference); } catch {}
+        applyResolutionZoom(next, false);
+      });
+
+      document.querySelectorAll(".zoom-opt-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const val = btn.getAttribute("data-zoom-val");
+          if (val === "auto" || val === "reset") {
+            userZoomPreference = "auto";
+            try { localStorage.setItem("kk_resolution_zoom", "auto"); } catch {}
+            const metrics = getDeviceMetrics();
+            applyResolutionZoom(calculateOptimalZoom(metrics), true);
+          } else {
+            const num = parseFloat(val);
+            if (!isNaN(num)) {
+              userZoomPreference = num.toFixed(2);
+              try { localStorage.setItem("kk_resolution_zoom", userZoomPreference); } catch {}
+              applyResolutionZoom(num, false);
+            }
+          }
+          toggleDropdown(false);
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (dropdown && !pill.contains(e.target)) {
+          toggleDropdown(false);
+        }
+      });
+
+      // 支援鍵盤快速縮放 (Alt + Plus / Alt + Minus / Alt + 0)
+      window.addEventListener("keydown", (e) => {
+        if (e.altKey && (e.key === "=" || e.key === "+")) {
+          e.preventDefault();
+          inBtn?.click();
+        } else if (e.altKey && (e.key === "-" || e.key === "_")) {
+          e.preventDefault();
+          outBtn?.click();
+        } else if (e.altKey && (e.key === "0")) {
+          e.preventDefault();
+          userZoomPreference = "auto";
+          try { localStorage.setItem("kk_resolution_zoom", "auto"); } catch {}
+          detectAndApplyDeviceLayout();
+        }
+      });
+    }
+
+    let resizeDebounceTimer = null;
+    function handleDeviceResize() {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = setTimeout(detectAndApplyDeviceLayout, 100);
+    }
+
     detectAndApplyDeviceLayout();
-    window.addEventListener("resize", detectAndApplyDeviceLayout);
-    window.addEventListener("orientationchange", detectAndApplyDeviceLayout);
+    initResolutionZoomControls();
+    window.addEventListener("resize", handleDeviceResize);
+    window.addEventListener("orientationchange", handleDeviceResize);
 
     /* ============================================================================
      * 網頁高度整合路由與簡潔頂部標籤控制器 (Home Square Hub + 頂部自動切換標籤)
@@ -3272,8 +3654,89 @@
       lastTickTs: 0,
       lockToastTimer: null,
       playbackSpeedIdx: 1,
+      watchSessionActive: false,
     };
     const SPEED_STEPS = [0.75, 1.0, 1.25, 1.5];
+
+    function isDfcFullscreenActive() {
+      const stage = $("dfcStage");
+      const v = $("dfcVideo");
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (fsEl && (fsEl === stage || stage?.contains(fsEl))) return true;
+      if (v && v.webkitDisplayingFullscreen) return true;
+      return false;
+    }
+
+    function isDfcFinished() {
+      const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
+      const videoDone = (dfcState.currentTime >= dur - 0.5) || (dfcState.useRealVideo && $("dfcVideo")?.ended);
+      const cps = DFC_CONFIG.checkpoints || [];
+      const questionsDone = cps.length === 0 || dfcState.submitted || cps.every(c => dfcState.answeredIds.has(c.id));
+      return Boolean(videoDone && questionsDone);
+    }
+
+    function isDfcWatchOngoing() {
+      if (!dfcState.watchSessionActive) return false;
+      if (isDfcFinished()) return false;
+      return true;
+    }
+
+    async function requestDfcFullscreen() {
+      const stage = $("dfcStage");
+      if (!stage) return false;
+      if (isDfcFullscreenActive()) return true;
+      try {
+        if (stage.requestFullscreen) {
+          await stage.requestFullscreen();
+        } else if (stage.webkitRequestFullscreen) {
+          stage.webkitRequestFullscreen();
+        } else if (stage.msRequestFullscreen) {
+          stage.msRequestFullscreen();
+        } else {
+          const v = $("dfcVideo");
+          if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+        }
+        if (navigator.keyboard && typeof navigator.keyboard.lock === "function") {
+          navigator.keyboard.lock(["Escape"]).catch(() => {});
+        }
+        return true;
+      } catch (err) {
+        console.warn("Fullscreen request error:", err);
+        return false;
+      }
+    }
+
+    function exitDfcFullscreen() {
+      if (navigator.keyboard && typeof navigator.keyboard.unlock === "function") {
+        try { navigator.keyboard.unlock(); } catch (e) {}
+      }
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    function showDfcFsLockOverlay() {
+      const overlay = $("dfcFsLockOverlay");
+      if (overlay) overlay.classList.remove("hide");
+    }
+
+    function hideDfcFsLockOverlay() {
+      const overlay = $("dfcFsLockOverlay");
+      if (overlay) overlay.classList.add("hide");
+    }
+
+    function handleDfcCompletion() {
+      dfcState.watchSessionActive = false;
+      hideDfcFsLockOverlay();
+      if (isDfcFullscreenActive()) {
+        exitDfcFullscreen();
+      }
+      showDfcLockToast("🎉 DFC 影片與問卷已全部完成！已自動解除全螢幕");
+    }
 
     function showDfcLockToast(msg) {
       const el = $("dfcLockToast");
@@ -3704,6 +4167,7 @@
         browser: navigator.userAgent || "",
         screenResolution: `${devLayout.sw}x${devLayout.sh}`,
         viewportSize: `${devLayout.vw}x${devLayout.vh}`,
+        zoomScale: `${Math.round((devLayout.zoom || 1) * 100)}% (${devLayout.isAuto ? "auto" : "manual"})`,
         language: navigator.language || "zh-TW",
         connectionType: conn ? [conn.effectiveType, conn.downlink ? conn.downlink + "Mbps" : ""].filter(Boolean).join(" / ") : "",
       };
@@ -3816,10 +4280,6 @@
         btn.disabled = false;
         return;
       }
-        errEl.classList.add("show");
-        btn.disabled = false;
-        return;
-      }
 
       btn.disabled = false;
       dfcState.activeCheckpointIndex = -1;
@@ -3831,11 +4291,17 @@
       renderDfcMarkers();
 
       if (dfcState.currentTime < dfcState.duration - 0.3) {
+        if (!isDfcFullscreenActive() && dfcState.watchSessionActive) {
+          requestDfcFullscreen().catch(() => {});
+        }
         setDfcPlaying(true);
       } else {
         const badge = $("dfcVideoBadge");
         badge.textContent = "✓ 影片與問答已完成";
         badge.classList.remove("question-stop");
+        if (isDfcFinished()) {
+          handleDfcCompletion();
+        }
       }
     };
 
@@ -3911,6 +4377,9 @@
           badge.textContent = "✓ 播放完畢";
           badge.classList.remove("question-stop");
         }
+        if (isDfcFinished()) {
+          handleDfcCompletion();
+        }
         return;
       }
       if (dfcState.playing) dfcState.rafId = requestAnimationFrame(dfcLoop);
@@ -3923,6 +4392,7 @@
 
       if (play) {
         if (dfcState.activeCheckpointIndex !== -1) return;
+        dfcState.watchSessionActive = true;
 
         // 若為實體影片且尚未載入就緒，進入等待佇列，切勿提前開啟計時跑表！
         if (dfcState.useRealVideo && !dfcState.videoReady) {
@@ -4787,7 +5257,7 @@
             const isFullCached = dfcTurboState.completed["720p"] || dfcTurboState.completed["360p"];
             badge.textContent = dfcState.playing
               ? (isFullCached ? "🎬 本機快取全片高速播放中" : "🎬 YouTube ABR 智慧漸進串流播放中")
-              : (isFullCached ? "⚡ 全片已載入本機快取 (100%) · 點擊開始觀看" : "⚡ 360p 極速預載就緒 · 點擊開始觀看");
+              : (isFullCached ? "⚡ 全片已載入本機快取 (100%) · 點擊進入全螢幕觀看" : "⚡ 360p 極速預載就緒 · 點擊進入全螢幕觀看");
           }
 
           renderDfcStepPills();
@@ -4906,16 +5376,27 @@
           badge.classList.remove("question-stop");
         }
         renderDfcStepPills();
+        if (isDfcFinished()) {
+          handleDfcCompletion();
+        }
       };
 
-      const togglePlayOnScreen = (e) => {
+      const togglePlayOnScreen = async (e) => {
         if (dfcState.isEmbed || dfcState.activeCheckpointIndex !== -1) return;
         e.stopPropagation();
         if (dfcState.currentTime >= dfcState.duration - 0.2) {
           dfcState.currentTime = 0;
           if (dfcState.useRealVideo) v.currentTime = 0;
         }
-        setDfcPlaying(!dfcState.playing);
+        if (!dfcState.playing) {
+          dfcState.watchSessionActive = true;
+          if (!isDfcFullscreenActive()) {
+            await requestDfcFullscreen();
+          }
+          setDfcPlaying(true);
+        } else {
+          setDfcPlaying(false);
+        }
       };
       v.onclick = togglePlayOnScreen;
       if ($("dfcCenterPlay")) $("dfcCenterPlay").onclick = togglePlayOnScreen;
@@ -4972,17 +5453,69 @@
       const fsBtn = $("dfcFsBtn");
       if (fsBtn) {
         fsBtn.onclick = () => {
-          const stage = $("dfcStage");
-          if (!stage) return;
-          if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            if (stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
-            else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          if (isDfcWatchOngoing()) {
+            if (isDfcFullscreenActive()) {
+              showDfcLockToast("🔒 測驗進行中強制全螢幕，全部完成後將自動解除");
+              return;
+            }
+            requestDfcFullscreen();
+            return;
+          }
+          if (!isDfcFullscreenActive()) {
+            requestDfcFullscreen();
           } else {
-            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            exitDfcFullscreen();
           }
         };
       }
+
+      // 全螢幕狀態變更監聽：若測驗中意外退出全螢幕，立即強制暫停並彈出全螢幕阻擋鎖定遮罩
+      const handleFullscreenChange = () => {
+        const isFs = isDfcFullscreenActive();
+        if (isFs) {
+          hideDfcFsLockOverlay();
+          if (navigator.keyboard && typeof navigator.keyboard.lock === "function") {
+            navigator.keyboard.lock(["Escape"]).catch(() => {});
+          }
+        } else {
+          if (navigator.keyboard && typeof navigator.keyboard.unlock === "function") {
+            try { navigator.keyboard.unlock(); } catch (e) {}
+          }
+          if (isDfcWatchOngoing()) {
+            if (dfcState.playing) {
+              setDfcPlaying(false);
+            }
+            showDfcFsLockOverlay();
+            showDfcLockToast("🔒 觀看 DFC 問卷影片請保持全螢幕，已自動暫停");
+          }
+        }
+      };
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+      document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+      // 強制全螢幕鎖定遮罩之恢復與離開事件綁定
+      const resumeFsFromOverlay = async (e) => {
+        if (e.target.closest("#dfcFsQuitBtn")) return;
+        const ok = await requestDfcFullscreen();
+        if (ok || isDfcFullscreenActive()) {
+          hideDfcFsLockOverlay();
+          if (dfcState.activeCheckpointIndex === -1 && !isDfcFinished()) {
+            setDfcPlaying(true);
+          }
+        } else {
+          showDfcLockToast("⚠️ 請點擊允許全螢幕以繼續觀看");
+        }
+      };
+      $("dfcFsResumeBtn")?.addEventListener("click", resumeFsFromOverlay);
+      $("dfcFsLockOverlay")?.addEventListener("click", resumeFsFromOverlay);
+
+      $("dfcFsQuitBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dfcState.watchSessionActive = false;
+        setDfcPlaying(false);
+        hideDfcFsLockOverlay();
+        navigateToTab("home", false);
+      });
 
       document.addEventListener("visibilitychange", () => {
         if (document.hidden && dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
@@ -5017,15 +5550,24 @@
     function pauseDfcPage() {
       dfcTurboState.isOnDfcPage = false;
       if (dfcState.playing) setDfcPlaying(false);
+      if (isDfcFullscreenActive()) exitDfcFullscreen();
     }
 
-    $("dfcPlayBtn").onclick = () => {
+    $("dfcPlayBtn").onclick = async () => {
       if (dfcState.activeCheckpointIndex !== -1) return;
       if (dfcState.currentTime >= dfcState.duration - 0.2) {
         dfcState.currentTime = 0;
         if (dfcState.useRealVideo) $("dfcVideo").currentTime = 0;
       }
-      setDfcPlaying(!dfcState.playing);
+      if (!dfcState.playing) {
+        dfcState.watchSessionActive = true;
+        if (!isDfcFullscreenActive()) {
+          await requestDfcFullscreen();
+        }
+        setDfcPlaying(true);
+      } else {
+        setDfcPlaying(false);
+      }
     };
 
     if ($("dfcToggleQBtn")) {
@@ -5316,13 +5858,15 @@
       };
     }
 
-    $("dfcReplayBtn").onclick = () => {
+    $("dfcReplayBtn").onclick = async () => {
       dfcState.currentTime = 0;
+      dfcState.maxWatchedTime = 0;
       if (dfcState.useRealVideo) $("dfcVideo").currentTime = 0;
       dfcState.activeCheckpointIndex = -1;
       dfcState.answeredIds.clear();
       dfcState.answers = {};
       dfcState.submitted = false;
+      dfcState.watchSessionActive = true;
       $("dfcCompleteBox").classList.add("hide");
       if ($("dfcSummaryCard")) $("dfcSummaryCard").classList.add("hide");
       $("dfcStage").classList.remove("split-active");
@@ -5330,6 +5874,9 @@
       $("dfcPlayBtn").disabled = false;
       renderDfcStepPills();
       renderDfcMarkers();
+      if (!isDfcFullscreenActive()) {
+        await requestDfcFullscreen();
+      }
       setDfcPlaying(true);
     };
 
@@ -5380,6 +5927,8 @@
         dfcState.answeredIds.clear();
         dfcState.answers = {};
         dfcState.submitted = false;
+        dfcState.watchSessionActive = false;
+        hideDfcFsLockOverlay();
         if (videoChanged) {
           purgeLocalDfcVideoSession(false);
           dfcState.currentTime = 0;
@@ -5576,6 +6125,9 @@
         $("dfcStage").classList.remove("split-active");
         $("dfcPlayBtn").disabled = false;
         seekDfcWithPolicy(target, false);
+        if (!isDfcFullscreenActive() && dfcState.watchSessionActive) {
+          requestDfcFullscreen().catch(() => {});
+        }
         setDfcPlaying(true);
         logAction("答題時倒退 10 秒重看", `重看至 ${Math.round(target)} 秒`);
       };

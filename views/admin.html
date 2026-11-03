@@ -465,6 +465,41 @@
 
   <!-- 右上角管理員帳號資訊 -->
   <div class="acct-zone">
+    <!-- 裝置解析度智慧縮放控制器 (Auto Resolution Zoom Control) -->
+    <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依螢幕解析度縮放頁面">
+      <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小頁面 (Alt + -)" aria-label="縮小頁面">−</button>
+      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="點擊設定頁面縮放比例與解析度適配" aria-haspopup="true" aria-expanded="false">
+        <span class="zoom-icon">🔍</span>
+        <span class="zoom-text" id="zoomText">100%</span>
+        <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
+      </button>
+      <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大頁面 (Alt + +)" aria-label="放大頁面">+</button>
+
+      <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
+        <div class="zoom-dropdown-header">
+          <span class="zoom-res-title">裝置螢幕解析度</span>
+          <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
+        </div>
+        <div class="zoom-dropdown-divider"></div>
+        <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
+          <span>✨ 依解析度自動最適縮放</span>
+          <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
+        </button>
+        <div class="zoom-dropdown-divider"></div>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">🔍 80% (超小視野)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">🔍 90% (筆電緊湊)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">🔍 100% (標準原始)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">🔍 110% (舒適放大)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">🔍 120% (大螢幕/2K)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">🔍 135% (4K / 觸控大屏)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">🔍 150% (超大投影)</button>
+        <div class="zoom-dropdown-divider"></div>
+        <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
+          <span>🔄 重設為自動適配</span>
+        </button>
+      </div>
+    </div>
+
     <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
     <div class="acct-pill">
       <div class="acct-av" id="adminAv">A</div>
@@ -4744,15 +4779,194 @@ if (document.fonts?.ready) {
   document.fonts.ready.then(() => updateAdminDockGlider(activeTab, false));
 }
 
-function detectAdminDeviceLayout() {
-  const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
-  const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
-  const layout = vw < 680 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
-  document.documentElement.setAttribute("data-layout", layout);
-  document.documentElement.setAttribute("data-orientation", vw >= vh ? "landscape" : "portrait");
+/* ============================================================================
+ * 管理後台跨裝置解析度智慧自動縮放系統 (Admin Resolution Zoom System)
+ * ============================================================================ */
+let currentAppliedZoom = 1.0;
+let userZoomPreference = (() => {
+  try { return localStorage.getItem("kk_admin_resolution_zoom") || "auto"; } catch { return "auto"; }
+})();
+
+function getAdminDeviceMetrics() {
+  const zoom = currentAppliedZoom || 1.0;
+  const vw = Math.round((window.innerWidth || document.documentElement.clientWidth || 1280) * zoom);
+  const vh = Math.round((window.innerHeight || document.documentElement.clientHeight || 800) * zoom);
+  const sw = Math.round(window.screen?.width || vw);
+  const sh = Math.round(window.screen?.height || vh);
+  const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
+  const ua = navigator.userAgent || "";
+  const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(ua);
+  const isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+
+  let layout = "desktop";
+  let label = "💻 電腦版面";
+  if (vw < 680 || (isMobileUA && vw < 900)) {
+    layout = "mobile";
+    label = "📱 手機版面";
+  } else if (vw < 1024 || isTabletUA) {
+    layout = "tablet";
+    label = "📟 平板版面";
+  }
+  return { layout, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA };
 }
+
+function calculateAdminOptimalZoom(metrics) {
+  const { vw, vh, sw, sh, dpr, isMobileUA } = metrics;
+  if (vw < 680 || (isMobileUA && vw < 860)) return 1.0;
+  if (vw >= 3000 || sw >= 3400) return 1.35; // 4K
+  if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) return 1.20; // 2K QHD
+  if (vw >= 1950) return 1.12;
+  if (vw >= 1750 && vh >= 940) return 1.05;
+  if (vw >= 1360 && vh >= 740) return 1.0;
+  if (vh < 740 && vw >= 1024) return 0.92; // 筆電微縮適配
+  if (vw >= 900 && vw < 1200) return 0.95;
+  return 1.0;
+}
+
+function applyAdminResolutionZoom(zoomVal, isAuto = false) {
+  const zoomNum = Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
+  currentAppliedZoom = zoomNum;
+
+  document.documentElement.style.zoom = String(zoomNum);
+  document.documentElement.style.setProperty("--app-zoom", String(zoomNum));
+  document.documentElement.setAttribute("data-zoom", Math.round(zoomNum * 100));
+  document.documentElement.setAttribute("data-zoom-auto", isAuto ? "1" : "0");
+
+  const pct = Math.round(zoomNum * 100);
+  if ($("zoomText")) $("zoomText").textContent = `${pct}%`;
+  const autoBadge = $("zoomAutoBadge");
+  if (autoBadge) {
+    autoBadge.textContent = isAuto ? "自動" : "自訂";
+    autoBadge.className = `zoom-auto-badge ${isAuto ? "auto" : "manual"}`;
+  }
+
+  const autoHint = $("zoomAutoCalcHint");
+  if (autoHint) autoHint.textContent = `${pct}%`;
+  document.querySelectorAll(".zoom-opt-btn").forEach(btn => {
+    const val = btn.getAttribute("data-zoom-val");
+    if (isAuto && val === "auto") btn.classList.add("active");
+    else if (!isAuto && val === zoomNum.toFixed(2)) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
+  try { updateAdminDockGlider(activeTab, false); } catch {}
+}
+
+function detectAdminDeviceLayout() {
+  const metrics = getAdminDeviceMetrics();
+  document.documentElement.setAttribute("data-layout", metrics.layout);
+  document.documentElement.setAttribute("data-orientation", metrics.vw >= metrics.vh ? "landscape" : "portrait");
+
+  const optimal = calculateAdminOptimalZoom(metrics);
+  if (userZoomPreference === "auto") {
+    applyAdminResolutionZoom(optimal, true);
+  } else {
+    const manualVal = parseFloat(userZoomPreference);
+    applyAdminResolutionZoom(isNaN(manualVal) ? optimal : manualVal, false);
+  }
+
+  if ($("zoomResDetail")) {
+    $("zoomResDetail").textContent = `${metrics.sw} × ${metrics.sh} (@${metrics.dpr}x) · 視窗 ${metrics.vw}×${metrics.vh}`;
+  }
+}
+
+function initAdminZoomControls() {
+  const pill = $("resolutionZoomPill");
+  const dropdown = $("zoomDropdown");
+  const displayBtn = $("zoomDisplayBtn");
+  const outBtn = $("zoomOutBtn");
+  const inBtn = $("zoomInBtn");
+  if (!pill) return;
+
+  const toggleDropdown = (show) => {
+    if (!dropdown) return;
+    const willShow = show !== undefined ? show : dropdown.classList.contains("hide");
+    if (willShow) {
+      dropdown.classList.remove("hide");
+      displayBtn?.setAttribute("aria-expanded", "true");
+    } else {
+      dropdown.classList.add("hide");
+      displayBtn?.setAttribute("aria-expanded", "false");
+    }
+  };
+
+  displayBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  outBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const next = Math.max(0.6, Number((currentAppliedZoom - 0.05).toFixed(2)));
+    userZoomPreference = next.toFixed(2);
+    try { localStorage.setItem("kk_admin_resolution_zoom", userZoomPreference); } catch {}
+    applyAdminResolutionZoom(next, false);
+  });
+
+  inBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const next = Math.min(2.0, Number((currentAppliedZoom + 0.05).toFixed(2)));
+    userZoomPreference = next.toFixed(2);
+    try { localStorage.setItem("kk_admin_resolution_zoom", userZoomPreference); } catch {}
+    applyAdminResolutionZoom(next, false);
+  });
+
+  document.querySelectorAll(".zoom-opt-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const val = btn.getAttribute("data-zoom-val");
+      if (val === "auto" || val === "reset") {
+        userZoomPreference = "auto";
+        try { localStorage.setItem("kk_admin_resolution_zoom", "auto"); } catch {}
+        const metrics = getAdminDeviceMetrics();
+        applyAdminResolutionZoom(calculateAdminOptimalZoom(metrics), true);
+      } else {
+        const num = parseFloat(val);
+        if (!isNaN(num)) {
+          userZoomPreference = num.toFixed(2);
+          try { localStorage.setItem("kk_admin_resolution_zoom", userZoomPreference); } catch {}
+          applyAdminResolutionZoom(num, false);
+        }
+      }
+      toggleDropdown(false);
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (dropdown && !pill.contains(e.target)) {
+      toggleDropdown(false);
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.altKey && (e.key === "=" || e.key === "+")) {
+      e.preventDefault();
+      inBtn?.click();
+    } else if (e.altKey && (e.key === "-" || e.key === "_")) {
+      e.preventDefault();
+      outBtn?.click();
+    } else if (e.altKey && (e.key === "0")) {
+      e.preventDefault();
+      userZoomPreference = "auto";
+      try { localStorage.setItem("kk_admin_resolution_zoom", "auto"); } catch {}
+      detectAdminDeviceLayout();
+    }
+  });
+}
+
+let adminResizeTimer = null;
+function handleAdminResize() {
+  clearTimeout(adminResizeTimer);
+  adminResizeTimer = setTimeout(() => {
+    detectAdminDeviceLayout();
+    try { updateAdminDockGlider(activeTab, false); } catch {}
+  }, 100);
+}
+
 detectAdminDeviceLayout();
-window.addEventListener("resize", detectAdminDeviceLayout);
+initAdminZoomControls();
+window.addEventListener("resize", handleAdminResize);
+window.addEventListener("orientationchange", handleAdminResize);
 
 load(true);
 </script>
