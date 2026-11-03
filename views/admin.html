@@ -753,6 +753,7 @@ s1120002
 </div>
 
 <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
+<button type="button" class="back-to-top-fab hide" id="backToTopFab" title="回到頁面頂端" aria-label="回到頂端">↑</button>
 
 <script src="/adminusercontrol/jszip.js"></script>
 <script>
@@ -1038,6 +1039,8 @@ function drawCard(canvas, text, author, style = {}) {
 
   const layout = style?.layout || "classic";
   const cardFont = (FONT_MAP && FONT_MAP[style?.font]) || FONT;
+  const sScale = Number(style?.sizeScale) || 1.0;
+  const showSeal = style?.showSeal !== false;
   const bg = style?.bg || "#f4f2ee";
   const dark = isColorDark(bg);
   const textClr = style?.text || (dark ? "#f4f4f5" : "#1c1917");
@@ -1094,6 +1097,7 @@ function drawCard(canvas, text, author, style = {}) {
     let vSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.78) : 54;
     if (displayText.length > 60) vSize = Math.round(vSize * 0.75);
     else if (displayText.length > 35) vSize = Math.round(vSize * 0.86);
+    vSize = Math.round(vSize * sScale);
 
     const charSpacing = vSize * 1.28;
     const colSpacing = vSize * 1.55;
@@ -1130,7 +1134,7 @@ function drawCard(canvas, text, author, style = {}) {
     authorChars.forEach((ch, idx) => {
       ctx.fillText(ch, authorColX, aStartY + idx * (aSize * 1.25) + aSize / 2);
     });
-    if (!isPlaceholder && displayAuthor !== "署名") {
+    if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
       drawCinnabarSeal(ctx, displayAuthor, authorColX - 21, aStartY + authorH + 16, 42);
     }
 
@@ -1139,6 +1143,7 @@ function drawCard(canvas, text, author, style = {}) {
     let qSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.88) : 62;
     if (displayText.length > 60) qSize = Math.round(qSize * 0.68);
     else if (displayText.length > 35) qSize = Math.round(qSize * 0.8);
+    qSize = Math.round(qSize * sScale);
 
     ctx.font = `${qSize}px ${cardFont}`;
     const qLines = wrapText(ctx, displayText, contentW);
@@ -1174,7 +1179,7 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText("— " + displayAuthor, contentX, divY + 16);
-    if (!isPlaceholder && displayAuthor !== "署名") {
+    if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
       const authW = ctx.measureText("— " + displayAuthor).width;
       drawCinnabarSeal(ctx, displayAuthor, contentX + authW + 18, divY + 8, 38);
     }
@@ -1194,6 +1199,7 @@ function drawCard(canvas, text, author, style = {}) {
     let fSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.88) : 62;
     if (displayText.length > 60) fSize = Math.round(fSize * 0.68);
     else if (displayText.length > 35) fSize = Math.round(fSize * 0.8);
+    fSize = Math.round(fSize * sScale);
 
     ctx.font = `${fSize}px ${cardFont}`;
     const fLines = wrapText(ctx, displayText, FW - 80);
@@ -1213,7 +1219,7 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.fillStyle = subClr;
     ctx.textAlign = 'center';
     ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
-    if (!isPlaceholder && displayAuthor !== "署名") {
+    if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
       drawCinnabarSeal(ctx, displayAuthor, CX + CW / 2 - 21, fStartY + fTotalH + fas * 1.8, 42);
     }
 
@@ -1245,6 +1251,7 @@ function drawCard(canvas, text, author, style = {}) {
     let pSize = FONT_SIZE ? Math.round(FONT_SIZE * 0.92) : 64;
     if (displayText.length > 60) pSize = Math.round(pSize * 0.68);
     else if (displayText.length > 35) pSize = Math.round(pSize * 0.8);
+    pSize = Math.round(pSize * sScale);
 
     ctx.font = `${pSize}px ${cardFont}`;
     const pLines = wrapText(ctx, displayText, CW - 130);
@@ -1274,7 +1281,7 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textBaseline = 'middle';
     ctx.fillText(authorStr, pX + 14, aBadgeY + (pas + 20) / 2);
     ctx.restore();
-    if (!isPlaceholder && displayAuthor !== "署名") {
+    if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
       drawCinnabarSeal(ctx, displayAuthor, pX + aw + 38, aBadgeY + (pas + 20) / 2 - 20, 40);
     }
 
@@ -1284,6 +1291,7 @@ function drawCard(canvas, text, author, style = {}) {
     if (tLen > 65) size = Math.round(size * 0.64);
     else if (tLen > 40) size = Math.round(size * 0.75);
     else if (tLen > 25) size = Math.round(size * 0.86);
+    size = Math.round(size * sScale);
 
     const maxLineW = CW - 120;
     ctx.font = `${size}px ${cardFont}`;
@@ -1307,7 +1315,7 @@ function drawCard(canvas, text, author, style = {}) {
     ctx.textAlign = "right";
     ctx.fillStyle = subClr;
     ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
-    if (!isPlaceholder && displayAuthor !== "署名") {
+    if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
       drawCinnabarSeal(ctx, displayAuthor, startX + widest + 16, startY + totalH + as * 0.5, 40);
     }
   }
@@ -1495,7 +1503,36 @@ function initLayoutFilterChips() {
 
 async function render() {
   initLayoutFilterChips();
-  if ($("chipAllCount")) $("chipAllCount").textContent = rows.length;
+  const layoutCounts = { classic: 0, vertical: 0, quote: 0, framed: 0, poster: 0 };
+  rows.forEach(row => {
+    let metaObj = row.user_meta;
+    if (typeof metaObj === "string") {
+      try { metaObj = JSON.parse(metaObj); } catch {}
+    }
+    const layout = metaObj?.cardStyle?.layout || "classic";
+    if (layoutCounts[layout] !== undefined) layoutCounts[layout]++;
+    else layoutCounts.classic++;
+  });
+  if ($("postLayoutFilterStrip")) {
+    const strip = $("postLayoutFilterStrip");
+    const chips = strip.querySelectorAll(".filter-chip");
+    const iconNameMap = {
+      classic: "🏛️ 經典居中",
+      vertical: "📜 文青直排",
+      quote: "💬 現代引言",
+      framed: "🖼️ 典雅雙框",
+      poster: "🎨 潮流海報"
+    };
+    chips.forEach(chip => {
+      const f = chip.dataset.filter;
+      if (f === "all") {
+        chip.innerHTML = `全部投稿 (<span id="chipAllCount">${rows.length}</span>)`;
+      } else if (iconNameMap[f]) {
+        const cnt = layoutCounts[f] || 0;
+        chip.innerHTML = `${iconNameMap[f]} <span style="font-size:11px;opacity:0.85">(${cnt})</span>`;
+      }
+    });
+  }
   const filtered = rows.map(unpackRow).filter(r => {
     let metaObj = r.user_meta;
     if (typeof metaObj === "string") {
@@ -4680,6 +4717,14 @@ detectAdminDeviceLayout();
 initAdminZoomControls();
 window.addEventListener("resize", handleAdminResize);
 window.addEventListener("orientationchange", handleAdminResize);
+
+const fab = $("backToTopFab");
+if (fab) {
+  window.addEventListener("scroll", () => {
+    fab.classList.toggle("hide", window.scrollY < 300);
+  }, { passive: true });
+  fab.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 load(true);
 </script>

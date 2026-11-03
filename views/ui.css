@@ -3246,6 +3246,86 @@ html[data-layout="mobile"] .spoiler-vault-card {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
+/* 字級微調選擇器 (Font Size Stepper) */
+.size-stepper-grid {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.size-chip-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.size-chip-btn:hover {
+  color: var(--ink);
+  border-color: var(--blue, #0071e3);
+  background: var(--surface-hover, rgba(0, 113, 227, 0.04));
+}
+.size-chip-btn.active {
+  color: var(--blue, #0071e3);
+  border-color: var(--blue, #0071e3);
+  background: var(--blue-soft, rgba(0, 113, 227, 0.08));
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.18);
+}
+.seal-toggle-item {
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+.seal-toggle-item:hover {
+  opacity: 0.85;
+}
+
+/* 浮動回到頂部按鈕 (Floating Back to Top FAB) */
+.back-to-top-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong, rgba(0, 0, 0, 0.15));
+  background: var(--surface-card, #fff);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  z-index: 900;
+  transition: all 0.25s var(--spring-smooth);
+}
+.back-to-top-fab:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  background: var(--surface-hover, #fafafa);
+  color: var(--blue, #0071e3);
+  border-color: var(--blue, #0071e3);
+}
+.back-to-top-fab.hide {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px) scale(0.9);
+}
+[data-theme="dark"] .back-to-top-fab {
+  background: var(--surface-card, #27272a);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
 /* 卡片高清全螢幕燈箱 (Card Lightbox Modal) */
 .card-lightbox-overlay {
   position: fixed;

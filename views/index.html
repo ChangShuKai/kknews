@@ -410,6 +410,34 @@
                 </div>
               </div>
 
+              <!-- 字級比例與落款印章選項 -->
+              <div class="style-block">
+                <div class="style-head">
+                  <span class="style-title">字級比例與細節</span>
+                  <span class="style-active-badge" id="sizeBadge">標準 (100%)</span>
+                </div>
+                <div class="size-stepper-grid" id="sizePicker">
+                  <button type="button" class="size-chip-btn" data-scale="0.88" title="精巧緊湊：空間留白多">
+                    <span style="font-size:12px;font-weight:600">A-</span>
+                    <span>緊湊 (88%)</span>
+                  </button>
+                  <button type="button" class="size-chip-btn active" data-scale="1.0" title="黃金適中：最推薦排版比例">
+                    <span style="font-size:14px;font-weight:700">A</span>
+                    <span>標準 (100%)</span>
+                  </button>
+                  <button type="button" class="size-chip-btn" data-scale="1.14" title="大器豪邁：字體放大，視覺強烈">
+                    <span style="font-size:16px;font-weight:800">A+</span>
+                    <span>大器 (114%)</span>
+                  </button>
+                </div>
+                <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
+                  <label class="seal-toggle-item" title="是否在卡片署名旁加蓋專屬朱砂篆刻印章" style="display:inline-flex;align-items:center;cursor:pointer">
+                    <input type="checkbox" id="showSealToggle" checked style="accent-color:var(--red,#dc2626);cursor:pointer;width:15px;height:15px">
+                    <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600;margin-left:7px;cursor:pointer">加蓋傳統朱砂落款印章</span>
+                  </label>
+                </div>
+              </div>
+
               <!-- 配色選擇 -->
               <div class="style-block">
                 <div class="style-head">
@@ -762,6 +790,9 @@
       </div>
     </div>
   </div>
+
+  <!-- 浮動回到頂部按鈕 -->
+  <button type="button" class="back-to-top-fab hide" id="backToTopFab" title="回到頁面頂端" aria-label="回到頂端">↑</button>
 
   <script>
     const $ = id => document.getElementById(id);
@@ -1570,6 +1601,8 @@
       layout: "classic",
       themeId: "ivory",
       font: "reggae",
+      sizeScale: 1.0,
+      showSeal: true,
       bg: "#f4f2ee",
       text: "#1c1917",
       sub: "#6b665d",
@@ -1686,6 +1719,8 @@
 
       const layout = style.layout || "classic";
       const cardFont = (CARD_FONT_MAP && CARD_FONT_MAP[style.font]) || CARD_FONT;
+      const sScale = Number(style.sizeScale) || 1.0;
+      const showSeal = style.showSeal !== false;
       const bg = style.bg || "#f4f2ee";
       const dark = isColorDark(bg);
       const textClr = style.text || (dark ? "#f4f4f5" : "#1c1917");
@@ -1742,7 +1777,8 @@
           if (!chars.length) { colChars.push([]); continue; }
           for (let i = 0; i < chars.length; i += colLen) colChars.push(chars.slice(i, i + colLen));
         }
-        let vSize = displayText.length > 60 ? 40 : displayText.length > 35 ? 46 : 54;
+        let vBase = displayText.length > 60 ? 40 : displayText.length > 35 ? 46 : 54;
+        let vSize = Math.round(vBase * sScale);
         const charSpacing = vSize * 1.28;
         const colSpacing = vSize * 1.55;
         const totalCols = colChars.length + 1;
@@ -1778,13 +1814,14 @@
         authorChars.forEach((ch, idx) => {
           ctx.fillText(ch, authorColX, aStartY + idx * (aSize * 1.25) + aSize / 2);
         });
-        if (!isPlaceholder && displayAuthor !== "署名") {
+        if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
           drawCinnabarSeal(ctx, displayAuthor, authorColX - 21, aStartY + authorH + 16, 42);
         }
 
       } else if (layout === "quote") {
         const contentX = CX + 72, contentW = CW - 144;
-        let qSize = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
+        let qBase = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
+        let qSize = Math.round(qBase * sScale);
         ctx.font = `${qSize}px ${cardFont}`;
         const qLines = wrapText(ctx, displayText, contentW);
         const qLh = qSize * 1.44;
@@ -1819,7 +1856,7 @@
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         ctx.fillText("— " + displayAuthor, contentX, divY + 16);
-        if (!isPlaceholder && displayAuthor !== "署名") {
+        if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
           const authW = ctx.measureText("— " + displayAuthor).width;
           drawCinnabarSeal(ctx, displayAuthor, contentX + authW + 18, divY + 8, 38);
         }
@@ -1836,7 +1873,8 @@
         ctx.strokeRect(FX + 8, FY + 8, FW - 16, FH - 16);
         ctx.restore();
 
-        let fSize = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
+        let fBase = displayText.length > 60 ? 42 : displayText.length > 35 ? 50 : 62;
+        let fSize = Math.round(fBase * sScale);
         ctx.font = `${fSize}px ${cardFont}`;
         const fLines = wrapText(ctx, displayText, FW - 80);
         const fLh = fSize * 1.4;
@@ -1855,7 +1893,7 @@
         ctx.fillStyle = subClr;
         ctx.textAlign = 'center';
         ctx.fillText(`✦   ${displayAuthor}   ✦`, CX + CW / 2, fStartY + fTotalH + fas * 1.2);
-        if (!isPlaceholder && displayAuthor !== "署名") {
+        if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
           drawCinnabarSeal(ctx, displayAuthor, CX + CW / 2 - 21, fStartY + fTotalH + fas * 1.8, 42);
         }
 
@@ -1884,7 +1922,8 @@
         ctx.fillText(tagText, pX + 12, pY + 15);
         ctx.restore();
 
-        let pSize = displayText.length > 60 ? 44 : displayText.length > 35 ? 52 : 64;
+        let pBase = displayText.length > 60 ? 44 : displayText.length > 35 ? 52 : 64;
+        let pSize = Math.round(pBase * sScale);
         ctx.font = `${pSize}px ${cardFont}`;
         const pLines = wrapText(ctx, displayText, CW - 130);
         const pLh = pSize * 1.38;
@@ -1913,13 +1952,14 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(authorStr, pX + 14, aBadgeY + (pas + 20) / 2);
         ctx.restore();
-        if (!isPlaceholder && displayAuthor !== "署名") {
+        if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
           drawCinnabarSeal(ctx, displayAuthor, pX + aw + 38, aBadgeY + (pas + 20) / 2 - 20, 40);
         }
 
       } else {
         // classic
-        let size = displayText.length > 65 ? 44 : displayText.length > 40 ? 52 : displayText.length > 25 ? 60 : 68;
+        let baseSize = displayText.length > 65 ? 44 : displayText.length > 40 ? 52 : displayText.length > 25 ? 60 : 68;
+        let size = Math.round(baseSize * sScale);
         const maxLineW = CW - 120;
         ctx.font = `${size}px ${cardFont}`;
         const lines = wrapText(ctx, displayText, maxLineW);
@@ -1942,7 +1982,7 @@
         ctx.textAlign = "right";
         ctx.fillStyle = subClr;
         ctx.fillText("— " + displayAuthor, startX + widest, startY + totalH + as * 1.1);
-        if (!isPlaceholder && displayAuthor !== "署名") {
+        if (showSeal && !isPlaceholder && displayAuthor !== "署名") {
           drawCinnabarSeal(ctx, displayAuthor, startX + widest + 16, startY + totalH + as * 0.5, 40);
         }
       }
@@ -2007,6 +2047,21 @@
       }
       if ($("customColorRow")) {
         $("customColorRow").classList.toggle("hide", currentCardStyle.themeId !== "custom");
+      }
+
+      // 字級按鈕與印章同步
+      const curScale = currentCardStyle.sizeScale || 1.0;
+      if ($("sizePicker")) {
+        $("sizePicker").querySelectorAll(".size-chip-btn").forEach(b => {
+          b.classList.toggle("active", Math.abs(Number(b.dataset.scale) - curScale) < 0.04);
+        });
+      }
+      if ($("sizeBadge")) {
+        const sName = curScale < 0.95 ? "緊湊 (88%)" : curScale > 1.05 ? "大器 (114%)" : "標準 (100%)";
+        $("sizeBadge").textContent = sName;
+      }
+      if ($("showSealToggle")) {
+        $("showSealToggle").checked = currentCardStyle.showSeal !== false;
       }
     }
 
@@ -2100,6 +2155,28 @@
           });
         }
 
+        // 字級比例切換
+        const sizeWrap = $("sizePicker");
+        if (sizeWrap) {
+          sizeWrap.querySelectorAll(".size-chip-btn").forEach(btn => {
+            btn.onclick = () => {
+              currentCardStyle.sizeScale = Number(btn.dataset.scale) || 1.0;
+              syncCardStyleUi();
+              renderLivePreviewCard();
+              logAction("調整卡片字級", `字級比例: ${btn.dataset.scale}x`);
+            };
+          });
+        }
+
+        // 印章開關
+        if ($("showSealToggle")) {
+          $("showSealToggle").onchange = (e) => {
+            currentCardStyle.showSeal = Boolean(e.target.checked);
+            renderLivePreviewCard();
+            logAction("切換落款印章", currentCardStyle.showSeal ? "開啟" : "關閉");
+          };
+        }
+
         // 字體切換
         const fontWrap = $("fontPicker");
         if (fontWrap) {
@@ -2162,6 +2239,14 @@
       $("cardLightboxModal").onclick = (e) => {
         if (e.target === $("cardLightboxModal")) closeCardLightbox();
       };
+    }
+
+    const fab = $("backToTopFab");
+    if (fab) {
+      window.addEventListener("scroll", () => {
+        fab.classList.toggle("hide", window.scrollY < 300);
+      }, { passive: true });
+      fab.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     if ($("copyCardImgBtn")) {
@@ -4901,7 +4986,7 @@
       $("resetCardStyleBtn").onclick = () => {
         const btn = $("resetCardStyleBtn");
         const origText = btn.textContent;
-        currentCardStyle = { layout: "classic", themeId: "ivory", font: "reggae", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
+        currentCardStyle = { layout: "classic", themeId: "ivory", font: "reggae", sizeScale: 1.0, showSeal: true, bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
         syncCardStyleUi();
         renderLivePreviewCard();
         btn.textContent = "✓ 已重設";
