@@ -1,47 +1,66 @@
 /* ============================================================================
- * KKNews Apple-Grade Design System
- * Inspired by Apple Human Interface Guidelines (macOS Sequoia / iOS 18)
- * Designed for fluidity, generous whitespace, liquid glass & spring physics
+ * KKNews Precision Design System 2.0 (Editorial & Fluid Liquid Glass)
+ * Inspired by Apple HIG, Modern Editorial Design & Modern Enterprise UI
+ * Engineered for fluidity, resilient UX, accessibility, and broken-media immunity
  * ============================================================================ */
 
 :root {
   --app-zoom: 1;
-  /* 基礎色彩系統 (Apple Clean Neutral & Vibrant Accents) */
-  --bg: #f5f5f7;
+
+  /* 基礎色彩系統 (Modern High-Contrast Precision Neutrals & Accents) */
+  --bg: #f6f8fa;
   --bg-secondary: #ffffff;
-  --surface: rgba(255, 255, 255, 0.78);
+  --surface: rgba(255, 255, 255, 0.82);
   --surface-solid: #ffffff;
-  --surface-muted: #fbfbfd;
-  --surface-tint: rgba(0, 0, 0, 0.025);
+  --surface-muted: #f8fafc;
+  --surface-tint: rgba(15, 23, 42, 0.02);
 
-  --ink: #1d1d1f;
-  --ink-secondary: #6e6e73;
-  --ink-tertiary: #86868b;
-  --ink-quaternary: #aeaeb2;
+  --ink: #0f172a;
+  --ink-secondary: #475569;
+  --ink-tertiary: #64748b;
+  --ink-quaternary: #94a3b8;
 
-  --line: rgba(0, 0, 0, 0.08);
-  --line-subtle: rgba(0, 0, 0, 0.05);
-  --line-strong: rgba(0, 0, 0, 0.16);
-  --line-focus: rgba(0, 113, 227, 0.38);
+  --line: rgba(15, 23, 42, 0.08);
+  --line-subtle: rgba(15, 23, 42, 0.04);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --line-focus: rgba(37, 99, 235, 0.45);
 
-  /* Apple Accent Colors */
-  --blue: #0071e3;
-  --blue-hover: #0077ed;
-  --blue-soft: rgba(0, 113, 227, 0.08);
-  --green: #34c759;
-  --green-soft: rgba(52, 199, 89, 0.12);
-  --orange: #ff9500;
-  --orange-soft: rgba(255, 149, 0, 0.12);
-  --red: #ff3b30;
-  --red-soft: rgba(255, 59, 48, 0.1);
+  /* 主題品牌漸層與高動態色彩 (Vibrant Modern Accents) */
+  --blue: #2563eb;
+  --blue-hover: #1d4ed8;
+  --blue-soft: rgba(37, 99, 235, 0.08);
+  --blue-glow: rgba(37, 99, 235, 0.25);
+
+  --green: #059669;
+  --green-hover: #047857;
+  --green-soft: rgba(5, 150, 105, 0.1);
+  --green-glow: rgba(5, 150, 105, 0.22);
+
+  --orange: #d97706;
+  --orange-hover: #b45309;
+  --orange-soft: rgba(217, 119, 6, 0.1);
+
+  --red: #dc2626;
+  --red-hover: #b91c1c;
+  --red-soft: rgba(220, 38, 38, 0.08);
+
+  --purple: #7c3aed;
+  --purple-soft: rgba(124, 58, 237, 0.1);
+
+  /* 視覺多維漸層 (High-End Aesthetic Gradients) */
+  --gradient-brand: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #06b6d4 100%);
+  --gradient-proverb: linear-gradient(135deg, #b45309 0%, #d97706 60%, #f59e0b 100%);
+  --gradient-dfc: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%);
+  --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
 
   /* 相容舊變數別名 */
-  --ok: #28a745;
-  --ok-bg: #eafaf1;
-  --err: #e03131;
-  --err-bg: #fdebee;
+  --ok: var(--green);
+  --ok-bg: #ecfdf5;
+  --err: var(--red);
+  --err-bg: #fef2f2;
   --link: var(--blue);
-  --paper: #fbfbfa;
+  --paper: #f8fafc;
   --white: #ffffff;
 
   /* 圓角階層 (Squircle-curved Continuous Radiuses) */
@@ -49,115 +68,150 @@
   --r-sm: 10px;
   --r-md: 14px;
   --r-lg: 20px;
-  --r-xl: 26px;
+  --r-xl: 28px;
   --r-pill: 9999px;
 
-  /* 深度與立體光影 (Layered Ambient Shadows) */
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.07), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 20px 48px -10px rgba(0, 0, 0, 0.1), 0 4px 14px -2px rgba(0, 0, 0, 0.04);
-  --shadow-floating: 0 28px 64px -12px rgba(0, 0, 0, 0.14), 0 8px 20px -4px rgba(0, 0, 0, 0.04);
-  --shadow-inner-glow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  /* 深度與立體光影 (Multi-Tier Layered Ambient Shadows) */
+  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.02);
+  --shadow-sm: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -3px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.12), 0 8px 20px -4px rgba(15, 23, 42, 0.04);
+  --shadow-floating: 0 32px 72px -16px rgba(15, 23, 42, 0.16), 0 12px 28px -6px rgba(15, 23, 42, 0.06);
+  --shadow-inner-glow: inset 0 1px 1px rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 
-  /* 動畫曲線 (Apple Spring Physics & Fluid Transitions) */
+  /* 動畫曲線 (Spring Physics & Smooth Cubic Beziers) */
   --spring-smooth: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring-snappy: cubic-bezier(0.25, 1, 0.5, 1);
-  --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-snappy: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --spring-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
   --ease-out-apple: cubic-bezier(0, 0, 0.2, 1);
 
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang TC", "Microsoft JhengHei", sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Noto Sans TC", sans-serif;
+  --font-serif: "Noto Serif TC", "Songti TC", "Source Han Serif TC", Georgia, serif;
 }
 
 /* ============================================================================
- * Apple OLED 沉浸深色模式 (Dark Mode Architecture)
+ * Deep Obsidian 沉浸深色模式 (Modern Dark Mode Architecture)
  * ============================================================================ */
 [data-theme="dark"] {
-  --bg: #000000;
-  --bg-secondary: #121214;
-  --surface: rgba(28, 28, 30, 0.82);
-  --surface-solid: #1c1c1e;
-  --surface-muted: #161618;
-  --surface-tint: rgba(255, 255, 255, 0.04);
+  --bg: #090d16;
+  --bg-secondary: #0f172a;
+  --surface: rgba(15, 23, 42, 0.85);
+  --surface-solid: #131d33;
+  --surface-muted: #0c1322;
+  --surface-tint: rgba(255, 255, 255, 0.05);
 
-  --ink: #f5f5f7;
-  --ink-secondary: #98989d;
-  --ink-tertiary: #86868b;
-  --ink-quaternary: #636366;
+  --ink: #f8fafc;
+  --ink-secondary: #cbd5e1;
+  --ink-tertiary: #94a3b8;
+  --ink-quaternary: #64748b;
 
   --line: rgba(255, 255, 255, 0.12);
-  --line-subtle: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.22);
-  --line-focus: rgba(10, 132, 255, 0.5);
+  --line-subtle: rgba(255, 255, 255, 0.06);
+  --line-strong: rgba(255, 255, 255, 0.24);
+  --line-focus: rgba(96, 165, 250, 0.55);
 
-  --blue: #0a84ff;
-  --blue-hover: #409cff;
-  --blue-soft: rgba(10, 132, 255, 0.18);
-  --green: #30d158;
-  --green-soft: rgba(48, 209, 88, 0.18);
-  --orange: #ff9f0a;
-  --orange-soft: rgba(255, 159, 10, 0.18);
-  --red: #ff453a;
-  --red-soft: rgba(255, 69, 58, 0.18);
+  --blue: #3b82f6;
+  --blue-hover: #60a5fa;
+  --blue-soft: rgba(59, 130, 246, 0.18);
+  --blue-glow: rgba(59, 130, 246, 0.35);
 
-  --ok: #30d158;
-  --ok-bg: rgba(48, 209, 88, 0.15);
-  --err: #ff453a;
-  --err-bg: rgba(255, 69, 58, 0.15);
-  --paper: #18181b;
-  --white: #1c1c1e;
+  --green: #10b981;
+  --green-hover: #34d399;
+  --green-soft: rgba(16, 185, 129, 0.18);
+  --green-glow: rgba(16, 185, 129, 0.3);
 
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.7), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 20px 48px -10px rgba(0, 0, 0, 0.8), 0 4px 14px -2px rgba(0, 0, 0, 0.6);
-  --shadow-floating: 0 28px 64px -12px rgba(0, 0, 0, 0.9), 0 8px 20px -4px rgba(0, 0, 0, 0.7);
-  --shadow-inner-glow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --orange: #f59e0b;
+  --orange-hover: #fbbf24;
+  --orange-soft: rgba(245, 158, 11, 0.18);
+
+  --red: #ef4444;
+  --red-hover: #f87171;
+  --red-soft: rgba(239, 68, 68, 0.16);
+
+  --purple: #a855f7;
+  --purple-soft: rgba(168, 85, 247, 0.18);
+
+  --gradient-brand: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  --gradient-proverb: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+  --gradient-dfc: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(19, 29, 51, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+
+  --ok: #10b981;
+  --ok-bg: rgba(16, 185, 129, 0.16);
+  --err: #ef4444;
+  --err-bg: rgba(239, 68, 68, 0.16);
+  --paper: #0c1322;
+  --white: #131d33;
+
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5), 0 1px 3px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 4px 10px -3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+  --shadow-floating: 0 32px 72px -16px rgba(0, 0, 0, 0.85), 0 12px 28px -6px rgba(0, 0, 0, 0.6);
+  --shadow-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #000000;
-    --bg-secondary: #121214;
-    --surface: rgba(28, 28, 30, 0.82);
-    --surface-solid: #1c1c1e;
-    --surface-muted: #161618;
-    --surface-tint: rgba(255, 255, 255, 0.04);
+    --bg: #090d16;
+    --bg-secondary: #0f172a;
+    --surface: rgba(15, 23, 42, 0.85);
+    --surface-solid: #131d33;
+    --surface-muted: #0c1322;
+    --surface-tint: rgba(255, 255, 255, 0.05);
 
-    --ink: #f5f5f7;
-    --ink-secondary: #98989d;
-    --ink-tertiary: #86868b;
-    --ink-quaternary: #636366;
+    --ink: #f8fafc;
+    --ink-secondary: #cbd5e1;
+    --ink-tertiary: #94a3b8;
+    --ink-quaternary: #64748b;
 
     --line: rgba(255, 255, 255, 0.12);
-    --line-subtle: rgba(255, 255, 255, 0.08);
-    --line-strong: rgba(255, 255, 255, 0.22);
-    --line-focus: rgba(10, 132, 255, 0.5);
+    --line-subtle: rgba(255, 255, 255, 0.06);
+    --line-strong: rgba(255, 255, 255, 0.24);
+    --line-focus: rgba(96, 165, 250, 0.55);
 
-    --blue: #0a84ff;
-    --blue-hover: #409cff;
-    --blue-soft: rgba(10, 132, 255, 0.18);
-    --green: #30d158;
-    --green-soft: rgba(48, 209, 88, 0.18);
-    --orange: #ff9f0a;
-    --orange-soft: rgba(255, 159, 10, 0.18);
-    --red: #ff453a;
-    --red-soft: rgba(255, 69, 58, 0.18);
+    --blue: #3b82f6;
+    --blue-hover: #60a5fa;
+    --blue-soft: rgba(59, 130, 246, 0.18);
+    --blue-glow: rgba(59, 130, 246, 0.35);
 
-    --ok: #30d158;
-    --ok-bg: rgba(48, 209, 88, 0.15);
-    --err: #ff453a;
-    --err-bg: rgba(255, 69, 58, 0.15);
-    --paper: #18181b;
-    --white: #1c1c1e;
+    --green: #10b981;
+    --green-hover: #34d399;
+    --green-soft: rgba(16, 185, 129, 0.18);
+    --green-glow: rgba(16, 185, 129, 0.3);
 
-    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.7), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 20px 48px -10px rgba(0, 0, 0, 0.8), 0 4px 14px -2px rgba(0, 0, 0, 0.6);
-    --shadow-floating: 0 28px 64px -12px rgba(0, 0, 0, 0.9), 0 8px 20px -4px rgba(0, 0, 0, 0.7);
-    --shadow-inner-glow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    --orange: #f59e0b;
+    --orange-hover: #fbbf24;
+    --orange-soft: rgba(245, 158, 11, 0.18);
+
+    --red: #ef4444;
+    --red-hover: #f87171;
+    --red-soft: rgba(239, 68, 68, 0.16);
+
+    --purple: #a855f7;
+    --purple-soft: rgba(168, 85, 247, 0.18);
+
+    --gradient-brand: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+    --gradient-proverb: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+    --gradient-dfc: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+    --gradient-surface: linear-gradient(180deg, rgba(19, 29, 51, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+
+    --ok: #10b981;
+    --ok-bg: rgba(16, 185, 129, 0.16);
+    --err: #ef4444;
+    --err-bg: rgba(239, 68, 68, 0.16);
+    --paper: #0c1322;
+    --white: #131d33;
+
+    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5), 0 1px 3px -1px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 4px 10px -3px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    --shadow-floating: 0 32px 72px -16px rgba(0, 0, 0, 0.85), 0 12px 28px -6px rgba(0, 0, 0, 0.6);
+    --shadow-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -236,12 +290,102 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 實用類別 */
+/* 實用類別與無障礙焦點系統 */
 .hide { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-:focus-visible { outline: 3px solid var(--blue-soft); outline-offset: 2px; }
-a { color: var(--link); text-decoration: none; transition: opacity 0.18s; }
-a:hover { opacity: 0.85; }
+:focus-visible { outline: 2.5px solid var(--blue); outline-offset: 2.5px; border-radius: inherit; }
+a { color: var(--link); text-decoration: none; transition: opacity 0.18s, color 0.18s; }
+a:hover { opacity: 0.88; }
+
+/* ============================================================================
+ * 全域防破圖、骨架屏與媒體容錯系統 (Universal Broken-Media Resilience Engine)
+ * 防止在圖片阻擋、404、CDN 斷線或網路延遲時產生難看的瀏覽器破圖圖標
+ * ============================================================================ */
+img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+  font-style: italic;
+  shape-margin: 0.75rem;
+  transition: opacity 0.25s ease;
+}
+
+/* 移除未賦予 src 或空 src 圖片的空白佔位與醜陋框 */
+img:not([src]),
+img[src=""],
+img[src="#"] {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* 破圖時的自適應優雅降級標記 */
+img.img-load-error {
+  min-height: 44px;
+  position: relative;
+  background-color: var(--surface-muted) !important;
+  border: 1px dashed var(--line-strong) !important;
+  border-radius: var(--r-md) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+/* 頭像破圖專用降級 */
+.av.img-load-error,
+.user-avatar-circle.img-load-error {
+  border-radius: 50% !important;
+  border: 1.5px solid var(--line) !important;
+  background: var(--gradient-brand) !important;
+  color: #ffffff !important;
+}
+
+/* 骨架屏微光波浪 (Shimmer Animation) */
+@keyframes uiShimmerWave {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skel,
+.shimmer-box {
+  background: linear-gradient(90deg, var(--surface-muted) 25%, var(--line-subtle) 50%, var(--surface-muted) 75%);
+  background-size: 200% 100%;
+  animation: uiShimmerWave 1.8s ease-in-out infinite;
+  border-radius: var(--r-md);
+}
+
+/* 劇院與畫布離線/破圖提示卡 (Media Fallback Slate) */
+.media-fallback-slate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 32px 24px;
+  background: var(--surface-solid);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  color: var(--ink-secondary);
+  box-shadow: var(--shadow-sm);
+}
+.media-fallback-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+.media-fallback-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 0;
+}
+.media-fallback-desc {
+  font-size: 13px;
+  color: var(--ink-tertiary);
+  margin: 0;
+  max-width: 320px;
+}
 
 /* ============================================================================
  * Apple 頂部導覽列 (Frosted Glass Header)
