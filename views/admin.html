@@ -364,37 +364,97 @@ s1120002
 
   <!-- 分頁 5：即時系統數據 -->
   <section id="adminStatusBar" class="hide" aria-label="系統即時數據">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
-      <div class="panel-surface">
-        <h3 style="margin:0 0 14px">雲端資料庫狀態</h3>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-          <div class="db-icon-box" id="dbIco" style="width:40px;height:40px;border-radius:10px;background:var(--green-soft);color:var(--green);display:grid;place-items:center">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-          </div>
+    <div class="sys-dashboard-grid">
+      <div class="panel-surface sys-panel-card">
+        <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
           <div>
+            <h3>雲端資料庫狀態</h3>
+            <p>即時監控 Supabase PostgreSQL 叢集連線與硬體資源。</p>
+          </div>
+          <span class="role-chip" style="background:var(--green-soft);color:var(--green);border-color:rgba(16,185,129,0.25)">🟢 服務正常運行</span>
+        </div>
+
+        <div class="sys-db-header">
+          <div class="db-icon-box" id="dbIco">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <div class="sys-db-info">
             <b id="dbName">Primary Database</b>
-            <div id="dbRegion" style="font-size:12.5px;color:var(--ink-secondary)">Northeast Asia (Tokyo)</div>
+            <div id="dbRegion">Northeast Asia (Tokyo)</div>
           </div>
         </div>
-        <div style="font-size:13px;color:var(--ink-secondary);line-height:1.8">
-          <div>專案代號：<strong id="stRef">—</strong></div>
-          <div>CPU 負載：<strong id="stCpu">—%</strong></div>
-          <div>RAM 記憶體：<strong id="stRam">—%</strong> (<span id="stRealRam">—</span>)</div>
-          <div>Disk 儲存空間：<strong id="stDisk">—%</strong> (<span id="stRealDisk">—</span>)</div>
-          <div>連線數：<strong id="stConns">—/60</strong></div>
+
+        <div class="sys-metric-items">
+          <div class="sys-metric-row">
+            <span class="metric-lbl">專案代號</span>
+            <strong id="stRef" class="metric-val mono">—</strong>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">CPU 負載</span>
+            <strong id="stCpu" class="metric-val mono">—%</strong>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">RAM 記憶體</span>
+            <div class="metric-val-wrap">
+              <strong id="stRam" class="metric-val mono">—%</strong>
+              <span id="stRealRam" class="metric-sub-val mono">—</span>
+            </div>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">Disk 儲存空間</span>
+            <div class="metric-val-wrap">
+              <strong id="stDisk" class="metric-val mono">—%</strong>
+              <span id="stRealDisk" class="metric-sub-val mono">—</span>
+            </div>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">資料庫連線數</span>
+            <strong id="stConns" class="metric-val mono">—/60</strong>
+          </div>
         </div>
       </div>
 
-      <div class="panel-surface">
-        <h3 style="margin:0 0 14px">效能指標與流量</h3>
-        <div style="font-size:13px;color:var(--ink-secondary);line-height:1.8">
-          <div>API 響應延遲：<strong id="stLatency">— ms</strong></div>
-          <div>快取命中率：<strong id="stCache">—</strong></div>
-          <div>資料庫容量：<strong id="stDbSize">—</strong> (WAL: <span id="stWalSize">—</span>)</div>
-          <div>SQL 執行次數：<strong id="stQueries">—</strong></div>
-          <div>交易統計：<span id="stXact">—</span></div>
-          <div>網路流量：<span id="stNet">—</span></div>
-          <div>Node 記憶體：<strong id="stNodeMem">—</strong></div>
+      <div class="panel-surface sys-panel-card">
+        <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
+          <div>
+            <h3>效能指標與流量</h3>
+            <p>API 延遲回應時間、命中率與後端 Node.js 執行指標。</p>
+          </div>
+          <span class="role-chip">⚡ 即時分析</span>
+        </div>
+
+        <div class="sys-metric-items">
+          <div class="sys-metric-row">
+            <span class="metric-lbl">API 響應延遲</span>
+            <strong id="stLatency" class="metric-val mono">— ms</strong>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">快取狀態</span>
+            <strong id="stCache" class="metric-val mono">—</strong>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">資料庫容量</span>
+            <div class="metric-val-wrap">
+              <strong id="stDbSize" class="metric-val mono">—</strong>
+              <span id="stWalSize" class="metric-sub-val mono">—</span>
+            </div>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">SQL 執行次數</span>
+            <strong id="stQueries" class="metric-val mono">—</strong>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">交易統計</span>
+            <span id="stXact" class="metric-val mono">—</span>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">網路累積流量</span>
+            <span id="stNet" class="metric-val mono">—</span>
+          </div>
+          <div class="sys-metric-row">
+            <span class="metric-lbl">Node 記憶體耗用</span>
+            <strong id="stNodeMem" class="metric-val mono">—</strong>
+          </div>
         </div>
       </div>
     </div>
