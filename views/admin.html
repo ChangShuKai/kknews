@@ -463,24 +463,27 @@ s1120002
 
 <!-- 照片放大燈箱 (含防破圖優雅降級) -->
 <div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
-  <div style="position:relative;display:flex;flex-direction:column;align-items:center;max-width:92vw">
-    <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽" onerror="this.classList.add('hide');if(document.getElementById('lightboxFallback'))document.getElementById('lightboxFallback').classList.remove('hide');">
+  <div class="lightbox-box">
+    <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" title="關閉預覽 (Esc)">✕</button>
+    <img id="lightboxImg" class="lightbox-preview-img" alt="放大預覽" onerror="this.classList.add('hide');if(document.getElementById('lightboxFallback'))document.getElementById('lightboxFallback').classList.remove('hide');">
     <div id="lightboxFallback" class="media-fallback-slate hide" style="min-width:280px;background:var(--surface-solid)">
       <div class="media-fallback-icon">🖼️</div>
       <div class="media-fallback-title">預覽圖片暫時無法載入</div>
       <div class="media-fallback-desc">圖片資源可能已被清理或連線受阻，點擊背景關閉。</div>
     </div>
+    <div class="lightbox-tip-caption">點擊任意處或按 Esc 鍵關閉</div>
   </div>
 </div>
 
 <!-- 刪除確認彈窗 -->
 <div id="confirmModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-  <div class="modal" style="max-width:380px">
-    <h3 id="confirmTitle" style="margin:0 0 8px;font-size:19px;text-align:center">確定要執行刪除？</h3>
-    <p id="confirmDesc" class="sub" style="text-align:center;margin-bottom:16px;font-size:13.5px">刪除後將無法復原。</p>
-    <div style="display:flex;gap:10px">
-      <button type="button" class="btn ghost" id="cancelDelBtn" style="flex:1">取消</button>
-      <button type="button" class="btn danger" id="confirmDelBtn" style="flex:1">確定刪除</button>
+  <div class="modal confirm-modal-box">
+    <div class="confirm-warning-badge">⚠️</div>
+    <h3 id="confirmTitle" class="confirm-title">確定要執行刪除？</h3>
+    <p id="confirmDesc" class="confirm-desc">刪除後將無法復原。</p>
+    <div class="confirm-actions-row">
+      <button type="button" class="btn ghost" id="cancelDelBtn">取消</button>
+      <button type="button" class="btn danger" id="confirmDelBtn">確定刪除</button>
     </div>
   </div>
 </div>
@@ -936,6 +939,23 @@ $("lightbox").onclick = () => {
   $("lightboxImg").classList.remove("hide");
   $("lightboxFallback")?.classList.add("hide");
 };
+$("lightboxCloseBtn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  $("lightbox").classList.add("hide");
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!$("lightbox")?.classList.contains("hide")) {
+      $("lightbox").classList.add("hide");
+    } else if (!$("confirmModal")?.classList.contains("hide")) {
+      pendingConfirmFn = null;
+      $("confirmModal").classList.add("hide");
+    } else if (!$("editAdminModal")?.classList.contains("hide")) {
+      $("editAdminModal").classList.add("hide");
+    }
+  }
+});
 
 function applyRoleUi(role, email) {
   const changed = currentRole !== role || currentEmail !== email;

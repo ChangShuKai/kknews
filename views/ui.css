@@ -1121,16 +1121,120 @@ h1, h2, h3 {
 }
 .modal {
   width: min(440px, 100%);
-  background: #ffffff;
+  background: var(--surface-solid, #ffffff);
   border-radius: var(--r-xl);
   padding: 34px 30px 28px;
   box-shadow: var(--shadow-floating);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--line);
   animation: applePop 0.35s var(--spring-smooth) both;
 }
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* 現代燈箱視窗 (Modern Lightbox Suite) */
+.lightbox-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 92vw;
+  animation: applePop 0.28s var(--spring-smooth) both;
+}
+
+.lightbox-close-btn {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  z-index: 10;
+}
+
+.lightbox-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.lightbox-preview-img {
+  max-width: min(90vw, 680px);
+  max-height: 82vh;
+  border-radius: 18px;
+  display: block;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  object-fit: contain;
+}
+
+.lightbox-tip-caption {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+/* 現代刪除確認彈窗 (Modern Confirm Modal) */
+.confirm-modal-box {
+  max-width: 380px !important;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.confirm-warning-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fffbeb;
+  border: 2px solid #fde68a;
+  color: #d97706;
+  font-size: 24px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+
+[data-theme="dark"] .confirm-warning-badge {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.confirm-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.confirm-desc {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
+.confirm-actions-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirm-actions-row .btn {
+  flex: 1;
 }
 
 /* 載入骨架微光 */
