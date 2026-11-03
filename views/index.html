@@ -295,6 +295,40 @@
                 <input class="input" id="author" maxlength="30" placeholder="例如：林同學">
               </label>
 
+              <!-- 風格主題套餐 (One-Click Aesthetic Presets) -->
+              <div class="style-block" style="margin-bottom:14px">
+                <div class="style-head">
+                  <span class="style-title">🎨 風格主題套餐</span>
+                  <span class="style-active-badge" id="presetBadge">一鍵套用</span>
+                </div>
+                <div class="style-presets-grid" id="stylePresetPicker">
+                  <button type="button" class="preset-card-chip" data-preset="japanese" title="文青直排 · 莫蘭迪綠 · 律動書風">
+                    <span class="preset-chip-dot" style="background:#536b55"></span>
+                    <span class="preset-chip-name">📜 和風書畫</span>
+                  </button>
+                  <button type="button" class="preset-card-chip" data-preset="reader" title="現代引言 · 經典米白 · 典雅宋體">
+                    <span class="preset-chip-dot" style="background:#0071e3"></span>
+                    <span class="preset-chip-name">📖 人文讀者</span>
+                  </button>
+                  <button type="button" class="preset-card-chip" data-preset="minimal" title="潮流海報 · 曜石極黑 · 現代黑體">
+                    <span class="preset-chip-dot" style="background:#38bdf8"></span>
+                    <span class="preset-chip-name">🌌 曜石極簡</span>
+                  </button>
+                  <button type="button" class="preset-card-chip" data-preset="sakura" title="典雅雙框 · 櫻花粉霧 · 律動書風">
+                    <span class="preset-chip-dot" style="background:#d946ef"></span>
+                    <span class="preset-chip-name">🌸 春櫻手札</span>
+                  </button>
+                  <button type="button" class="preset-card-chip" data-preset="sunset" title="經典居中 · 落日暖杏 · 典雅宋體">
+                    <span class="preset-chip-dot" style="background:#ea580c"></span>
+                    <span class="preset-chip-name">🌅 落日文青</span>
+                  </button>
+                  <button type="button" class="preset-card-chip" data-preset="azure" title="現代引言 · 晨曦蔚藍 · 現代黑體">
+                    <span class="preset-chip-dot" style="background:#0284c7"></span>
+                    <span class="preset-chip-name">🌊 晨曦蔚藍</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- 版面選擇 -->
               <div class="style-block">
                 <div class="style-head">
@@ -410,14 +444,16 @@
                   即時卡片效果
                 </span>
                 <div style="display:flex;align-items:center;gap:8px">
+                  <button type="button" class="btn ghost sm" id="enlargePreviewBtn" style="padding:2px 8px;font-size:12px" title="點擊放大全螢幕檢視卡片">🔍 放大檢視</button>
                   <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:2px 8px;font-size:12px" title="複製當前金句文字與署名">複製文字</button>
                   <button type="button" class="btn ghost sm" id="copyCardImgBtn" style="padding:2px 8px;font-size:12px" title="複製卡片圖片至剪貼簿，可直接貼上至 Line 或社群">複製圖片</button>
                   <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:2px 8px;font-size:12px" title="重設回預設經典米白排版">重設版型</button>
                   <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
                 </div>
               </div>
-              <div class="canvas-gallery-frame">
+              <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊放大全螢幕檢視高清卡片">
                 <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
+                <div class="canvas-zoom-hint"><span>🔍 點擊全螢幕放大檢視</span></div>
               </div>
             </div>
           </div>
@@ -704,6 +740,26 @@
         請共同維護校園良善交流氛圍，嚴禁惡意洗版或發布不當言語。系統已啟用資安防護與操作紀錄。
       </div>
       <button type="button" class="btn primary block" id="closeModalBtn">我已詳閱並同意遵守</button>
+    </div>
+  </div>
+
+  <!-- 卡片全螢幕燈箱放大檢視 (Card Lightbox Modal) -->
+  <div class="card-lightbox-overlay hide" id="cardLightboxModal" role="dialog" aria-modal="true" aria-label="卡片高清放大檢視">
+    <div class="card-lightbox-dialog">
+      <div class="card-lightbox-header">
+        <div class="card-lightbox-info">
+          <span class="card-lightbox-title">🔍 卡片高清全螢幕檢視</span>
+          <span class="card-lightbox-specs" id="cardLightboxSpecs">經典居中 · 律動書風 · 經典米白</span>
+        </div>
+        <div class="card-lightbox-actions">
+          <button type="button" class="btn ghost sm" id="modalCopyImgBtn" style="color:#fff;border-color:rgba(255,255,255,0.3)">📋 複製圖片</button>
+          <button type="button" class="btn primary sm" id="modalDlImgBtn">⬇ 下載卡片</button>
+          <button type="button" class="card-lightbox-close" id="modalCloseBtn" aria-label="關閉預覽">✕</button>
+        </div>
+      </div>
+      <div class="card-lightbox-content">
+        <img id="cardLightboxImg" src="" alt="諺語卡片高清放大圖">
+      </div>
     </div>
   </div>
 
@@ -1501,6 +1557,15 @@
       poster: "潮流海報",
     };
 
+    const CARD_PRESETS = [
+      { id: "japanese", name: "和風書畫", layout: "vertical", themeId: "sage", font: "reggae" },
+      { id: "reader", name: "人文讀者", layout: "quote", themeId: "ivory", font: "serif" },
+      { id: "minimal", name: "曜石極簡", layout: "poster", themeId: "obsidian", font: "sans" },
+      { id: "sakura", name: "春櫻手札", layout: "framed", themeId: "sakura", font: "reggae" },
+      { id: "sunset", name: "落日文青", layout: "classic", themeId: "sunset", font: "serif" },
+      { id: "azure", name: "晨曦蔚藍", layout: "quote", themeId: "azure", font: "sans" },
+    ];
+
     let currentCardStyle = {
       layout: "classic",
       themeId: "ivory",
@@ -1917,6 +1982,23 @@
           b.classList.toggle("active", b.dataset.font === (currentCardStyle.font || "reggae"));
         });
       }
+
+      // 檢查是否命中風格主題套餐
+      const curFont = currentCardStyle.font || "reggae";
+      const matchedPreset = CARD_PRESETS.find(p =>
+        p.layout === currentCardStyle.layout &&
+        p.themeId === currentCardStyle.themeId &&
+        p.font === curFont
+      );
+      if ($("stylePresetPicker")) {
+        $("stylePresetPicker").querySelectorAll(".preset-card-chip").forEach(b => {
+          b.classList.toggle("active", Boolean(matchedPreset && b.dataset.preset === matchedPreset.id));
+        });
+      }
+      if ($("presetBadge")) {
+        $("presetBadge").textContent = matchedPreset ? matchedPreset.name : "自訂組合";
+      }
+
       if ($("layoutBadge")) $("layoutBadge").textContent = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
       if ($("fontBadge")) $("fontBadge").textContent = CARD_FONT_NAMES[currentCardStyle.font || "reggae"] || "律動書風";
       if ($("colorBadge")) {
@@ -1994,6 +2076,30 @@
           };
         }
 
+        // 風格主題套餐切換
+        const presetWrap = $("stylePresetPicker");
+        if (presetWrap) {
+          presetWrap.querySelectorAll(".preset-card-chip").forEach(btn => {
+            btn.onclick = () => {
+              const pid = btn.dataset.preset;
+              const preset = CARD_PRESETS.find(p => p.id === pid);
+              if (!preset) return;
+              const matchedPalette = CARD_PALETTES.find(p => p.id === preset.themeId) || CARD_PALETTES[0];
+              currentCardStyle.layout = preset.layout;
+              currentCardStyle.themeId = matchedPalette.id;
+              currentCardStyle.font = preset.font;
+              currentCardStyle.bg = matchedPalette.bg;
+              currentCardStyle.text = matchedPalette.text;
+              currentCardStyle.sub = matchedPalette.sub;
+              currentCardStyle.accent = matchedPalette.accent;
+              syncCardStyleUi();
+              renderLivePreviewCard();
+              say(`🎨 已套用「${preset.name}」主題風格套餐！`, true);
+              logAction("套用風格套餐", preset.name);
+            };
+          });
+        }
+
         // 字體切換
         const fontWrap = $("fontPicker");
         if (fontWrap) {
@@ -2021,6 +2127,41 @@
         }
       }
       syncCardStyleUi();
+    }
+
+    /* 卡片全螢幕高清放大檢視 (Lightbox Modal) */
+    function openCardLightbox() {
+      renderLivePreviewCard();
+      const cv = $("liveCardCanvas");
+      if (!cv) return;
+      const modal = $("cardLightboxModal");
+      const img = $("cardLightboxImg");
+      const specs = $("cardLightboxSpecs");
+      if (!modal || !img) return;
+      img.src = cv.toDataURL("image/png");
+      const lName = CARD_LAYOUT_NAMES[currentCardStyle.layout] || "經典居中";
+      const fName = CARD_FONT_NAMES[currentCardStyle.font || "reggae"] || "律動書風";
+      const p = CARD_PALETTES.find(item => item.id === currentCardStyle.themeId);
+      const cName = p ? p.name : (currentCardStyle.themeId === "custom" ? "自訂配色" : "經典米白");
+      if (specs) specs.textContent = `${lName} · ${fName} · ${cName}`;
+      modal.classList.remove("hide");
+      logAction("全螢幕預覽卡片", `${lName} - ${fName}`);
+    }
+
+    function closeCardLightbox() {
+      const modal = $("cardLightboxModal");
+      if (modal) modal.classList.add("hide");
+    }
+
+    if ($("enlargePreviewBtn")) $("enlargePreviewBtn").onclick = openCardLightbox;
+    if ($("canvasGalleryFrame")) $("canvasGalleryFrame").onclick = openCardLightbox;
+    if ($("modalCloseBtn")) $("modalCloseBtn").onclick = closeCardLightbox;
+    if ($("modalCopyImgBtn")) $("modalCopyImgBtn").onclick = () => $("copyCardImgBtn")?.click();
+    if ($("modalDlImgBtn")) $("modalDlImgBtn").onclick = () => $("dlPreviewBtn")?.click();
+    if ($("cardLightboxModal")) {
+      $("cardLightboxModal").onclick = (e) => {
+        if (e.target === $("cardLightboxModal")) closeCardLightbox();
+      };
     }
 
     if ($("copyCardImgBtn")) {
@@ -4843,8 +4984,11 @@
       };
     }
 
-    // 全局鍵盤控制（DFC 播放器快捷鍵：Space 播放/暫停，←/→ 快退快進 5 秒，F 全螢幕，M 靜音）
+    // 全局鍵盤控制（DFC 播放器快捷鍵：Space 播放/暫停，←/→ 快退快進 5 秒，F 全螢幕，M 靜音；Esc 關閉預覽彈窗）
     window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeCardLightbox();
+      }
       const pane = $("paneDfc");
       if (!pane || pane.style.display === "none") return;
       const tag = (document.activeElement?.tagName || "").toLowerCase();
