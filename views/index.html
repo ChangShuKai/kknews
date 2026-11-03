@@ -833,6 +833,45 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    /* 影音播放異常或防火牆攔截容錯覆蓋層 (Video Stream Resilience Overlay) */
+    .video-error-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      animation: applePop 0.35s var(--spring-smooth) both;
+    }
+    .video-error-card {
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .video-error-icon {
+      font-size: 38px;
+      line-height: 1;
+    }
+    .video-error-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+    .video-error-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.72);
+      line-height: 1.55;
+      margin: 0;
+    }
+
     /* 全螢幕劇院支援（包含右側互動題目卡同步全螢幕） */
     .dfc-stage-wrap:fullscreen,
     .dfc-stage-wrap:-webkit-full-screen {
@@ -2086,6 +2125,15 @@
                 <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
                 <canvas id="dfcBridgeCanvas" class="video-bridge-canvas" width="1280" height="720"></canvas>
                 <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
+                <!-- 影音串流異常容錯重試遮罩 (Video Broken/Error Resilience Shield) -->
+                <div class="video-error-overlay hide" id="dfcVideoError">
+                  <div class="video-error-card">
+                    <div class="video-error-icon">📡</div>
+                    <h3 class="video-error-title">影音串流連線重試中</h3>
+                    <p class="video-error-desc">可能受到校園防火牆或網路暫時延遲影響，請點選下方按鈕重新連線或刷新頁面。</p>
+                    <button type="button" class="btn primary sm" id="dfcRetryStreamBtn">🔄 重新連線影片</button>
+                  </div>
+                </div>
               </div>
 
               <div class="cinema-controls">
@@ -5383,6 +5431,7 @@
       };
 
       v.onplay = () => {
+        $("dfcVideoError")?.classList.add("hide");
         dfcState.playing = true;
         updateDfcUiProgress();
         if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
@@ -5431,8 +5480,13 @@
           badge.textContent = "🎬 專屬劇院播放器 · 點擊重新連接";
           badge.classList.remove("question-stop");
         }
+        $("dfcVideoError")?.classList.remove("hide");
         updateDfcUiProgress();
       };
+      $("dfcRetryStreamBtn")?.addEventListener("click", () => {
+        $("dfcVideoError")?.classList.add("hide");
+        if (dfcState.currentForm) loadDfcVideo(dfcState.currentForm, true);
+      });
 
       v.onended = () => {
         if (isSeamlessSwapping) return;
@@ -6160,9 +6214,15 @@
         const c = $("content").value.trim() || "寫下你想說的一句話";
         const a = $("author").value.trim() || "署名";
         const text = `「${c}」—— ${a}`;
+        const btn = $("copyProverbBtn");
+        const origText = btn.textContent;
         if (navigator.clipboard?.writeText) {
           navigator.clipboard.writeText(text).then(
-            () => say("已複製金句至剪貼簿！", true),
+            () => {
+              btn.textContent = "✓ 已複製";
+              setTimeout(() => { btn.textContent = origText; }, 1800);
+              say("已複製金句至剪貼簿！", true);
+            },
             () => say("複製失敗，請手動複製")
           );
         } else {
@@ -6173,9 +6233,13 @@
 
     if ($("resetCardStyleBtn")) {
       $("resetCardStyleBtn").onclick = () => {
+        const btn = $("resetCardStyleBtn");
+        const origText = btn.textContent;
         currentCardStyle = { layout: "classic", themeId: "ivory", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
         initCardStyleControls();
         renderLivePreviewCard();
+        btn.textContent = "✓ 已重設";
+        setTimeout(() => { btn.textContent = origText; }, 1800);
         say("已重設回預設經典米白版型", true);
       };
     }
