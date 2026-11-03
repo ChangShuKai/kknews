@@ -157,8 +157,8 @@
       </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="formsTabList"></div>
-      <div id="activeFormApiGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;background:var(--bg);padding:16px;border-radius:var(--r-md);margin-bottom:14px"></div>
-      <div id="activeFormCpList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px"></div>
+      <div id="activeFormApiGrid" class="dfc-meta-info-grid"></div>
+      <div id="activeFormCpList" class="dfc-cp-card-grid"></div>
     </div>
 
     <!-- DFC 影片防暴雷與規定帳號觀看管理中心 -->
@@ -174,8 +174,8 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start">
-        <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:16px">
+      <div class="dfc-access-cols-grid">
+        <div class="dfc-access-col-box">
           <label class="field" style="margin-top:0">
             <span class="lbl">1. 選擇觀看權限模式 (Access Mode)</span>
             <select id="dfcAccessModeSelect" class="input" style="font-weight:700">
@@ -195,7 +195,7 @@
             </div>
           </div>
 
-          <div style="margin-top:14px;font-size:12.5px;color:var(--ink-secondary);line-height:1.6;background:#ffffff;border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+          <div class="dfc-tips-box">
             <strong>💡 支援 3 種自由設定方式（自動合併生效）：</strong>
             <div>1. <b>後台直接設定</b>：於右側輸入框編輯並點擊儲存（也可在「已登入帳號」分頁單鍵授權）</div>
             <div>2. <b>Supabase 資料庫表</b>：於 SQL 資料表 <code>public.dfc_access_list</code> 新增 <code>email_pattern</code></div>
@@ -203,7 +203,7 @@
           </div>
         </div>
 
-        <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:16px">
+        <div class="dfc-access-col-box">
           <label class="field" style="margin-top:0">
             <span class="lbl" style="display:flex;justify-content:space-between;align-items:center">
               <span>3. 規定可觀看帳號名單（每行一個或以逗號分隔）</span>
@@ -2099,10 +2099,7 @@ function renderDfcPanel() {
 
   (activeForm.checkpoints || []).forEach((cp, i) => {
     const div = document.createElement("div");
-    div.style.background = "var(--bg)";
-    div.style.padding = "10px 14px";
-    div.style.borderRadius = "var(--r-md)";
-    div.style.fontSize = "13px";
+    div.className = "dfc-cp-item-card";
     div.innerHTML = `
       <div class="cp-item-top">
         <span>⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒) · 問題 ${i + 1}</span>
@@ -2111,8 +2108,8 @@ function renderDfcPanel() {
           <span class="cp-entry">${esc(cp.entryId || cp.id)}</span>
         </div>
       </div>
-      <div style="font-weight:700;margin-bottom:4px;font-size:13.5px">${esc(cp.title)}</div>
-      ${cp.desc ? `<div style="font-size:12px;color:var(--ink-secondary);margin-bottom:6px">${esc(cp.desc)}</div>` : ""}
+      <div style="font-weight:700;margin-bottom:2px;font-size:13.5px;color:var(--ink)">${esc(cp.title)}</div>
+      ${cp.desc ? `<div style="font-size:12px;color:var(--ink-secondary);margin-bottom:4px">${esc(cp.desc)}</div>` : ""}
       ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--ink-secondary)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
     `;
     cpWrap.appendChild(div);

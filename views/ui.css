@@ -3566,6 +3566,131 @@ nav.admin-dock {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
+/* DFC 問卷活動與設定規格化排版 */
+.dfc-meta-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  background: var(--bg);
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-subtle, rgba(0, 0, 0, 0.04));
+  margin-bottom: 16px;
+}
+
+[data-theme="dark"] .dfc-meta-info-grid {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.api-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.api-kv small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.api-kv div {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.dfc-cp-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.dfc-cp-item-card {
+  background: var(--bg);
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-subtle, rgba(0, 0, 0, 0.04));
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.18s, border-color 0.18s;
+}
+
+.dfc-cp-item-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-1.5px);
+}
+
+[data-theme="dark"] .dfc-cp-item-card {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.cp-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-tertiary);
+}
+
+.cp-badge-type {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+}
+
+.cp-entry {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+
+/* DFC 影片防暴雷與權限管理區域 */
+.dfc-access-cols-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.dfc-access-col-box {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dfc-tips-box {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.dfc-tips-box strong {
+  color: var(--ink);
+  display: block;
+  margin-bottom: 4px;
+}
+
 /* DFC 題目作答進度指示條 (Question Mini Progress Bar) */
 .dfc-q-progress-bar {
   width: 100%;
