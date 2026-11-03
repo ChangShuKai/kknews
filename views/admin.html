@@ -439,27 +439,27 @@
   </div>
 
   <!-- 頂部中央 Apple 液態玻璃 Dock 導覽 -->
-  <nav class="dock-bar" id="adminDock" aria-label="後台導覽">
+  <nav class="dock-bar admin-dock" id="adminDock" aria-label="後台導覽">
     <div class="dock-glider" id="adminDockGlider"></div>
     <button type="button" class="dock-item active" id="dockPosts">
-      <span>投稿管理</span>
+      <span>📝 投稿管理</span>
       <span class="dock-badge" id="pCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockUsers">
-      <span>已登入帳號</span>
+      <span>👥 已登入帳號</span>
       <span class="dock-badge" id="uCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockForms">
-      <span>DFC 問卷管理</span>
+      <span>🎬 DFC 問卷管理</span>
       <span class="dock-badge" id="fCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockAdmins">
-      <span>管理員權限</span>
+      <span>🛡️ 管理員權限</span>
       <span class="dock-badge" id="aCount">1</span>
     </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>即時數據</span>
+      <span>📊 即時數據</span>
     </button>
   </nav>
 
@@ -519,15 +519,19 @@
 
   <!-- 工具列 -->
   <div class="action-toolbar" id="mainToolbar">
-    <input type="search" id="searchInput" class="search-box" placeholder="搜尋諺語、作者、姓名、信箱、回答或 IP...">
-    <label class="font-size-control" id="szWrap">
-      <span>卡片字級</span>
-      <input id="size" type="number" min="24" max="200" step="2">
-    </label>
-    <button type="button" id="reload" class="btn ghost sm">立即重整</button>
-    <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">匯出投稿 CSV</button>
-    <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">匯出帳號 CSV</button>
-    <button type="button" id="dlAll" class="btn primary sm">打包下載 ZIP</button>
+    <div class="action-toolbar-group" style="flex:1;min-width:280px">
+      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋諺語、作者、姓名、信箱、回答或 IP..." style="width:100%;max-width:440px">
+      <label class="font-size-control" id="szWrap">
+        <span>卡片字級</span>
+        <input id="size" type="number" min="24" max="200" step="2">
+      </label>
+    </div>
+    <div class="action-toolbar-group">
+      <button type="button" id="reload" class="btn ghost sm">🔄 立即重整</button>
+      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">📑 匯出投稿 CSV</button>
+      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">👥 匯出帳號 CSV</button>
+      <button type="button" id="dlAll" class="btn primary sm">📦 打包下載 ZIP</button>
+    </div>
   </div>
 
   <!-- 分頁 1：投稿管理網格 -->

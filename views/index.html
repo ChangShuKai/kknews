@@ -1868,6 +1868,16 @@
                   placeholder="例如：生活不是等待風暴過去，而是學會在雨中跳舞。（支援 Ctrl+Enter 送出）"></textarea>
               </label>
 
+              <!-- 靈感隨手選 (Inspiration Chips) -->
+              <div class="inspire-chips-container" aria-label="諺語靈感庫">
+                <span class="inspire-chip-label">✨ 靈感隨手點：</span>
+                <button type="button" class="inspire-chip" data-quote="生活不是等待風暴過去，而是學會在雨中跳舞。" data-author="校園生活">🌧️ 雨中跳舞</button>
+                <button type="button" class="inspire-chip" data-quote="每一個不曾起舞的日子，都是對生命的辜負。" data-author="尼采">💃 迎風起舞</button>
+                <button type="button" class="inspire-chip" data-quote="千里之行，始於足下；勇於探索，收穫微光。" data-author="勵志格言">🌱 始於足下</button>
+                <button type="button" class="inspire-chip" data-quote="心之所向，素履以往；生如逆旅，一葦以航。" data-author="七堇年">⛵ 素履以往</button>
+                <button type="button" class="inspire-chip" data-quote="把『我做不到』變成『我們可以怎麼做』。" data-author="DFC 設計思考">💡 思考轉念</button>
+              </div>
+
               <label class="field">
                 <span class="lbl">來源（人名或署名） <span id="ac">0/30</span></span>
                 <input class="input" id="author" maxlength="30" placeholder="例如：林同學">
@@ -1961,14 +1971,19 @@
             <!-- 即時畫布預覽 -->
             <div class="studio-preview-box">
               <div class="preview-toolbar">
-                <span>即時卡片效果</span>
+                <span style="display:inline-flex;align-items:center;gap:6px">
+                  <span class="page-tag-dot" style="width:6px;height:6px"></span>
+                  即時卡片效果
+                </span>
                 <div style="display:flex;align-items:center;gap:8px">
                   <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:2px 8px;font-size:12px" title="複製當前金句文字與署名">複製文字</button>
                   <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:2px 8px;font-size:12px" title="重設回預設經典米白排版">重設版型</button>
                   <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
                 </div>
               </div>
-              <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
+              <div class="canvas-gallery-frame">
+                <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -6110,6 +6125,25 @@
         say("已重設回預設經典米白版型", true);
       };
     }
+
+    // 靈感隨手選金句點選帶入
+    document.querySelectorAll(".inspire-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const q = chip.getAttribute("data-quote");
+        const a = chip.getAttribute("data-author");
+        if (q && $("content")) {
+          $("content").value = q;
+          if ($("cc")) $("cc").textContent = `${q.length}/100`;
+        }
+        if (a && $("author")) {
+          $("author").value = a;
+          if ($("ac")) $("ac").textContent = `${a.length}/30`;
+        }
+        renderLivePreviewCard();
+        say(`已套用靈感金句：${chip.textContent.trim()}`, true);
+        logAction("使用靈感金句", `點選: ${chip.textContent.trim()}`);
+      });
+    });
 
     if ($("homeQuickStartDfc")) {
       $("homeQuickStartDfc").onclick = () => navigateToTab("dfc", true);
