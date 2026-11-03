@@ -9,12 +9,12 @@
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   .login-card {
-    width: min(420px, 100%);
+    width: min(440px, 100%);
     background: var(--surface-solid);
     border: 1px solid var(--line);
     border-radius: var(--r-xl);
-    padding: 40px 36px 36px;
-    box-shadow: var(--shadow-lg), var(--shadow-inner-glow);
+    padding: 44px 38px 38px;
+    box-shadow: var(--shadow-floating), var(--shadow-inner-glow);
     animation: applePop 0.38s var(--spring-smooth) both;
   }
   .login-brand {
@@ -22,7 +22,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -35,18 +35,39 @@
     gap: 10px;
   }
   .login-brand img {
-    width: 26px;
-    height: 26px;
-    border-radius: 7px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  .brand-icon-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--gradient-brand);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    display: inline-grid;
+    place-items: center;
+    letter-spacing: -0.05em;
   }
   .login-brand small {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.08em;
     background: var(--ink);
     color: #fff;
-    padding: 2px 8px;
+    padding: 2.5px 8.5px;
     border-radius: var(--r-pill);
+  }
+  [data-theme="dark"] .login-card {
+    background: rgba(19, 29, 51, 0.92);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  [data-theme="dark"] .login-brand small {
+    background: var(--blue);
+    color: #fff;
   }
 </style>
 </head>
@@ -55,7 +76,7 @@
 <main class="login-card">
   <div class="login-brand">
     <div class="login-brand-left">
-      <img src="/icon.svg" alt="KKNews Logo">
+      <img src="/icon.svg" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
       <span>KKNEWS</span>
       <small>CONSOLE</small>
     </div>
@@ -87,6 +108,22 @@
 
 <script>
 const $ = id => document.getElementById(id);
+
+try {
+  const saved = localStorage.getItem("kk_theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+} catch {}
+
+window.addEventListener("error", e => {
+  if (e.target && e.target.tagName === "IMG") {
+    e.target.classList.add("img-load-error", "hide");
+    const p = e.target.parentElement;
+    if (p && !p.querySelector(".brand-icon-fallback")) {
+      p.insertAdjacentHTML("afterbegin", '<div class="brand-icon-fallback">KK</div>');
+    }
+  }
+}, true);
 
 function applyLoginDeviceProfile() {
   const sw = Math.round(window.screen?.width || window.innerWidth);

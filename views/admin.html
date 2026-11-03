@@ -428,7 +428,7 @@
 <header class="admin-header">
   <div class="brand-wrap">
     <div class="brand" style="cursor:default">
-      <img src="/icon.svg" alt="">
+      <img src="/icon.svg" alt="" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
       <span>KKNEWS</span>
       <small>CONSOLE</small>
     </div>
@@ -803,9 +803,16 @@ s1120002
   </section>
 </main>
 
-<!-- 照片放大燈箱 -->
+<!-- 照片放大燈箱 (含防破圖優雅降級) -->
 <div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
-  <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽">
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center;max-width:92vw">
+    <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽">
+    <div id="lightboxFallback" class="media-fallback-slate hide" style="min-width:280px;background:var(--surface-solid)">
+      <div class="media-fallback-icon">🖼️</div>
+      <div class="media-fallback-title">預覽圖片暫時無法載入</div>
+      <div class="media-fallback-desc">圖片資源可能已被清理或連線受阻，點擊背景關閉。</div>
+    </div>
+  </div>
 </div>
 
 <!-- 刪除確認彈窗 -->
@@ -1180,6 +1187,23 @@ function initThemeController() {
   } catch (e) {}
 }
 initThemeController();
+
+window.addEventListener("error", (e) => {
+  if (e.target && e.target.tagName === "IMG") {
+    e.target.classList.add("img-load-error");
+    if (e.target.id === "lightboxImg") {
+      e.target.classList.add("hide");
+      $("lightboxFallback")?.classList.remove("hide");
+    } else if (e.target.classList.contains("u-av-img")) {
+      e.target.classList.add("hide");
+      const p = e.target.parentElement;
+      if (p && !p.querySelector(".user-avatar-circle:not(.u-av-img)")) {
+        p.insertAdjacentHTML("afterbegin", '<div class="user-avatar-circle">U</div>');
+      }
+    }
+  }
+}, true);
+
 let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingConfirmFn = null;
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
@@ -1228,10 +1252,23 @@ function safeImgSrc(url) {
 function openLightbox(src) {
   const safe = safeImgSrc(src);
   if (!safe) return;
-  $("lightboxImg").src = safe;
+  const img = $("lightboxImg");
+  const fb = $("lightboxFallback");
+  img.classList.remove("hide");
+  if (fb) fb.classList.add("hide");
+  img.onerror = () => {
+    img.classList.add("hide");
+    if (fb) fb.classList.remove("hide");
+  };
+  img.src = safe;
   $("lightbox").classList.remove("hide");
 }
-$("lightbox").onclick = () => { $("lightbox").classList.add("hide"); $("lightboxImg").src = ""; };
+$("lightbox").onclick = () => {
+  $("lightbox").classList.add("hide");
+  $("lightboxImg").src = "";
+  $("lightboxImg").classList.remove("hide");
+  $("lightboxFallback")?.classList.add("hide");
+};
 
 function applyRoleUi(role, email) {
   const changed = currentRole !== role || currentEmail !== email;
@@ -2007,7 +2044,10 @@ function renderUsers() {
     const avImgEl = el.querySelector(".u-av-img");
     if (avImgEl) {
       avImgEl.addEventListener("error", () => {
-        avImgEl.src = "/icon.svg";
+        avImgEl.classList.add("hide");
+        if (!el.querySelector(".user-avatar-fallback")) {
+          avImgEl.insertAdjacentHTML("afterend", `<div class="user-avatar-circle user-avatar-fallback">${esc(displayName[0]?.toUpperCase() || "U")}</div>`);
+        }
       }, { once: true });
     }
     el.querySelectorAll(".u-strip-img").forEach(img => {
