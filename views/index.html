@@ -130,7 +130,7 @@
       <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
       <div class="acct-pill hide" id="acctUser">
         <div class="av" id="topAv">U</div>
-        <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
+        <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer" onerror="this.classList.add('hide');if(document.getElementById('topAv'))document.getElementById('topAv').classList.remove('hide');">
         <span class="acct-info" id="topWho"></span>
         <button type="button" class="acct-logout" id="topLogoutBtn">登出</button>
       </div>

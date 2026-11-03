@@ -393,7 +393,7 @@ s1120002
 <!-- 照片放大燈箱 (含防破圖優雅降級) -->
 <div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
   <div style="position:relative;display:flex;flex-direction:column;align-items:center;max-width:92vw">
-    <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽">
+    <img id="lightboxImg" style="max-width:min(90vw,600px);max-height:85vh;border-radius:18px;display:block;box-shadow:var(--shadow-floating)" alt="放大預覽" onerror="this.classList.add('hide');if(document.getElementById('lightboxFallback'))document.getElementById('lightboxFallback').classList.remove('hide');">
     <div id="lightboxFallback" class="media-fallback-slate hide" style="min-width:280px;background:var(--surface-solid)">
       <div class="media-fallback-icon">🖼️</div>
       <div class="media-fallback-title">預覽圖片暫時無法載入</div>
@@ -1574,7 +1574,7 @@ function renderUsers() {
     const displayName = u.name || (u.email || "").split("@")[0] || "未命名";
     const pic = safeImgSrc(u.picture);
     const avHtml = pic
-      ? `<img class="user-avatar-circle u-av-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`
+      ? `<img class="user-avatar-circle u-av-img" data-zoom="${esc(pic)}" src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.classList.add('hide');if(this.nextElementSibling)this.nextElementSibling.classList.remove('hide');"><div class="user-avatar-circle hide">${esc(displayName[0]?.toUpperCase() || "U")}</div>`
       : `<div class="user-avatar-circle">${esc(displayName[0]?.toUpperCase() || "U")}</div>`;
     const lastLogin = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "未知";
     const createdAt = u.created_at ? new Date(u.created_at).toLocaleString() : "未知";
