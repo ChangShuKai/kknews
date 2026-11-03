@@ -107,17 +107,18 @@
   <!-- 工具列 -->
   <div class="action-toolbar" id="mainToolbar">
     <div class="action-toolbar-group" style="flex:1;min-width:280px">
-      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋諺語、作者、姓名、信箱、版面風格 (如 直排、居中) 或 IP..." style="width:100%;max-width:440px">
-      <label class="font-size-control" id="szWrap">
+      <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋投稿內容、作者、帳號或風格..." style="width:100%;max-width:400px">
+      <label class="font-size-control" id="szWrap" title="調整卡片預覽字級大小">
         <span>卡片字級</span>
         <input id="size" type="number" min="24" max="200" step="2">
+        <span style="font-size:11px;color:var(--ink-tertiary)">px</span>
       </label>
     </div>
     <div class="action-toolbar-group">
-      <button type="button" id="reload" class="btn ghost sm">🔄 立即重整</button>
-      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm">📑 匯出投稿 CSV</button>
-      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide">👥 匯出帳號 CSV</button>
-      <button type="button" id="dlAll" class="btn primary sm">📦 打包下載 ZIP</button>
+      <button type="button" id="reload" class="btn ghost sm" title="重新整理最新資料">🔄 重新整理</button>
+      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm" title="匯出投稿名單 CSV">📑 匯出投稿 CSV</button>
+      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide" title="匯出已登入帳號名單 CSV">👥 匯出帳號 CSV</button>
+      <button type="button" id="dlAll" class="btn primary sm" title="打包下載全部卡片圖檔">📦 打包下載 ZIP</button>
     </div>
   </div>
 
@@ -1559,30 +1560,58 @@ async function render() {
       try { metaObj = JSON.parse(metaObj); } catch {}
     }
     const cardStyle = metaObj?.cardStyle || { layout: "classic", bg: "#f4f2ee", text: "#1c1917", sub: "#6b665d", accent: "#0071e3" };
+    const postLayout = cardStyle.layout || "classic";
+    const postLayoutChip = {
+      classic: "🏛️ 居中",
+      vertical: "📜 直排",
+      quote: "💬 引言",
+      framed: "🖼️ 雙框",
+      poster: "🎨 海報"
+    }[postLayout] || "🏛️ 居中";
 
     const el = document.createElement("div"); el.className = "post-item-card"; el.dataset.fname = fname(r);
     el._cardStyle = cardStyle;
     el.innerHTML = `
       <div class="post-item-meta">
         <div class="post-item-meta-top">
-          <b>#${r.id} · ${esc(r.display_name)}</b>
-          <span>${new Date(r.created_at).toLocaleString()}</span>
+          <div class="post-item-author-wrap">
+            <span class="post-id-chip">#${r.id}</span>
+            <b class="post-author-name" title="${esc(r.display_name)}">${esc(r.display_name)}</b>
+            <span class="post-style-chip">${postLayoutChip}</span>
+          </div>
+          <span class="post-time-text" title="${new Date(r.created_at).toLocaleString()}">${new Date(r.created_at).toLocaleDateString()}</span>
         </div>
-        <div>📧 ${esc(r.user_email)}</div>
-        <div>💻 ${esc(r.device_info)}</div>
+        <div class="post-item-meta-sub">
+          <span class="meta-tag meta-email" title="${esc(r.user_email)}">📧 ${esc(r.user_email)}</span>
+          <span class="meta-tag meta-device" title="${esc(r.device_info)}">💻 ${esc(r.device_info || "未知設備")}</span>
+        </div>
       </div>
-      <canvas class="admin-card-cv"></canvas>
-      <textarea rows="2" class="input" aria-label="內容" ${canEdit ? "" : "readonly"} style="margin-top:6px"></textarea>
-      <input class="input" placeholder="署名" aria-label="署名" ${canEdit ? "" : "readonly"} style="margin-top:6px">
+      <canvas class="admin-card-cv" title="點擊預覽放大卡片"></canvas>
+      <div class="post-item-inputs">
+        <textarea rows="2" class="input card-ta" placeholder="金句內容..." aria-label="內容" ${canEdit ? "" : "readonly"}></textarea>
+        <div class="card-author-row">
+          <span class="card-author-dash">——</span>
+          <input class="input card-au" placeholder="署名 / 出處" aria-label="署名" ${canEdit ? "" : "readonly"}>
+        </div>
+      </div>
       <div class="post-item-actions">
-        <button type="button" class="btn ghost sm copy-text" title="複製金句與署名文字">複製文字</button>
-        <button type="button" class="btn ghost sm copy-img" title="複製卡片圖片至剪貼簿">複製圖檔</button>
-        <button type="button" class="btn ghost sm dl">下載 PNG</button>
-        ${canEdit ? `<button type="button" class="btn ghost sm save-edit">儲存</button><button type="button" class="btn danger sm del">刪除</button>` : ""}
+        <div class="post-actions-group">
+          <button type="button" class="btn ghost sm copy-text" title="複製金句與署名文字">📋 複製文字</button>
+          <button type="button" class="btn ghost sm copy-img" title="複製卡片圖片至剪貼簿">🖼️ 複製圖檔</button>
+          <button type="button" class="btn ghost sm dl" title="下載 PNG 卡片圖檔">⬇️ 下載圖檔</button>
+        </div>
+        ${canEdit ? `
+        <div class="post-actions-group admin-ops">
+          <button type="button" class="btn primary sm save-edit" title="儲存此投稿變更">💾 儲存修改</button>
+          <button type="button" class="btn danger sm del" title="刪除此投稿">🗑️ 刪除</button>
+        </div>` : ""}
       </div>`;
 
     const cv = el.querySelector("canvas"), ta = el.querySelector("textarea"), au = el.querySelector("input");
     ta.value = r.content; au.value = r.author;
+    cv.onclick = () => {
+      try { openLightbox(cv.toDataURL("image/png")); } catch {}
+    };
     let cardRaf = null;
     const scheduleRedraw = () => {
       if (cardRaf) cancelAnimationFrame(cardRaf);
@@ -1725,25 +1754,26 @@ function renderUsers() {
     el.innerHTML = `
       <div class="user-card-head">
         ${avHtml}
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <b style="font-size:15.5px">${esc(displayName)}</b>
+        <div class="user-card-title-wrap">
+          <div class="user-card-name-row">
+            <b class="user-card-name">${esc(displayName)}</b>
             ${admRoleBadge}
             ${dfcBadgeHtml}
           </div>
-          <span style="font-size:13px;color:var(--ink-secondary)">${esc(u.email)}</span>
+          <span class="user-card-email">${esc(u.email)}</span>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${toggleDfcBtnHtml}${setAdminBtnHtml}</div>
+        <div class="user-card-ops">${toggleDfcBtnHtml}${setAdminBtnHtml}</div>
       </div>
       <div class="user-stats-bar">
-        <div><b>${u.login_count}</b><small>登入次數</small></div>
-        <div><b>${u.post_count}</b><small>貼文次數</small></div>
+        <div class="user-stat-box"><b>${u.login_count}</b><small>登入次數</small></div>
+        <div class="user-stat-box"><b>${u.post_count}</b><small>貼文次數</small></div>
       </div>
       <div class="user-detail-section">
         <div class="section-badge-title">帳號與環境資訊</div>
-        <div>最後登入：${esc(lastLogin)} · 首次註冊：${esc(createdAt)}</div>
-        <div>IP位址：${esc(u.last_ip || "—")} · GPS：${fmtGeo(u.geo)}</div>
-        <div>裝置：${esc(u.last_device)}</div>
+        <div class="user-detail-row"><span>⏱️ 最後登入</span><b>${esc(lastLogin)}</b></div>
+        <div class="user-detail-row"><span>📅 首次註冊</span><b>${esc(createdAt)}</b></div>
+        <div class="user-detail-row"><span>🌐 IP 與定位</span><b>${esc(u.last_ip || "—")} (${fmtGeo(u.geo)})</b></div>
+        <div class="user-detail-row"><span>💻 登入環境</span><b title="${esc(u.last_device)}">${esc(u.last_device || "—")}</b></div>
       </div>`;
 
     // CSP-safe 圖片防破圖 fallback 綁定
@@ -4345,6 +4375,7 @@ function switchAdminDock(tab) {
   $("dlAll").classList.toggle("hide", tab !== "posts");
   $("exportPostsCsvBtn").classList.toggle("hide", tab !== "posts");
   $("exportUsersCsvBtn").classList.toggle("hide", tab !== "users");
+  if ($("postLayoutFilterStrip")) $("postLayoutFilterStrip").classList.toggle("hide", tab !== "posts");
 
   if (tab === "forms") loadAndRenderCsv(false);
 }
