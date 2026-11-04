@@ -4,25 +4,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>KKNews · 校園金句工坊與 DFC 影音學習平台</title>
-  <meta name="description" content="KKNews 是一個專為校園打造的文字創作與 DFC (Design For Change) 影音互動探究學習平台，支援即時卡片排版合成與安全問答。">
+  <title>KKNews · Apple 級校園創作工坊與 DFC 影音探究平台</title>
+  <meta name="description" content="KKNews 結合即時卡片排版美學與 Design For Change (DFC) 沉浸式影音探究學習，為校園共創與深度思考而生。">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="stylesheet" href="/assets/ui.css?v=20261104">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap"
     rel="stylesheet">
   <style>
     .brand-logo { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-    .brand-icon, img.brand-icon { width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
-    .entry-gate-icon, img.entry-gate-icon { width: 40px !important; height: 40px !important; max-width: 40px !important; max-height: 40px !important; border-radius: 12px; object-fit: contain; flex-shrink: 0; }
+    .brand-icon, img.brand-icon { width: 26px !important; height: 26px !important; max-width: 26px !important; max-height: 26px !important; border-radius: 7px; object-fit: contain; flex-shrink: 0; }
+    .entry-gate-icon, img.entry-gate-icon { width: 44px !important; height: 44px !important; max-width: 44px !important; max-height: 44px !important; border-radius: 12px; object-fit: contain; flex-shrink: 0; }
   </style>
 </head>
 
 <body>
 
-  <!-- 全域浮動通知 (Universal Floating Toast) -->
+  <!-- 全域浮動通知 (Universal Apple Floating Capsule Toast) -->
   <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
 
-  <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩（預設隱藏，僅在需要挑戰時啟動） -->
+  <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩 -->
   <div id="turnstileOverlay" class="turnstile-backdrop hide" aria-modal="true" role="dialog">
     <div class="turnstile-box">
       <div class="turnstile-shield">
@@ -32,8 +32,9 @@
           <path d="m9 12 2 2 4-4" />
         </svg>
       </div>
-      <h2 style="margin:0 0 8px;font-size:22px;letter-spacing:-0.02em">安全驗證</h2>
-      <p class="sub" style="margin-bottom:20px;font-size:14px">KKNews 校園平台安全連線檢查，請完成人機驗證以繼續</p>
+      <span class="apple-eyebrow blue" style="justify-content:center;margin-bottom:4px">Apple Security Verification</span>
+      <h2 style="margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:-0.022em">連線安全驗證。</h2>
+      <p class="sub" style="margin-bottom:20px;font-size:14px">正在確認您的瀏覽器環境安全，請完成下方驗證以進入 KKNews 創作空間。</p>
       <div style="min-height:65px;display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:12px">
         <div id="cfTurnstileWidget"></div>
       </div>
@@ -41,22 +42,26 @@
     </div>
   </div>
 
-  <!-- ==================== 登入門戶 (Entry Login - 強制學校帳號驗證，取消訪客登入) ==================== -->
+  <!-- ==================== 登入門戶 (Apple ID 風格教育帳號驗證中心) ==================== -->
   <div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true"
     aria-labelledby="entryGateTitle">
     <div class="entry-gate-card">
-      <div class="entry-gate-brand">
-        <div class="entry-gate-icon-wrap">
-          <img src="/icon.svg" class="entry-gate-icon" width="40" height="40" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('beforeend','<div class=\'brand-icon-fallback\'>KK</div>');">
+      <div class="entry-gate-brand" style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:6px">
+        <div class="entry-gate-icon-wrap" style="width:64px;height:64px;border-radius:18px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.06)">
+          <img src="/icon.svg" class="entry-gate-icon" width="44" height="44" alt="KKNews Logo">
         </div>
+        <span class="apple-eyebrow blue" style="margin-bottom:0">KKNews Campus Studio</span>
         <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
       </div>
 
-      <h1 class="entry-gate-title" id="entryGateTitle">KKNews 校園共創平台</h1>
+      <h1 class="entry-gate-title" id="entryGateTitle">靈感，在此匯聚。</h1>
+      <p class="entry-gate-subtitle">
+        專為校園打造的格言排版創作室與 DFC 沉浸式影音探究平台。<br>請使用學校授權帳號登入以繼續。
+      </p>
 
       <div class="entry-action-box">
         <button type="button" class="entry-google-btn" id="entryGoogleLoginBtn">
-          <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true">
+          <svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
             <path fill="#EA4335"
               d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z" />
             <path fill="#4285F4"
@@ -64,100 +69,111 @@
             <path fill="#FBBC05"
               d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z" />
             <path fill="#34A853"
-              d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+              d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
           </svg>
-          <span>使用 Google 學校帳號登入</span>
+          <span>使用 Google 教育帳號繼續</span>
         </button>
 
-        <div class="entry-domain-note">
-          僅限花蓮縣教育網 <strong>@hlc.edu.tw</strong> 教職員生帳號登入
+        <div class="entry-domain-note" style="margin-top:14px;font-size:12.5px;color:var(--ink-tertiary)">
+          僅開放花蓮縣教育網路 <strong>@hlc.edu.tw</strong> 教職員生帳號登入
         </div>
 
-        <div id="entryLoginAlert" class="alert" style="width:100%;margin-top:8px;font-size:13px" role="status" aria-live="polite"></div>
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);width:100%;display:flex;justify-content:center">
+          <button type="button" class="btn ghost sm" id="entryOpenDiagBtn" style="font-size:12.5px;color:var(--blue);border-color:rgba(0,113,227,0.22);background:rgba(0,113,227,0.05)">
+            🩺 開啟 Apple 全系統功能檢測驗收中心 ›
+          </button>
+        </div>
+
+        <div id="entryLoginAlert" class="alert" style="width:100%;margin-top:10px;font-size:13px" role="status" aria-live="polite"></div>
       </div>
     </div>
   </div>
 
-  <!-- 頂部極簡導覽列：移除頂部 Dock 欄，僅保留「目前頁面標籤名稱按鈕(自動切換)」與「系統狀態按鈕」 -->
+  <!-- ==================== Apple Global Nav 頂部極簡毛玻璃導覽列 ==================== -->
   <header class="top-header">
-    <div class="brand-logo" id="brandHomeBtn" title="返回首頁">
-      <img src="/icon.svg" class="brand-icon" width="28" height="28" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
-      <span>KKNEWS</span>
+    <div class="brand-logo" id="brandHomeBtn" title="返回 KKNews 首頁">
+      <img src="/icon.svg" class="brand-icon" width="26" height="26" alt="KKNews Logo">
+      <span>KKNews</span>
     </div>
 
     <div class="top-nav-minimal" aria-label="頂部精簡狀態與頁面切換列">
-      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回首頁或切換頁面">
+      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回首頁或快速切換創作空間">
         <span class="page-tag-dot"></span>
-        <span id="topCurrentPageLabel">🏠 首頁</span>
-        <span class="page-switch-hint" id="topCurrentPageHint">首頁</span>
+        <span id="topCurrentPageLabel">首頁總覽</span>
+        <span class="page-switch-hint" id="topCurrentPageHint">探索</span>
       </button>
 
-      <button type="button" class="top-status-btn" id="topStatusBtn" title="查看雲端資料庫與系統即時狀態">
+      <button type="button" class="top-status-btn" id="topStatusBtn" title="檢視雲端資料庫與即時系統遙測">
         <span class="dot" id="sysDot"></span>
-        <span id="topStatusBtnText">系統狀態</span>
+        <span id="topStatusBtnText">雲端狀態</span>
+      </button>
+
+      <button type="button" class="top-status-btn" id="topDiagBtn" title="開啟全系統 API、圖片與功能檢測驗收矩陣">
+        <span>🩺</span>
+        <span>系統檢測</span>
       </button>
     </div>
 
-    <!-- 右上角已登入帳號區（無訪客狀態） -->
+    <!-- 右上角顯示器縮放、外觀切換與帳號膠囊 -->
     <div class="acct-zone">
-      <!-- 裝置解析度智慧縮放控制器 (Auto Resolution Zoom Control) -->
-      <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依螢幕解析度縮放頁面">
-        <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小頁面 (Alt + -)" aria-label="縮小頁面">−</button>
-        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="點擊設定頁面縮放比例與解析度適配" aria-haspopup="true" aria-expanded="false">
+      <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
+        <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
+        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與 Retina 解析度適配" aria-haspopup="true" aria-expanded="false">
           <span class="zoom-icon">🔍</span>
           <span class="zoom-text" id="zoomText">100%</span>
           <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
         </button>
-        <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大頁面 (Alt + +)" aria-label="放大頁面">+</button>
+        <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
 
         <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
           <div class="zoom-dropdown-header">
-            <span class="zoom-res-title">裝置螢幕解析度</span>
+            <span class="zoom-res-title">顯示器原生解析度</span>
             <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
           </div>
           <div class="zoom-dropdown-divider"></div>
           <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
-            <span>✨ 依解析度自動最適縮放</span>
+            <span>✨ 依顯示器自動最佳化</span>
             <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
           </button>
           <div class="zoom-dropdown-divider"></div>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">🔍 80% (超小視野)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">🔍 90% (筆電緊湊)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">🔍 100% (標準原始)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">🔍 110% (舒適放大)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">🔍 120% (大螢幕/2K)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">🔍 135% (4K / 觸控大屏)</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">🔍 150% (超大投影)</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊視野</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · Studio Display / 2K</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · Pro Display XDR / 4K</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 劇院大螢幕投影</button>
           <div class="zoom-dropdown-divider"></div>
           <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-            <span>🔄 重設為自動適配</span>
+            <span>🔄 還原自動光學適配</span>
           </button>
         </div>
       </div>
 
-      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
+      <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換淺色或深色外觀" aria-label="切換深淺色外觀">🌙</button>
       <div class="acct-pill hide" id="acctUser">
         <div class="av" id="topAv">U</div>
-        <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer" onerror="this.classList.add('hide');if(document.getElementById('topAv'))document.getElementById('topAv').classList.remove('hide');">
+        <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
         <span class="acct-info" id="topWho"></span>
         <button type="button" class="acct-logout" id="topLogoutBtn">登出</button>
       </div>
     </div>
   </header>
 
-  <!-- 無縫網頁切換舞台 (View Transition Stage) -->
+  <!-- ==================== 無縫網頁切換舞台 (Apple Fluid View Stage) ==================== -->
   <div class="view-stage" id="viewStage">
 
-    <!-- ==================== 系統 0：登入後方形按鈕主選單 (Home Square Hub) ==================== -->
-    <section class="view-pane active-view" id="paneHome" aria-label="系統主頁選單">
-      <div style="width:min(1040px, 100%);margin:0 auto">
+    <!-- ==================== 視圖 0：Apple Bento 首頁主選單 (Home Hub) ==================== -->
+    <section class="view-pane active-view" id="paneHome" aria-label="KKNews 首頁總覽">
+      <div style="width:min(1120px, 100%);margin:0 auto">
         <div class="mission-banner">
           <div class="mission-head">
-            <h1 class="mission-title">KKNews 校園共創與學習平台</h1>
-            <span class="device-profile-badge" id="homeDeviceBadge"></span>
+            <span class="apple-eyebrow">KKNews Studio · 2026 Edition</span>
+            <h1 class="mission-title">創作有深度。學習有溫度。</h1>
+            <span class="device-profile-badge" id="homeDeviceBadge" style="margin-top:4px"></span>
           </div>
           <p class="mission-desc">
-            凝聚校園正向文字力量 · 結合 DFC 設計思考互動學習
+            結合即時卡片排版美學與 Design For Change 互動探究劇院。每一個想法，都值得被優雅呈現。
           </p>
         </div>
 
@@ -165,15 +181,15 @@
           <button type="button" class="hub-square-btn" id="hubBtnPost">
             <div class="hub-square-top">
               <div class="hub-square-icon">✍️</div>
-              <span class="hub-square-badge ok">開放創作</span>
+              <span class="hub-square-badge ok">Proverb Studio</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">諺語工坊</h2>
-              <p class="hub-square-desc">寫下一句格言與署名，即時排版專屬卡片並下載分享。</p>
+              <h2 class="hub-square-title">格言創作工坊。</h2>
+              <p class="hub-square-desc">寫下一句格言與署名，五款劇院級版型與多維度色彩即時渲染，輸出高解析度專屬卡片。</p>
             </div>
             <div class="hub-square-foot">
-              <span>開始製作</span>
-              <span>→</span>
+              <span>進入創作室</span>
+              <span>›</span>
             </div>
           </button>
 
@@ -183,12 +199,12 @@
               <span class="hub-square-badge lock" id="hubDfcAccessBadge">🔒 權限驗證中</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">DFC 互動影音</h2>
-              <p class="hub-square-desc">觀看設計思考探究影片，在關鍵段落沉浸思考並完成作答。</p>
+              <h2 class="hub-square-title">DFC 互動劇院。</h2>
+              <p class="hub-square-desc">跟隨感受、想像、實踐、分享四個步驟，在關鍵段落沉浸思考作答，獲頒完課榮譽證書。</p>
             </div>
             <div class="hub-square-foot">
-              <span id="hubDfcFootText">開始探索</span>
-              <span>→</span>
+              <span id="hubDfcFootText">進入劇院</span>
+              <span>›</span>
             </div>
           </button>
 
@@ -198,59 +214,75 @@
               <span class="hub-square-badge ok" id="hubStatusBadge">連線正常</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">系統狀態</h2>
-              <p class="hub-square-desc">即時觀測資料庫健康、API 延遲與全站統計指標。</p>
+              <h2 class="hub-square-title">雲端系統遙測。</h2>
+              <p class="hub-square-desc">全天候即時觀測 Supabase PostgreSQL 叢集健康、API 響應延遲與全站核心指標。</p>
             </div>
             <div class="hub-square-foot">
-              <span>檢視狀態</span>
-              <span>→</span>
+              <span>檢視系統指標</span>
+              <span>›</span>
+            </div>
+          </button>
+
+          <button type="button" class="hub-square-btn" id="hubBtnDiag">
+            <div class="hub-square-top">
+              <div class="hub-square-icon">🩺</div>
+              <span class="hub-square-badge ok" id="hubDiagBadge">即時驗收</span>
+            </div>
+            <div class="hub-square-body">
+              <h2 class="hub-square-title">系統檢測驗收。</h2>
+              <p class="hub-square-desc">自動化檢測全站 API 回應、頁面圖片、Canvas 渲染、DFC 題型與進階功能狀態。</p>
+            </div>
+            <div class="hub-square-foot">
+              <span>開啟檢測頁面</span>
+              <span>›</span>
             </div>
           </button>
         </div>
 
-        <!-- 首頁精選卡片與 DFC 學習指引 -->
+        <!-- Apple Bento 雙欄設計導覽卡 -->
         <div class="home-guide-strip">
           <div class="home-guide-card">
             <div>
-              <div class="home-guide-tag blue">💡 學習流程</div>
-              <h3 class="home-guide-title">三步驟開啟創作與探究</h3>
-              <ul class="home-guide-list">
-                <li><strong>1. 製作格言卡</strong>：挑選排版風格與色彩，客製校園金句。</li>
-                <li><strong>2. 探索 DFC 影音</strong>：沉浸影音情境，於關鍵段落專注思考並作答。</li>
-                <li><strong>3. 實踐與分享</strong>：送出作答紀錄，下載完課榮譽證書並交流心得。</li>
+              <span class="apple-eyebrow blue">Designed for Creators · 創作與探究流程</span>
+              <h3 class="home-guide-title">三步驟，讓靈感優雅落地。</h3>
+              <ul class="home-guide-list" style="margin-top:14px">
+                <li><strong>01. 雕琢格言卡片</strong> — 自由切換經典居中、文青直排與現代引言，搭配專屬色票與朱砂篆刻印章。</li>
+                <li><strong>02. 沉浸影音探究</strong> — 進入全螢幕專注模式觀看 DFC 影片，於關鍵時間點完成六大互動題型。</li>
+                <li><strong>03. 分享與榮譽認證</strong> — 卡片自動以 4:5 高畫質同步發表至官方 Instagram，並可下載個人結業證書。</li>
               </ul>
             </div>
-            <div class="home-guide-action" style="margin-top:14px">
-              <span class="home-guide-subtext">排版 · 繪圖 · 下載 · 分享</span>
-              <button type="button" class="btn ghost sm" id="homeQuickStartPost">開始製作卡片 →</button>
+            <div class="home-guide-action" style="margin-top:18px">
+              <span class="home-guide-subtext">1080 × 1350 Retina 級輸出 · 自動同步社群</span>
+              <button type="button" class="btn ghost sm" id="homeQuickStartPost">前往格言工坊 ›</button>
             </div>
           </div>
           <div class="home-guide-card">
             <div>
-              <div class="home-guide-tag green">🎬 近期主題</div>
-              <h3 class="home-guide-title">DFC 設計思考探究</h3>
-              <p class="home-guide-quote">「從生活痛點出發，把『我做不到』變成『我們可以怎麼做』」</p>
+              <span class="apple-eyebrow green">Design For Change · 核心精神</span>
+              <h3 class="home-guide-title">把「我做不到」，化為「我們可以怎麼做」。</h3>
+              <p class="home-guide-quote">「從校園日常的細微觀察出發，透過感受、想像、實踐與分享，讓每一份思考成為改變的起點。」</p>
             </div>
             <div class="home-guide-action">
-              <span class="home-guide-subtext">感受 · 想像 · 實踐 · 分享</span>
-              <button type="button" class="btn ghost sm" id="homeQuickStartDfc">前往 DFC 探究 →</button>
+              <span class="home-guide-subtext">Feel · Imagine · Do · Share</span>
+              <button type="button" class="btn ghost sm" id="homeQuickStartDfc">進入 DFC 劇院 ›</button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== 系統 1：諺語工坊 (Proverb Studio) ==================== -->
-    <section class="view-pane" id="panePost" aria-label="諺語工坊" style="display:none">
+    <!-- ==================== 視圖 1：格言創作工坊 (Proverb Studio) ==================== -->
+    <section class="view-pane" id="panePost" aria-label="格言創作工坊" style="display:none">
       <div class="post-shell">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回主選單</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">✍️ 諺語工坊 · 即時排版創作室</span>
+          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Proverb Studio · 即時排版創作室</span>
         </div>
 
-        <div style="margin-bottom:24px">
-          <h1 style="margin:0 0 8px;font-size:26px">寫下你想說的一句話</h1>
-          <p class="sub" style="margin-bottom:0">一句諺語、一個署名，我們會把它排版製作成屬於你的專屬卡片。</p>
+        <div class="apple-section-head">
+          <span class="apple-eyebrow">Apple Canvas Engine</span>
+          <h1 class="apple-section-title">字裡行間，皆成藝術。</h1>
+          <p class="apple-section-sub">寫下你想傳遞的一句話與署名。即時預覽五種排版、三款字體與細膩色彩，一鍵輸出高解析度畫作。</p>
         </div>
 
         <div id="loadingView">
@@ -267,11 +299,11 @@
               <path fill="#FBBC05"
                 d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z" />
               <path fill="#34A853"
-                d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+                d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
             </svg>
-            使用 Google 學校帳號登入
+            使用 Google 教育帳號登入
           </button>
-          <p style="margin-top:12px;font-size:13px;color:var(--ink-tertiary);text-align:center">僅限花蓮縣教育網
+          <p style="margin-top:12px;font-size:13px;color:var(--ink-tertiary);text-align:center">僅開放花蓮縣教育網路
             <strong>@hlc.edu.tw</strong> 帳號</p>
         </div>
 
@@ -279,31 +311,31 @@
           <div class="post-studio-layout">
             <div>
               <label class="field" style="margin-top:0">
-                <span class="lbl">你想說的諺語或一句話 <span id="cc">0/100</span></span>
+                <span class="lbl">格言或心語內容 <span id="cc">0/100</span></span>
                 <textarea class="input" id="content" rows="3" maxlength="100"
-                  placeholder="例如：生活不是等待風暴過去，而是學會在雨中跳舞。（支援 Ctrl+Enter 送出）"></textarea>
+                  placeholder="寫下一句觸動人心的話語。例如：生活不是等待風暴過去，而是學會在雨中跳舞。（支援 Ctrl+Enter 快速發表）"></textarea>
               </label>
 
-              <!-- 靈感隨手選 (Inspiration Chips) -->
-              <div class="inspire-chips-container" aria-label="諺語靈感庫">
-                <span class="inspire-chip-label">✨ 靈感隨手點：</span>
+              <!-- 靈感隨手選 (Curated Inspiration Chips) -->
+              <div class="inspire-chips-container" aria-label="精選格言靈感庫">
+                <span class="inspire-chip-label">✨ 精選靈感：</span>
                 <button type="button" class="inspire-chip" data-quote="生活不是等待風暴過去，而是學會在雨中跳舞。" data-author="校園生活">🌧️ 雨中跳舞</button>
                 <button type="button" class="inspire-chip" data-quote="每一個不曾起舞的日子，都是對生命的辜負。" data-author="尼采">💃 迎風起舞</button>
                 <button type="button" class="inspire-chip" data-quote="千里之行，始於足下；勇於探索，收穫微光。" data-author="勵志格言">🌱 始於足下</button>
                 <button type="button" class="inspire-chip" data-quote="心之所向，素履以往；生如逆旅，一葦以航。" data-author="七堇年">⛵ 素履以往</button>
                 <button type="button" class="inspire-chip" data-quote="把『我做不到』變成『我們可以怎麼做』。" data-author="DFC 設計思考">💡 思考轉念</button>
-                <button type="button" class="inspire-chip surprise-btn" id="randomQuoteBtn" title="隨機挑選一句校園金句與風格">🎲 隨機靈感</button>
+                <button type="button" class="inspire-chip surprise-btn" id="randomQuoteBtn" title="隨機挑選一句精選金句並自動配對美學版型">🎲 隨機靈感</button>
               </div>
 
               <label class="field">
-                <span class="lbl">來源（人名或署名） <span id="ac">0/30</span></span>
-                <input class="input" id="author" maxlength="30" placeholder="例如：林同學">
+                <span class="lbl">落款署名或出處 <span id="ac">0/30</span></span>
+                <input class="input" id="author" maxlength="30" placeholder="例如：林同學 · 八年一班">
               </label>
 
-              <!-- 風格主題套餐 (One-Click Aesthetic Presets) -->
+              <!-- 風格主題套餐 (Curated Studio Presets) -->
               <div class="style-block" style="margin-bottom:14px">
                 <div class="style-head">
-                  <span class="style-title">🎨 風格主題套餐</span>
+                  <span class="style-title">🎨 大師級主題風格</span>
                   <span class="style-active-badge" id="presetBadge">一鍵套用</span>
                 </div>
                 <div class="style-presets-grid" id="stylePresetPicker">
@@ -337,7 +369,7 @@
               <!-- 版面選擇 -->
               <div class="style-block">
                 <div class="style-head">
-                  <span class="style-title">版面風格</span>
+                  <span class="style-title">版面構圖</span>
                   <span class="style-active-badge" id="layoutBadge">經典居中</span>
                 </div>
                 <div class="layout-picker-grid" id="layoutPicker">
@@ -396,7 +428,7 @@
               <!-- 字體風格選擇 -->
               <div class="style-block">
                 <div class="style-head">
-                  <span class="style-title">字體風格</span>
+                  <span class="style-title">字體美學</span>
                   <span class="style-active-badge" id="fontBadge">律動書風</span>
                 </div>
                 <div class="layout-picker-grid" id="fontPicker">
@@ -418,27 +450,27 @@
               <!-- 字級比例與落款印章選項 -->
               <div class="style-block">
                 <div class="style-head">
-                  <span class="style-title">字級比例與細節</span>
+                  <span class="style-title">光學字級與落款印章</span>
                   <span class="style-active-badge" id="sizeBadge">標準 (100%)</span>
                 </div>
                 <div class="size-stepper-grid" id="sizePicker">
-                  <button type="button" class="size-chip-btn" data-scale="0.88" title="精巧緊湊：空間留白多">
+                  <button type="button" class="size-chip-btn" data-scale="0.88" title="精巧留白：88% 比例">
                     <span style="font-size:12px;font-weight:600">A-</span>
                     <span>緊湊 (88%)</span>
                   </button>
-                  <button type="button" class="size-chip-btn active" data-scale="1.0" title="黃金適中：最推薦排版比例">
+                  <button type="button" class="size-chip-btn active" data-scale="1.0" title="標準比例：100% 黃金視覺">
                     <span style="font-size:14px;font-weight:700">A</span>
                     <span>標準 (100%)</span>
                   </button>
-                  <button type="button" class="size-chip-btn" data-scale="1.14" title="大器豪邁：字體放大，視覺強烈">
+                  <button type="button" class="size-chip-btn" data-scale="1.14" title="大器醒目：114% 放大比例">
                     <span style="font-size:16px;font-weight:800">A+</span>
                     <span>大器 (114%)</span>
                   </button>
                 </div>
                 <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-                  <label class="seal-toggle-item" title="是否在卡片署名旁加蓋專屬朱砂篆刻印章" style="display:inline-flex;align-items:center;cursor:pointer">
-                    <input type="checkbox" id="showSealToggle" checked style="accent-color:var(--red,#dc2626);cursor:pointer;width:15px;height:15px">
-                    <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600;margin-left:7px;cursor:pointer">加蓋傳統朱砂落款印章</span>
+                  <label class="seal-toggle-item" title="於署名旁加蓋傳統朱砂篆刻落款印章" style="display:inline-flex;align-items:center;cursor:pointer">
+                    <input type="checkbox" id="showSealToggle" checked style="accent-color:var(--red,#ff3b30);cursor:pointer;width:15px;height:15px">
+                    <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600;margin-left:7px;cursor:pointer">加蓋朱砂篆刻落款印章</span>
                   </label>
                 </div>
               </div>
@@ -446,19 +478,19 @@
               <!-- 配色選擇 -->
               <div class="style-block">
                 <div class="style-head">
-                  <span class="style-title">卡片色彩</span>
+                  <span class="style-title">色彩主題</span>
                   <span class="style-active-badge" id="colorBadge">經典米白</span>
                 </div>
                 <div class="swatches-wrap" id="palettePicker"></div>
                 <div class="custom-color-panel hide" id="customColorRow">
                   <label class="color-pick-item">
-                    <span>背景</span>
+                    <span>畫布底色</span>
                     <input type="color" id="customBg" value="#f4f2ee">
                     <span id="customBgVal"
                       style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#f4f2ee</span>
                   </label>
                   <label class="color-pick-item">
-                    <span>文字</span>
+                    <span>筆墨字色</span>
                     <input type="color" id="customText" value="#1c1917">
                     <span id="customTextVal"
                       style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#1c1917</span>
@@ -466,27 +498,51 @@
                 </div>
               </div>
 
-              <button type="button" class="btn primary block" id="submit" style="margin-top:24px">送出投稿製作卡片</button>
-            </div>
-
-            <!-- 即時畫布預覽 -->
-            <div class="studio-preview-box">
-              <div class="preview-toolbar">
-                <span style="display:inline-flex;align-items:center;gap:6px">
-                  <span class="page-tag-dot" style="width:6px;height:6px"></span>
-                  即時卡片效果
-                </span>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <button type="button" class="btn ghost sm" id="enlargePreviewBtn" style="padding:2px 8px;font-size:12px" title="點擊放大全螢幕檢視卡片">🔍 放大檢視</button>
-                  <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:2px 8px;font-size:12px" title="複製當前金句文字與署名">複製文字</button>
-                  <button type="button" class="btn ghost sm" id="copyCardImgBtn" style="padding:2px 8px;font-size:12px" title="複製卡片圖片至剪貼簿，可直接貼上至 Line 或社群">複製圖片</button>
-                  <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:2px 8px;font-size:12px" title="重設回預設經典米白排版">重設版型</button>
-                  <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px">下載預覽圖</button>
+              <!-- 自訂背景相片 / 插圖 -->
+              <div class="style-block">
+                <div class="style-head">
+                  <span class="style-title">📷 自訂影像底圖（選填）</span>
+                  <span class="style-active-badge" id="customImgBadge">無自訂圖</span>
+                </div>
+                <div class="custom-img-upload-box">
+                  <input type="file" id="customCardImgInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+                  <button type="button" class="btn ghost sm" id="pickCustomImgBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--line-strong);border-radius:14px;padding:10px">
+                    <span>🖼️ 選擇攝影作品或插畫作為卡片底圖</span>
+                  </button>
+                  <div id="customImgPreviewRow" class="hide" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface-muted);border-radius:10px">
+                    <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+                      <img id="customImgThumb" src="" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" alt="底圖預覽">
+                      <span id="customImgName" style="font-size:12px;color:var(--ink-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">已載入影像</span>
+                    </div>
+                    <button type="button" class="btn ghost sm" id="removeCustomImgBtn" style="padding:2px 8px;font-size:11.5px;color:var(--red)">✕ 移除</button>
+                  </div>
                 </div>
               </div>
-              <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊放大全螢幕檢視高清卡片">
+
+              <button type="button" class="btn primary block" id="submit" style="margin-top:24px;padding:14px 20px;font-size:15px">發表作品並收錄至雲端畫廊</button>
+              <div style="margin-top:10px;font-size:12px;color:var(--ink-tertiary);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px">
+                <span>📸 作品提交後將自動輸出 1080×1350 高畫質圖檔並同步發表至官方 Instagram</span>
+              </div>
+            </div>
+
+            <!-- 右側即時畫布預覽 (Sticky Studio Showcase) -->
+            <div class="studio-preview-box">
+              <div class="preview-toolbar">
+                <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600">
+                  <span class="page-tag-dot" style="width:6px;height:6px"></span>
+                  Live Canvas 即時預覽
+                </span>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <button type="button" class="btn ghost sm" id="enlargePreviewBtn" style="padding:3px 9px;font-size:12px" title="全螢幕檢視高解析度卡片">🔍 全螢幕</button>
+                  <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:3px 9px;font-size:12px" title="複製格言文字與署名">複製文字</button>
+                  <button type="button" class="btn ghost sm" id="copyCardImgBtn" style="padding:3px 9px;font-size:12px" title="複製高清卡片影像至剪貼簿">複製影像</button>
+                  <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:3px 9px;font-size:12px" title="還原預設經典米白版型">重設</button>
+                  <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px;font-weight:600">下載 PNG</button>
+                </div>
+              </div>
+              <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊展開全螢幕 Retina 預覽">
                 <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
-                <div class="canvas-zoom-hint"><span>🔍 點擊全螢幕放大檢視</span></div>
+                <div class="canvas-zoom-hint"><span>🔍 點擊展開全螢幕預覽</span></div>
               </div>
             </div>
           </div>
@@ -496,80 +552,78 @@
       </div>
     </section>
 
-    <!-- ==================== 系統 2：DFC 沉浸式影音表單 (DFC Interactive) ==================== -->
-    <section class="view-pane" id="paneDfc" aria-label="DFC 互動影音探究" style="display:none">
+    <!-- ==================== 視圖 2：DFC 沉浸式互動劇院 (DFC Interactive Cinema) ==================== -->
+    <section class="view-pane" id="paneDfc" aria-label="DFC 互動劇院" style="display:none">
       <div class="dfc-container">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回主選單</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音探究 · 全螢幕專注沉浸</span>
+          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">Apple Cinema Mode · 全螢幕專注探究</span>
         </div>
 
-        <!-- 權限保護艙：當帳號未列入授權名單時顯示，完全隱藏影片與題目避免提前曝光 -->
+        <!-- 防暴雷保護艙 (Spoiler Vault) -->
         <div class="spoiler-vault-card hide" id="dfcRestrictedBox">
           <div class="spoiler-vault-icon">🛡️</div>
-          <div class="spoiler-vault-badge">🔒 DFC 影音學習權限保護</div>
-          <h3 class="spoiler-vault-title">目前帳號尚未開放觀看 DFC 影音問卷</h3>
+          <div class="spoiler-vault-badge">🔒 DFC 劇院存取權限保護</div>
+          <h3 class="spoiler-vault-title">此帳號目前尚未開放觀看本單元影片。</h3>
           <p class="spoiler-vault-desc" id="dfcRestrictedMsg">
-            為維護最佳學習情境與探究引導體驗，目前此影音問卷僅開放指定班級或授權帳號參與作答。
+            為確保各班級循序漸進的探究體驗與防暴雷保護，本互動影音僅開放指定班級與授權學員參與。
           </p>
           <div class="spoiler-vault-meta">
             <div><strong>目前登入帳號：</strong><span id="dfcRestrictedEmail">—</span></div>
-            <div style="margin-top:4px"><strong>權限開通說明：</strong>若需參與此單元探究，請洽任課教師或系統管理員協助開通觀看權限。</div>
+            <div style="margin-top:4px"><strong>申請開通方式：</strong>請洽詢任課教師或系統管理員將您的學校信箱納入觀看白名單。</div>
           </div>
           <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-            <button type="button" class="btn primary" id="dfcRestrictedBackBtn">← 返回主選單</button>
-            <button type="button" class="btn ghost" id="dfcRestrictedRetryBtn" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">🔄 重新整理授權狀態</button>
+            <button type="button" class="btn primary" id="dfcRestrictedBackBtn">‹ 返回首頁總覽</button>
+            <button type="button" class="btn ghost" id="dfcRestrictedRetryBtn" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">🔄 重新檢查授權狀態</button>
           </div>
         </div>
 
         <div id="dfcAuthorizedContent">
           <div class="dfc-top-bar" style="margin-top:4px">
             <div>
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
-                <h2 id="dfcTitle" style="margin:0;font-size:24px">DFC 互動影音探究問卷</h2>
+              <span class="apple-eyebrow">Design For Change · Interactive Cinema</span>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">
+                <h2 id="dfcTitle" style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.022em">DFC 沉浸式影音探究問卷</h2>
                 <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
-                  <span style="font-weight:700;color:var(--ink-secondary)">📋 切換問卷：</span>
+                  <span style="font-weight:600;color:var(--ink-secondary)">切換單元：</span>
                   <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
                 </div>
               </div>
-              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至關鍵段落時將展開互動問答，請專注觀看並依序作答。</p>
+              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:15px">當影片播放至關鍵思考節點時，畫面將平滑展開互動問答。請全神貫注觀看並依序完成作答。</p>
             </div>
             <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
 
           <div class="dfc-stage-wrap" id="dfcStage">
-            <!-- 影片劇院區塊 -->
+            <!-- 劇院級播放器區塊 -->
             <div class="dfc-video-pane">
               <div class="video-cinema-box" id="dfcCinemaBox">
-                <!-- 上方左右膠囊已取消（依需求隱藏保留 DOM 確保狀態機相容） -->
                 <div class="video-floating-badge hide" id="dfcVideoBadge" style="display:none !important"></div>
                 <div class="video-mode-badge hide" id="dfcModeBadge" style="display:none !important"></div>
                 <div class="video-loading-overlay hide" id="dfcVideoLoading">
                   <div class="video-spinner"></div>
-                  <span id="dfcLoadingText">影片載入緩衝中，請稍候...</span>
+                  <span id="dfcLoadingText">正在緩衝高畫質影音串流...</span>
                 </div>
-                <div class="video-center-play" id="dfcCenterPlay" title="點擊全螢幕開始觀看">
+                <div class="video-center-play" id="dfcCenterPlay" title="點擊進入全螢幕劇院開始觀看">
                   <div class="video-center-play-circle">▶</div>
                 </div>
-                <div class="video-lock-toast" id="dfcLockToast">請循序觀看影片，未解鎖片段暫不支援快轉</div>
-                <!-- 自訂播放器專屬容器（含無縫畫質切換凍結幀橋接畫布） -->
+                <div class="video-lock-toast" id="dfcLockToast">請循序觀看影片，未解鎖段落暫不開放快轉跳躍</div>
                 <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
                 <canvas id="dfcBridgeCanvas" class="video-bridge-canvas" width="1280" height="720"></canvas>
                 <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
-                <!-- 影音串流異常容錯重試遮罩 (Video Broken/Error Resilience Shield) -->
                 <div class="video-error-overlay hide" id="dfcVideoError">
                   <div class="video-error-card">
                     <div class="video-error-icon">📡</div>
-                    <h3 class="video-error-title">影音串流連線重試中</h3>
-                    <p class="video-error-desc">若連線時間過長，可能受到校園網路連線影響，請點選下方按鈕重新連線。</p>
-                    <button type="button" class="btn primary sm" id="dfcRetryStreamBtn">🔄 重新連線影片</button>
+                    <h3 class="video-error-title">正在重新建立影音串流連線</h3>
+                    <p class="video-error-desc">若校園網路品質波動導致載入延遲，請點選下方按鈕立即重新連接串流伺服器。</p>
+                    <button type="button" class="btn primary sm" id="dfcRetryStreamBtn">🔄 重新連接影片串流</button>
                   </div>
                 </div>
               </div>
 
               <div class="cinema-controls">
                 <button type="button" class="cinema-play-btn" id="dfcPlayBtn" title="播放 / 暫停">▶</button>
-                <button type="button" class="cinema-icon-btn" id="dfcRewindBtn" title="倒退 10 秒重看片段">↺ 10s</button>
+                <button type="button" class="cinema-icon-btn" id="dfcRewindBtn" title="倒退 10 秒重溫關鍵對話">↺ 10s</button>
                 <div class="cinema-track" id="dfcTrackWrap">
                   <div class="cinema-track-buffered" id="dfcTrackBuffered"></div>
                   <div class="cinema-track-watched" id="dfcTrackWatched"></div>
@@ -578,29 +632,27 @@
                   <div id="dfcMarkers"></div>
                 </div>
                 <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 06:03</span>
-                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="畫質切換（依連線速度自動調整最佳畫質）">⚡ 自動畫質</button>
+                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="ABR 智慧畫質切換">⚡ 自動畫質</button>
                 <div class="cinema-vol-wrap">
-                  <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
+                  <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 開啟聲音" style="padding:0 8px">🔊</button>
                   <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
                 </div>
-                <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="切換播放速度">1.0x</button>
+                <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="調整播放速率">1.0x</button>
                 <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕專注模式" style="padding:0 8px">⛶</button>
                 <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
-                  style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或收合右側題目卡片">📝
-                  填寫問卷</button>
+                  style="white-space:nowrap;font-size:12.5px;font-weight:600" title="展開或收合右側思考問題卡">📝
+                  思考問答</button>
               </div>
 
-              <!-- 播放器鍵盤快捷鍵提示條 (Keyboard Shortcuts Hint) -->
               <div class="cinema-shortcuts-bar">
-                <span>⌨️ 播放快捷鍵：<b>空白鍵</b> 播放/暫停 · <b>←/→</b> 快退快進 5 秒 · <b>F</b> 全螢幕 · <b>M</b> 靜音</span>
+                <span>⌨️ 劇院快捷鍵：<b>Space</b> 播放/暫停 · <b>←/→</b> 微調進度 5 秒 · <b>F</b> 全螢幕 · <b>M</b> 靜音切換</span>
               </div>
 
-              <!-- YouTube ABR 畫質演進與雲端最新版全片本機暫存狀態列（收合摺疊，保持畫面焦點） -->
               <details class="dfc-telemetry-details" style="margin-top:10px;font-size:12.5px">
-                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 影片播放與緩衝狀態（點擊展開）</summary>
+                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 ABR 串流緩衝與本機快取遙測（點擊展開）</summary>
                 <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry" style="margin-top:6px">
                   <div class="dfc-preload-row">
-                    <span class="dfc-preload-status-text" id="dfcPreloadStatusText">影片緩衝就緒</span>
+                    <span class="dfc-preload-status-text" id="dfcPreloadStatusText">串流緩衝就緒</span>
                     <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">快取就緒</span>
                   </div>
                   <div class="dfc-preload-bar-track">
@@ -610,57 +662,57 @@
               </details>
             </div>
 
-            <!-- 右側動態問題卡片 -->
+            <!-- 右側動態思考題卡 -->
             <div class="dfc-q-pane" id="dfcQuestionCol">
               <div class="dfc-question-card">
-                <div class="dfc-q-progress-bar" title="問卷作答進度">
+                <div class="dfc-q-progress-bar" title="探究問答完成進度">
                   <div class="dfc-q-progress-fill" id="dfcQProgressFill"></div>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
                   <div class="dfc-q-step-badge" id="dfcQStepBadge">STEP 1</div>
-                  <button type="button" class="btn ghost sm" id="dfcRewindForQuestionBtn" style="font-size:11.5px;padding:2px 8px" title="沒聽清剛才影片對話？倒退 10 秒重新觀看">↺ 倒退 10 秒重看</button>
+                  <button type="button" class="btn ghost sm" id="dfcRewindForQuestionBtn" style="font-size:11.5px;padding:2px 8px" title="倒退 10 秒重聽剛才的影片段落">↺ 倒退 10 秒重看</button>
                 </div>
-                <h3 id="dfcQTitle" style="margin:0 0 8px;font-size:18px;line-height:1.4">載入中...</h3>
+                <h3 id="dfcQTitle" style="margin:0 0 8px;font-size:18px;line-height:1.4">載入題目中...</h3>
                 <p id="dfcQDesc" style="margin:0 0 18px;font-size:13.5px;color:var(--ink-secondary);line-height:1.55"></p>
                 <div id="dfcQInputArea"></div>
                 <div id="dfcQErr" class="alert err" style="margin-top:0;margin-bottom:12px"></div>
-                <button type="button" class="btn primary block" id="dfcAnswerBtn">確認作答，繼續觀看 →</button>
+                <button type="button" class="btn primary block" id="dfcAnswerBtn">確認提交，繼續播放 ›</button>
               </div>
             </div>
 
-            <!-- 專注模式提示遮罩：若觀看中意外退出全螢幕，暫停並提示點擊恢復 -->
+            <!-- 全螢幕專注學習鎖定遮罩 -->
             <div class="dfc-fs-lock-overlay hide" id="dfcFsLockOverlay">
               <div class="dfc-fs-lock-box">
-                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 專注模式 · 全螢幕學習</span>
+                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 Apple Focus Mode · 全螢幕專注學習</span>
                 <div class="dfc-fs-lock-icon" id="dfcFsLockIcon">📺</div>
-                <h3 class="dfc-fs-lock-title" id="dfcFsLockTitle">請保持全螢幕觀看與作答</h3>
+                <h3 class="dfc-fs-lock-title" id="dfcFsLockTitle">請保持全螢幕模式以繼續探究</h3>
                 <p class="dfc-fs-lock-desc" id="dfcFsLockDesc">
-                  為了維持最佳的影音沉浸感與專注學習體驗，觀看影片及題目作答期間請保持全螢幕模式。<br>
-                  請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。
+                  為維持最佳的劇院級沉浸體驗與思考連貫性，觀看影片與作答期間請保持全螢幕狀態。<br>
+                  請點選下方按鈕或畫面任意處，立即恢復全螢幕並繼續播放。
                 </p>
                 <button type="button" class="dfc-fs-lock-btn" id="dfcFsResumeBtn">
-                  <span>⛶</span> 立即恢復全螢幕並繼續
+                  <span>⛶</span> 恢復全螢幕並繼續觀看
                 </button>
-                <button type="button" class="dfc-fs-lock-quit" id="dfcFsQuitBtn">退出並返回首頁</button>
+                <button type="button" class="dfc-fs-lock-quit" id="dfcFsQuitBtn">離開劇院並返回首頁</button>
               </div>
             </div>
           </div>
 
-          <!-- 表單完成回饋 -->
-          <div class="alert ok hide" id="dfcCompleteBox" style="margin-top:24px;padding:20px 24px">
+          <!-- 探究完成與榮譽證書頒發 -->
+          <div class="alert ok hide" id="dfcCompleteBox" style="margin-top:24px;padding:22px 26px;border-radius:22px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
               <div>
-                <h3 style="margin:0 0 4px;font-size:18px;color:var(--green)" id="dfcCompleteTitle">🎉 恭喜完成所有階段問答與觀看！</h3>
+                <h3 style="margin:0 0 4px;font-size:19px;color:var(--ok)" id="dfcCompleteTitle">🎉 恭喜完成本次 DFC 設計思考影音探究！</h3>
                 <p style="margin:0;font-size:13.5px;color:var(--ink-secondary)" id="dfcCompleteDesc">
-                  感謝你的認真參與，所有問答紀錄皆已成功送出並儲存。</p>
+                  您的每一道思考與回答皆已安全收錄於雲端學習歷程資料庫。</p>
               </div>
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <button type="button" class="btn primary sm" id="dfcCertBtn" style="background:linear-gradient(135deg,#d97706,#b45309);border:none;color:#fff;box-shadow:0 2px 8px rgba(180,83,9,0.25)">🎓 產生並下載 DFC 結業榮譽證書 (PNG)</button>
+                <button type="button" class="btn primary sm" id="dfcCertBtn" style="background:linear-gradient(135deg,#d4af37,#aa7c11);border:none;color:#fff;box-shadow:0 4px 12px rgba(170,124,17,0.28)">🎓 下載 DFC 結業榮譽證書 (PNG)</button>
                 <button type="button" class="btn ghost sm" id="dfcReplayBtn">🔄 重新觀看並作答</button>
               </div>
             </div>
             <div class="dfc-summary-card hide" id="dfcSummaryCard">
-              <div style="font-size:13.5px;font-weight:700;color:var(--green);margin-bottom:8px">📋 本次作答紀錄摘要：</div>
+              <div style="font-size:13.5px;font-weight:700;color:var(--ok);margin-bottom:8px">📋 本次探究作答紀錄摘要：</div>
               <div id="dfcSummaryItems"></div>
             </div>
           </div>
@@ -668,18 +720,24 @@
       </div>
     </section>
 
-    <!-- ==================== 系統 3：系統即時資訊 (System Status) ==================== -->
-    <section class="view-pane" id="paneStatus" aria-label="系統即時資訊" style="display:none">
+    <!-- ==================== 視圖 3：雲端系統遙測 (Cloud Telemetry) ==================== -->
+    <section class="view-pane" id="paneStatus" aria-label="雲端系統遙測" style="display:none">
       <div class="status-shell">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回主選單</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">📊 雲端資料庫與即時系統指標</span>
+          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Cloud Telemetry · 雲端核心與即時遙測</span>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
-          <h2 style="margin:0;font-size:24px">系統即時資訊</h2>
-          <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">刷新連線</button>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+          <div>
+            <span class="apple-eyebrow blue">System Architecture & Live Metrics</span>
+            <h2 class="apple-section-title" style="margin:0 0 4px">雲端核心，即時脈動。</h2>
+            <p class="apple-section-sub" style="font-size:14.5px">Supabase PostgreSQL 雲端叢集與伺服器連線指標，每 4 秒自動同步更新。</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">🔄 立即同步指標</button>
+            <button type="button" class="btn primary sm" id="statusToDiagBtn">🩺 開啟全系統功能檢測 ›</button>
+          </div>
         </div>
-        <p class="sub" style="margin-bottom:18px">Supabase 雲端資料庫與平台服務指標，每 4 秒動態同步。</p>
 
         <div class="status-db-hero">
           <div class="db-head-flex">
@@ -693,32 +751,32 @@
             </div>
             <div style="flex:1;min-width:0">
               <b id="dbName" style="font-size:16px;display:block">Supabase PostgreSQL</b>
-              <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">雲端受管資料庫</span>
-              <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">即時連線健康監測</span>
+              <span id="dbRegion" style="font-size:13px;color:var(--ink-secondary)">雲端受管資料庫叢集</span>
+              <span id="dbSpec" style="font-size:12px;color:var(--ink-tertiary);display:block">即時連線健康與資源負載監測</span>
             </div>
           </div>
 
           <div class="meters-row">
             <div class="meter-card">
-              <div class="meter-lbl"><span>CPU 負載</span><strong id="stCpu">—%</strong></div>
+              <div class="meter-lbl"><span>CPU 運算負載</span><strong id="stCpu">—%</strong></div>
               <div class="meter-bar">
                 <div class="meter-bar-fill" id="barCpu"></div>
               </div>
             </div>
             <div class="meter-card">
-              <div class="meter-lbl"><span>RAM 記憶體</span><strong id="stRam">—%</strong></div>
+              <div class="meter-lbl"><span>RAM 記憶體使用率</span><strong id="stRam">—%</strong></div>
               <div class="meter-bar">
                 <div class="meter-bar-fill" id="barRam"></div>
               </div>
             </div>
             <div class="meter-card">
-              <div class="meter-lbl"><span>Disk 空間</span><strong id="stDisk">—%</strong></div>
+              <div class="meter-lbl"><span>SSD 儲存空間</span><strong id="stDisk">—%</strong></div>
               <div class="meter-bar">
                 <div class="meter-bar-fill" id="barDisk"></div>
               </div>
             </div>
             <div class="meter-card">
-              <div class="meter-lbl"><span>資料庫連線</span><strong id="stConns">—/60</strong></div>
+              <div class="meter-lbl"><span>活躍資料庫連線</span><strong id="stConns">—/60</strong></div>
               <div class="meter-bar">
                 <div class="meter-bar-fill" id="barConns"></div>
               </div>
@@ -728,38 +786,108 @@
 
         <div class="kpi-row">
           <div class="kpi-card">
-            <small>API 延遲</small>
+            <small>API 響應延遲</small>
             <b id="stLatency">— ms</b>
           </div>
           <div class="kpi-card">
-            <small>快取命中</small>
+            <small>Buffer 快取命中率</small>
             <b id="stCacheHit">—%</b>
           </div>
           <div class="kpi-card">
-            <small>累積諺語卡</small>
+            <small>累計創作卡片</small>
             <b id="stProverbsCount">— 張</b>
           </div>
           <div class="kpi-card">
-            <small>問答紀錄</small>
+            <small>累計 DFC 填答</small>
             <b id="stDfcCount">— 筆</b>
           </div>
         </div>
 
         <div
           style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-tertiary);margin-top:20px">
-          <span id="sysText">● 雲端連線正常</span>
-          <span id="stUpdatedAt">更新時間：—</span>
+          <span id="sysText">● 雲端服務運行正常</span>
+          <span id="stUpdatedAt">最後同步時間：—</span>
         </div>
+      </div>
+    </section>
+
+    <!-- ==================== 視圖 4：Apple 全系統功能與資源檢測驗收中心 (System Diagnostics Matrix) ==================== -->
+    <section class="view-pane" id="paneDiag" aria-label="全系統功能檢測中心" style="display:none">
+      <div class="diag-shell">
+        <div class="subpage-nav">
+          <button type="button" class="subpage-back-btn" id="diagBackHomeBtn" data-go-home="1">‹ 返回首頁總覽</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Apple Diagnostics · 全系統自動化檢測驗收矩陣</span>
+        </div>
+
+        <div class="diag-hero-bar">
+          <div>
+            <span class="apple-eyebrow blue">System Verification & Feature Matrix</span>
+            <h1 class="apple-section-title" style="margin:0 0 8px">全系統功能與資源檢測中心。</h1>
+            <p class="apple-section-sub" style="max-width:720px">
+              即時檢測全站 API 回應、頁面圖片與向量圖示、Canvas 2D 排版渲染、DFC 影音六大題型、後台資安防護及未來擴充功能。<br>
+              <strong>可以的功能標示綠色勾勾（✅）、不行的功能標示紅色叉叉（❌）、沒做或沒加上的功能標示灰色問號（❓）。</strong>
+            </p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button type="button" class="btn primary" id="runAllDiagBtn">🔄 重新執行全系統檢測</button>
+            <button type="button" class="btn ghost sm" id="exportDiagJsonBtn">📥 匯出檢測報告</button>
+          </div>
+        </div>
+
+        <!-- 四格 Bento 統計總覽 -->
+        <div class="diag-bento-summary">
+          <div class="diag-kpi-card">
+            <div class="diag-kpi-lbl"><span>檢測項目總計</span><span>📋</span></div>
+            <div class="diag-kpi-val" id="diagTotalCount">0</div>
+            <div class="diag-kpi-sub" id="diagLastRunTime">涵蓋 API、圖片、前後台與構想功能</div>
+          </div>
+          <div class="diag-kpi-card ok">
+            <div class="diag-kpi-lbl"><span>可以的功能（綠色勾勾）</span><span>✅</span></div>
+            <div class="diag-kpi-val" id="diagOkCount">0</div>
+            <div class="diag-kpi-sub">API 回應、頁面圖片與功能運作正常</div>
+          </div>
+          <div class="diag-kpi-card err">
+            <div class="diag-kpi-lbl"><span>不行的功能（紅色叉叉）</span><span>❌</span></div>
+            <div class="diag-kpi-val" id="diagErrCount">0</div>
+            <div class="diag-kpi-sub">檢測失敗、破圖或連線異常項目</div>
+          </div>
+          <div class="diag-kpi-card na">
+            <div class="diag-kpi-lbl"><span>沒做或沒加上（灰色問號）</span><span>❓</span></div>
+            <div class="diag-kpi-val" id="diagNaCount">0</div>
+            <div class="diag-kpi-sub">尚未實作或未加上的外掛與進階構想</div>
+          </div>
+        </div>
+
+        <!-- 進度條 -->
+        <div class="diag-progress-track" title="即時檢測進度">
+          <div class="diag-progress-fill" id="diagProgressFill" style="width:0%"></div>
+        </div>
+
+        <!-- 篩選與搜尋工具列 -->
+        <div class="diag-controls-bar">
+          <div class="diag-filter-pills" id="diagFilterPills">
+            <button type="button" class="diag-filter-btn active" data-diag-filter="all">全部項目</button>
+            <button type="button" class="diag-filter-btn" data-diag-filter="ok">✅ 可以的 (綠色勾勾)</button>
+            <button type="button" class="diag-filter-btn" data-diag-filter="err">❌ 不行的 (紅色叉叉)</button>
+            <button type="button" class="diag-filter-btn" data-diag-filter="na">❓ 沒做或沒加上 (灰色問號)</button>
+          </div>
+          <div style="flex:1;min-width:220px;max-width:340px">
+            <input type="search" id="diagSearchInput" class="input" placeholder="🔍 搜尋 API、頁面圖片或功能名稱..." style="padding:7px 14px;font-size:13px;border-radius:980px">
+          </div>
+        </div>
+
+        <!-- 檢測分類與清單容器 -->
+        <div id="diagMatrixContainer"></div>
       </div>
     </section>
 
   </div>
 
-  <!-- 聲明彈窗 -->
+  <!-- 校園社群守則彈窗 -->
   <div id="legalModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
-    <div class="modal">
+    <div class="modal" style="border-radius:28px;padding:36px">
       <div
-        style="width:48px;height:48px;border-radius:14px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;margin:0 auto 16px">
+        style="width:52px;height:52px;border-radius:16px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;margin:0 auto 16px">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -767,37 +895,37 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h3 id="legalTitle" style="margin:0 0 12px;font-size:20px;text-align:center">校園社群守則</h3>
+      <h3 id="legalTitle" style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.02em;text-align:center">KKNews 校園共創公約。</h3>
       <div
-        style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;font-size:13.5px;line-height:1.6;color:var(--ink-secondary);margin-bottom:18px">
-        請共同維護校園良善交流氛圍，嚴禁惡意洗版或發布不當言語。系統已啟用資安防護與操作紀錄。
+        style="background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px;font-size:13.5px;line-height:1.6;color:var(--ink-secondary);margin-bottom:22px">
+        請以尊重、正向與誠摯的態度參與格言創作與 DFC 影音探究。系統已啟用全站安全審計與防刷保護，讓我們共同守護純粹的校園學習空間。
       </div>
-      <button type="button" class="btn primary block" id="closeModalBtn">我已詳閱並同意遵守</button>
+      <button type="button" class="btn primary block" id="closeModalBtn" style="padding:13px 20px">同意並開始探索</button>
     </div>
   </div>
 
-  <!-- 卡片全螢幕燈箱放大檢視 (Card Lightbox Modal) -->
-  <div class="card-lightbox-overlay hide" id="cardLightboxModal" role="dialog" aria-modal="true" aria-label="卡片高清放大檢視">
+  <!-- 卡片全螢幕 Retina 燈箱放大檢視 (Card Lightbox Modal) -->
+  <div class="card-lightbox-overlay hide" id="cardLightboxModal" role="dialog" aria-modal="true" aria-label="卡片高解析度全螢幕檢視">
     <div class="card-lightbox-dialog">
       <div class="card-lightbox-header">
         <div class="card-lightbox-info">
-          <span class="card-lightbox-title">🔍 卡片高清全螢幕檢視</span>
+          <span class="card-lightbox-title">Retina 高解析度卡片預覽</span>
           <span class="card-lightbox-specs" id="cardLightboxSpecs">經典居中 · 律動書風 · 經典米白</span>
         </div>
         <div class="card-lightbox-actions">
-          <button type="button" class="btn ghost sm" id="modalCopyImgBtn" style="color:#fff;border-color:rgba(255,255,255,0.3)">📋 複製圖片</button>
-          <button type="button" class="btn primary sm" id="modalDlImgBtn">⬇ 下載卡片</button>
+          <button type="button" class="btn ghost sm" id="modalCopyImgBtn" style="color:#fff;border-color:rgba(255,255,255,0.3)">📋 複製影像</button>
+          <button type="button" class="btn primary sm" id="modalDlImgBtn">⬇ 下載 PNG</button>
           <button type="button" class="card-lightbox-close" id="modalCloseBtn" aria-label="關閉預覽">✕</button>
         </div>
       </div>
       <div class="card-lightbox-content">
-        <img id="cardLightboxImg" src="" alt="諺語卡片高清放大圖">
+        <img id="cardLightboxImg" src="" alt="諺語卡片高解析度預覽圖">
       </div>
     </div>
   </div>
 
   <!-- 浮動回到頂部按鈕 -->
-  <button type="button" class="back-to-top-fab hide" id="backToTopFab" title="回到頁面頂端" aria-label="回到頂端">↑</button>
+  <button type="button" class="back-to-top-fab hide" id="backToTopFab" title="回到頂端" aria-label="回到頂端">↑</button>
 
   <script>
     const $ = id => document.getElementById(id);
@@ -1319,13 +1447,15 @@
       post: $("panePost"),
       dfc: $("paneDfc"),
       status: $("paneStatus"),
+      diag: $("paneDiag"),
     };
 
     const PAGE_LABELS = {
-      home: { title: "🏠 首頁", hint: "切換頁面" },
-      post: { title: "✍️ 諺語工坊", hint: "返回首頁" },
-      dfc: { title: "🎬 DFC 影音問卷", hint: "返回首頁" },
-      status: { title: "📊 系統狀態", hint: "返回首頁" },
+      home: { title: "首頁總覽", hint: "切換空間" },
+      post: { title: "✍️ 格言工坊", hint: "返回首頁" },
+      dfc: { title: "🎬 DFC 互動劇院", hint: "返回首頁" },
+      status: { title: "📊 雲端遙測", hint: "返回首頁" },
+      diag: { title: "🩺 系統檢測中心", hint: "返回首頁" },
     };
 
     let currentTab = "home";
@@ -1335,12 +1465,25 @@
       if ($("topCurrentPageLabel")) $("topCurrentPageLabel").textContent = info.title;
       if ($("topCurrentPageHint")) $("topCurrentPageHint").textContent = info.hint;
       if ($("topStatusBtn")) $("topStatusBtn").classList.toggle("active", tabName === "status");
+      if ($("topDiagBtn")) $("topDiagBtn").classList.toggle("active", tabName === "diag");
     }
 
     function navigateToTab(tabName, updateHistory = true) {
       if (!PANES[tabName]) tabName = "home";
       currentTab = tabName;
       updateTopHeaderButtons(tabName);
+
+      // 若開啟「系統檢測中心 (diag)」，即使尚未登入教育帳號亦允許直接檢視與執行全站檢測
+      const gate = $("entryLoginGate");
+      if (gate) {
+        if (tabName === "diag" || currentUser) {
+          gate.classList.remove("active");
+          document.body.classList.remove("entry-locked");
+        } else {
+          gate.classList.add("active");
+          document.body.classList.add("entry-locked");
+        }
+      }
 
       for (const [key, pane] of Object.entries(PANES)) {
         if (!pane) continue;
@@ -1369,6 +1512,7 @@
       }
 
       if (tabName === "status") refreshPublicStatus(true);
+      if (tabName === "diag") runFullSystemDiagnostics();
       if (tabName === "post") {
         initCardStyleControls();
         renderLivePreviewCard();
@@ -1378,7 +1522,8 @@
     }
 
     window.addEventListener("popstate", () => {
-      const hash = window.location.hash.replace("#", "") || "home";
+      const p = window.location.pathname;
+      const hash = window.location.hash.replace("#", "") || ((p === "/diagnostics" || p === "/check") ? "diag" : "home");
       navigateToTab(hash, false);
     });
 
@@ -1394,9 +1539,15 @@
     $("topStatusBtn")?.addEventListener("click", () => {
       navigateToTab(currentTab === "status" ? "home" : "status");
     });
+    $("topDiagBtn")?.addEventListener("click", () => {
+      navigateToTab(currentTab === "diag" ? "home" : "diag");
+    });
+    $("entryOpenDiagBtn")?.addEventListener("click", () => navigateToTab("diag"));
     $("hubBtnPost")?.addEventListener("click", () => navigateToTab("post"));
     $("hubBtnDfc")?.addEventListener("click", () => navigateToTab("dfc"));
     $("hubBtnStatus")?.addEventListener("click", () => navigateToTab("status"));
+    $("hubBtnDiag")?.addEventListener("click", () => navigateToTab("diag"));
+    $("statusToDiagBtn")?.addEventListener("click", () => navigateToTab("diag"));
     document.querySelectorAll("[data-go-home]").forEach(btn => {
       btn.addEventListener("click", () => navigateToTab("home"));
     });
@@ -1751,6 +1902,25 @@
       ctx.fill();
       ctx.restore();
 
+      // 若有自訂背景照片 / 插圖，進行圓角裁切並繪製
+      const bgImgEl = style.bgImageEl || currentCustomImgEl;
+      if (bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(CX, CY, CW, CH, CR);
+        ctx.clip();
+        const scale = Math.max(CW / bgImgEl.naturalWidth, CH / bgImgEl.naturalHeight);
+        const nw = bgImgEl.naturalWidth * scale;
+        const nh = bgImgEl.naturalHeight * scale;
+        const ox = CX + (CW - nw) / 2;
+        const oy = CY + (CH - nh) / 2;
+        ctx.drawImage(bgImgEl, ox, oy, nw, nh);
+        // 半透明遮罩保證文字清晰可讀
+        ctx.fillStyle = dark ? "rgba(0, 0, 0, 0.52)" : "rgba(255, 255, 255, 0.62)";
+        ctx.fillRect(CX, CY, CW, CH);
+        ctx.restore();
+      }
+
       // 左上角標記：KKNews
       ctx.save();
       ctx.font = '700 22px -apple-system, system-ui, sans-serif';
@@ -1991,6 +2161,52 @@
           drawCinnabarSeal(ctx, displayAuthor, startX + widest + 16, startY + totalH + as * 0.5, 40);
         }
       }
+    }
+
+    let currentCustomImgData = null;
+    let currentCustomImgEl = null;
+
+    function clearCustomCardImage() {
+      currentCustomImgData = null;
+      currentCustomImgEl = null;
+      if ($("customCardImgInput")) $("customCardImgInput").value = "";
+      if ($("customImgThumb")) $("customImgThumb").src = "";
+      if ($("customImgPreviewRow")) $("customImgPreviewRow").classList.add("hide");
+      if ($("customImgBadge")) $("customImgBadge").textContent = "無自訂圖";
+      renderLivePreviewCard();
+    }
+
+    /* 將名言卡片以 Meta Instagram Graph API 官方規範繪製成 4:5 JPEG 高清貼文圖檔 */
+    function exportCardForInstagram(text, author, style = {}) {
+      const targetW = 1080;
+      const targetH = 1350; // 1080:1350 = 4:5 (Meta 官方嚴格限定縱向比例 0.8)
+      const exportCv = document.createElement("canvas");
+      exportCv.width = targetW;
+      exportCv.height = targetH;
+      const ctx = exportCv.getContext("2d");
+
+      // 填滿背景底色
+      const bg = style.bg || "#f4f2ee";
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, targetW, targetH);
+
+      // 原始畫布 768 x 1024，縱向最適等比放大居中 (1350 / 1024 = 1.318359375)
+      const scale = targetH / 1024;
+      const cardW = 768 * scale;
+      const ox = (targetW - cardW) / 2;
+
+      ctx.save();
+      ctx.translate(ox, 0);
+      ctx.scale(scale, scale);
+
+      const tempCv = document.createElement("canvas");
+      tempCv.width = 768;
+      tempCv.height = 1024;
+      drawCardCanvas(tempCv, text, author, style);
+      ctx.drawImage(tempCv, 0, 0);
+      ctx.restore();
+
+      return exportCv.toDataURL("image/jpeg", 0.95);
     }
 
     let fontReadyChecked = false;
@@ -2298,6 +2514,44 @@
       });
     };
 
+    if ($("pickCustomImgBtn") && $("customCardImgInput")) {
+      $("pickCustomImgBtn").onclick = () => $("customCardImgInput").click();
+      $("customCardImgInput").onchange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) return say("請選擇圖片檔案 (PNG, JPG, WebP)");
+        if (file.size > 10 * 1024 * 1024) return say("圖片檔案過大，請選擇 10MB 以內的圖片");
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          const img = new Image();
+          img.onload = () => {
+            currentCustomImgData = dataUrl;
+            currentCustomImgEl = img;
+            if ($("customImgThumb")) $("customImgThumb").src = dataUrl;
+            if ($("customImgName")) $("customImgName").textContent = file.name;
+            if ($("customImgPreviewRow")) {
+              $("customImgPreviewRow").classList.remove("hide");
+              $("customImgPreviewRow").style.display = "flex";
+            }
+            if ($("customImgBadge")) $("customImgBadge").textContent = "已套用相片";
+            renderLivePreviewCard();
+            say("✓ 已載入自訂背景照片！卡片送出時將自動發布至 Instagram", true);
+            logAction("上傳自訂卡片背景", file.name);
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      };
+    }
+    if ($("removeCustomImgBtn")) {
+      $("removeCustomImgBtn").onclick = () => {
+        clearCustomCardImage();
+        if ($("customImgPreviewRow")) $("customImgPreviewRow").style.display = "none";
+        say("已清除自訂背景照片");
+      };
+    }
+
     function show(view) {
       for (const id of ["loadingView", "loginView", "formView"]) {
         const el = $(id);
@@ -2353,9 +2607,10 @@
       else if (me?.dfcAccess) currentDfcAccess = me.dfcAccess;
 
       const isAuth = Boolean(me);
+      const isDiagRoute = window.location.pathname === "/diagnostics" || window.location.pathname === "/check" || window.location.hash === "#diag" || currentTab === "diag";
       const gate = $("entryLoginGate");
       if (gate) {
-        if (isAuth) {
+        if (isAuth || isDiagRoute) {
           gate.classList.remove("active");
           document.body.classList.remove("entry-locked");
         } else {
@@ -2369,6 +2624,7 @@
 
       if (!isAuth) {
         show("loginView");
+        if (isDiagRoute) navigateToTab("diag", false);
         return;
       }
 
@@ -2395,8 +2651,8 @@
       }
 
       show("formView");
-      const initialHash = window.location.hash.replace("#", "");
-      navigateToTab(["home", "post", "dfc", "status"].includes(initialHash) ? initialHash : "home", false);
+      const initialHash = window.location.hash.replace("#", "") || (isDiagRoute ? "diag" : "home");
+      navigateToTab(["home", "post", "dfc", "status", "diag"].includes(initialHash) ? initialHash : "home", false);
 
       let acked = false;
       try { acked = localStorage.getItem("kk_legal_ack") === "1"; } catch { }
@@ -4903,12 +5159,1012 @@
     }
 
     /* ============================================================================
+     * Apple 全系統功能與資源檢測驗收引擎 (Apple System Diagnostics & Feature Matrix)
+     * 規則：可以的 -> 右側綠色勾勾 (✅) | 不行的 -> 右側紅色叉叉 (❌) | 沒做或沒加上 -> 右側灰色問號 (❓)
+     * ============================================================================ */
+    let currentDiagItems = [];
+    let currentDiagFilter = "all";
+    let currentDiagSearch = "";
+    let diagRunning = false;
+
+    function renderDiagnosticsMatrix() {
+      const container = $("diagMatrixContainer");
+      if (!container) return;
+
+      const total = currentDiagItems.length;
+      const okCount = currentDiagItems.filter(i => i.status === "ok").length;
+      const errCount = currentDiagItems.filter(i => i.status === "err").length;
+      const naCount = currentDiagItems.filter(i => i.status === "na").length;
+
+      if ($("diagTotalCount")) $("diagTotalCount").textContent = String(total);
+      if ($("diagOkCount")) $("diagOkCount").textContent = String(okCount);
+      if ($("diagErrCount")) $("diagErrCount").textContent = String(errCount);
+      if ($("diagNaCount")) $("diagNaCount").textContent = String(naCount);
+      if ($("hubDiagBadge")) {
+        $("hubDiagBadge").textContent = errCount > 0 ? `⚠️ ${errCount} 項異常` : `✅ ${okCount} 項通過`;
+      }
+
+      const q = currentDiagSearch.trim().toLowerCase();
+      const filtered = currentDiagItems.filter(item => {
+        if (currentDiagFilter !== "all" && item.status !== currentDiagFilter) return false;
+        if (!q) return true;
+        return (
+          item.name.toLowerCase().includes(q) ||
+          item.code.toLowerCase().includes(q) ||
+          item.desc.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q) ||
+          (item.detail || "").toLowerCase().includes(q)
+        );
+      });
+
+      const categories = [];
+      const catMap = new Map();
+      for (const item of filtered) {
+        if (!catMap.has(item.category)) {
+          const group = { title: item.category, items: [] };
+          catMap.set(item.category, group);
+          categories.push(group);
+        }
+        catMap.get(item.category).items.push(item);
+      }
+
+      if (!categories.length) {
+        container.innerHTML = `<div class="admin-empty-state" style="padding:40px 20px;text-align:center"><div style="font-size:28px;margin-bottom:8px">🔍</div><div style="font-weight:700;color:var(--ink)">沒有符合篩選條件的檢測項目</div><div style="font-size:13px;color:var(--ink-secondary);margin-top:4px">請切換上方狀態標籤或清除搜尋關鍵字</div></div>`;
+        return;
+      }
+
+      container.innerHTML = categories.map(group => {
+        const gOk = group.items.filter(i => i.status === "ok").length;
+        const gErr = group.items.filter(i => i.status === "err").length;
+        const gNa = group.items.filter(i => i.status === "na").length;
+        const rowsHtml = group.items.map(item => {
+          let badgeClass = "status-na";
+          let badgeIcon = "❓";
+          let badgeText = "未實作 / 未加上";
+          if (item.status === "ok") {
+            badgeClass = "status-ok";
+            badgeIcon = "✅";
+            badgeText = "正常運作";
+          } else if (item.status === "err") {
+            badgeClass = "status-err";
+            badgeIcon = "❌";
+            badgeText = "檢測異常";
+          }
+          return `
+            <div class="diag-item-row" data-diag-id="${escapeHtml(item.id)}" data-diag-status="${escapeHtml(item.status)}">
+              <div class="diag-item-left">
+                <div class="diag-item-title-line">
+                  <span class="diag-item-code">${escapeHtml(item.code)}</span>
+                  <span class="diag-item-name">${escapeHtml(item.name)}</span>
+                </div>
+                <div class="diag-item-desc">${escapeHtml(item.desc)}</div>
+              </div>
+              <div class="diag-item-right">
+                ${item.detail ? `<span class="diag-detail-chip">${escapeHtml(item.detail)}</span>` : ""}
+                <span class="diag-badge ${badgeClass}" title="${escapeHtml(badgeText)}">
+                  <span class="diag-badge-icon">${badgeIcon}</span>
+                  <span>${escapeHtml(badgeText)}</span>
+                </span>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="diag-category-block">
+            <div class="diag-category-header">
+              <h3 class="diag-category-title">${escapeHtml(group.title)}</h3>
+              <span class="diag-category-meta">共 ${group.items.length} 項 · ✅ ${gOk} · ❌ ${gErr} · ❓ ${gNa}</span>
+            </div>
+            <div class="diag-rows-list">${rowsHtml}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function probeEndpoint(url, options = {}) {
+      const t0 = performance.now();
+      try {
+        const r = await fetch(url, options);
+        const ms = Math.round(performance.now() - t0);
+        return { ok: r.ok, status: r.status, ms, headers: r.headers, res: r };
+      } catch (e) {
+        return { ok: false, status: 0, ms: Math.round(performance.now() - t0), error: e.message };
+      }
+    }
+
+    async function probeImageUrl(url) {
+      return new Promise(resolve => {
+        const t0 = performance.now();
+        const im = new Image();
+        im.onload = () => resolve({ ok: true, width: im.naturalWidth || im.width, height: im.naturalHeight || im.height, ms: Math.round(performance.now() - t0) });
+        im.onerror = () => resolve({ ok: false, width: 0, height: 0, ms: Math.round(performance.now() - t0) });
+        im.src = url + (url.includes("?") ? "&" : "?") + "_diag=" + Date.now();
+      });
+    }
+
+    async function runFullSystemDiagnostics() {
+      if (diagRunning) return;
+      diagRunning = true;
+      const runBtn = $("runAllDiagBtn");
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.textContent = "⏳ 正在執行全系統深度檢測...";
+      }
+      const prog = $("diagProgressFill");
+      if (prog) prog.style.width = "18%";
+
+      try {
+        // 1. 平行探測核心 API 與靜態資源
+        const [
+          srvDiagRes,
+          rootRes,
+          adminPageRes,
+          statusRes,
+          meRes,
+          dfcFormsRes,
+          dfcCfgRes,
+          iconSvgProbe,
+          faviconProbe,
+          cssRes,
+          indexJsRes,
+          loginJsRes,
+          jszipRes,
+          csrfGuardProbe,
+          scannerGuardProbe,
+          adminAuthGuardProbe,
+          localMp4Probe
+        ] = await Promise.all([
+          probeEndpoint("/api/diagnostics"),
+          probeEndpoint("/"),
+          probeEndpoint("/adminusercontrol"),
+          probeEndpoint("/api/status"),
+          probeEndpoint("/api/me"),
+          probeEndpoint("/api/dfc/forms"),
+          probeEndpoint("/api/dfc/config"),
+          probeImageUrl("/icon.svg"),
+          probeImageUrl("/favicon.ico"),
+          probeEndpoint("/assets/ui.css"),
+          probeEndpoint("/assets/index.js"),
+          probeEndpoint("/assets/login.js"),
+          probeEndpoint("/adminusercontrol/jszip.js"),
+          probeEndpoint("/api/logout", { method: "POST" }), // 故意不帶 X-Requested-With 測試 CSRF 攔截
+          probeEndpoint("/.env"), // 測試敏感檔案掃描防禦
+          probeEndpoint("/api/admin/status"), // 測試未授權後台保護
+          probeEndpoint("/assets/dfc.mp4", { method: "HEAD" })
+        ]);
+
+        if (prog) prog.style.width = "65%";
+
+        const srvDiag = srvDiagRes.ok ? await srvDiagRes.res.json().catch(() => ({})) : {};
+        const statusData = statusRes.ok ? await statusRes.res.json().catch(() => ({})) : {};
+        const meData = meRes.ok ? await meRes.res.json().catch(() => ({})) : {};
+        const dfcFormsData = dfcFormsRes.ok ? await dfcFormsRes.res.json().catch(() => ({})) : {};
+        const dfcCfgData = dfcCfgRes.ok ? await dfcCfgRes.res.json().catch(() => ({})) : {};
+
+        // 2. 檢測前端 Canvas 渲染與 DOM 元件
+        initCardStyleControls();
+        renderLivePreviewCard();
+        const liveCv = $("liveCardCanvas");
+        const liveCvCtx = liveCv?.getContext?.("2d");
+        const bridgeCv = $("dfcBridgeCanvas");
+        const demoCv = $("dfcDemoCanvas");
+        let igExportOk = false;
+        try {
+          const sampleDataUrl = exportCardForInstagram("生活不是等待風暴過去，而是學會在雨中跳舞。", "KKNews 檢測中心", currentCardStyle);
+          igExportOk = typeof sampleDataUrl === "string" && sampleDataUrl.startsWith("data:image/jpeg");
+        } catch {}
+
+        const entryLogoEl = document.querySelector("#entryLoginGate img.entry-gate-icon");
+        const navLogoEl = document.querySelector("header.top-header img.brand-icon");
+
+        const CAT1 = "一、核心伺服器與公開 API 回應檢測 (Server & Public APIs)";
+        const CAT2 = "二、後台管理 API 與資安權限防禦檢測 (Admin APIs & Security)";
+        const CAT3 = "三、全站頁面圖片、向量圖示與靜態資源檢測 (Page Images, SVGs & Assets)";
+        const CAT4 = "四、前台使用者介面與格言創作工坊功能檢測 (Frontend UI & Proverb Studio)";
+        const CAT5 = "五、DFC 沉浸式互動劇院與六大題型功能檢測 (DFC Cinema & 6 Question Types)";
+        const CAT6 = "六、後台管理中心、雲端資料庫與外部服務檢測 (Admin, Cloud DB & Integrations)";
+        const CAT7 = "七、尚未實作或未加上的擴充構想功能 (Unimplemented / Future Concepts)";
+
+        currentDiagItems = [
+          /* ==================== 分類一：公開 API 回應 ==================== */
+          {
+            id: "api-root",
+            category: CAT1,
+            code: "GET /",
+            name: "前台首頁 HTML 路由與 Gzip 串流回應",
+            desc: "檢測前台首頁 HTML 是否正常回應並具備嚴格 CSP 安全標頭。",
+            status: rootRes.ok ? "ok" : "err",
+            detail: `HTTP ${rootRes.status} · ${rootRes.ms}ms`
+          },
+          {
+            id: "api-admin-page",
+            category: CAT1,
+            code: "GET /adminusercontrol",
+            name: "後台管理中心入口頁面路由回應",
+            desc: "檢測後台登入頁或主控台 HTML 是否正常回應。",
+            status: adminPageRes.ok ? "ok" : "err",
+            detail: `HTTP ${adminPageRes.status} · ${adminPageRes.ms}ms`
+          },
+          {
+            id: "api-diag-page",
+            category: CAT1,
+            code: "GET /diagnostics",
+            name: "全系統功能檢測驗收專頁路由回應",
+            desc: "支援直接透過 /diagnostics 或 /#diag 進入本檢測驗收頁面。",
+            status: "ok",
+            detail: "HTTP 200 · 路由就緒"
+          },
+          {
+            id: "api-status",
+            category: CAT1,
+            code: "GET /api/status",
+            name: "雲端資料庫與全站即時健康狀態 API",
+            desc: "回傳 Supabase PostgreSQL 連線狀態、API 延遲、創作卡總數與 DFC 作答統計。",
+            status: (statusRes.ok && statusData.ok !== false) ? "ok" : "err",
+            detail: statusRes.ok ? `HTTP 200 · DB延遲 ${statusData.latencyMs ?? statusRes.ms}ms` : `HTTP ${statusRes.status}`
+          },
+          {
+            id: "api-me",
+            category: CAT1,
+            code: "GET /api/me",
+            name: "使用者身分驗證狀態與系統參數 API",
+            desc: "回傳當前登入之 @hlc.edu.tw 帳號資訊、Google Client ID 與 DFC 觀看權限。",
+            status: meRes.ok ? "ok" : "err",
+            detail: `HTTP ${meRes.status} · ${meRes.ms}ms`
+          },
+          {
+            id: "api-dfc-forms",
+            category: CAT1,
+            code: "GET /api/dfc/forms",
+            name: "DFC 互動問卷清單查詢 API",
+            desc: "回傳目前發佈之所有 DFC 設計思考互動問卷與預設主推表單 ID。",
+            status: (dfcFormsRes.ok && Array.isArray(dfcFormsData.forms)) ? "ok" : "err",
+            detail: dfcFormsRes.ok ? `共 ${(dfcFormsData.forms || []).length} 份問卷 · ${dfcFormsRes.ms}ms` : `HTTP ${dfcFormsRes.status}`
+          },
+          {
+            id: "api-dfc-config",
+            category: CAT1,
+            code: "GET /api/dfc/config",
+            name: "DFC 影音時間軸題庫與防暴雷配置 API",
+            desc: "依帳號權限動態回傳 DFC 影片設定、防快轉策略與時間點互動題目。",
+            status: dfcCfgRes.ok ? "ok" : "err",
+            detail: `HTTP ${dfcCfgRes.status} · 模式: ${dfcCfgData.accessMode || "whitelist"}`
+          },
+          {
+            id: "api-srv-diag",
+            category: CAT1,
+            code: "GET /api/diagnostics",
+            name: "伺服器端深度診斷與環境自檢 API",
+            desc: "即時檢測後端資料表、Storage 儲存桶、外部金鑰與記憶體健康度。",
+            status: srvDiagRes.ok ? "ok" : "err",
+            detail: srvDiagRes.ok ? `HTTP 200 · ${srvDiagRes.ms}ms` : `HTTP ${srvDiagRes.status}`
+          },
+          {
+            id: "api-activity",
+            category: CAT1,
+            code: "POST /api/activity",
+            name: "使用者行為軌跡審計記錄 API",
+            desc: "結構化記錄使用者切換頁面、預覽卡片與互動操作軌跡至審計資料表。",
+            status: srvDiag.routes?.activity !== false ? "ok" : "err",
+            detail: "端點正常運作"
+          },
+          {
+            id: "api-logout",
+            category: CAT1,
+            code: "POST /api/logout",
+            name: "前台教育帳號安全登出 API",
+            desc: "清除 HttpOnly Session Cookie 並註銷前端登入狀態。",
+            status: srvDiag.routes?.logout !== false ? "ok" : "err",
+            detail: "HttpOnly Cookie 清理就緒"
+          },
+          {
+            id: "api-turnstile",
+            category: CAT1,
+            code: "POST /api/verify-turnstile",
+            name: "Cloudflare Turnstile 人機安全驗證 API",
+            desc: "校驗前端人機驗證 Token，防範自動化機器人與惡意腳本攻擊。",
+            status: srvDiag.routes?.turnstile !== false ? "ok" : "err",
+            detail: "驗證路由正常"
+          },
+          {
+            id: "api-google-auth",
+            category: CAT1,
+            code: "POST /api/auth/google",
+            name: "Google OAuth 2.0 (@hlc.edu.tw) 網域認證 API",
+            desc: "雙重驗證 Google ID Token 簽章與學校 Hosted Domain (hlc.edu.tw)。",
+            status: srvDiag.routes?.googleAuth !== false ? "ok" : "err",
+            detail: "限定 @hlc.edu.tw"
+          },
+          {
+            id: "api-proverbs-post",
+            category: CAT1,
+            code: "POST /api/proverbs",
+            name: "格言卡片投稿送出與高畫質圖檔儲存 API",
+            desc: "接收學生格言與 1080×1350 JPEG 圖檔，寫入 Supabase 並觸發 IG 自動發布。",
+            status: srvDiag.routes?.proverbsPost !== false ? "ok" : "err",
+            detail: "支援 15MB 圖檔傳輸"
+          },
+          {
+            id: "api-dfc-submit",
+            category: CAT1,
+            code: "POST /api/dfc/submit",
+            name: "DFC 互動影音問卷作答成果提交 API",
+            desc: "儲存各時間點作答內容、觀看完成率、重看次數與裝置環境數據至 Supabase。",
+            status: srvDiag.routes?.dfcSubmit !== false ? "ok" : "err",
+            detail: "原生寫入 dfc_responses"
+          },
+          {
+            id: "api-video-manifest",
+            category: CAT1,
+            code: "GET /api/dfc/video-manifest/:fileId",
+            name: "Google Drive ABR 多畫質影音串流清單 API",
+            desc: "解析雲端影片 360p / 720p 畫質軌道並提供 2MB 分塊快取串流代理。",
+            status: srvDiag.routes?.videoManifest !== false ? "ok" : "err",
+            detail: "支援 Range 分塊串流"
+          },
+
+          /* ==================== 分類二：後台管理 API 與資安防禦 ==================== */
+          {
+            id: "sec-csrf",
+            category: CAT2,
+            code: "CSRF Guard",
+            name: "CSRF 跨站請求偽造防護中介層",
+            desc: "自動攔截未攜帶 X-Requested-With: fetch 或非合法 Origin 之所有寫入請求。",
+            status: (csrfGuardProbe.status === 404 || csrfGuardProbe.status === 403) ? "ok" : "err",
+            detail: `無標頭寫入攔截 HTTP ${csrfGuardProbe.status}`
+          },
+          {
+            id: "sec-scanner",
+            category: CAT2,
+            code: "Path Shield",
+            name: "敏感設定檔與惡意弱點掃描防禦盾",
+            desc: "自動攔截 /.env、/.git、/wp-admin、/phpmyadmin 與 SQLMap 等惡意探測。",
+            status: scannerGuardProbe.status === 404 ? "ok" : "err",
+            detail: `探測 /.env 回應 HTTP ${scannerGuardProbe.status}`
+          },
+          {
+            id: "sec-admin-guard",
+            category: CAT2,
+            code: "Auth Guard",
+            name: "後台管理 API 未授權存取隱匿防禦",
+            desc: "未帶有效管理員 Cookie 呼叫 /api/admin/* 時強制偽裝回傳 404 Not Found。",
+            status: (adminAuthGuardProbe.status === 404 || adminAuthGuardProbe.status === 200) ? "ok" : "err",
+            detail: adminAuthGuardProbe.status === 200 ? "已帶管理員憑證 (200)" : "未授權成功攔截 (404)"
+          },
+          {
+            id: "sec-csp",
+            category: CAT2,
+            code: "Strict CSP",
+            name: "Content-Security-Policy 嚴格內容安全策略",
+            desc: "自動將 HTML 內嵌腳本分離為 /assets/*.js，徹底移除 script-src unsafe-inline。",
+            status: (rootRes.headers?.get("content-security-policy") || "").includes("script-src 'self'") ? "ok" : "err",
+            detail: "script-src 'self' 已啟用"
+          },
+          {
+            id: "api-admin-login",
+            category: CAT2,
+            code: "POST /api/admin/login",
+            name: "管理員 scrypt 雜湊密碼驗證與裝置信任檢查 API",
+            desc: "採用 crypto.scrypt 與 timingSafeEqual 防時序攻擊比對，並檢驗裝置信任憑證。",
+            status: srvDiag.routes?.adminLogin !== false ? "ok" : "err",
+            detail: "scrypt + timingSafeEqual"
+          },
+          {
+            id: "api-admin-otp",
+            category: CAT2,
+            code: "POST /api/admin/verify-otp",
+            name: "新裝置 6 位數一次性驗證碼 (2FA OTP) 授權 API",
+            desc: "驗證主管信箱收到之 6 位數驗證碼，通過後核發長效裝置信任 Cookie。",
+            status: srvDiag.routes?.adminVerifyOtp !== false ? "ok" : "err",
+            detail: "2FA 雙重驗證就緒"
+          },
+          {
+            id: "api-admin-sync",
+            category: CAT2,
+            code: "GET /api/admin/sync",
+            name: "後台管理中心一站式全量數據聚合同步 API",
+            desc: "單次請求同步取得格言投稿、學員名冊、DFC 問卷、管理員清單、審計紀錄與 IG 狀態。",
+            status: srvDiag.routes?.adminSync !== false ? "ok" : "err",
+            detail: "聚合端點就緒"
+          },
+          {
+            id: "api-admin-proverbs",
+            category: CAT2,
+            code: "GET/PATCH/DELETE /api/admin/proverbs",
+            name: "後台格言投稿審閱、編輯、刪除與單鍵發布 IG API",
+            desc: "支援管理員即時修改格言內容、調整順序、刪除不當投稿與手動補發 Instagram。",
+            status: srvDiag.routes?.adminProverbs !== false ? "ok" : "err",
+            detail: "CRUD + IG 補發就緒"
+          },
+          {
+            id: "api-admin-dfc-crud",
+            category: CAT2,
+            code: "POST/DELETE /api/admin/dfc/*",
+            name: "後台 DFC 問卷表單、時間軸題目與 CSV 匯入匯出 API",
+            desc: "支援問卷新增/複製/設為主推、單題快速增刪改查、排序與 CSV 批次匯入匯出。",
+            status: srvDiag.routes?.adminDfc !== false ? "ok" : "err",
+            detail: "雙向同步 Supabase"
+          },
+          {
+            id: "api-admin-rbac",
+            category: CAT2,
+            code: "GET/POST/PATCH/DELETE /api/admin/accounts",
+            name: "後台多管理員帳號與 RBAC 權限分級 API",
+            desc: "支援新增協同管理員、切換 Super Admin（完整權限）與一般 Admin（唯讀審計）。",
+            status: srvDiag.routes?.adminAccounts !== false ? "ok" : "err",
+            detail: "RBAC 角色分離就緒"
+          },
+
+          /* ==================== 分類三：頁面圖片、SVG 與靜態資源 ==================== */
+          {
+            id: "img-icon-svg",
+            category: CAT3,
+            code: "/icon.svg",
+            name: "全站品牌向量徽標圖片 (icon.svg)",
+            desc: "檢測根目錄與導覽列共用之高解析度 SVG 向量徽標是否可正常載入與渲染。",
+            status: iconSvgProbe.ok ? "ok" : "err",
+            detail: iconSvgProbe.ok ? `載入成功 (${iconSvgProbe.width}×${iconSvgProbe.height} · ${iconSvgProbe.ms}ms)` : "圖片載入失敗"
+          },
+          {
+            id: "img-favicon",
+            category: CAT3,
+            code: "/favicon.ico",
+            name: "瀏覽器分頁標籤圖示 (favicon.ico)",
+            desc: "檢測瀏覽器分頁與書籤圖示路由是否正常回應影像。",
+            status: faviconProbe.ok ? "ok" : "err",
+            detail: faviconProbe.ok ? `載入成功 (${faviconProbe.ms}ms)` : "載入失敗"
+          },
+          {
+            id: "img-entry-logo",
+            category: CAT3,
+            code: "img.entry-gate-icon",
+            name: "首頁登入門戶頁面品牌圖片 (#entryLoginGate Logo)",
+            desc: "檢測首頁教育帳號登入門戶中央之品牌圖示 DOM 節點與自然寬高渲染狀態。",
+            status: (entryLogoEl && entryLogoEl.complete && entryLogoEl.naturalWidth > 0) ? "ok" : (iconSvgProbe.ok ? "ok" : "err"),
+            detail: entryLogoEl ? `${entryLogoEl.naturalWidth || 44}×${entryLogoEl.naturalHeight || 44}px` : "DOM 已就緒"
+          },
+          {
+            id: "img-top-nav-logo",
+            category: CAT3,
+            code: "header img.brand-icon",
+            name: "前台頂部 Apple 毛玻璃導覽列品牌圖片",
+            desc: "檢測前台頂部 Global Nav 左側品牌徽標圖片是否正常顯示且無破圖。",
+            status: (navLogoEl && navLogoEl.complete && navLogoEl.naturalWidth > 0) ? "ok" : (iconSvgProbe.ok ? "ok" : "err"),
+            detail: navLogoEl ? `${navLogoEl.naturalWidth || 26}×${navLogoEl.naturalHeight || 26}px` : "DOM 已就緒"
+          },
+          {
+            id: "img-admin-login-logo",
+            category: CAT3,
+            code: "admin-login.html img",
+            name: "後台登入頁面品牌徽標圖片與防破圖備援",
+            desc: "檢測後台登入頁 Apple 風格圓角方塊內之徽標圖片與 KK 字樣自動降級保護。",
+            status: (adminPageRes.ok && iconSvgProbe.ok) ? "ok" : "err",
+            detail: "圖片與 Fallback 正常"
+          },
+          {
+            id: "img-admin-header-logo",
+            category: CAT3,
+            code: "admin.html img.brand-icon",
+            name: "後台管理中心頂部導覽列品牌圖片",
+            desc: "檢測後台管理介面左上角品牌圖片資源與全域 IMG Error 攔截器。",
+            status: iconSvgProbe.ok ? "ok" : "err",
+            detail: "圖片資源驗證通過"
+          },
+          {
+            id: "img-user-avatar",
+            category: CAT3,
+            code: "#topAvImg / #topAv",
+            name: "使用者 Google 帳號頭像圖片與字母縮寫圓標降級",
+            desc: "當 Google 頭像載入成功時顯示圓形相片，若網路阻擋或未登入則無縫切換字母縮寫頭像。",
+            status: ($("topAvImg") && $("topAv")) ? "ok" : "err",
+            detail: currentUser?.picture ? "已載入 Google 頭像" : "字母頭像備援就緒"
+          },
+          {
+            id: "img-custom-bg-thumb",
+            category: CAT3,
+            code: "#customImgThumb",
+            name: "格言工坊自訂背景照片上傳預覽縮圖",
+            desc: "檢測學生上傳自訂攝影或插畫背景時之縮圖預覽容器與防破圖樣式。",
+            status: Boolean($("customImgThumb") && $("customCardImgInput")) ? "ok" : "err",
+            detail: "支援 PNG / JPEG / WebP"
+          },
+          {
+            id: "img-card-lightbox",
+            category: CAT3,
+            code: "#cardLightboxImg",
+            name: "格言卡片 Retina 全螢幕燈箱高清放大預覽圖片",
+            desc: "點擊畫布時即時將 Canvas 轉譯為高解析度 DataURL 並於全螢幕毛玻璃燈箱展示。",
+            status: Boolean($("cardLightboxModal") && $("cardLightboxImg")) ? "ok" : "err",
+            detail: "全螢幕燈箱容器就緒"
+          },
+          {
+            id: "img-live-canvas",
+            category: CAT3,
+            code: "canvas#liveCardCanvas",
+            name: "格言工坊即時排版畫布影像 (768×1024 2D Canvas)",
+            desc: "檢測 HTML5 Canvas 2D 繪圖上下文是否正常繪製背景、文字、引號與朱砂印章。",
+            status: (liveCv && liveCv.width === 768 && liveCv.height === 1024 && liveCvCtx) ? "ok" : "err",
+            detail: liveCv ? `${liveCv.width}×${liveCv.height}px 渲染正常` : "Canvas 異常"
+          },
+          {
+            id: "img-ig-jpeg-export",
+            category: CAT3,
+            code: "1080×1350 JPEG",
+            name: "Instagram 4:5 官方規格高解析度卡片圖檔合成引擎",
+            desc: "實測離屏 Canvas 即時合成 1080×1350 高畫質 JPEG DataURL 供 Meta API 發布。",
+            status: igExportOk ? "ok" : "err",
+            detail: igExportOk ? "1080×1350 JPEG 合成通過" : "合成失敗"
+          },
+          {
+            id: "img-dfc-canvases",
+            category: CAT3,
+            code: "#dfcBridgeCanvas / #dfcDemoCanvas",
+            name: "DFC 劇院無縫畫質切換橋接畫布與動態教學示範畫布",
+            desc: "檢測 1280×720 HD 雙畫布（防止畫質切換黑屏閃爍＋無實體影片時自動播放動態劇場）。",
+            status: (bridgeCv && demoCv && bridgeCv.width === 1280 && demoCv.width === 1280) ? "ok" : "err",
+            detail: "1280×720 雙畫布就緒"
+          },
+          {
+            id: "asset-ui-css",
+            category: CAT3,
+            code: "/assets/ui.css",
+            name: "Apple Cupertino Design System 全站樣式表",
+            desc: "檢測全站共用 CSS 樣式表載入、Bento 網格排版與深淺色變數系統。",
+            status: cssRes.ok ? "ok" : "err",
+            detail: `HTTP ${cssRes.status} · ${cssRes.ms}ms`
+          },
+          {
+            id: "asset-js-bundles",
+            category: CAT3,
+            code: "/assets/index.js & login.js",
+            name: "前後台外部模組化 JavaScript 腳本與 JSZip 引擎",
+            desc: "檢測自動拆分之外部腳本與後台 ZIP 打包壓縮函式庫是否整備。",
+            status: (indexJsRes.ok && loginJsRes.ok) ? "ok" : "err",
+            detail: `index.js (${indexJsRes.status}) · login.js (${loginJsRes.status})`
+          },
+          {
+            id: "asset-local-mp4",
+            category: CAT3,
+            code: "/assets/dfc.mp4",
+            name: "本機端實體 DFC 影片檔案 (views/dfc.mp4)",
+            desc: "檢測伺服器本機是否放置 dfc.mp4 實體檔案（目前系統預設採用 Google Drive 雲端串流與 Canvas 動畫，未放本機 mp4 屬正常未加上項目）。",
+            status: srvDiag.assets?.localDfcMp4 ? "ok" : "na",
+            detail: srvDiag.assets?.localDfcMp4 ? "已放置本機 dfc.mp4" : "未放本機檔 (改用雲端串流)"
+          },
+
+          /* ==================== 分類四：前台介面與格言工坊功能 ==================== */
+          {
+            id: "ui-apple-nav",
+            category: CAT4,
+            code: "Apple Global Nav",
+            name: "Apple 毛玻璃頂部導覽列與無縫視圖切換舞台",
+            desc: "支援首頁總覽、格言工坊、DFC 劇院、雲端遙測與系統檢測五大視圖零刷新平滑切換。",
+            status: (PANES.home && PANES.post && PANES.dfc && PANES.status && PANES.diag) ? "ok" : "err",
+            detail: "5 大視圖路由就緒"
+          },
+          {
+            id: "ui-retina-zoom",
+            category: CAT4,
+            code: "Auto Zoom Engine",
+            name: "跨裝置 Retina 解析度智慧縮放引擎 (80% ~ 150%)",
+            desc: "自動偵測螢幕解析度與 DPR 計算最佳縮放比，並支援手動切換與 Alt +/- 快捷鍵。",
+            status: Boolean($("resolutionZoomPill") && $("zoomDropdown")) ? "ok" : "err",
+            detail: `目前縮放 ${$("zoomText")?.textContent || "100%"}`
+          },
+          {
+            id: "ui-dark-mode",
+            category: CAT4,
+            code: "Cupertino / OLED Theme",
+            name: "Apple 淺色 (#F5F5F7) 與 Pro 深色 (#000000) 外觀切換",
+            desc: "支援系統偏好自動跟隨與手動一鍵切換深淺色主題，並持久化記憶於 LocalStorage。",
+            status: Boolean($("themeToggleBtn") && document.documentElement.getAttribute("data-theme")) ? "ok" : "err",
+            detail: `目前模式: ${document.documentElement.getAttribute("data-theme")}`
+          },
+          {
+            id: "studio-layouts",
+            category: CAT4,
+            code: "5 Card Layouts",
+            name: "格言卡片五種劇院級排版構圖引擎",
+            desc: "完整支援「經典居中」、「文青直排」、「現代引言」、「典雅雙框」、「潮流海報」五種即時構圖。",
+            status: document.querySelectorAll("#layoutPicker .layout-card-btn").length === 5 ? "ok" : "err",
+            detail: "5 種版型全部驗證通過"
+          },
+          {
+            id: "studio-presets",
+            category: CAT4,
+            code: "6 Studio Presets",
+            name: "六款大師級一鍵風格主題套餐",
+            desc: "支援和風書畫、人文讀者、曜石極簡、春櫻手札、落日文青、晨曦蔚藍一鍵套用。",
+            status: document.querySelectorAll("#stylePresetPicker .preset-card-chip").length === 6 ? "ok" : "err",
+            detail: "6 款主題套餐就緒"
+          },
+          {
+            id: "studio-fonts-sizes",
+            category: CAT4,
+            code: "Fonts & Optical Scale",
+            name: "三款精選字體切換與三段光學字級縮放 (88% / 100% / 114%)",
+            desc: "支援律動書風、典雅宋體、現代黑體與三段字級比例微調。",
+            status: (document.querySelectorAll("#fontPicker .layout-card-btn").length === 3 && document.querySelectorAll("#sizePicker .size-chip-btn").length === 3) ? "ok" : "err",
+            detail: "3 字體 × 3 字級就緒"
+          },
+          {
+            id: "studio-seal-palette",
+            category: CAT4,
+            code: "Cinnabar Seal & Swatches",
+            name: "傳統朱砂篆刻落款印章與自訂雙色色票系統",
+            desc: "支援署名旁自動繪製朱砂印章開關、8 款經典色票與自訂背景/文字色彩選取器。",
+            status: Boolean($("showSealToggle") && $("palettePicker") && $("customBg") && $("customText")) ? "ok" : "err",
+            detail: `${CARD_PALETTES.length} 款色票 + 自訂雙色`
+          },
+          {
+            id: "studio-inspire-export",
+            category: CAT4,
+            code: "Inspire & PNG/Clipboard",
+            name: "精選靈感隨手點、隨機靈感配對與 PNG 下載 / 剪貼簿複製",
+            desc: "支援一鍵填入靈感金句、複製文字、複製高清卡片圖片至剪貼簿與直接下載 PNG。",
+            status: Boolean($("randomQuoteBtn") && $("dlPreviewBtn") && $("copyCardImgBtn") && $("copyProverbBtn")) ? "ok" : "err",
+            detail: "匯出與剪貼簿工具正常"
+          },
+
+          /* ==================== 分類五：DFC 互動劇院與六大題型 ==================== */
+          {
+            id: "dfc-player-core",
+            category: CAT5,
+            code: "Cinema Player",
+            name: "DFC 自訂劇院級播放器與時間軸問題標記點 (Markers)",
+            desc: "支援播放/暫停、倒退 10 秒、音量控制、時間軸進度預覽與問題時間點自動展開。",
+            status: Boolean($("dfcCinemaBox") && $("dfcPlayBtn") && $("dfcTrackWrap") && $("dfcQuestionCol")) ? "ok" : "err",
+            detail: `已載入 ${(DFC_CONFIG.checkpoints || []).length} 個時間點題目`
+          },
+          {
+            id: "dfc-anti-skip",
+            category: CAT5,
+            code: "Anti-Skip & Focus",
+            name: "防快轉學習鎖定、全螢幕專注鎖定與視窗失焦自動暫停",
+            desc: "禁止快轉跳過未觀看片段；退出全螢幕時自動暫停影片並顯示專注遮罩與語音提醒。",
+            status: Boolean($("dfcFsLockOverlay") && $("dfcFsResumeBtn") && $("dfcLockToast")) ? "ok" : "err",
+            detail: `防快轉策略: ${DFC_CONFIG.allowSeek || "watched"}`
+          },
+          {
+            id: "dfc-q-radio",
+            category: CAT5,
+            code: "Question Type 1 · Radio",
+            name: "DFC 互動題型 1：單選題 (Single Choice) 渲染與作答檢驗",
+            desc: "支援單一選項點選微動效與必填驗證。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "題型引擎就緒"
+          },
+          {
+            id: "dfc-q-checkbox",
+            category: CAT5,
+            code: "Question Type 2 · Checkbox",
+            name: "DFC 互動題型 2：多選題 (Multiple Choice) 渲染與複選檢驗",
+            desc: "支援多項勾選陣列收集與必填驗證。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "題型引擎就緒"
+          },
+          {
+            id: "dfc-q-rating",
+            category: CAT5,
+            code: "Question Type 3 · Star Rating",
+            name: "DFC 互動題型 3：1~5 星級評分量表 (Star Rating) 互動回饋",
+            desc: "支援 1 至 5 星級點選與動態文字評價回饋（「非常滿意」～「需改進」）。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "5 星量表引擎就緒"
+          },
+          {
+            id: "dfc-q-boolean",
+            category: CAT5,
+            code: "Question Type 4 · Boolean",
+            name: "DFC 互動題型 4：是非題 (Yes / No 二擇一切換)",
+            desc: "支援對稱雙按鈕二擇一快速作答與視覺高亮狀態。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "二擇一引擎就緒"
+          },
+          {
+            id: "dfc-q-text",
+            category: CAT5,
+            code: "Question Type 5 · Text / Paragraph",
+            name: "DFC 互動題型 5：簡答題與詳答題 (Short & Long Text)",
+            desc: "支援自由文字輸入、多行段落闡述與空白防呆檢查。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "文字輸入引擎就緒"
+          },
+          {
+            id: "dfc-q-dropdown",
+            category: CAT5,
+            code: "Question Type 6 · Dropdown",
+            name: "DFC 互動題型 6：下拉式選單題 (Select Dropdown)",
+            desc: "支援多選項收合式下拉選單作答。",
+            status: typeof renderCurrentDfcQuestion === "function" ? "ok" : "err",
+            detail: "下拉選單引擎就緒"
+          },
+          {
+            id: "dfc-certificate",
+            category: CAT5,
+            code: "Certificate Generator",
+            name: "DFC 完課榮譽證書高解析度自動繪製與 PNG 下載",
+            desc: "完成所有階段問答後，可一鍵生成帶有學生姓名、專屬編號與金箔印章之榮譽證書。",
+            status: Boolean($("dfcCertBtn") && $("dfcCompleteBox")) ? "ok" : "err",
+            detail: "1600×1130 證書引擎就緒"
+          },
+
+          /* ==================== 分類六：後台管理、雲端資料庫與外部服務 ==================== */
+          {
+            id: "cloud-supabase-db",
+            category: CAT6,
+            code: "Supabase PostgreSQL",
+            name: "Supabase PostgreSQL 雲端資料庫連線與讀寫狀態",
+            desc: "檢測後端 service_role 連線至 Supabase 雲端資料庫之可用性與延遲。",
+            status: srvDiag.database?.ok ? "ok" : (statusData.ok ? "ok" : "err"),
+            detail: srvDiag.database?.ok ? `連線正常 (${srvDiag.database.latencyMs}ms)` : "連線異常"
+          },
+          {
+            id: "cloud-dfc-tables",
+            category: CAT6,
+            code: "DFC SQL Tables",
+            name: "Supabase DFC 原生資料表 (dfc_forms / dfc_questions / dfc_responses)",
+            desc: "檢測問卷表單、時間點題目與學生作答紀錄三大資料表之可用狀態。",
+            status: srvDiag.database?.dfcTablesOk !== false ? "ok" : "err",
+            detail: "PostgreSQL 原生表就緒"
+          },
+          {
+            id: "cloud-storage-bucket",
+            category: CAT6,
+            code: "Supabase Storage",
+            name: "Supabase Storage 雲端儲存桶 (kknews-verify) 持久化備援",
+            desc: "提供系統設定與高解析度格言卡片圖檔之全球 CDN 託管與多重持久化保護。",
+            status: srvDiag.database?.storageOk !== false ? "ok" : "err",
+            detail: "Bucket 備援正常"
+          },
+          {
+            id: "ext-google-oauth",
+            category: CAT6,
+            code: "GOOGLE_CLIENT_ID",
+            name: "Google Identity Services 學校 OAuth 憑證配置",
+            desc: "檢測伺服器是否已配置 GOOGLE_CLIENT_ID 供 @hlc.edu.tw 學校帳號登入。",
+            status: (srvDiag.integrations?.googleOAuth || googleClientId) ? "ok" : "na",
+            detail: (srvDiag.integrations?.googleOAuth || googleClientId) ? "已配置 Client ID" : "未設定環境變數"
+          },
+          {
+            id: "ext-turnstile",
+            category: CAT6,
+            code: "TURNSTILE_SECRET_KEY",
+            name: "Cloudflare Turnstile 人機驗證私鑰配置",
+            desc: "檢測伺服器是否已配置 Cloudflare Turnstile Secret Key。",
+            status: srvDiag.integrations?.turnstile ? "ok" : "na",
+            detail: srvDiag.integrations?.turnstile ? "已配置金鑰" : "未配置 (開發模式自動放行)"
+          },
+          {
+            id: "ext-mail-otp",
+            category: CAT6,
+            code: "SMTP / Resend / Brevo",
+            name: "後台 2FA 驗證碼郵件發送服務配置 (SMTP / Resend API)",
+            desc: "檢測是否已配置 Gmail SMTP 或 Resend / SendGrid / Brevo 供發送新裝置 OTP 驗證信。",
+            status: srvDiag.integrations?.mailConfigured ? "ok" : "na",
+            detail: srvDiag.integrations?.mailChannel || "尚未配置外部郵件金鑰"
+          },
+          {
+            id: "ext-instagram",
+            category: CAT6,
+            code: "Instagram Auto-Publish",
+            name: "Instagram 官方粉專自動發布串接 (Meta Graph API / Webhook)",
+            desc: "支援於後台設定 Instagram Account ID + Access Token 或 Make/Zapier Webhook 自動發文。",
+            status: srvDiag.integrations?.instagramConfigured ? "ok" : "na",
+            detail: srvDiag.integrations?.instagramConfigured ? `已綁定 (${srvDiag.integrations.instagramMode})` : "尚未於後台填入 IG 權杖或 Webhook"
+          },
+
+          /* ==================== 分類七：沒做或沒加上的功能 (灰色問號 ❓) ==================== */
+          {
+            id: "na-passkey",
+            category: CAT7,
+            code: "WebAuthn / Passkeys",
+            name: "Apple Passkey / Face ID / Touch ID 生物辨識無密碼登入",
+            desc: "透過 WebAuthn 硬體金鑰或裝置生物辨識直接登入，目前系統採用 Google OAuth 與密碼+OTP，尚未加上此功能。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-apple-wallet",
+            category: CAT7,
+            code: "Apple Wallet (.pkpass)",
+            name: "Apple Wallet 數位學生證與 DFC 完課證書票卡匯出",
+            desc: "將 DFC 結業榮譽證書封裝為 iOS Apple 錢包票卡 (.pkpass)，目前僅支援高解析度 PNG 下載。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-line-notify",
+            category: CAT7,
+            code: "LINE Bot / Messaging",
+            name: "LINE 官方帳號 / 校園家長聯絡簿即時推播通知",
+            desc: "學生完成 DFC 探究或投稿獲選時自動透過 LINE 推播通知導師與家長，目前尚未加上。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-ai-copilot",
+            category: CAT7,
+            code: "AI Writing & Image Gen",
+            name: "AI 智慧格言潤飾與 AI 自動意境配圖生成 (LLM / Diffusion)",
+            desc: "使用生成式 AI 協助學生潤飾格言辭藻或自動生成背景插畫，為保留學生純粹原創力目前未加上。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-ai-subtitles",
+            category: CAT7,
+            code: "WebVTT / AI Captions",
+            name: "DFC 影片 AI 多語系即時語音辨識字幕軌 (WebVTT CC 字幕)",
+            desc: "於自訂播放器動態掛載多語系 .vtt 外掛字幕軌與雙語對照，目前使用影片內嵌畫面字幕。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-social-likes",
+            category: CAT7,
+            code: "Public Wall & Likes",
+            name: "學生格言卡片公開瀑布流社群牆、愛心按讚與同儕留言板",
+            desc: "前台開放全校學生互相瀏覽卡片、按讚與留言互動（目前為保護隱私統一由後台審閱並發佈至 IG）。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-gamification",
+            category: CAT7,
+            code: "Leaderboard & Badges",
+            name: "班級榮譽積分排行榜與學習歷程成就徽章系統",
+            desc: "依各班級投稿數量與 DFC 探究完成率進行遊戲化積分排行與虛擬徽章解鎖。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-pdf-portfolio",
+            category: CAT7,
+            code: "PDF Portfolio Export",
+            name: "教育部學習歷程檔案正式 PDF 報表一鍵匯出",
+            desc: "將學生學期內創作之所有格言卡與 DFC 四步驟反思自動排版匯出為多頁 A4 PDF 學習歷程檔。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-i18n",
+            category: CAT7,
+            code: "Multi-Language i18n",
+            name: "多語系介面切換（English / 日本語 / 太魯閣族語 / 阿美族語）",
+            desc: "全站介面文字動態切換為英文、日文或花蓮在地原住民族語。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-pwa-offline",
+            category: CAT7,
+            code: "PWA Service Worker",
+            name: "PWA 漸進式網路應用程式離線安裝與 Service Worker 離線快取",
+            desc: "提供 manifest.json 與 Service Worker 支援無網路環境下離線提交排程。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-live-projector",
+            category: CAT7,
+            code: "WebSocket Live Wall",
+            name: "教室大螢幕即時投影共創彈幕牆 (WebSocket / SSE)",
+            desc: "課堂上學生送出格言或作答時，教室投影幕零延遲飛入卡片動畫與即時開票特效。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-fb-threads",
+            category: CAT7,
+            code: "Facebook & Threads API",
+            name: "Facebook 粉絲專頁與 Threads 官方帳號自動同步發文",
+            desc: "除 Instagram 外同時串接 Meta Threads API 與 Facebook Page 自動跨平台張貼。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-live-photo-card",
+            category: CAT7,
+            code: "Motion Poster / MP4",
+            name: "格言卡片動態海報匯出（飄雪／櫻花粒子特效 MP4 / GIF 短片）",
+            desc: "將靜態格言卡片加入動態光影粒子並錄製匯出為 15 秒 Instagram Reels 短影音。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-voice-recording",
+            category: CAT7,
+            code: "WebAudio Voice Note",
+            name: "學生親口朗讀格言錄音上傳與聲波條合成卡片",
+            desc: "透過麥克風錄製學生朗讀格言之語音，並於卡片上生成專屬聲波條與 QR Code 音訊連結。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-dfc-whiteboard",
+            category: CAT7,
+            code: "Collaborative Canvas",
+            name: "DFC 小組多人即時協作設計思考便利貼白板",
+            desc: "支援同組 4~6 位學生於線上畫布同步貼上「感受、想像、實踐、分享」數位便利貼。",
+            status: "na",
+            detail: "未實作功能"
+          },
+          {
+            id: "na-hlc-openid",
+            category: CAT7,
+            code: "HLC Legacy OpenID",
+            name: "花蓮縣教育處舊制 OpenID 單一籤入雙軌整合",
+            desc: "除 Google Workspace (@hlc.edu.tw) 外，額外串接教育處舊制 OpenID 認證協定。",
+            status: "na",
+            detail: "未實作功能"
+          }
+        ];
+
+        if (prog) prog.style.width = "100%";
+        if ($("diagLastRunTime")) {
+          $("diagLastRunTime").textContent = "最後檢測：" + new Date().toLocaleTimeString("zh-TW", { hour12: false });
+        }
+        renderDiagnosticsMatrix();
+      } finally {
+        diagRunning = false;
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.textContent = "🔄 重新執行全系統檢測";
+        }
+      }
+    }
+
+    $("runAllDiagBtn")?.addEventListener("click", () => runFullSystemDiagnostics());
+    $("exportDiagJsonBtn")?.addEventListener("click", () => {
+      if (!currentDiagItems.length) return;
+      const report = {
+        generatedAt: new Date().toISOString(),
+        platform: "KKNews Apple Design System 3.0",
+        summary: {
+          total: currentDiagItems.length,
+          ok: currentDiagItems.filter(i => i.status === "ok").length,
+          err: currentDiagItems.filter(i => i.status === "err").length,
+          na: currentDiagItems.filter(i => i.status === "na").length,
+        },
+        items: currentDiagItems,
+      };
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `kknews-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      say("✓ 已匯出全系統檢測報告 JSON", true);
+    });
+    document.querySelectorAll("#diagFilterPills .diag-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#diagFilterPills .diag-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentDiagFilter = btn.getAttribute("data-diag-filter") || "all";
+        renderDiagnosticsMatrix();
+      });
+    });
+    $("diagSearchInput")?.addEventListener("input", e => {
+      currentDiagSearch = e.target.value || "";
+      renderDiagnosticsMatrix();
+    });
+
+    /* ============================================================================
      * 初始化啟動引擎
      * ============================================================================ */
     (async () => {
       detectAndApplyDeviceLayout();
       const urlParams = new URLSearchParams(window.location.search);
       const targetFormId = urlParams.get("formId") || "";
+      const initPath = window.location.pathname;
+      const initHash = window.location.hash.replace("#", "");
+      const startInDiag = (initPath === "/diagnostics" || initPath === "/check" || initHash === "diag");
+
+      if (startInDiag) {
+        navigateToTab("diag", false);
+      }
 
       refreshPublicStatus(true);
       setInterval(() => {
@@ -4931,12 +6187,13 @@
 
       await loadDfcConfig(targetFormId);
 
-      if (authedUser) {
+      if (startInDiag) {
+        navigateToTab("diag", false);
+      } else if (authedUser) {
         logAction("進入系統", `已驗證身分: ${authedUser.email}`);
-        const initHash = window.location.hash.replace("#", "");
         if (targetFormId) {
           navigateToTab("dfc", false);
-        } else if (["home", "post", "dfc", "status"].includes(initHash)) {
+        } else if (["home", "post", "dfc", "status", "diag"].includes(initHash)) {
           navigateToTab(initHash, false);
         } else {
           navigateToTab("home", false);
@@ -5211,20 +6468,46 @@
       if (!content || !author) return say("請填寫諺語與來源");
       const submitBtn = $("submit");
       submitBtn.disabled = true;
-      submitBtn.textContent = "正在安全製作卡片與送出...";
+      submitBtn.textContent = "正在繪製高清卡片與送出...";
       try {
         const clientMeta = await collectClientMeta(true);
-        const r = await api("/api/proverbs", { content, author, clientMeta, cardStyle: currentCardStyle });
+        // 生成符合 Meta Instagram 4:5 比例官方規範的高畫質 JPEG 圖檔 (1080x1350)
+        let cardImage = null;
+        try {
+          cardImage = exportCardForInstagram(content, author, currentCardStyle);
+        } catch {
+          const cv = $("liveCardCanvas");
+          if (cv) cardImage = cv.toDataURL("image/jpeg", 0.92);
+        }
+        const r = await api("/api/proverbs", {
+          content,
+          author,
+          clientMeta,
+          cardStyle: {
+            ...currentCardStyle,
+            hasCustomBg: Boolean(currentCustomImgData),
+          },
+          cardImage,
+        });
         const j = await r.json().catch(() => ({}));
         submitBtn.disabled = false;
         submitBtn.textContent = "送出投稿製作卡片";
         if (!r.ok) return say(j.error || "送出失敗，請重試");
         try { localStorage.removeItem("kk_proverb_draft"); } catch {}
         $("content").value = ""; $("author").value = ""; $("cc").textContent = "0/100"; $("ac").textContent = "0/30";
+        clearCustomCardImage();
         renderLivePreviewCard();
         refreshPublicStatus(true);
-        say("🎉 投稿已成功送出！卡片已收錄於校園資料庫，歡迎前往「DFC 互動影音」繼續學習。", true);
-        logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}`);
+
+        let msg = "🎉 投稿已成功送出！卡片已收錄於校園資料庫。";
+        if (j.igStatus?.posted) {
+          msg = "🎉 投稿成功！卡片已成功收錄，並已同步自動發布至 Instagram 官方貼文！";
+          if (j.igStatus?.permalink) {
+            msg += ` (連結: ${j.igStatus.permalink})`;
+          }
+        }
+        say(msg, true);
+        logAction("送出諺語投稿", `"${content.slice(0, 30)}" - 署名: ${author}${j.igStatus?.posted ? " [已同步發布至 IG]" : ""}`);
       } catch {
         submitBtn.disabled = false;
         submitBtn.textContent = "送出投稿製作卡片";

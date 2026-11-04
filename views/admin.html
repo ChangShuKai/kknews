@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>KKNews · 後台管理系統</title>
+<title>KKNews Console · Apple 級雲端管理與審計中心</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css?v=20261104">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap" rel="stylesheet">
@@ -15,83 +15,88 @@
 </head>
 <body>
 
-<!-- 頂部導覽列 -->
+<!-- ==================== Apple Global Nav 後台頂部毛玻璃導覽列 ==================== -->
 <header class="admin-header">
   <div class="brand-wrap">
     <div class="brand" style="cursor:default">
-      <img src="/icon.svg" class="brand-icon" width="24" height="24" alt="" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
-      <span>KKNEWS</span>
+      <img src="/icon.svg" class="brand-icon" width="24" height="24" alt="KKNews Console">
+      <span>KKNews</span>
       <small>CONSOLE</small>
     </div>
     <div class="sync-indicator">
       <span class="sync-pulse"></span>
-      <span id="syncText">即時同步中</span>
+      <span id="syncText">雲端即時同步中</span>
     </div>
   </div>
 
   <!-- 頂部中央 Apple 液態玻璃 Dock 導覽 -->
-  <nav class="dock-bar admin-dock" id="adminDock" aria-label="後台導覽">
+  <nav class="dock-bar admin-dock" id="adminDock" aria-label="後台管理導覽">
     <div class="dock-glider" id="adminDockGlider"></div>
     <button type="button" class="dock-item active" id="dockPosts">
-      <span>📝 投稿管理</span>
+      <span>📝 格言畫廊</span>
       <span class="dock-badge" id="pCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockUsers">
-      <span>👥 已登入帳號</span>
+      <span>👥 學員名冊</span>
       <span class="dock-badge" id="uCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockForms">
-      <span>🎬 DFC 問卷管理</span>
+      <span>🎬 DFC 工作室</span>
       <span class="dock-badge" id="fCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockAdmins">
-      <span>🛡️ 管理員權限</span>
+      <span>🛡️ 權限與審計</span>
       <span class="dock-badge" id="aCount">1</span>
+    </button>
+    <button type="button" class="dock-item" id="dockInstagram">
+      <span>📸 IG 自動發布</span>
+      <span class="dock-badge" id="igCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>📊 即時數據</span>
+      <span>📊 雲端遙測</span>
     </button>
   </nav>
 
-  <!-- 右上角管理員帳號資訊 -->
+  <!-- 右上角管理員帳號與顯示器光學縮放區 -->
   <div class="acct-zone">
-    <!-- 裝置解析度智慧縮放控制器 (Auto Resolution Zoom Control) -->
-    <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依螢幕解析度縮放頁面">
-      <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小頁面 (Alt + -)" aria-label="縮小頁面">−</button>
-      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="點擊設定頁面縮放比例與解析度適配" aria-haspopup="true" aria-expanded="false">
+    <a href="/diagnostics" class="btn ghost sm" style="font-size:12px;padding:5px 12px;text-decoration:none" title="開啟 Apple 全系統功能檢測驗收中心">🩺 系統檢測</a>
+
+    <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
+      <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
+      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與 Retina 解析度適配" aria-haspopup="true" aria-expanded="false">
         <span class="zoom-icon">🔍</span>
         <span class="zoom-text" id="zoomText">100%</span>
         <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
       </button>
-      <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大頁面 (Alt + +)" aria-label="放大頁面">+</button>
+      <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
 
       <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
         <div class="zoom-dropdown-header">
-          <span class="zoom-res-title">裝置螢幕解析度</span>
+          <span class="zoom-res-title">顯示器原生解析度</span>
           <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
         </div>
         <div class="zoom-dropdown-divider"></div>
         <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
-          <span>✨ 依解析度自動最適縮放</span>
+          <span>✨ 依顯示器自動最佳化</span>
           <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
         </button>
         <div class="zoom-dropdown-divider"></div>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">🔍 80% (超小視野)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">🔍 90% (筆電緊湊)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">🔍 100% (標準原始)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">🔍 110% (舒適放大)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">🔍 120% (大螢幕/2K)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">🔍 135% (4K / 觸控大屏)</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">🔍 150% (超大投影)</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊視野</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · Studio Display / 2K</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · Pro Display XDR / 4K</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 劇院大螢幕投影</button>
         <div class="zoom-dropdown-divider"></div>
         <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-          <span>🔄 重設為自動適配</span>
+          <span>🔄 還原自動光學適配</span>
         </button>
       </div>
     </div>
 
-    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
+    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換淺色或深色外觀" aria-label="切換深淺色外觀">🌙</button>
     <div class="acct-pill">
       <div class="acct-av" id="adminAv">A</div>
       <span class="role-chip" id="adminRoleBadge">Super Admin</span>
@@ -102,36 +107,36 @@
 </header>
 
 <main class="admin-main">
-  <!-- 唯讀權限提示橫幅 -->
+  <!-- 唯讀審計權限提示橫幅 -->
   <div id="readOnlyBanner" class="banner-notice hide">
-    <span>您目前以「一般管理員（唯讀權限）」登入：可查看全部投稿、帳號資料與問卷作答結果，但無法修改或刪除。</span>
-    <span style="font-size:12.5px;color:var(--ink-secondary)">系統設定由 Super Admin 管理</span>
+    <span>您目前以「一般管理員（唯讀審計權限）」登入：可檢視全部格言作品、學員名冊與 DFC 探究數據，寫入與刪除操作受系統保護。</span>
+    <span style="font-size:12.5px;color:var(--ink-secondary)">最高權限由 Super Admin 控管</span>
   </div>
 
-  <!-- 工具列 -->
+  <!-- 頂部搜尋與批次操作工具列 -->
   <div class="action-toolbar" id="mainToolbar">
     <div class="action-toolbar-group" style="flex:1;min-width:280px">
-      <div style="position:relative;width:100%;max-width:400px;display:flex;align-items:center">
-        <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋投稿內容、作者、帳號或風格..." style="width:100%;padding-right:42px">
+      <div style="position:relative;width:100%;max-width:420px;display:flex;align-items:center">
+        <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋格言內容、署名、學校信箱或版型..." style="width:100%;padding-right:42px;border-radius:980px">
         <kbd class="search-kbd-pill" title="快捷鍵：按下 / 或 ⌘K 快速聚焦搜尋">⌘K</kbd>
       </div>
-      <label class="font-size-control" id="szWrap" title="調整卡片預覽字級大小">
-        <span>卡片字級</span>
+      <label class="font-size-control" id="szWrap" title="微調畫布預覽字級基準">
+        <span>預覽字級</span>
         <input id="size" type="number" min="24" max="200" step="2">
         <span style="font-size:11px;color:var(--ink-tertiary)">px</span>
       </label>
     </div>
     <div class="action-toolbar-group">
-      <button type="button" id="reload" class="btn ghost sm" title="重新整理最新資料">🔄 重新整理</button>
-      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm" title="匯出投稿名單 CSV">📑 匯出投稿 CSV</button>
-      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide" title="匯出已登入帳號名單 CSV">👥 匯出帳號 CSV</button>
-      <button type="button" id="dlAll" class="btn primary sm" title="打包下載全部卡片圖檔">📦 打包下載 ZIP</button>
+      <button type="button" id="reload" class="btn ghost sm" title="立即向雲端同步最新資料">🔄 同步更新</button>
+      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm" title="匯出格言作品報表 CSV">📑 匯出作品 CSV</button>
+      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide" title="匯出已驗證學校帳號名冊 CSV">👥 匯出名冊 CSV</button>
+      <button type="button" id="dlAll" class="btn primary sm" title="將全校格言卡片打包為高解析度 ZIP 壓縮檔">📦 打包全站卡片 ZIP</button>
     </div>
   </div>
 
-  <!-- 投稿版面風格篩選標籤列 (Layout Filter Strip) -->
+  <!-- 格言版面構圖篩選列 -->
   <div class="layout-filter-strip" id="postLayoutFilterStrip">
-    <button type="button" class="filter-chip active" data-filter="all">全部投稿 (<span id="chipAllCount">0</span>)</button>
+    <button type="button" class="filter-chip active" data-filter="all">全部作品 (<span id="chipAllCount">0</span>)</button>
     <button type="button" class="filter-chip" data-filter="classic">🏛️ 經典居中</button>
     <button type="button" class="filter-chip" data-filter="vertical">📜 文青直排</button>
     <button type="button" class="filter-chip" data-filter="quote">💬 現代引言</button>
@@ -139,27 +144,28 @@
     <button type="button" class="filter-chip" data-filter="poster">🎨 潮流海報</button>
   </div>
 
-  <!-- 分頁 1：投稿管理網格 -->
+  <!-- 分頁 1：格言畫廊作品網格 -->
   <div id="grid" class="submissions-grid"></div>
 
-  <!-- 分頁 2：已登入帳號列表 -->
+  <!-- 分頁 2：已登入學員名冊 -->
   <div id="usersGrid" class="users-list-grid hide"></div>
 
-  <!-- 分頁 3：DFC 互動問卷管理與作答數據中心（原生儲存於 Supabase） -->
-  <section id="formsPanel" class="hide" aria-label="DFC 互動問卷與數據管理">
+  <!-- 分頁 3：DFC 互動問卷工作室與數據分析中心 -->
+  <section id="formsPanel" class="hide" aria-label="DFC 互動問卷與數據分析中心">
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <h3 style="display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷管理與題庫工作室</h3>
-          <p>所有問卷題目、時間點與學生填答數據均原生儲存於 Supabase PostgreSQL 雲端資料庫，自主管理免 Google Form。</p>
+          <span class="apple-eyebrow blue">Design For Change · Studio & Telemetry</span>
+          <h3 style="display:flex;align-items:center;gap:8px;font-size:22px;letter-spacing:-0.02em">DFC 互動問卷與時間軸題庫工作室。</h3>
+          <p>所有問卷單元、時間點題目與學生作答行為數據均原生儲存於 Supabase PostgreSQL 雲端資料庫。</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="superFormActions">
-          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增 DFC 問卷</button>
-          <button type="button" class="btn primary sm" id="editActiveFormBtn">⚙️ 編輯問卷與時間點</button>
-          <button type="button" class="btn ghost sm" id="setActiveFormBtn" title="將此問卷設為前台首頁預設展示的問卷">🌟 設為前台主推</button>
-          <button type="button" class="btn ghost sm" id="dupActiveFormBtn" title="複製此問卷快速建立新活動">📑 複製此問卷</button>
-          <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新視窗直接體驗此問卷">👁️ 前台預覽作答</button>
-          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除此表單</button>
+          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增問卷單元</button>
+          <button type="button" class="btn primary sm" id="editActiveFormBtn">⚙️ 時間軸題庫工作室</button>
+          <button type="button" class="btn ghost sm" id="setActiveFormBtn" title="將此問卷設為前台預設展示單元">🌟 設為前台主推</button>
+          <button type="button" class="btn ghost sm" id="dupActiveFormBtn" title="複製此問卷建立新活動">📑 複製問卷</button>
+          <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新分頁直接體驗此問卷">👁️ 前台預覽</button>
+          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除問卷</button>
         </div>
       </div>
 
@@ -171,80 +177,81 @@
         <div class="dfc-db-sync-info">
           <span class="pulse-dot-green"></span>
           <div>
-            <strong style="color:var(--ink);font-size:13.5px">🟢 Supabase PostgreSQL 雲端資料庫原生儲存</strong>
+            <strong style="color:var(--ink);font-size:13.5px">Supabase PostgreSQL 原生雲端引擎運行中</strong>
             <div style="font-size:12px;color:var(--ink-secondary)" id="dfcDbStatsText">
-              正在連接 Supabase 雲端資料表 (dfc_forms, dfc_questions, dfc_responses)...
+              正在連接雲端資料表 (dfc_forms, dfc_questions, dfc_responses)...
             </div>
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn ghost sm" id="syncDbBtn" title="全量同步所有表單、題目與作答資料至 Supabase">⚡ 立即同步至 Supabase</button>
-          <button type="button" class="btn ghost sm" id="exportQuestionsCsvBtn" title="匯出當前問卷所有題目為 CSV">📤 匯出題目 (CSV)</button>
-          <button type="button" class="btn ghost sm" id="importQuestionsFromPanelBtn" title="批次匯入題目 CSV / Excel">📥 匯入題目 (CSV)</button>
-          <button type="button" class="btn primary sm" id="panelAddQuestionBtn">➕ 快速新增題目</button>
+          <button type="button" class="btn ghost sm" id="syncDbBtn" title="全量同步表單、題目與作答資料至 Supabase">⚡ 立即同步至雲端</button>
+          <button type="button" class="btn ghost sm" id="exportQuestionsCsvBtn" title="匯出當前問卷題目為 CSV">📤 匯出題庫 (CSV)</button>
+          <button type="button" class="btn ghost sm" id="importQuestionsFromPanelBtn" title="批次匯入題目 CSV / Excel">📥 匯入題庫 (CSV)</button>
+          <button type="button" class="btn primary sm" id="panelAddQuestionBtn">➕ 新增單題</button>
         </div>
       </div>
 
       <!-- 題目清單頂部篩選與操作列 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;flex-wrap:wrap;gap:10px">
         <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:280px;max-width:480px">
-          <input type="search" id="qFilterInput" class="search-box" placeholder="🔍 搜尋題目內容、題型或階段標籤..." style="width:100%;font-size:13px;padding:7px 12px">
+          <input type="search" id="qFilterInput" class="search-box" placeholder="🔍 搜尋題目內容、題型或 DFC 四步驟標籤..." style="width:100%;font-size:13px;padding:8px 14px;border-radius:980px">
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="panelQuestionCountBadge">共 0 題</span>
-          <button type="button" class="btn ghost sm" id="panelSortQuestionsBtn" title="依照時間點秒數重新由小到大排序">⏱️ 依時間排序</button>
+          <button type="button" class="btn ghost sm" id="panelSortQuestionsBtn" title="依照影片時間點秒數由小到大排序">⏱️ 依時間軸排序</button>
         </div>
       </div>
 
       <div id="activeFormCpList" class="dfc-cp-card-grid"></div>
     </div>
 
-    <!-- DFC 影片防暴雷與規定帳號觀看管理中心 -->
+    <!-- DFC 影片防暴雷與授權帳號觀看管理 -->
     <div class="panel-surface" id="dfcAccessControlSurface">
       <div class="panel-surface-head">
         <div>
-          <h3 style="display:flex;align-items:center;gap:8px">🛡️ DFC 影片防暴雷與規定帳號觀看管理</h3>
-          <p>自由設定哪些學校帳號可觀看 DFC 互動影片與題目（同時寫入雲端設定與資料庫 <code>public.dfc_access_list</code>），未授權帳號將全面攔截並顯示防暴雷保護畫面。</p>
+          <span class="apple-eyebrow">Spoiler Vault & Access Control</span>
+          <h3 style="display:flex;align-items:center;gap:8px;font-size:20px">DFC 劇院防暴雷與觀看白名單管理。</h3>
+          <p>精準設定可進入 DFC 劇院之學校帳號（自動同步寫入雲端設定與 <code>public.dfc_access_list</code>），未授權帳號將啟動防暴雷保護艙。</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="role-chip" id="dfcAccessSummaryBadge">🔒 白名單防暴雷模式</span>
-          <button type="button" class="btn primary sm" id="saveDfcAccessBtn">💾 儲存防暴雷權限設定</button>
+          <button type="button" class="btn primary sm" id="saveDfcAccessBtn">💾 儲存權限設定</button>
         </div>
       </div>
 
       <div class="dfc-access-cols-grid">
         <div class="dfc-access-col-box">
           <label class="field" style="margin-top:0">
-            <span class="lbl">1. 選擇觀看權限模式 (Access Mode)</span>
-            <select id="dfcAccessModeSelect" class="input" style="font-weight:700">
-              <option value="whitelist">🔒 規定帳號白名單模式（僅下方名單與管理員可看・其餘防暴雷）</option>
-              <option value="all_school">🏫 全校開放模式（所有 @hlc.edu.tw 學校帳號皆可觀看）</option>
-              <option value="closed">⛔ 完全封閉防暴雷模式（僅管理員可預覽，全面禁止一般帳號觀看）</option>
+            <span class="lbl">1. 劇院存取權限模式 (Access Mode)</span>
+            <select id="dfcAccessModeSelect" class="input" style="font-weight:600">
+              <option value="whitelist">🔒 規定帳號白名單模式（僅下方授權名單與管理員可觀看）</option>
+              <option value="all_school">🏫 全校開放模式（所有 @hlc.edu.tw 教育帳號皆可觀看）</option>
+              <option value="closed">⛔ 封閉預備模式（僅管理員可預覽，暫停對外開放）</option>
             </select>
           </label>
 
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
-            <span class="lbl" style="display:block;margin-bottom:6px">2. 從已登入學校帳號快速加入白名單</span>
+            <span class="lbl" style="display:block;margin-bottom:6px">2. 從已驗證學員名冊快速加入白名單</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <select id="dfcQuickAddUserSelect" class="input" style="flex:1;min-width:180px">
-                <option value="">-- 選擇已登入之學校帳號 --</option>
+                <option value="">— 選擇已登入之教育帳號 —</option>
               </select>
-              <button type="button" class="btn ghost sm" id="dfcQuickAddUserBtn">➕ 加入授權名單</button>
+              <button type="button" class="btn ghost sm" id="dfcQuickAddUserBtn">➕ 加入白名單</button>
             </div>
           </div>
 
           <div class="dfc-tips-box">
-            <strong>💡 支援 3 種自由設定方式（自動合併生效）：</strong>
-            <div>1. <b>後台直接設定</b>：於右側輸入框編輯並點擊儲存（也可在「已登入帳號」分頁單鍵授權）</div>
-            <div>2. <b>Supabase 資料庫表</b>：於 SQL 資料表 <code>public.dfc_access_list</code> 新增 <code>email_pattern</code></div>
-            <div>3. <b>環境變數</b>：於 <code>.env</code> 設定 <code>DFC_ALLOWED_EMAILS</code></div>
+            <strong>💡 三重白名單自動合併機制：</strong>
+            <div>1. <b>管理中心設定</b>：於右側編輯名單並儲存（亦可在「學員名冊」分頁單鍵授權）</div>
+            <div>2. <b>Supabase 資料表</b>：於 <code>public.dfc_access_list</code> 新增規則</div>
+            <div>3. <b>環境變數</b>：於伺服器 <code>.env</code> 設定 <code>DFC_ALLOWED_EMAILS</code></div>
           </div>
         </div>
 
         <div class="dfc-access-col-box">
           <label class="field" style="margin-top:0">
             <span class="lbl" style="display:flex;justify-content:space-between;align-items:center">
-              <span>3. 規定可觀看帳號名單（每行一個或以逗號分隔）</span>
+              <span>3. 授權觀看帳號清單（每行一筆或以逗號分隔）</span>
               <span id="dfcAllowedCountLabel" style="color:var(--blue);font-weight:700">0 個授權規則</span>
             </span>
             <textarea id="dfcAllowedEmailsInput" class="input" rows="7" style="font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px;line-height:1.6" placeholder="支援完整信箱、學號前綴或萬用字元 *，例如：
@@ -253,8 +260,8 @@ s1120002
 112*@hlc.edu.tw"></textarea>
           </label>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--ink-tertiary)">
-            <span>支援格式：完整 Email、學號前綴（自動對應 @hlc.edu.tw）或萬用字元（如 <code>112*@hlc.edu.tw</code>）</span>
-            <button type="button" class="btn ghost sm" id="clearDfcAllowedBtn" style="font-size:11.5px;padding:4px 8px">清空名單</button>
+            <span>支援完整 Email、學號前綴（自動補齊 @hlc.edu.tw）或萬用字元（如 <code>112*@hlc.edu.tw</code>）</span>
+            <button type="button" class="btn ghost sm" id="clearDfcAllowedBtn" style="font-size:11.5px;padding:4px 8px">清空清單</button>
           </div>
         </div>
       </div>
@@ -263,33 +270,34 @@ s1120002
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <h3>回傳結果與作答數據檢視</h3>
-          <p id="csvSourceHint">顯示儲存於 Supabase 雲端資料庫 (<code>public.dfc_responses</code>) 之填答紀錄、行為歷程與設備數據。</p>
+          <span class="apple-eyebrow blue">Analytics & Response Telemetry</span>
+          <h3 style="font-size:20px">探究作答成果與深度圖表分析。</h3>
+          <p id="csvSourceHint">即時呈現 <code>public.dfc_responses</code> 中之填答明細、觀看完成率與各題統計圖表。</p>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn ghost sm" id="syncCsvBtn">🔄 同步最新作答</button>
-          <button type="button" class="btn primary sm" id="exportCsvBtn">📥 匯出下載 CSV</button>
+          <button type="button" class="btn primary sm" id="exportCsvBtn">📥 匯出作答 CSV</button>
           <button type="button" class="btn ghost sm" id="openImportCsvBtn">📤 匯入 CSV 數據</button>
-          <button type="button" class="btn danger sm" id="clearResponsesBtn">🗑️ 清空本表單紀錄</button>
+          <button type="button" class="btn danger sm" id="clearResponsesBtn">🗑️ 清空本單元紀錄</button>
         </div>
       </div>
 
       <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
 
       <!-- 回傳結果即時搜尋與篩選列 -->
-      <div class="response-filter-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;background:var(--card);padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
+      <div class="response-filter-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;background:var(--bg);padding:10px 14px;border-radius:16px;border:1px solid var(--line)">
         <div style="flex:1;min-width:240px">
-          <input type="search" id="respSearchInput" class="search-box" placeholder="🔍 搜尋填答學生姓名、信箱、班級或作答內容..." style="width:100%;font-size:13px;padding:7px 12px">
+          <input type="search" id="respSearchInput" class="search-box" placeholder="🔍 搜尋填答學員姓名、信箱或作答文字..." style="width:100%;font-size:13px;padding:7px 14px;border-radius:980px">
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="respDeviceFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto">
-            <option value="all">📱 全部裝置 (不限)</option>
-            <option value="desktop">💻 電腦桌機</option>
-            <option value="mobile">📱 手機行動端</option>
-            <option value="tablet">📟 平板電腦</option>
+          <select id="respDeviceFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto;border-radius:980px">
+            <option value="all">📱 全部裝置類型</option>
+            <option value="desktop">💻 Mac / 桌面電腦</option>
+            <option value="mobile">📱 iPhone / 行動裝置</option>
+            <option value="tablet">📟 iPad / 平板電腦</option>
           </select>
-          <select id="respWatchFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto">
-            <option value="all">🎬 全部觀看率</option>
+          <select id="respWatchFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto;border-radius:980px">
+            <option value="all">🎬 全部觀看完成率</option>
             <option value="high">🟢 ≥90% 完整觀看</option>
             <option value="mid">🟡 50~89% 大部分觀看</option>
             <option value="low">🔴 &lt;50% 部分觀看</option>
@@ -297,12 +305,13 @@ s1120002
           <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="respFilterCountBadge">顯示 0 / 0 筆</span>
         </div>
       </div>
-      <!-- DFC 互動問卷深度數據分析中心：每一題提供專屬圓餅圖、長條圖、數據、對應表格與填答者清單 -->
+
+      <!-- DFC 互動問卷深度數據分析中心 -->
       <div id="dfcAnalyticsSection" style="margin-bottom:24px">
         <div id="dfcKpiBar" class="dfc-kpi-bar"></div>
         <div id="dfcOverallPieBar" class="dfc-overall-pies-grid"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px;flex-wrap:wrap;gap:8px">
-          <strong style="font-size:15px;color:var(--ink)">🥧 各題目問卷結果圓餅圖、深度分析與專屬數據表格</strong>
+          <strong style="font-size:15px;color:var(--ink)">🥧 各題作答分佈圓餅圖、長條圖與填答學員明細</strong>
           <div id="dfcQuestionFilterTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         </div>
         <div id="dfcPerQuestionAnalytics" class="dfc-analytics-wrap"></div>
@@ -317,46 +326,44 @@ s1120002
     </div>
   </section>
 
-  <!-- 分頁 4：管理員權限設定 -->
-  <section id="adminsPanel" class="hide" aria-label="管理員權限管理">
+  <!-- 分頁 4：管理員權限與安全審計中心 -->
+  <section id="adminsPanel" class="hide" aria-label="管理員權限與安全審計">
     <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:18px">
-        <!-- 後台入口與雙重驗證 (2FA & 裝置信任安全防護) -->
-        <div class="panel-surface" id="deviceTrustSecurityCard" style="border-left:4px solid var(--blue)">
+        <!-- 雙重認證與裝置信任安全卡片 -->
+        <div class="panel-surface" id="deviceTrustSecurityCard">
           <div class="panel-surface-head" style="margin-bottom:12px">
             <div>
-              <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(24,104,199,0.12);color:var(--blue);padding:3px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;margin-bottom:6px">
-                <span>🛡️</span> 雙重安全防護 (2FA & 裝置信任)
-              </div>
-              <h3 style="margin:0 0 4px">後台入口與新裝置安全授權</h3>
-              <p style="margin:0;font-size:13px;color:var(--ink-secondary)">已取消金鑰限制，直達登入頁。新裝置登入強制傳送一次性驗證碼至主管信箱，驗證一次即永久信任。</p>
+              <span class="apple-eyebrow blue">Two-Factor Authentication & Device Trust</span>
+              <h3 style="margin:0 0 4px;font-size:20px">雙重認證與受信任裝置管理。</h3>
+              <p style="margin:0;font-size:13px;color:var(--ink-secondary)">新裝置登入強制傳送 6 位數驗證碼至安全主管信箱，通過一次驗證即自動納入受信任裝置。</p>
             </div>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-            <div style="background:var(--bg);padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
-              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">後台直接登入網址</div>
+            <div style="background:var(--bg);padding:12px 14px;border-radius:16px;border:1px solid var(--line)">
+              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">管理中心專屬入口</div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
                 <code style="font-size:12.5px;color:var(--ink);font-weight:600">/adminusercontrol</code>
-                <button type="button" class="btn ghost sm" id="copyAdminDirectLinkBtn" style="padding:3px 8px;font-size:11.5px">複製連結</button>
+                <button type="button" class="btn ghost sm" id="copyAdminDirectLinkBtn" style="padding:3px 9px;font-size:11.5px">複製網址</button>
               </div>
             </div>
-            <div style="background:var(--bg);padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
-              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">驗證碼接收主管信箱</div>
+            <div style="background:var(--bg);padding:12px 14px;border-radius:16px;border:1px solid var(--line)">
+              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">安全驗證碼接收信箱</div>
               <div style="display:flex;align-items:center;gap:6px">
                 <span style="font-size:13px;font-weight:700;color:var(--blue);font-family:monospace" id="displayAdminOtpEmail">kai1010210@gmail.com</span>
-                <span class="role-chip" style="font-size:10px;padding:2px 6px">中央管控</span>
+                <span class="role-chip" style="font-size:10px;padding:2px 6px">中央控管</span>
               </div>
             </div>
           </div>
 
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-top:10px;border-top:1px solid var(--line)">
-            <div style="font-size:12px;color:var(--ink-secondary)">
-              💻 當前裝置狀態：<strong style="color:var(--green)">已信任</strong>（登入免重打驗證碼）
+            <div style="font-size:12.5px;color:var(--ink-secondary)">
+              💻 此裝置目前狀態：<strong style="color:var(--ok)">已受信任</strong>（免重複輸入 OTP 驗證碼）
             </div>
             <div style="display:flex;align-items:center;gap:8px">
-              <button type="button" class="btn ghost sm" id="revokeMyDeviceBtn" style="font-size:12px;color:var(--amber)" title="清除此瀏覽器上的信任憑證">撤銷本裝置信任</button>
-              <button type="button" class="btn danger sm" id="revokeAllDevicesBtn" style="font-size:12px" title="強制所有管理員下次登入必須重新輸入驗證碼">強制所有裝置重新驗證</button>
+              <button type="button" class="btn ghost sm" id="revokeMyDeviceBtn" style="font-size:12px;color:var(--orange)" title="清除此瀏覽器上的信任憑證">撤銷此裝置信任</button>
+              <button type="button" class="btn danger sm" id="revokeAllDevicesBtn" style="font-size:12px" title="強制所有管理員下次登入重新驗證 OTP">撤銷全體裝置信任</button>
             </div>
           </div>
         </div>
@@ -364,8 +371,8 @@ s1120002
         <div class="panel-surface">
           <div class="panel-surface-head">
             <div>
-              <h3>後台管理員清單</h3>
-              <p>可自由配置「一般管理員 (唯讀)」或「Super Admin (最高權限)」。</p>
+              <h3>授權管理員名冊。</h3>
+              <p>自由配置「一般管理員 Admin（唯讀審計）」或「Super Admin（完整權限）」。</p>
             </div>
           </div>
           <div id="adminsListWrap"></div>
@@ -374,14 +381,14 @@ s1120002
         <div class="panel-surface">
           <div class="panel-surface-head" style="flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
             <div>
-              <h3>全站操作與安全審計紀錄</h3>
-              <p>即時紀錄全站使用者登入、瀏覽、功能操作、投稿及管理員權限變更。</p>
+              <h3>全站安全審計軌跡 (Audit Logs)。</h3>
+              <p>結構化記錄使用者登入、格言創作、DFC 作答與管理員操作歷程。</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <input type="text" id="auditSearchInput" class="input" placeholder="🔍 搜尋動作、帳號或詳情..." style="width:200px;padding:6px 10px;font-size:12.5px">
-              <select id="auditFilterType" class="input" style="width:130px;padding:6px 8px;font-size:12.5px">
-                <option value="all">全部紀錄</option>
-                <option value="user">僅使用者動作</option>
+              <input type="text" id="auditSearchInput" class="input" placeholder="🔍 搜尋動作、帳號或 IP..." style="width:200px;padding:6px 12px;font-size:12.5px;border-radius:980px">
+              <select id="auditFilterType" class="input" style="width:130px;padding:6px 10px;font-size:12.5px;border-radius:980px">
+                <option value="all">全部審計紀錄</option>
+                <option value="user">僅學員動作</option>
                 <option value="admin">僅管理員動作</option>
               </select>
             </div>
@@ -389,7 +396,7 @@ s1120002
           <div class="table-scroll-container" style="max-height:420px;overflow-y:auto">
             <table class="data-tbl">
               <thead>
-                <tr><th style="width:140px">時間</th><th style="width:180px">動作類別</th><th>目標與操作詳情</th><th style="width:130px">來源 IP</th></tr>
+                <tr><th style="width:140px">時間戳記</th><th style="width:180px">事件類別</th><th>操作目標與詳情</th><th style="width:130px">來源 IP</th></tr>
               </thead>
               <tbody id="auditLogsTbody">
                 <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-tertiary)">載入中...</td></tr>
@@ -403,57 +410,206 @@ s1120002
       <div class="panel-surface" id="addAdminCard">
         <div class="panel-surface-head">
           <div>
-            <h3>新增後台管理員</h3>
-            <p>可手動輸入信箱或從已登入帳號快速帶入。</p>
+            <span class="apple-eyebrow">Role-Based Access Control</span>
+            <h3>新增協同管理員。</h3>
+            <p>可手動輸入信箱，或從已登入之學校帳號快速帶入。</p>
           </div>
         </div>
         <form id="createAdminForm" autocomplete="off">
           <label class="field" style="margin-top:0">
-            <span class="lbl">從已登入帳號快速帶入 <span>選填</span></span>
+            <span class="lbl">從學員名冊快速帶入 <span>選填</span></span>
             <select class="input" id="quickPickUserSel">
               <option value="">— 手動輸入或選擇已登入帳號 —</option>
             </select>
           </label>
           <label class="field">
-            <span class="lbl">管理員信箱 <span>必填</span></span>
-            <input class="input" id="newAdminEmail" type="email" placeholder="staff@example.com" required>
+            <span class="lbl">管理員電子郵件 <span>必填</span></span>
+            <input class="input" id="newAdminEmail" type="email" placeholder="staff@hlc.edu.tw" required>
           </label>
           <label class="field">
-            <span class="lbl">備註名稱 <span>選填</span></span>
-            <input class="input" id="newAdminName" placeholder="例如：活動組助理">
+            <span class="lbl">職稱或備註名稱 <span>選填</span></span>
+            <input class="input" id="newAdminName" placeholder="例如：教學組協同管理員">
           </label>
           <label class="field">
             <span class="lbl">
-              <span>登入密碼 <span>(至少 6 碼)</span></span>
+              <span>登入通行密碼 <span>(至少 6 碼)</span></span>
               <span style="display:inline-flex;gap:6px">
-                <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">隨機密碼</button>
+                <button type="button" id="genNewAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">產生高強度密碼</button>
               </span>
             </span>
             <input class="input" id="newAdminPw" type="password" placeholder="請設定登入密碼" minlength="6" required>
           </label>
           <label class="field">
-            <span class="lbl">權限等級</span>
+            <span class="lbl">授權等級</span>
             <select class="input" id="newAdminRole">
-              <option value="admin" selected>一般管理員 Admin（唯讀：僅能查看數據）</option>
-              <option value="super_admin">最高管理員 Super Admin（完整修改管理權限）</option>
+              <option value="admin" selected>一般管理員 Admin（唯讀：僅能查閱與匯出報表）</option>
+              <option value="super_admin">最高管理員 Super Admin（完整編輯與系統管理權限）</option>
             </select>
           </label>
-          <button type="submit" class="btn primary block" id="createAdminBtn" style="margin-top:20px">建立管理員帳號</button>
+          <button type="submit" class="btn primary block" id="createAdminBtn" style="margin-top:22px">建立管理員帳號</button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- 分頁 5：即時系統數據 -->
-  <section id="adminStatusBar" class="hide" aria-label="系統即時數據">
+  <!-- 分頁 5：Instagram 自動發布管理中心 -->
+  <section id="instagramPanel" class="hide" aria-label="Instagram 自動發布管理">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+        <div class="panel-surface" style="padding:20px 24px;margin-bottom:0">
+          <div style="font-size:12px;color:var(--ink-secondary);font-weight:600;margin-bottom:6px">自動化發布引擎</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sync-pulse" id="igAutoPostPulse" style="background:#34c759"></span>
+            <span style="font-size:20px;font-weight:700" id="igAutoPostStatusText">啟用中</span>
+          </div>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--ink-tertiary)">收到格言卡片時自動轉譯 4:5 JPEG 並發布</p>
+        </div>
+
+        <div class="panel-surface" style="padding:20px 24px;margin-bottom:0">
+          <div style="font-size:12px;color:var(--ink-secondary);font-weight:600;margin-bottom:6px">Instagram 連結狀態</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px;font-weight:700" id="igAccountStatusText">未設定</span>
+          </div>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--ink-tertiary)" id="igAccountIdSub">Meta Graph API 商業 / 創作者帳號</p>
+        </div>
+
+        <div class="panel-surface" style="padding:20px 24px;margin-bottom:0">
+          <div style="font-size:12px;color:var(--ink-secondary);font-weight:600;margin-bottom:6px">已同步發表貼文</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:26px;font-weight:700;color:var(--blue)" id="igSuccessCount">0</span>
+            <span style="font-size:13px;color:var(--ink-secondary)">篇作品</span>
+          </div>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--ink-tertiary)">已發佈至官方 Instagram 社群</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start">
+        <div class="panel-surface">
+          <div class="panel-surface-head">
+            <div>
+              <span class="apple-eyebrow">Meta Graph API & Webhook</span>
+              <h3>Instagram 自動發布設定。</h3>
+              <p>支援 Meta 官方 Instagram Graph API 或 Make / Zapier / n8n Webhook 雙軌自動發布。</p>
+            </div>
+          </div>
+
+          <form id="igConfigForm" style="display:flex;flex-direction:column;gap:14px;margin-top:10px">
+            <label style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);border:1px solid var(--line);border-radius:16px;cursor:pointer">
+              <div>
+                <b style="font-size:14px;display:block">收到格言卡片時自動同步發表至 Instagram</b>
+                <span style="font-size:12px;color:var(--ink-secondary)">開啟後，學員提交格言作品時將自動輸出 1080×1350 圖檔並發布貼文</span>
+              </div>
+              <input type="checkbox" id="igAutoPostToggle" checked style="width:20px;height:20px;accent-color:var(--blue);cursor:pointer">
+            </label>
+
+            <label class="field-item">
+              <span class="lbl">Instagram Business Account ID</span>
+              <input type="text" class="input mono" id="igAccountIdInput" placeholder="例如: 17841400000000000">
+              <span style="font-size:11.5px;color:var(--ink-tertiary)">於 Meta for Developers 取得之商業或創作者帳號 ID</span>
+            </label>
+
+            <label class="field-item">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="lbl">Meta Graph API 長期存取權杖 (Access Token)</span>
+                <button type="button" class="btn ghost sm" id="toggleIgTokenMaskBtn" style="padding:1px 8px;font-size:11px">顯示</button>
+              </div>
+              <input type="password" class="input mono" id="igAccessTokenInput" placeholder="EAAB..." autocomplete="off">
+              <span style="font-size:11.5px;color:var(--ink-tertiary)">需具備 instagram_basic 與 instagram_content_publish 權限</span>
+            </label>
+
+            <label class="field-item">
+              <span class="lbl">貼文文案範本 (Caption Template)</span>
+              <textarea class="input" id="igCaptionTemplate" rows="3" placeholder="{content}&#10;&#10;— {author}&#10;&#10;#KKNews #校園金句 #格言工坊"></textarea>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+                <span style="font-size:11px;color:var(--ink-secondary)">點擊插入動態標籤：</span>
+                <button type="button" class="btn ghost sm ig-tag-pill" data-tag="{content}" style="padding:2px 8px;font-size:11px">{content} 格言內文</button>
+                <button type="button" class="btn ghost sm ig-tag-pill" data-tag="{author}" style="padding:2px 8px;font-size:11px">{author} 署名出處</button>
+                <button type="button" class="btn ghost sm ig-tag-pill" data-tag="{id}" style="padding:2px 8px;font-size:11px">{id} 作品編號</button>
+              </div>
+            </label>
+
+            <label class="field-item">
+              <span class="lbl">自訂自動化 Webhook 網址（選填，支援 Make / Zapier / n8n）</span>
+              <input type="url" class="input mono" id="igWebhookUrlInput" placeholder="https://hook.make.com/...">
+            </label>
+
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button type="button" class="btn primary" id="saveIgConfigBtn" style="flex:1">💾 儲存發布設定</button>
+              <button type="button" class="btn ghost" id="testIgConnectionBtn" style="flex:1">🧪 測試 API 連線</button>
+            </div>
+          </form>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div class="panel-surface">
+            <div class="panel-surface-head" style="margin-bottom:8px">
+              <div>
+                <span class="apple-eyebrow blue">Optical Image Pipeline</span>
+                <h4 style="margin:0 0 4px;font-size:17px">Meta 官方影像規格自動適配。</h4>
+              </div>
+            </div>
+            <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-secondary)">
+              <li><strong>4:5 劇院級比例鎖定</strong>：自動以 1080 × 1350 高解析度渲染輸出，完美契合 Instagram 視覺版面。</li>
+              <li><strong>純淨 JPEG 編碼</strong>：自動轉譯為高畫質 JPEG 並託管於 Supabase Storage 全球 CDN。</li>
+              <li><strong>單鍵手動補發</strong>：可隨時於「格言畫廊」對任意作品點選「📸 發布至 IG」。</li>
+            </ul>
+          </div>
+
+          <div class="panel-surface">
+            <div class="panel-surface-head" style="margin-bottom:8px">
+              <div>
+                <h4 style="margin:0 0 4px;font-size:17px">發送測試貼文。</h4>
+                <p style="font-size:12.5px;color:var(--ink-secondary)">立即發送一張測試格言卡至 Instagram，驗證完整雲端發布流程。</p>
+              </div>
+            </div>
+            <button type="button" class="btn ghost block" id="publishTestCardBtn" style="margin-top:8px">
+              🚀 發布測試卡片至 Instagram
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-surface">
+        <div class="panel-surface-head" style="flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+          <div>
+            <h3>Instagram 發布歷史紀錄。</h3>
+            <p>即時追蹤每一張格言卡片同步至 Instagram 的發布狀態与貼文永久連結。</p>
+          </div>
+          <button type="button" class="btn ghost sm" id="reloadIgLogsBtn">🔄 重新整理紀錄</button>
+        </div>
+
+        <div class="table-scroll-container" style="max-height:420px;overflow-y:auto;margin-top:12px">
+          <table class="table" style="font-size:12.5px;margin:0;width:100%">
+            <thead>
+              <tr>
+                <th style="width:70px">預覽</th>
+                <th style="width:130px">時間</th>
+                <th>格言內容與署名</th>
+                <th style="width:110px">狀態</th>
+                <th style="width:150px">貼文連結</th>
+                <th style="width:180px">系統備註</th>
+              </tr>
+            </thead>
+            <tbody id="igLogsTbody">
+              <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-tertiary)">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分頁 6：雲端即時遙測數據 -->
+  <section id="adminStatusBar" class="hide" aria-label="雲端即時遙測">
     <div class="sys-dashboard-grid">
       <div class="panel-surface sys-panel-card">
         <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
           <div>
-            <h3>雲端資料庫狀態</h3>
-            <p>即時監控 Supabase PostgreSQL 叢集連線與硬體資源。</p>
+            <span class="apple-eyebrow green">Database Cluster Telemetry</span>
+            <h3>Supabase 雲端資料庫叢集。</h3>
+            <p>即時監控 PostgreSQL 實例連線池與硬體資源負載。</p>
           </div>
-          <span class="role-chip" style="background:var(--green-soft);color:var(--green);border-color:rgba(16,185,129,0.25)">🟢 服務正常運行</span>
+          <span class="role-chip" style="background:var(--green-soft);color:var(--ok);border-color:rgba(52,199,89,0.28)">🟢 叢集運行正常</span>
         </div>
 
         <div class="sys-db-header">
@@ -468,29 +624,29 @@ s1120002
 
         <div class="sys-metric-items">
           <div class="sys-metric-row">
-            <span class="metric-lbl">專案代號</span>
+            <span class="metric-lbl">叢集專案代號</span>
             <strong id="stRef" class="metric-val mono">—</strong>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">CPU 負載</span>
+            <span class="metric-lbl">CPU 運算負載</span>
             <strong id="stCpu" class="metric-val mono">—%</strong>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">RAM 記憶體</span>
+            <span class="metric-lbl">RAM 記憶體配置</span>
             <div class="metric-val-wrap">
               <strong id="stRam" class="metric-val mono">—%</strong>
               <span id="stRealRam" class="metric-sub-val mono">—</span>
             </div>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">Disk 儲存空間</span>
+            <span class="metric-lbl">SSD 儲存空間</span>
             <div class="metric-val-wrap">
               <strong id="stDisk" class="metric-val mono">—%</strong>
               <span id="stRealDisk" class="metric-sub-val mono">—</span>
             </div>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">資料庫連線數</span>
+            <span class="metric-lbl">活躍資料庫連線數</span>
             <strong id="stConns" class="metric-val mono">—/60</strong>
           </div>
         </div>
@@ -499,10 +655,11 @@ s1120002
       <div class="panel-surface sys-panel-card">
         <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
           <div>
-            <h3>效能指標與流量</h3>
-            <p>API 延遲回應時間、命中率與後端 Node.js 執行指標。</p>
+            <span class="apple-eyebrow blue">Runtime & I/O Performance</span>
+            <h3>效能指標與吞吐量。</h3>
+            <p>API 延遲回應時間、快取命中率與 Node.js 執行環境指標。</p>
           </div>
-          <span class="role-chip">⚡ 即時分析</span>
+          <a href="/diagnostics" class="btn primary sm" style="text-decoration:none;font-size:12px">🩺 前往全功能檢測頁面 ›</a>
         </div>
 
         <div class="sys-metric-items">
@@ -511,30 +668,30 @@ s1120002
             <strong id="stLatency" class="metric-val mono">— ms</strong>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">快取狀態</span>
+            <span class="metric-lbl">Buffer 快取命中率</span>
             <strong id="stCache" class="metric-val mono">—</strong>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">資料庫容量</span>
+            <span class="metric-lbl">資料庫容量與 WAL</span>
             <div class="metric-val-wrap">
               <strong id="stDbSize" class="metric-val mono">—</strong>
               <span id="stWalSize" class="metric-sub-val mono">—</span>
             </div>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">SQL 執行次數</span>
+            <span class="metric-lbl">累計 SQL 查詢次數</span>
             <strong id="stQueries" class="metric-val mono">—</strong>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">交易統計</span>
+            <span class="metric-lbl">交易提交統計</span>
             <span id="stXact" class="metric-val mono">—</span>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">網路累積流量</span>
+            <span class="metric-lbl">網路累積吞吐量</span>
             <span id="stNet" class="metric-val mono">—</span>
           </div>
           <div class="sys-metric-row">
-            <span class="metric-lbl">Node 記憶體耗用</span>
+            <span class="metric-lbl">Node.js 記憶體耗用</span>
             <strong id="stNodeMem" class="metric-val mono">—</strong>
           </div>
         </div>
@@ -544,16 +701,16 @@ s1120002
 </main>
 
 <!-- 照片放大燈箱 (含防破圖優雅降級) -->
-<div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片預覽">
+<div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片光學檢視">
   <div class="lightbox-box">
     <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" title="關閉預覽 (Esc)">✕</button>
-    <img id="lightboxImg" class="lightbox-preview-img" alt="放大預覽" onerror="this.classList.add('hide');if(document.getElementById('lightboxFallback'))document.getElementById('lightboxFallback').classList.remove('hide');">
+    <img id="lightboxImg" class="lightbox-preview-img" alt="ProRAW 光學預覽">
     <div id="lightboxFallback" class="media-fallback-slate hide" style="min-width:280px;background:var(--surface-solid)">
       <div class="media-fallback-icon">🖼️</div>
-      <div class="media-fallback-title">預覽圖片暫時無法載入</div>
-      <div class="media-fallback-desc">圖片資源可能已被清理或連線受阻，點擊背景關閉。</div>
+      <div class="media-fallback-title">光學影像資源暫時無法載入</div>
+      <div class="media-fallback-desc">影像物件可能已由雲端清理或網路受限，點選背景即可關閉視窗。</div>
     </div>
-    <div class="lightbox-tip-caption">點擊任意處或按 Esc 鍵關閉</div>
+    <div class="lightbox-tip-caption">點選任意背景處或按 Esc 鍵關閉光學檢視器</div>
   </div>
 </div>
 
@@ -561,11 +718,11 @@ s1120002
 <div id="confirmModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="modal confirm-modal-box">
     <div class="confirm-warning-badge">⚠️</div>
-    <h3 id="confirmTitle" class="confirm-title">確定要執行刪除？</h3>
-    <p id="confirmDesc" class="confirm-desc">刪除後將無法復原。</p>
+    <h3 id="confirmTitle" class="confirm-title">確定要執行永久移除？</h3>
+    <p id="confirmDesc" class="confirm-desc">移除後此筆雲端紀錄將無法復原。</p>
     <div class="confirm-actions-row">
       <button type="button" class="btn ghost" id="cancelDelBtn">取消</button>
-      <button type="button" class="btn danger" id="confirmDelBtn">確定刪除</button>
+      <button type="button" class="btn danger" id="confirmDelBtn">確認永久移除</button>
     </div>
   </div>
 </div>
@@ -573,34 +730,35 @@ s1120002
 <!-- 管理員權限編輯彈窗 -->
 <div id="editAdminModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="editAdminModalTitle">
   <div class="modal" style="max-width:440px">
-    <h3 id="editAdminModalTitle" style="margin:0 0 6px;font-size:19px">編輯管理員權限</h3>
-    <p id="editAdminModalSub" class="sub" style="margin-bottom:16px;font-size:13.5px">設定該帳號之管理權限或重設密碼。</p>
+    <span class="apple-eyebrow" style="margin-bottom:4px">Access Role Studio</span>
+    <h3 id="editAdminModalTitle" style="margin:0 0 6px;font-size:20px;letter-spacing:-0.02em">編輯管理員權限與金鑰</h3>
+    <p id="editAdminModalSub" class="sub" style="margin-bottom:16px;font-size:13.5px">配置該管理帳號之存取層級或重設登入密碼。</p>
     <form id="editAdminForm" autocomplete="off">
       <label class="field" style="margin-top:0">
-        <span class="lbl">電子郵件信箱</span>
+        <span class="lbl">電子郵件信箱 (Apple ID / Email)</span>
         <input class="input" id="editAdminEmail" type="email" readonly style="background:var(--bg);color:var(--ink-secondary)">
       </label>
       <label class="field">
-        <span class="lbl">備註名稱</span>
-        <input class="input" id="editAdminName" placeholder="例如：審核組員">
+        <span class="lbl">顯示名稱與職務備註</span>
+        <input class="input" id="editAdminName" placeholder="例如：策展審核小組成員">
       </label>
       <label class="field">
-        <span class="lbl">權限角色</span>
+        <span class="lbl">授權角色層級</span>
         <select class="input" id="editAdminRole">
-          <option value="admin">一般管理員 Admin（唯讀：僅能查看數據）</option>
-          <option value="super_admin">最高管理員 Super Admin（完整管理權限）</option>
+          <option value="admin">一般管理員 Admin（唯讀檢視：僅可瀏覽數據與報表）</option>
+          <option value="super_admin">最高管理員 Super Admin（完整讀寫與系統控制權限）</option>
         </select>
       </label>
       <label class="field">
         <span class="lbl">
-          <span id="editAdminPwLbl">重設密碼 (留空代表不變)</span>
-          <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">隨機密碼</button>
+          <span id="editAdminPwLbl">重設登入密碼（留空代表維持原密碼）</span>
+          <button type="button" id="genEditAdminPwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0">產生高強度密碼</button>
         </span>
         <input class="input" id="editAdminPw" type="password" placeholder="請輸入至少 6 碼新密碼">
       </label>
       <div style="display:flex;gap:10px;margin-top:20px">
         <button type="button" class="btn ghost" id="cancelEditAdminBtn" style="flex:1">取消</button>
-        <button type="submit" class="btn primary" id="saveEditAdminBtn" style="flex:1">儲存設定</button>
+        <button type="submit" class="btn primary" id="saveEditAdminBtn" style="flex:1">儲存權限設定</button>
       </div>
     </form>
   </div>
@@ -611,12 +769,13 @@ s1120002
   <div class="modal modal-xl">
     <div class="studio-head">
       <div>
-        <h3 id="formConfigModalTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">🎬 DFC 互動問卷與時間點編輯工作室</h3>
-        <p class="sub" style="margin:2px 0 0;font-size:12.5px">可視化預覽影片、即時標記時間點題目與調整選項，設定均直接儲存於 Supabase 資料表。</p>
+        <span class="apple-eyebrow" style="margin-bottom:2px">Timeline &amp; Checkpoint Director</span>
+        <h3 id="formConfigModalTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;letter-spacing:-0.02em">🎬 DFC 互動時間軸與題目編導工作室</h3>
+        <p class="sub" style="margin:2px 0 0;font-size:12.5px">即時預覽影片時間軸、精準釘選互動錨點與題型選項，所有變更直接同步至 Supabase 雲端資料庫。</p>
       </div>
       <div class="studio-tabs">
-        <button type="button" class="studio-tab-btn active" id="tabStudioTimeline">⏱️ 時間點題目工作室</button>
-        <button type="button" class="studio-tab-btn" id="tabStudioGeneral">📌 基本設定與問卷屬性</button>
+        <button type="button" class="studio-tab-btn active" id="tabStudioTimeline">⏱️ 時間軸與題目編導</button>
+        <button type="button" class="studio-tab-btn" id="tabStudioGeneral">📌 劇場屬性與防快轉策略</button>
       </div>
     </div>
 
@@ -628,7 +787,7 @@ s1120002
         <div class="studio-video-card">
           <div class="studio-video-grid">
             <div class="studio-screen-wrap">
-              <span class="studio-video-badge" id="studioBadgeText">▶ 影片預覽</span>
+              <span class="studio-video-badge" id="studioBadgeText">▶ Cinema Preview</span>
               <iframe id="studioIframe" class="hide" allow="autoplay; fullscreen" frameborder="0" style="width:100%;height:100%;border:none;border-radius:inherit"></iframe>
               <video id="studioVideo" playsinline preload="metadata" class="hide"></video>
               <canvas id="studioCanvas" width="640" height="360"></canvas>
@@ -636,7 +795,7 @@ s1120002
             <div class="studio-ctrls">
               <div class="studio-time-row">
                 <div>
-                  <small style="color:#94a3b8;display:block;font-size:11.5px;font-weight:600">目前播放時間點 / 總長度</small>
+                  <small style="color:#94a3b8;display:block;font-size:11.5px;font-weight:600">PLAYHEAD TIME / DURATION</small>
                   <div class="studio-big-time" id="studioTimeLabel">00:00.0 / 00:18.0</div>
                 </div>
                 <div class="studio-btns">
@@ -649,7 +808,7 @@ s1120002
               <!-- 時間軸 Scrubber 與 Checkpoint Pins -->
               <div>
                 <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#94a3b8;margin-bottom:4px">
-                  <span>拖曳或點選進度條跳轉影片（可點選圖釘直達該題時間）</span>
+                  <span>拖曳時間軸或點選時間錨點圖釘即可直達該題秒數</span>
                   <span id="studioPinCountHint">現有 0 個時間點題目</span>
                 </div>
                 <div class="studio-track-wrap" id="studioTrackWrap">
@@ -662,11 +821,11 @@ s1120002
 
               <!-- 關鍵秒數抓取按鈕列 -->
               <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button type="button" class="btn sm" id="studioCaptureBtn" style="background:#0284c7;border-color:#0284c7;color:#fff" title="將當前播放頭時間填入正在編輯的題目">
-                  📍 抓取當前影片時間填入題目
+                <button type="button" class="btn sm" id="studioCaptureBtn" style="background:#0071e3;border-color:#0071e3;color:#fff" title="將當前播放頭時間填入正在編輯的題目">
+                  📍 擷取當前播放頭秒數填入題目
                 </button>
                 <button type="button" class="btn ghost sm" id="studioAddAtPlayheadBtn" style="background:#1e293b;border-color:#334155;color:#f8fafc" title="在此秒數直接建立新問題">
-                  ➕ 於當前秒數新增題目
+                  ➕ 於當前秒數建立新題目
                 </button>
               </div>
             </div>
@@ -676,14 +835,14 @@ s1120002
         <!-- 題目列表標頭工具列 -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div>
-            <strong style="font-size:15px">📝 影片時間點題目清單</strong>
+            <strong style="font-size:15px">📝 時間軸互動錨點清單</strong>
             <span style="font-size:12.5px;color:var(--muted);margin-left:6px" id="studioQuestionCountText">共 0 題</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn ghost sm" id="downloadQTemplateBtn" title="下載 CSV 題目空白範本，可在 Excel 編輯後直接匯入">📤 下載題目範本 (CSV)</button>
-            <button type="button" class="btn ghost sm" id="importQuestionsBtn" title="支援上傳 CSV 檔或直接貼上從 Excel 複製的題目內容">📥 匯入題目 (CSV / Excel)</button>
-            <button type="button" class="btn ghost sm" id="clearAllQuestionsBtn" style="color:var(--err)" title="清空目前這份問卷的所有題目">🗑️ 清空題目</button>
-            <button type="button" class="btn ghost sm" id="studioSortCheckpointsBtn" title="依照時間點秒數由小到大自動重新排序">⏱️ 依時間重新排序</button>
+            <button type="button" class="btn ghost sm" id="importQuestionsBtn" title="支援上傳 CSV 檔或直接貼上從 Excel 複製的題目內容">📥 批次匯入題目 (CSV / Excel)</button>
+            <button type="button" class="btn ghost sm" id="clearAllQuestionsBtn" style="color:var(--err)" title="清空目前這份問卷的所有題目">🗑️ 清空全部題目</button>
+            <button type="button" class="btn ghost sm" id="studioSortCheckpointsBtn" title="依照時間點秒數由小到大自動重新排序">⏱️ 依時間軸自動排序</button>
             <button type="button" class="btn sm" id="addCheckpointBtn">➕ 新增時間點題目</button>
           </div>
         </div>
@@ -692,79 +851,79 @@ s1120002
         <div id="cfgCheckpointsWrap"></div>
       </div>
 
-      <!-- 分頁 B：基本設定與 Google 表單串接 -->
+      <!-- 分頁 B：基本設定與播放器策略 -->
       <div id="studioTabGeneralWrap" class="hide">
         <div class="grid-2">
           <label class="field" style="margin-top:0">
-            <span class="lbl">問卷名稱 <b>*</b></span>
+            <span class="lbl">問卷專案名稱 <b>*</b></span>
             <input class="input" id="cfgFormTitle" placeholder="例如：DFC 沉浸式互動影片表單">
           </label>
           <label class="field" style="margin-top:0">
-            <span class="lbl">影片路徑或網址 <span>支援 /assets/dfc.mp4 或外部 mp4/webm</span></span>
+            <span class="lbl">影片來源路徑或雲端網址 <span>支援 /assets/dfc.mp4、Google Drive 或外部 mp4</span></span>
             <input class="input" id="cfgVideoUrl" placeholder="/assets/dfc.mp4 或 https://...">
           </label>
         </div>
 
         <label class="field">
-          <span class="lbl">問卷簡介與說明 <span>顯示在前台問卷標題下方</span></span>
-          <textarea class="input" id="cfgFormDesc" rows="2" placeholder="請填寫此份 DFC 問卷的探究目的或填答說明..."></textarea>
+          <span class="lbl">問卷導讀與探究說明 <span>顯示於前台互動劇場標題下方</span></span>
+          <textarea class="input" id="cfgFormDesc" rows="2" placeholder="請填寫此份 DFC 問卷的探究目的或觀影引導說明..."></textarea>
         </label>
 
         <div class="grid-2">
           <label class="field">
-            <span class="lbl">內建示範動畫總長度 (秒) <span>若無實體影片時的備援長度</span></span>
+            <span class="lbl">內建 Canvas 示範動畫總長度 (秒) <span>當無外部影片時的預設時長</span></span>
             <input type="number" min="5" max="7200" class="input" id="cfgFallbackDuration" value="18">
           </label>
           <label class="field">
-            <span class="lbl">送出時機</span>
+            <span class="lbl">作答送出機制</span>
             <select class="input" id="cfgSubmitMode">
-              <option value="end">全部時間點答完後統一送出</option>
-              <option value="each">每個時間點作答時立即送出</option>
+              <option value="end">全部時間點題目作答完畢後統一送出</option>
+              <option value="each">每個時間點作答完成時即時同步送出</option>
             </select>
           </label>
         </div>
 
-        <div style="background:var(--bg);padding:14px 16px;border-radius:var(--r-md);margin:14px 0;border-left:4px solid var(--green, #10b981)">
+        <div style="background:var(--bg);padding:14px 16px;border-radius:var(--r-md);margin:14px 0;border-left:4px solid var(--green, #34c759)">
           <div style="font-weight:700;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:6px">
-            <span>🟢 原生 Supabase 雲端資料庫儲存</span>
+            <span>🟢 Supabase PostgreSQL 原生雲端持久儲存</span>
           </div>
           <p style="margin:4px 0 0;font-size:12.5px;color:var(--ink-secondary);line-height:1.6">
-            本系統已全面原生整合 Supabase PostgreSQL（<code>public.dfc_forms</code> 與 <code>public.dfc_responses</code>），問卷題目與學生作答成果均直接於本後台自主管理與深度分析，完全無需 Google Form 或第三方試算表串接。
+            問卷結構與學生時間軸作答紀錄皆直接儲存於 <code>public.dfc_forms</code> 與 <code>public.dfc_responses</code>，支援後台即時交叉統計與 CSV 報表匯出。
           </p>
         </div>
 
         <div class="grid-2">
           <label class="field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
-            <input type="checkbox" id="cfgIsDefault" style="transform:scale(1.3);accent-color:var(--ink)">
-            <span style="font-size:13.5px;font-weight:600">將此問卷設為前台預設發布問卷 (Active)</span>
+            <input type="checkbox" id="cfgIsDefault" style="transform:scale(1.3);accent-color:var(--blue)">
+            <span style="font-size:13.5px;font-weight:600">設為前台預設載入之主打問卷 (Active Default)</span>
           </label>
         </div>
 
         <!-- 自訂播放器控制與防快轉設定 -->
         <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
           <div style="font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px">
-            <span>🎛️ 自訂播放器控制與防快轉學習設定</span>
-            <span style="font-size:11.5px;background:var(--blue-soft);color:var(--blue);padding:2px 8px;border-radius:var(--r-pill);font-weight:600">自訂播放器核心</span>
+            <span>🎛️ 劇院播放器防快轉與專注學習策略</span>
+            <span style="font-size:11.5px;background:var(--blue-soft);color:var(--blue);padding:2px 8px;border-radius:var(--r-pill);font-weight:600">Cinema Playback Guard</span>
           </div>
           <p style="font-size:12.5px;color:var(--ink-secondary);margin:0 0 14px">
-            本平台已將 Google Drive 影片完整串接至自訂播放器。您可以自由設定學生的進度控制權限，杜絕任意跳轉與外掛跳過。
+            精準定義學員觀影時的進度條拖曳、倍速切換與視窗失焦保護行為，確保每道時間軸問題皆在完整理解後作答。
           </p>
 
           <div class="grid-2">
             <label class="field" style="margin-top:0">
-              <span class="lbl">進度條拖曳控制權限</span>
+              <span class="lbl">時間軸拖曳控制權限</span>
               <select class="input" id="cfgAllowSeek">
-                <option value="watched">🔒 防快轉學習模式（預設推薦：僅可回看已播放片段，禁止快轉跳過）</option>
-                <option value="locked">⛔ 嚴格鎖定模式（完全鎖定進度條拖曳，僅能使用「-10s」倒退重看）</option>
-                <option value="free">🎬 自由探索模式（允許自由拖曳進度條，但遇未答問題仍會自動暫停）</option>
+                <option value="watched">🔒 防快轉學習模式（推薦：僅可回看已觀看片段，禁止超前快轉）</option>
+                <option value="locked">⛔ 嚴格鎖定模式（鎖定進度條拖曳，僅能使用「↺ 10s」倒退重看）</option>
+                <option value="free">🎬 自由探索模式（允許自由拖曳，遇未答時間點仍自動暫停攔截）</option>
               </select>
             </label>
 
             <label class="field" style="margin-top:0">
-              <span class="lbl">倍速播放功能</span>
+              <span class="lbl">倍速播放權限</span>
               <select class="input" id="cfgAllowSpeed">
-                <option value="false">🔒 固定 1.0x 原速播放（禁止切換倍速，防外掛加速）</option>
-                <option value="true">⚡ 開放調整倍速（可切換 0.75x / 1.0x / 1.25x / 1.5x）</option>
+                <option value="false">🔒 固定 1.0x 原速播放（禁止切換倍速，防止跳略觀影）</option>
+                <option value="true">⚡ 開放切換倍速（支援 0.75x / 1.0x / 1.25x / 1.5x）</option>
               </select>
             </label>
           </div>
@@ -772,12 +931,12 @@ s1120002
           <div class="grid-2" style="margin-top:10px">
             <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer">
               <input type="checkbox" id="cfgAllowRewind" checked style="transform:scale(1.2);accent-color:var(--blue)">
-              <span style="font-size:13px;font-weight:600">提供「↺ 10s」倒退按鈕（方便學生重聽題目關聯片段）</span>
+              <span style="font-size:13px;font-weight:600">啟用「↺ 10s」快速倒退鈕（便於重聽關鍵段落）</span>
             </label>
 
             <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer">
               <input type="checkbox" id="cfgPauseOnBlur" checked style="transform:scale(1.2);accent-color:var(--blue)">
-              <span style="font-size:13px;font-weight:600">防掛機：切換視窗或離開分頁時自動暫停影片</span>
+              <span style="font-size:13px;font-weight:600">專注防掛機：切換分頁或視窗失焦時自動暫停播放</span>
             </label>
           </div>
         </div>
@@ -786,10 +945,10 @@ s1120002
 
     <!-- 工作室底部按鈕列 -->
     <div class="studio-foot">
-      <span style="font-size:12.5px;color:var(--muted)">💡 儲存後前台「🎬 DFC 表單」將即時同步最新的時間點題目與影片設定。</span>
+      <span style="font-size:12.5px;color:var(--muted)">💡 儲存後前台「DFC 互動劇場」將即時套用最新時間軸錨點與播放策略。</span>
       <div style="display:flex;gap:10px">
         <button type="button" class="btn ghost" id="cancelFormCfgBtn">取消關閉</button>
-        <button type="button" class="btn" id="saveFormCfgBtn">💾 儲存問卷與時間點設定</button>
+        <button type="button" class="btn primary" id="saveFormCfgBtn">💾 儲存並發布設定</button>
       </div>
     </div>
   </div>
@@ -799,14 +958,17 @@ s1120002
 <div id="importQuestionsModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importQuestionsTitle">
   <div class="modal modal-lg" style="max-width:800px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h3 id="importQuestionsTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">
-        📥 批次匯入問卷題目 (CSV / Excel)
-      </h3>
+      <div>
+        <span class="apple-eyebrow" style="margin-bottom:2px">Batch Question Importer</span>
+        <h3 id="importQuestionsTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px">
+          📥 批次匯入時間軸題目 (CSV / Excel)
+        </h3>
+      </div>
       <button type="button" class="btn ghost sm" id="closeImportQModalBtn">✕ 關閉</button>
     </div>
     
     <p style="font-size:13px;color:var(--ink-secondary);margin:0 0 14px;line-height:1.6">
-      支援直接選擇 <b>.csv / .tsv / .txt</b> 檔案，或由 <b>Excel</b> 複製表格儲存格後直接貼入下方文字框。<br>
+      支援直接上傳 <b>.csv / .tsv / .txt</b> 檔案，或自 <b>Excel / Numbers</b> 複製儲存格後貼入下方編輯區。<br>
       欄位順序：<b>時間、階段標籤、題目內容、題型、選項清單、補充說明、是否必填</b>。
     </p>
 
@@ -816,32 +978,32 @@ s1120002
         📁 選擇 CSV / TSV 檔案上傳
         <input type="file" id="importQFileInput" accept=".csv,.tsv,.txt" style="display:none">
       </label>
-      <button type="button" class="btn ghost sm" id="downloadQTemplateInModalBtn">📤 下載題目範本 (CSV)</button>
+      <button type="button" class="btn ghost sm" id="downloadQTemplateInModalBtn">📤 下載標準範本 (CSV)</button>
       <div style="display:inline-flex;gap:12px;margin-left:auto;align-items:center;font-size:13px">
         <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">
           <input type="radio" name="importQMode" value="replace" checked>
-          <span>替換現有題目（清空後匯入）</span>
+          <span>覆蓋現有題目（清空後匯入）</span>
         </label>
         <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">
           <input type="radio" name="importQMode" value="append">
-          <span>追加至現有題目末端</span>
+          <span>附加至現有題目末端</span>
         </label>
       </div>
     </div>
 
     <!-- 文字貼入區 -->
     <label class="field" style="margin-top:0">
-      <span class="lbl">貼上 CSV 或由 Excel 複製的內容（含或不含標題列皆可）：</span>
-      <textarea id="importQTextarea" class="input" rows="7" placeholder="時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填&#10;00:04,階段一 · 感受 Feel,你在影片中觀察到什麼校園問題？,單選,資訊宣傳分散 | 動線需改善 | 回饋管道不足,請選擇一個最符合的,是&#10;00:10,階段二 · 想像 Imagine,有哪些值得嘗試的創意解方？,多選,互動影音表單 | 一句話共創牆 | 跨班級工作坊,可複選多項,是" style="font-family:monospace;font-size:12.5px"></textarea>
+      <span class="lbl">貼上 CSV 或由試算表複製的內容（含或不含標題列皆可自動識別）：</span>
+      <textarea id="importQTextarea" class="input" rows="7" placeholder="時間,階段標籤,題目內容,題型,選項清單,補充說明,是否必填&#10;00:04,階段一 · 感受 Feel,你在影片中觀察到什麼校園問題？,單選,資訊宣傳分散 | 動線需改善 | 回饋管道不足,請選擇一個最符合的,是&#10;00:10,階段二 · 想像 Imagine,有哪些值得嘗試的創意解方？,多選,互動影音表單 | 一句話共創牆 | 跨班級工作坊,可複選多項,是" style="font-family:var(--font-mono);font-size:12.5px"></textarea>
     </label>
 
     <!-- 即時預覽區 -->
     <div id="importQPreviewWrap" class="hide" style="margin-top:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <strong style="font-size:13.5px;color:var(--ink)">🔍 題目解析預覽（共 <span id="importQPreviewCount">0</span> 題）</strong>
-        <span style="font-size:12px;color:var(--muted)">請確認下方題目資訊無誤後點擊「確認匯入題目」</span>
+        <strong style="font-size:13.5px;color:var(--ink)">🔍 題目結構解析預覽（共 <span id="importQPreviewCount">0</span> 題）</strong>
+        <span style="font-size:12px;color:var(--muted)">確認下方解析結果無誤後，點選「確認匯入題目」即可寫入</span>
       </div>
-      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px">
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:12px">
         <table class="table" style="font-size:12px;margin:0;width:100%">
           <thead>
             <tr>
@@ -870,30 +1032,34 @@ s1120002
 <div id="responseDetailModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="respDetailTitle">
   <div class="modal modal-lg" style="max-width:680px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 id="respDetailTitle" style="margin:0;font-size:18px">📝 完整作答記錄詳情</h3>
+      <div>
+        <span class="apple-eyebrow" style="margin-bottom:2px">Submission Inspector</span>
+        <h3 id="respDetailTitle" style="margin:0;font-size:19px">📝 學員作答紀錄完整檢視</h3>
+      </div>
       <button type="button" class="btn ghost sm" id="closeRespDetailBtn">關閉</button>
     </div>
     <div class="detail-kv-grid" id="respDetailMeta"></div>
-    <h4 style="margin:16px 0 10px;font-size:14px">各時間點作答內容：</h4>
+    <h4 style="margin:16px 0 10px;font-size:14px">各時間軸錨點作答明細：</h4>
     <div id="respDetailAnswersList"></div>
   </div>
 </div>
 <!-- 匯入 CSV 彈窗 -->
 <div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
   <div class="modal" style="max-width:540px">
-    <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入問卷作答成果 CSV 至 Supabase</h3>
-    <p class="sub" style="margin-bottom:12px;font-size:13.5px">選擇 <code>.csv</code> 檔案或直接貼上 CSV 內容。</p>
+    <span class="apple-eyebrow" style="margin-bottom:4px">CSV Data Importer</span>
+    <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入問卷作答紀錄 CSV 至 Supabase</h3>
+    <p class="sub" style="margin-bottom:12px;font-size:13.5px">選擇 <code>.csv</code> 檔案或直接貼上 CSV 格式文字進行批次寫入。</p>
     <label class="field" style="margin-top:0">
       <span class="lbl">選擇 CSV 檔案</span>
       <input type="file" id="csvFileInput" accept=".csv,text/csv" class="input" style="padding:8px">
     </label>
     <label class="field">
-      <span class="lbl">或貼上 CSV 內容</span>
+      <span class="lbl">或直接貼上 CSV 文字內容</span>
       <textarea class="input" id="csvTextInput" rows="5" placeholder="時間戳記,問題一,問題二&#10;2026/10/22,答案A,答案B"></textarea>
     </label>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button type="button" class="btn ghost" id="cancelImportCsvBtn" style="flex:1">取消</button>
-      <button type="button" class="btn primary" id="confirmImportCsvBtn" style="flex:1">開始匯入</button>
+      <button type="button" class="btn primary" id="confirmImportCsvBtn" style="flex:1">開始匯入雲端</button>
     </div>
   </div>
 </div>
@@ -902,9 +1068,12 @@ s1120002
 <div id="quickQuestionModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="quickQuestionTitle">
   <div class="modal modal-lg" style="max-width:640px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <h3 id="quickQuestionTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">
-        ✏️ 快速編輯問卷題目 (同步儲存至 Supabase)
-      </h3>
+      <div>
+        <span class="apple-eyebrow" style="margin-bottom:2px">Quick Checkpoint Editor</span>
+        <h3 id="quickQuestionTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px">
+          ✏️ 快速編輯時間軸題目 (即時同步 Supabase)
+        </h3>
+      </div>
       <button type="button" class="btn ghost sm" id="closeQuickQModalBtn">✕ 關閉</button>
     </div>
 
@@ -912,15 +1081,15 @@ s1120002
 
     <div class="grid-3">
       <label class="field" style="margin-top:0">
-        <span class="lbl">時間 (分:秒) <span>如 00:04</span></span>
+        <span class="lbl">時間錨點 (分:秒) <span>如 00:04</span></span>
         <input class="input" id="quickQTimeMm" placeholder="00:04">
       </label>
       <label class="field" style="margin-top:0">
-        <span class="lbl">時間 (總秒數)</span>
+        <span class="lbl">時間錨點 (總秒數)</span>
         <input type="number" step="0.5" min="0" class="input" id="quickQTimeSec" value="4">
       </label>
       <label class="field" style="margin-top:0">
-        <span class="lbl">題目類型 <b>*</b></span>
+        <span class="lbl">互動題型 <b>*</b></span>
         <select class="input" id="quickQType">
           <option value="radio">🔘 單選題 (Single Choice)</option>
           <option value="checkbox">☑️ 多選題 (Multiple Choice)</option>
@@ -934,7 +1103,7 @@ s1120002
     </div>
 
     <label class="field">
-      <span class="lbl">階段標籤 <span>點選下方快速代入 DFC 步驟</span></span>
+      <span class="lbl">DFC 階段標籤 <span>點選下方膠囊快速套用</span></span>
       <input class="input" id="quickQStep" placeholder="階段一 · 感受 Feel">
       <div class="quick-chips">
         <button type="button" class="chip-btn quick-step-btn" data-step="階段一 · 感受 Feel">階段一 · 感受 Feel</button>
@@ -945,21 +1114,21 @@ s1120002
     </label>
 
     <label class="field">
-      <span class="lbl">題目內容 <b>*</b></span>
-      <input class="input" id="quickQTitle" placeholder="請輸入題目內容...">
+      <span class="lbl">題目核心內容 <b>*</b></span>
+      <input class="input" id="quickQTitle" placeholder="請輸入引導思考的題目內容...">
     </label>
 
     <label class="field">
       <span class="lbl">補充說明或作答提示（選填）</span>
-      <input class="input" id="quickQDesc" placeholder="請輸入提示資訊，作答時將顯示於題目下方...">
+      <input class="input" id="quickQDesc" placeholder="請輸入輔助說明，作答時將顯示於題目下方...">
     </label>
 
     <div id="quickQOptionsBox">
       <label class="field">
-        <span class="lbl">選項清單 <span>每行一個選項</span></span>
+        <span class="lbl">選項清單 <span>每行輸入一個選項</span></span>
         <textarea class="input" id="quickQOptions" rows="4" placeholder="選項一&#10;選項二&#10;選項三"></textarea>
         <div class="quick-chips" style="margin-top:6px">
-          <span style="font-size:11.5px;color:var(--ink-tertiary)">快捷選項範本：</span>
+          <span style="font-size:11.5px;color:var(--ink-tertiary)">快速套用選項範本：</span>
           <button type="button" class="chip-btn quick-opt-preset" data-preset="likert5">五分滿意度</button>
           <button type="button" class="chip-btn quick-opt-preset" data-preset="agree5">認同度</button>
           <button type="button" class="chip-btn quick-opt-preset" data-preset="yesno">是非選項</button>
@@ -970,12 +1139,12 @@ s1120002
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);flex-wrap:wrap;gap:10px">
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-        <input type="checkbox" id="quickQRequired" checked style="transform:scale(1.2);accent-color:var(--ink)">
-        <span><b>此題為必填題</b>（學生必須填答後方可繼續播放影片）</span>
+        <input type="checkbox" id="quickQRequired" checked style="transform:scale(1.2);accent-color:var(--blue)">
+        <span><b>設為必答題目</b>（學員必須完成作答方可繼續播放影片）</span>
       </label>
       <div style="display:flex;gap:10px">
         <button type="button" class="btn ghost" id="cancelQuickQBtn">取消</button>
-        <button type="button" class="btn primary" id="saveQuickQBtn">💾 儲存並同步至 Supabase</button>
+        <button type="button" class="btn primary" id="saveQuickQBtn">💾 儲存並同步至雲端</button>
       </div>
     </div>
   </div>
@@ -1624,6 +1793,260 @@ function isInteractingAdminsList() {
   return a && $("adminsListWrap").contains(a) && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "BUTTON");
 }
 
+/* ============================================================================
+ * Instagram 自動發布與管理前端控制器
+ * ============================================================================ */
+let igConfigState = {
+  enabled: true,
+  accountId: "",
+  accessTokenConfigured: false,
+  accessTokenMasked: "",
+  captionTemplate: "",
+  webhookUrl: "",
+};
+let igLogsState = [];
+
+function applyInstagramSync(igData) {
+  if (!igData) return;
+  if (igData.config) {
+    igConfigState = { ...igConfigState, ...igData.config };
+    if ($("igAutoPostToggle") && document.activeElement !== $("igAutoPostToggle")) {
+      $("igAutoPostToggle").checked = Boolean(igConfigState.enabled);
+    }
+    if ($("igAccountIdInput") && document.activeElement !== $("igAccountIdInput")) {
+      $("igAccountIdInput").value = igConfigState.accountId || "";
+    }
+    if ($("igCaptionTemplate") && document.activeElement !== $("igCaptionTemplate")) {
+      $("igCaptionTemplate").value = igConfigState.captionTemplate || "";
+    }
+    if ($("igWebhookUrlInput") && document.activeElement !== $("igWebhookUrlInput")) {
+      $("igWebhookUrlInput").value = igConfigState.webhookUrl || "";
+    }
+    if ($("igAccessTokenInput") && document.activeElement !== $("igAccessTokenInput") && !$("igAccessTokenInput").value) {
+      if (igConfigState.accessTokenConfigured) {
+        $("igAccessTokenInput").placeholder = `已設定權杖 (${igConfigState.accessTokenMasked})`;
+      }
+    }
+  }
+
+  const isEnabled = Boolean(igConfigState.enabled);
+  if ($("igAutoPostPulse")) {
+    $("igAutoPostPulse").style.background = isEnabled ? "#10b981" : "#94a3b8";
+  }
+  if ($("igAutoPostStatusText")) {
+    $("igAutoPostStatusText").textContent = isEnabled ? "啟用中" : "已暫停";
+  }
+
+  const isConnected = Boolean(igData.status?.connected);
+  if ($("igAccountStatusText")) {
+    $("igAccountStatusText").textContent = isConnected ? "已連線" : (igConfigState.webhookUrl ? "Webhook 模式" : "未設定");
+    $("igAccountStatusText").style.color = isConnected ? "var(--green,#10b981)" : "inherit";
+  }
+  if ($("igAccountIdSub")) {
+    $("igAccountIdSub").textContent = igConfigState.accountId ? `ID: ${igConfigState.accountId}` : "Meta Graph API 商業/創作者帳號";
+  }
+
+  const successCount = igData.status?.successCount ?? 0;
+  if ($("igSuccessCount")) $("igSuccessCount").textContent = successCount;
+  if ($("igCount")) $("igCount").textContent = successCount;
+
+  if (Array.isArray(igData.status?.recentLogs)) {
+    igLogsState = igData.status.recentLogs;
+    renderIgLogs(igLogsState);
+  }
+}
+
+function renderIgLogs(logs) {
+  const tbody = $("igLogsTbody");
+  if (!tbody) return;
+  if (!logs || !logs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-tertiary)">尚無發布紀錄</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logs.map(l => {
+    const isSuccess = l.status === "success";
+    const isSkipped = l.status === "skipped";
+    const statusChip = isSuccess
+      ? `<span class="post-style-chip" style="background:#dcfce7;color:#15803d;font-weight:700">✓ 成功</span>`
+      : isSkipped
+        ? `<span class="post-style-chip" style="background:#f1f5f9;color:#64748b">略過</span>`
+        : `<span class="post-style-chip" style="background:#fee2e2;color:#b91c1c;font-weight:700">✕ 失敗</span>`;
+    const timeStr = l.created_at ? new Date(l.created_at).toLocaleString("zh-TW", { hour12: false }) : "—";
+    const thumbHtml = l.image_url
+      ? `<img src="${esc(l.image_url)}" style="width:42px;height:42px;border-radius:6px;object-fit:cover;cursor:pointer" onclick="openLightbox('${esc(l.image_url)}')">`
+      : `<div style="width:42px;height:42px;border-radius:6px;background:var(--surface-muted);display:flex;align-items:center;justify-content:center;font-size:18px">🖼️</div>`;
+    const permalinkHtml = l.ig_permalink
+      ? `<a href="${esc(l.ig_permalink)}" target="_blank" rel="noopener" style="color:#e1306c;font-weight:600;text-decoration:none" title="在 Instagram 開啟貼文">查看貼文 ↗</a>`
+      : (l.ig_media_id ? `<span class="mono" style="font-size:11px">${esc(l.ig_media_id)}</span>` : `<span style="color:var(--ink-tertiary)">—</span>`);
+    const note = l.error_message || (isSuccess ? "已成功建立媒體並發布" : "—");
+    return `
+      <tr>
+        <td>${thumbHtml}</td>
+        <td style="font-size:11.5px;color:var(--ink-secondary)">${esc(timeStr)}</td>
+        <td>
+          <div style="font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.content || "")}</div>
+          <div style="font-size:11px;color:var(--ink-tertiary)">— ${esc(l.author || "佚名")}${l.proverb_id ? ` (#${l.proverb_id})` : ""}</div>
+        </td>
+        <td>${statusChip}</td>
+        <td>${permalinkHtml}</td>
+        <td style="font-size:11.5px;color:${isSuccess ? 'var(--ink-secondary)' : '#ef4444'};max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${esc(note)}">${esc(note)}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function initInstagramControls() {
+  document.querySelectorAll(".ig-tag-pill").forEach(btn => {
+    btn.onclick = () => {
+      const tag = btn.dataset.tag;
+      const ta = $("igCaptionTemplate");
+      if (!ta || !tag) return;
+      const start = ta.selectionStart, end = ta.selectionEnd;
+      const val = ta.value;
+      ta.value = val.slice(0, start) + tag + val.slice(end);
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = start + tag.length;
+    };
+  });
+
+  if ($("toggleIgTokenMaskBtn") && $("igAccessTokenInput")) {
+    $("toggleIgTokenMaskBtn").onclick = () => {
+      const inp = $("igAccessTokenInput");
+      const btn = $("toggleIgTokenMaskBtn");
+      if (inp.type === "password") {
+        inp.type = "text";
+        btn.textContent = "隱藏";
+      } else {
+        inp.type = "password";
+        btn.textContent = "顯示";
+      }
+    };
+  }
+
+  if ($("saveIgConfigBtn")) {
+    $("saveIgConfigBtn").onclick = async () => {
+      if (!isSuper()) return toast("唯讀權限無法修改設定", true);
+      const btn = $("saveIgConfigBtn");
+      btn.disabled = true;
+      btn.textContent = "正在儲存...";
+      try {
+        const payload = {
+          enabled: Boolean($("igAutoPostToggle")?.checked),
+          accountId: $("igAccountIdInput")?.value.trim() || "",
+          captionTemplate: $("igCaptionTemplate")?.value.trim() || "",
+          webhookUrl: $("igWebhookUrlInput")?.value.trim() || "",
+        };
+        const tokenVal = $("igAccessTokenInput")?.value.trim();
+        if (tokenVal) payload.accessToken = tokenVal;
+
+        const resp = await fetch("/api/admin/instagram/config", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify(payload)
+        });
+        const resJson = await resp.json().catch(() => ({}));
+        btn.disabled = false;
+        btn.textContent = "💾 儲存 Instagram 設定";
+        if (resp.ok) {
+          toast("✓ Instagram 自動發布設定已儲存！");
+          if (resJson.data) applyInstagramSync(resJson.data);
+          load(true);
+        } else {
+          toast(resJson.error || "儲存失敗", true);
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "💾 儲存 Instagram 設定";
+        toast("網路錯誤: " + err.message, true);
+      }
+    };
+  }
+
+  if ($("testIgConnectionBtn")) {
+    $("testIgConnectionBtn").onclick = async () => {
+      const btn = $("testIgConnectionBtn");
+      btn.disabled = true;
+      btn.textContent = "連線測試中...";
+      try {
+        const accountId = $("igAccountIdInput")?.value.trim();
+        const accessToken = $("igAccessTokenInput")?.value.trim();
+        const resp = await fetch("/api/admin/instagram/test", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify({ accountId, accessToken, publishTestPost: false })
+        });
+        const resJson = await resp.json().catch(() => ({}));
+        btn.disabled = false;
+        btn.textContent = "🧪 測試連線與授權";
+        if (resp.ok && resJson.ok) {
+          const acc = resJson.account;
+          toast(`✓ IG 連線成功！已連接帳號 @${acc.username || acc.name} (ID: ${acc.id})`);
+          if ($("igAccountStatusText")) {
+            $("igAccountStatusText").textContent = `@${acc.username || acc.name}`;
+            $("igAccountStatusText").style.color = "var(--green,#10b981)";
+          }
+        } else {
+          toast("✕ 連線失敗: " + (resJson.error || "請檢查 Token 與 Account ID"), true);
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "🧪 測試連線與授權";
+        toast("連線錯誤: " + err.message, true);
+      }
+    };
+  }
+
+  if ($("publishTestCardBtn")) {
+    $("publishTestCardBtn").onclick = async () => {
+      if (!isSuper()) return toast("唯讀權限無法發布測試貼文", true);
+      openConfirm({
+        title: "確定要發布測試貼文到 Instagram？",
+        desc: "系統將會發布一張範例金句卡片到您綁定的 Instagram 官方帳號。",
+        confirmText: "立即發布",
+        onConfirm: async () => {
+          const btn = $("publishTestCardBtn");
+          btn.disabled = true;
+          btn.textContent = "正在發布測試貼文...";
+          try {
+            const resp = await fetch("/api/admin/instagram/test", {
+              method: "POST",
+              headers: H,
+              body: JSON.stringify({ publishTestPost: true })
+            });
+            const resJson = await resp.json().catch(() => ({}));
+            btn.disabled = false;
+            btn.textContent = "🚀 發布測試卡片至 Instagram";
+            if (resp.ok && resJson.ok && resJson.testPost?.posted) {
+              const link = resJson.testPost.permalink;
+              toast(`✓ 測試卡片已成功發布至 Instagram！${link ? ` (連結: ${link})` : ''}`);
+              load(true);
+            } else {
+              const err = resJson.testPost?.error || resJson.error || "發布失敗";
+              toast("發布失敗: " + err, true);
+            }
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = "🚀 發布測試卡片至 Instagram";
+            toast("發布錯誤: " + err.message, true);
+          }
+        }
+      });
+    };
+  }
+
+  if ($("reloadIgLogsBtn")) {
+    $("reloadIgLogsBtn").onclick = async () => {
+      const resp = await fetch("/api/admin/instagram/logs", { headers: H });
+      const logs = await resp.json().catch(() => []);
+      if (Array.isArray(logs)) {
+        igLogsState = logs;
+        renderIgLogs(logs);
+        toast("✓ 已更新 Instagram 發布紀錄");
+      }
+    };
+  }
+}
+
 let loadSeq = 0;
 async function load(forceRender = false) {
   if (!forceRender && document.hidden) return;
@@ -1662,6 +2085,9 @@ async function load(forceRender = false) {
       }
     }
     if (Array.isArray(syncData.auditLogs)) auditLogs = syncData.auditLogs;
+    if (syncData.instagram) {
+      applyInstagramSync(syncData.instagram);
+    }
 
     userMap = {};
     for (const u of users) { userMap[u.id] = u; userMap[u.email] = u; }
@@ -1855,6 +2281,12 @@ async function render() {
       poster: "🎨 海報"
     }[postLayout] || "🏛️ 居中";
 
+    const isIgPosted = Boolean(r.ig_permalink || r.ig_status === "posted" || metaObj?.igPermalink || metaObj?.igPostId);
+    const igPermalink = r.ig_permalink || metaObj?.igPermalink;
+    const igBadgeHtml = isIgPosted
+      ? `<a href="${esc(igPermalink || 'https://instagram.com')}" target="_blank" rel="noopener" class="post-style-chip ig-chip" style="background:rgba(225,48,108,0.12);color:#e1306c;border:1px solid rgba(225,48,108,0.3);text-decoration:none;font-weight:700" title="在 Instagram 查看公開貼文">📸 已發布至 IG ↗</a>`
+      : `<span class="post-style-chip ig-chip" style="opacity:0.65" title="尚未發布至 Instagram">📸 未發布至 IG</span>`;
+
     const el = document.createElement("div"); el.className = "post-item-card"; el.dataset.fname = fname(r);
     el._cardStyle = cardStyle;
     el.innerHTML = `
@@ -1864,6 +2296,7 @@ async function render() {
             <span class="post-id-chip">#${r.id}</span>
             <b class="post-author-name" title="${esc(r.display_name)}">${esc(r.display_name)}</b>
             <span class="post-style-chip">${postLayoutChip}</span>
+            ${igBadgeHtml}
           </div>
           <span class="post-time-text" title="${new Date(r.created_at).toLocaleString()}">${new Date(r.created_at).toLocaleDateString()}</span>
         </div>
@@ -1885,6 +2318,7 @@ async function render() {
           <button type="button" class="btn ghost sm copy-text" title="複製金句與署名文字">📋 複製文字</button>
           <button type="button" class="btn ghost sm copy-img" title="複製卡片圖片至剪貼簿">🖼️ 複製圖檔</button>
           <button type="button" class="btn ghost sm dl" title="下載 PNG 卡片圖檔">⬇️ 下載圖檔</button>
+          <button type="button" class="btn ghost sm publish-ig" style="color:#e1306c" title="手動將此名言卡片發布至 Instagram 官方貼文">📸 發布至 IG</button>
         </div>
         ${canEdit ? `
         <div class="post-actions-group admin-ops">
@@ -1934,6 +2368,50 @@ async function render() {
       });
     };
     el.querySelector(".dl").onclick = () => cv.toBlob(b => save(b, fname(r)));
+    const igBtn = el.querySelector(".publish-ig");
+    if (igBtn) {
+      igBtn.onclick = async () => {
+        if (!isSuper()) return toast("唯讀權限無法手動發布貼文至 Instagram", true);
+        igBtn.disabled = true;
+        igBtn.textContent = "正在發布至 IG...";
+        try {
+          // 生成 4:5 比例 JPEG (1080x1350) 確保符合 Instagram API 限制
+          const igExportCv = document.createElement("canvas");
+          igExportCv.width = 1080; igExportCv.height = 1350;
+          const ctx = igExportCv.getContext("2d");
+          ctx.fillStyle = cardStyle.bg || "#f4f2ee";
+          ctx.fillRect(0, 0, 1080, 1350);
+          const s = 1350 / 1024;
+          const ox = (1080 - 768 * s) / 2;
+          ctx.save();
+          ctx.translate(ox, 0);
+          ctx.scale(s, s);
+          drawCard(cv, ta.value, au.value, cardStyle);
+          ctx.drawImage(cv, 0, 0);
+          ctx.restore();
+          const jpegData = igExportCv.toDataURL("image/jpeg", 0.95);
+
+          const resp = await fetch("/api/admin/proverbs/" + r.id + "/publish-ig", {
+            method: "POST",
+            headers: H,
+            body: JSON.stringify({ image: jpegData })
+          });
+          const resJson = await resp.json().catch(() => ({}));
+          igBtn.disabled = false;
+          igBtn.textContent = "📸 發布至 IG";
+          if (resp.ok && resJson.ok) {
+            toast(`✓ 投稿 #${r.id} 已成功發布至 Instagram！`);
+            load(true);
+          } else {
+            toast(resJson.result?.error || resJson.error || "發布失敗，請確認 IG 設定", true);
+          }
+        } catch (err) {
+          igBtn.disabled = false;
+          igBtn.textContent = "📸 發布至 IG";
+          toast("連線失敗: " + err.message, true);
+        }
+      };
+    }
     if (canEdit) {
       const saveBtn = el.querySelector(".save-edit");
       saveBtn.onclick = async () => {
@@ -5083,6 +5561,7 @@ const DOCK_BTNS = {
   users: $("dockUsers"),
   forms: $("dockForms"),
   admins: $("dockAdmins"),
+  instagram: $("dockInstagram"),
   status: $("dockStatus")
 };
 
@@ -5114,6 +5593,7 @@ function switchAdminDock(tab) {
   $("dockUsers").classList.toggle("active", tab === "users");
   $("dockForms").classList.toggle("active", tab === "forms");
   $("dockAdmins").classList.toggle("active", tab === "admins");
+  $("dockInstagram")?.classList.toggle("active", tab === "instagram");
   $("dockStatus").classList.toggle("active", tab === "status");
 
   updateAdminDockGlider(tab, true);
@@ -5122,9 +5602,10 @@ function switchAdminDock(tab) {
   $("usersGrid").classList.toggle("hide", tab !== "users");
   $("formsPanel").classList.toggle("hide", tab !== "forms");
   $("adminsPanel").classList.toggle("hide", tab !== "admins");
+  $("instagramPanel")?.classList.toggle("hide", tab !== "instagram");
   $("adminStatusBar").classList.toggle("hide", tab !== "status");
 
-  $("mainToolbar").classList.toggle("hide", tab === "status" || tab === "admins");
+  $("mainToolbar").classList.toggle("hide", tab === "status" || tab === "admins" || tab === "instagram");
   $("szWrap").classList.toggle("hide", tab !== "posts");
   $("dlAll").classList.toggle("hide", tab !== "posts");
   $("exportPostsCsvBtn").classList.toggle("hide", tab !== "posts");
@@ -5132,6 +5613,7 @@ function switchAdminDock(tab) {
   if ($("postLayoutFilterStrip")) $("postLayoutFilterStrip").classList.toggle("hide", tab !== "posts");
 
   if (tab === "forms") loadAndRenderCsv(false);
+  if (tab === "instagram") renderIgLogs(igLogsState);
 }
 
 let isAdminGliderDragging = false;
@@ -5231,6 +5713,7 @@ $("dockPosts").onclick = () => { if (Date.now() >= adminSuppressClickUntil) swit
 $("dockUsers").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("users"); };
 $("dockForms").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("forms"); };
 $("dockAdmins").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("admins"); };
+if ($("dockInstagram")) $("dockInstagram").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("instagram"); };
 $("dockStatus").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("status"); };
 
 function toCsvField(v) {
@@ -5500,6 +5983,7 @@ function handleAdminResize() {
 
 detectAdminDeviceLayout();
 initAdminZoomControls();
+initInstagramControls();
 window.addEventListener("resize", handleAdminResize);
 window.addEventListener("orientationchange", handleAdminResize);
 

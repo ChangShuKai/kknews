@@ -29,6 +29,11 @@ const {
   TURNSTILE_SECRET_KEY = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || process.env.CLOUDFLARE_SECRET_KEY || "",
   DFC_ALLOWED_EMAILS = "",
   DFC_ACCESS_MODE = "whitelist",
+  INSTAGRAM_ACCOUNT_ID = process.env.INSTAGRAM_ACCOUNT_ID || "",
+  INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN || "",
+  INSTAGRAM_AUTO_POST = process.env.INSTAGRAM_AUTO_POST !== "false",
+  INSTAGRAM_CAPTION_TEMPLATE = process.env.INSTAGRAM_CAPTION_TEMPLATE || "{content}\n\n— {author}\n\n#KKNews #校園金句 #諺語工坊 #花蓮教育",
+  INSTAGRAM_WEBHOOK_URL = process.env.INSTAGRAM_WEBHOOK_URL || "",
 } = process.env;
 for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH })) {
   if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
@@ -1093,9 +1098,9 @@ app.use((req, res, next) => {
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live",
     "font-src 'self' https://fonts.gstatic.com https://vercel.live https://assets.vercel.com",
-    "img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://vercel.live https://vercel.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://*.supabase.co https://vercel.live https://vercel.com",
     "media-src 'self' https: data: blob:",
-    "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://vercel.live https://*.pusher.com wss://*.pusher.com",
+    "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://*.supabase.co https://vercel.live https://*.pusher.com wss://*.pusher.com",
     "frame-ancestors 'none'",
     "base-uri 'none'",
     "form-action 'self' https://docs.google.com",
@@ -1122,8 +1127,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// 6. 請求主體大小限制 (防範記憶體溢出攻擊)
-app.use(express.json({ limit: "250kb" }));
+// 6. 請求主體大小限制 (支援高畫質諺語卡片 JPEG / 圖片上傳)
+app.use(express.json({ limit: "15mb" }));
 
 // 7. API 寫入請求 Content-Type 檢驗
 app.use("/api", (req, res, next) => {
@@ -1198,6 +1203,7 @@ function sendStaticAsset(req, res, content, contentType, cacheControl = "public,
 
 /* --- 前台與靜態資源 --- */
 app.get("/", (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "public, max-age=60, s-maxage=600, stale-while-revalidate=86400"));
+app.get(["/diagnostics", "/check"], (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "no-store"));
 app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"));
 app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
 app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
@@ -2111,6 +2117,351 @@ app.post("/api/activity", async (req, res) => {
   res.json({ ok: true });
 });
 
+/* ============================================================================
+ * 諺語系統圖片儲存與 Instagram 自動發布引擎 (Proverb Image & Instagram Engine)
+ * ============================================================================ */
+const proverbLocalImages = new Map();
+let instagramLogsTableOk = true;
+
+function getBaseUrl(req) {
+  if (process.env.BASE_URL && !process.env.BASE_URL.includes("localhost") && !process.env.BASE_URL.includes("127.0.0.1")) {
+    return process.env.BASE_URL.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  }
+  const proto = req?.headers?.["x-forwarded-proto"] || "http";
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || `localhost:${PORT}`;
+  return `${proto}://${host}`;
+}
+
+function parseImageData(dataUrlOrBuf) {
+  if (!dataUrlOrBuf) return null;
+  if (Buffer.isBuffer(dataUrlOrBuf)) return { buf: dataUrlOrBuf, mime: "image/jpeg" };
+  if (typeof dataUrlOrBuf !== "string") return null;
+  const match = dataUrlOrBuf.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (match) {
+    let mime = match[1].toLowerCase();
+    if (mime === "image/jpg") mime = "image/jpeg";
+    try {
+      return { buf: Buffer.from(match[2], "base64"), mime };
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const buf = Buffer.from(dataUrlOrBuf, "base64");
+    if (buf.length > 0) return { buf, mime: "image/jpeg" };
+  } catch {}
+  return null;
+}
+
+async function saveProverbImage(input, defaultMime = "image/jpeg", req = null) {
+  const parsed = parseImageData(input);
+  if (!parsed || !parsed.buf || parsed.buf.length === 0) return null;
+
+  const ext = parsed.mime.includes("png") ? "png" : "jpg";
+  const fileName = `proverb_${Date.now()}_${crypto.randomBytes(6).toString("hex")}.${ext}`;
+
+  // 1. 本地記憶體快取 (上限 100 張，即使重啟或外部連線中斷也能正常服務)
+  proverbLocalImages.set(fileName, {
+    buf: parsed.buf,
+    mime: parsed.mime,
+    ts: Date.now(),
+  });
+  if (proverbLocalImages.size > 100) {
+    const oldestKey = proverbLocalImages.keys().next().value;
+    proverbLocalImages.delete(oldestKey);
+  }
+  try {
+    const tmpFile = path.join(os.tmpdir(), `kknews_${fileName}`);
+    fs.writeFileSync(tmpFile, parsed.buf);
+  } catch {}
+
+  // 2. 優先上傳至 Supabase Storage 公開存取桶 (kknews-proverbs)
+  let publicUrl = null;
+  try {
+    await db.storage.createBucket("kknews-proverbs", { public: true }).catch(() => {});
+    const { error } = await db.storage
+      .from("kknews-proverbs")
+      .upload(fileName, parsed.buf, {
+        contentType: parsed.mime,
+        upsert: true,
+      });
+    if (!error) {
+      const { data: pubData } = db.storage.from("kknews-proverbs").getPublicUrl(fileName);
+      if (pubData?.publicUrl) publicUrl = pubData.publicUrl;
+    }
+  } catch {}
+
+  // 3. 若無 Supabase Storage 公開網址，使用伺服器自身路由提供公開存取
+  if (!publicUrl) {
+    const baseUrl = getBaseUrl(req);
+    publicUrl = `${baseUrl}/api/proverbs/images/${fileName}`;
+  }
+
+  return { fileName, publicUrl, size: parsed.buf.length, mime: parsed.mime };
+}
+
+const DEFAULT_IG_CONFIG = {
+  enabled: process.env.INSTAGRAM_AUTO_POST !== "false",
+  accountId: process.env.INSTAGRAM_ACCOUNT_ID || "",
+  accessToken: process.env.INSTAGRAM_ACCESS_TOKEN || "",
+  captionTemplate: process.env.INSTAGRAM_CAPTION_TEMPLATE || "{content}\n\n— {author}\n\n#KKNews #校園金句 #諺語工坊 #花蓮教育",
+  webhookUrl: process.env.INSTAGRAM_WEBHOOK_URL || "",
+};
+
+async function getMergedInstagramConfig() {
+  const store = await readSysStore("instagram", DEFAULT_IG_CONFIG);
+  return {
+    enabled: typeof store.enabled === "boolean" ? store.enabled : (process.env.INSTAGRAM_AUTO_POST !== "false"),
+    accountId: String(store.accountId || process.env.INSTAGRAM_ACCOUNT_ID || "").trim(),
+    accessToken: String(store.accessToken || process.env.INSTAGRAM_ACCESS_TOKEN || "").trim(),
+    captionTemplate: String(store.captionTemplate || process.env.INSTAGRAM_CAPTION_TEMPLATE || DEFAULT_IG_CONFIG.captionTemplate).trim(),
+    webhookUrl: String(store.webhookUrl || process.env.INSTAGRAM_WEBHOOK_URL || "").trim(),
+  };
+}
+
+async function recordInstagramLog(entry) {
+  const logItem = {
+    proverb_id: entry.proverbId ? Number(entry.proverbId) : null,
+    content: str(entry.content, 100),
+    author: str(entry.author, 30),
+    image_url: entry.imageUrl || null,
+    status: entry.status || (entry.posted ? "success" : (entry.skipped ? "skipped" : "failed")),
+    ig_media_id: entry.mediaId || null,
+    ig_permalink: entry.permalink || null,
+    error_message: entry.error ? str(entry.error, 500) : null,
+    created_at: new Date().toISOString(),
+  };
+
+  // 1. 寫入 PostgreSQL instagram_logs
+  if (instagramLogsTableOk) {
+    try {
+      const { error } = await db.from("instagram_logs").insert(logItem);
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) {
+        instagramLogsTableOk = false;
+      }
+    } catch {
+      instagramLogsTableOk = false;
+    }
+  }
+
+  // 2. 備份至系統存儲庫
+  try {
+    const existing = await readSysStore("instagram_logs", []);
+    const updated = [logItem, ...(Array.isArray(existing) ? existing : [])].slice(0, 100);
+    await writeSysStore("instagram_logs", updated);
+  } catch {}
+}
+
+async function fetchInstagramLogs(limit = 50) {
+  if (instagramLogsTableOk) {
+    try {
+      const { data, error } = await db
+        .from("instagram_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!error && Array.isArray(data)) return data;
+      if (error && (error.code === "PGRST205" || error.code === "42P01")) instagramLogsTableOk = false;
+    } catch {}
+  }
+  const fallback = await readSysStore("instagram_logs", []);
+  return (Array.isArray(fallback) ? fallback : []).slice(0, limit);
+}
+
+async function getInstagramSummaryForAdmin() {
+  const config = await getMergedInstagramConfig();
+  const logs = await fetchInstagramLogs(25).catch(() => []);
+  const successCount = logs.filter(l => l.status === "success").length;
+  const isConnected = Boolean(config.accountId && config.accessToken);
+  return {
+    config: {
+      enabled: config.enabled,
+      accountId: config.accountId,
+      accessTokenConfigured: Boolean(config.accessToken),
+      accessTokenMasked: config.accessToken ? `${config.accessToken.slice(0, 8)}...${config.accessToken.slice(-6)}` : "",
+      captionTemplate: config.captionTemplate,
+      webhookUrl: config.webhookUrl,
+    },
+    status: {
+      connected: isConnected,
+      enabled: config.enabled,
+      successCount,
+      recentLogs: logs,
+    },
+  };
+}
+
+async function publishToInstagram({ imageUrl, content, author, proverbId, customCaption = null, studentEmail = "", studentName = "" }) {
+  const config = await getMergedInstagramConfig();
+  if (!config.enabled) {
+    const res = { ok: false, skipped: true, reason: "Instagram 自動發布功能已暫停" };
+    await recordInstagramLog({ proverbId, content, author, imageUrl, status: "skipped", error: res.reason });
+    return res;
+  }
+
+  const results = {
+    posted: false,
+    mediaId: null,
+    permalink: null,
+    graphApi: null,
+    webhook: null,
+    error: null,
+  };
+
+  const caption = customCaption || config.captionTemplate
+    .replace(/\{content\}/g, content || "")
+    .replace(/\{author\}/g, author || "")
+    .replace(/\{id\}/g, String(proverbId || ""));
+
+  const hasMeta = Boolean(config.accountId && config.accessToken);
+  const hasWebhook = Boolean(config.webhookUrl);
+
+  if (!hasMeta && !hasWebhook) {
+    const res = { ok: false, skipped: true, reason: "尚未設定 Instagram API 憑證或 Webhook 網址" };
+    await recordInstagramLog({ proverbId, content, author, imageUrl, status: "skipped", error: res.reason });
+    return res;
+  }
+
+  // 1. Meta Graph API 發布貼文 (Instagram Content Publishing API)
+  if (hasMeta) {
+    try {
+      // Step A: 建立 IG 媒體容器 (Media Container)
+      const containerUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(config.accountId)}/media`;
+      const containerParams = new URLSearchParams({
+        image_url: imageUrl,
+        caption: caption,
+        access_token: config.accessToken,
+      });
+      const containerResp = await fetch(containerUrl, {
+        method: "POST",
+        body: containerParams,
+        signal: AbortSignal.timeout(18000),
+      });
+      const containerData = await containerResp.json().catch(() => ({}));
+      if (!containerResp.ok || !containerData.id) {
+        throw new Error(containerData.error?.message || `建立 IG 容器失敗 (HTTP ${containerResp.status})`);
+      }
+      const creationId = containerData.id;
+
+      // Step B: 輪詢容器就緒狀態 (檢查 status_code)
+      let isReady = false;
+      for (let i = 0; i < 6; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 1200));
+        const stResp = await fetch(
+          `https://graph.facebook.com/v20.0/${creationId}?fields=status_code&access_token=${encodeURIComponent(config.accessToken)}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        const stData = await stResp.json().catch(() => ({}));
+        const code = stData.status_code || "FINISHED";
+        if (code === "FINISHED") {
+          isReady = true;
+          break;
+        } else if (code === "ERROR" || code === "EXPIRED") {
+          throw new Error(`IG 容器處理狀態錯誤: ${code}`);
+        }
+      }
+
+      // Step C: 發布貼文 (Media Publish)
+      const pubUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(config.accountId)}/media_publish`;
+      const pubParams = new URLSearchParams({
+        creation_id: creationId,
+        access_token: config.accessToken,
+      });
+      const pubResp = await fetch(pubUrl, {
+        method: "POST",
+        body: pubParams,
+        signal: AbortSignal.timeout(18000),
+      });
+      const pubData = await pubResp.json().catch(() => ({}));
+      if (!pubResp.ok || !pubData.id) {
+        throw new Error(pubData.error?.message || `IG 媒體發布失敗 (HTTP ${pubResp.status})`);
+      }
+      const mediaId = pubData.id;
+
+      // Step D: 取得貼文 Permalink
+      let permalink = null;
+      try {
+        const infoResp = await fetch(
+          `https://graph.facebook.com/v20.0/${mediaId}?fields=permalink,shortcode&access_token=${encodeURIComponent(config.accessToken)}`,
+          { signal: AbortSignal.timeout(6000) }
+        );
+        const infoData = await infoResp.json().catch(() => ({}));
+        permalink = infoData.permalink || null;
+      } catch {}
+
+      results.graphApi = { ok: true, mediaId, permalink };
+      results.posted = true;
+      results.mediaId = mediaId;
+      results.permalink = permalink;
+    } catch (err) {
+      results.graphApi = { ok: false, error: err.message };
+      results.error = err.message;
+    }
+  }
+
+  // 2. Webhook 轉發 (支援 Zapier / Make / n8n / 自建伺服器)
+  if (hasWebhook) {
+    try {
+      const hookResp = await fetch(config.webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "proverb_image_received",
+          id: proverbId,
+          content,
+          author,
+          imageUrl,
+          caption,
+          studentEmail,
+          studentName,
+          timestamp: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      results.webhook = { ok: hookResp.ok, status: hookResp.status };
+      if (hookResp.ok && !results.posted) results.posted = true;
+    } catch (err) {
+      results.webhook = { ok: false, error: err.message };
+      if (!results.error) results.error = err.message;
+    }
+  }
+
+  await recordInstagramLog({
+    proverbId,
+    content,
+    author,
+    imageUrl,
+    status: results.posted ? "success" : "failed",
+    mediaId: results.mediaId,
+    permalink: results.permalink,
+    error: results.error,
+  });
+
+  return results;
+}
+
+// 公開讀取伺服器所暫存之諺語卡片圖檔（供外部 CDN、Instagram 或前台預覽直連）
+app.get("/api/proverbs/images/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  if (proverbLocalImages.has(filename)) {
+    const item = proverbLocalImages.get(filename);
+    res.setHeader("Content-Type", item.mime || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
+    return res.end(item.buf);
+  }
+  const tmpFile = path.join(os.tmpdir(), `kknews_${filename}`);
+  if (fs.existsSync(tmpFile)) {
+    const mime = filename.endsWith(".png") ? "image/png" : "image/jpeg";
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
+    return res.sendFile(tmpFile);
+  }
+  notFound(res);
+});
+
 app.post("/api/proverbs", async (req, res) => {
   const u = userOf(req);
   if (!u) return res.status(401).json({ error: "請先登入" });
@@ -2131,12 +2482,20 @@ app.post("/api/proverbs", async (req, res) => {
     kk_timezone: cm.timezone || md.kk_timezone || "",
   })).catch(() => {});
 
+  // 1. 若收到卡片圖檔 (cardImage 或 image)
+  const rawImage = req.body?.cardImage || req.body?.image;
+  let savedImage = null;
+  if (rawImage) {
+    savedImage = await saveProverbImage(rawImage, "image/jpeg", req);
+  }
+
   const fullMeta = {
     google_sub: u.sub || null, given_name: u.given_name || null, family_name: u.family_name || null,
     picture: u.picture || null, hd: u.hd || null, locale: u.locale || cm.language || null,
     device_info: deviceInfo, user_agent: ua, ip_address: ip,
     platform: cm.platform || null, screen: cm.screen || null, timezone: cm.timezone || null, geo: cm.geo,
     gpu: cm.gpu || null, cores: cm.cores || null, memory: cm.memory || null, battery: cm.battery || null, network: cm.network || null,
+    imageUrl: savedImage?.publicUrl || null,
     cardStyle: (req.body?.cardStyle && typeof req.body.cardStyle === "object") ? {
       layout: String(req.body.cardStyle.layout || "classic").slice(0, 24),
       themeId: String(req.body.cardStyle.themeId || "ivory").slice(0, 24),
@@ -2144,23 +2503,77 @@ app.post("/api/proverbs", async (req, res) => {
       text: String(req.body.cardStyle.text || "#1c1917").slice(0, 24),
       sub: String(req.body.cardStyle.sub || "#6b665d").slice(0, 24),
       accent: String(req.body.cardStyle.accent || "#1868c7").slice(0, 24),
+      font: String(req.body.cardStyle.font || "reggae").slice(0, 24),
+      hasCustomBg: Boolean(req.body.cardStyle.hasCustomBg),
     } : null,
   };
+
   // 先嘗試寫入完整擴充欄位，若 Supabase 尚未執行 ALTER TABLE 則自動儲存於基本欄位
-  let { error } = await db.from("proverbs").insert({
+  let newId = null;
+  let { data: insData, error } = await db.from("proverbs").insert({
     user_id: u.id, user_email: u.email, user_name: u.name || null, user_avatar: u.picture || null,
     google_sub: u.sub || null, user_meta: fullMeta, device_info: deviceInfo, user_agent: ua, ip_address: ip, content, author,
-  });
+    image_url: savedImage?.publicUrl || null,
+    ig_status: savedImage?.publicUrl ? "processing" : "no_image",
+  }).select("id");
+  if (!error && insData && insData[0]?.id) newId = insData[0].id;
+
   if (error) {
     const retry = await db.from("proverbs").insert({
       user_id: u.id, user_email: u.email, user_name: JSON.stringify({ name: u.name || "", ...fullMeta }), content, author,
-    });
+    }).select("id");
     error = retry.error;
+    if (!error && retry.data && retry.data[0]?.id) newId = retry.data[0].id;
   }
   if (error) return res.status(500).json({ error: "送出失敗" });
-  audit(req, "[諺語投稿] 送出專屬卡片", `${u.email} (${u.name || ""}) | "${content.slice(0, 40)}" by ${author}`);
+
+  audit(req, "[諺語投稿] 送出專屬卡片", `${u.email} (${u.name || ""}) | "${content.slice(0, 40)}" by ${author}${savedImage ? " [含卡片圖檔]" : ""}`);
   invalidateQueryCache("proverbs", "proverbsCount", "users");
-  res.json({ ok: true });
+
+  // 2. 收到圖片：自動發布貼文到 Instagram
+  let igStatus = null;
+  if (savedImage?.publicUrl) {
+    try {
+      const igResult = await publishToInstagram({
+        imageUrl: savedImage.publicUrl,
+        content,
+        author,
+        proverbId: newId,
+        studentEmail: u.email,
+        studentName: u.name || "",
+      });
+      igStatus = {
+        posted: Boolean(igResult.posted),
+        skipped: Boolean(igResult.skipped),
+        mediaId: igResult.mediaId || null,
+        permalink: igResult.permalink || null,
+        error: igResult.error || igResult.reason || null,
+      };
+      if (newId && igResult.posted) {
+        fullMeta.igPostId = igResult.mediaId;
+        fullMeta.igPermalink = igResult.permalink;
+        fullMeta.igPostedAt = new Date().toISOString();
+        await db.from("proverbs").update({
+          ig_post_id: igResult.mediaId || null,
+          ig_permalink: igResult.permalink || null,
+          ig_status: "posted",
+          ig_posted_at: new Date().toISOString(),
+          user_meta: fullMeta,
+        }).eq("id", newId).catch(() => {});
+        invalidateQueryCache("proverbs", "proverbsCount", "users");
+      }
+    } catch (err) {
+      console.error("[Instagram Auto-Post]", err);
+      igStatus = { posted: false, error: err.message };
+    }
+  }
+
+  res.json({
+    ok: true,
+    id: newId,
+    imageUrl: savedImage?.publicUrl || null,
+    igStatus,
+  });
 });
 
 /* --- 前台讀取 DFC 表單清單（嚴格防暴雷：未授權帳號絕不回傳題目、表單與影片網址） --- */
@@ -3767,6 +4180,63 @@ app.delete("/api/admin/proverbs/:id", async (req, res) => {
   res.status(error ? 500 : 200).json({ ok: !error });
 });
 
+/* --- 管理員手動將指定名言卡片發布/重發至 Instagram --- */
+app.post("/api/admin/proverbs/:id/publish-ig", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "投稿 ID 格式錯誤" });
+
+  const { data: proverb, error } = await db.from("proverbs").select("*").eq("id", id).maybeSingle();
+  if (error || !proverb) return res.status(404).json({ error: "找不到指定的投稿項目" });
+
+  let imageUrl = proverb.image_url;
+  // 若管理後台前端送出即時繪製的高解析度卡片 JPEG 圖檔
+  if (req.body?.image) {
+    const s = await saveProverbImage(req.body.image, "image/jpeg", req);
+    if (s?.publicUrl) imageUrl = s.publicUrl;
+  }
+
+  if (!imageUrl) {
+    return res.status(400).json({ error: "此投稿尚未生成圖片，請在卡片上按發布或重新產生" });
+  }
+
+  const result = await publishToInstagram({
+    imageUrl,
+    content: proverb.content,
+    author: proverb.author,
+    proverbId: id,
+    studentEmail: proverb.user_email || "",
+    studentName: proverb.user_name || "",
+  });
+
+  if (result.posted) {
+    let meta = proverb.user_meta || {};
+    if (typeof meta === "string") {
+      try { meta = JSON.parse(meta); } catch {}
+    }
+    meta.igPostId = result.mediaId;
+    meta.igPermalink = result.permalink;
+    meta.igPostedAt = new Date().toISOString();
+
+    await db.from("proverbs").update({
+      image_url: imageUrl,
+      ig_post_id: result.mediaId || null,
+      ig_permalink: result.permalink || null,
+      ig_status: "posted",
+      ig_posted_at: new Date().toISOString(),
+      user_meta: meta,
+    }).eq("id", id).catch(() => {});
+
+    invalidateQueryCache("proverbs", "proverbsCount", "users");
+    audit(req, "publish_proverb_to_ig", `Proverb #${id} published to IG: ${result.permalink || result.mediaId}`);
+  }
+
+  res.json({ ok: Boolean(result.posted), result });
+});
+
 // 已登入帳號彙整（包含定位、硬體環境、登入與貼文次數，取消實拍照收集以保護隱私，支援分頁與搜尋）
 app.get("/api/admin/users", async (req, res) => {
   if (!adminOf(req)) return notFound(res);
@@ -3948,6 +4418,50 @@ app.get("/api/status", async (req, res) => {
   }
 });
 
+// 系統全方位功能與資源自動診斷端點
+app.get("/api/diagnostics", async (req, res) => {
+  try {
+    const [m, proverbsCount, dfcStore, igCfg] = await Promise.all([
+      fetchSupabaseRealMetrics(),
+      fetchProverbsCount().catch(() => 0),
+      readSysStore("dfc", DEFAULT_DFC_STORE),
+      readSysStore("instagram_config", {}).catch(() => ({})),
+    ]);
+    const hasLocalVideo = [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")].some(p => fs.existsSync(p));
+    const hasMailChannel = Boolean(RESEND_API_KEY || (SMTP_USER && SMTP_PASS) || SENDGRID_API_KEY || BREVO_API_KEY || MAIL_WEBHOOK_URL);
+    const hasIgConfig = Boolean((igCfg && igCfg.accountId && igCfg.accessToken) || (INSTAGRAM_ACCOUNT_ID && INSTAGRAM_ACCESS_TOKEN) || (igCfg && igCfg.webhookUrl) || INSTAGRAM_WEBHOOK_URL);
+    res.json({
+      ok: true,
+      dbOnline: Boolean(m.dbOnline),
+      latencyMs: m.latencyMs,
+      storageOnline: Boolean(m.storageOnline),
+      authOnline: Boolean(m.authOnline),
+      dfcTablesOnline: Boolean(m.dfcTablesOnline),
+      proverbsCount,
+      dfcFormsCount: (dfcStore?.forms || []).length,
+      dfcResponsesCount: (dfcStore?.responses || []).length,
+      assets: {
+        iconSvg: Boolean(PAGES.icon && PAGES.icon.length > 20),
+        uiCss: Boolean(PAGES.css && PAGES.css.length > 100),
+        indexJs: Boolean(PAGES.index?.js && PAGES.index.js.length > 100),
+        loginJs: Boolean(PAGES.login?.js && PAGES.login.js.length > 100),
+        adminJs: Boolean(PAGES.admin?.js && PAGES.admin.js.length > 100),
+        jszip: Boolean(PAGES.jszip && PAGES.jszip.length > 100),
+        localDfcMp4: hasLocalVideo,
+      },
+      integrations: {
+        googleOAuth: Boolean(GOOGLE_CLIENT_ID),
+        cloudflareTurnstile: Boolean(TURNSTILE_SECRET_KEY),
+        mailOtpChannel: hasMailChannel,
+        instagramAutoPost: hasIgConfig,
+      },
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message || "diagnostics failed" });
+  }
+});
+
 // 後台全開放狀態：回傳所有 Supabase 真實即時指標與當前登入管理員權限角色
 app.get("/api/admin/status", async (req, res) => {
   const adm = adminOf(req);
@@ -3996,6 +4510,103 @@ app.get("/api/admin/audit", async (req, res) => {
   res.json(await fetchAdminAuditLogs().catch(() => []));
 });
 
+/* --- Instagram 自動發布管理與設定 API --- */
+app.get("/api/admin/instagram/config", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  res.json(await getInstagramSummaryForAdmin());
+});
+
+app.post("/api/admin/instagram/config", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+
+  const current = await getMergedInstagramConfig();
+  const nextConfig = {
+    enabled: typeof req.body?.enabled === "boolean" ? req.body.enabled : current.enabled,
+    accountId: req.body?.accountId !== undefined ? String(req.body.accountId).trim() : current.accountId,
+    accessToken: req.body?.accessToken !== undefined ? String(req.body.accessToken).trim() : current.accessToken,
+    captionTemplate: req.body?.captionTemplate !== undefined ? String(req.body.captionTemplate).trim() : current.captionTemplate,
+    webhookUrl: req.body?.webhookUrl !== undefined ? String(req.body.webhookUrl).trim() : current.webhookUrl,
+  };
+
+  await writeSysStore("instagram", nextConfig);
+  audit(req, "update_instagram_config", `${adm.email} updated Instagram settings (enabled: ${nextConfig.enabled})`);
+  res.json({ ok: true, data: await getInstagramSummaryForAdmin() });
+});
+
+app.get("/api/admin/instagram/logs", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+  const logs = await fetchInstagramLogs(limit).catch(() => []);
+  res.json(logs);
+});
+
+app.post("/api/admin/instagram/test", async (req, res) => {
+  const adm = adminOf(req);
+  if (!adm) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+
+  const currentConfig = await getMergedInstagramConfig();
+  const accountId = String(req.body?.accountId ?? currentConfig.accountId).trim();
+  const accessToken = String(req.body?.accessToken ?? currentConfig.accessToken).trim();
+
+  if (!accountId || !accessToken) {
+    return res.status(400).json({ error: "請先填寫 Instagram Account ID 與 Access Token" });
+  }
+
+  try {
+    // 1. 檢驗 Meta Graph API 憑證是否有效
+    const meResp = await fetch(
+      `https://graph.facebook.com/v20.0/${encodeURIComponent(accountId)}?fields=id,name,username,profile_picture_url&access_token=${encodeURIComponent(accessToken)}`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    const meData = await meResp.json().catch(() => ({}));
+    if (!meResp.ok || !meData.id) {
+      return res.status(400).json({
+        ok: false,
+        error: meData.error?.message || "Instagram API 連線失敗，請檢查帳號 ID 與 Access Token 是否正確與具備權限",
+        metaCode: meData.error?.code,
+      });
+    }
+
+    // 2. 若勾選發布測試貼文
+    let testPostResult = null;
+    if (req.body?.publishTestPost) {
+      let testImgUrl = null;
+      if (req.body?.image) {
+        const s = await saveProverbImage(req.body.image, "image/jpeg", req);
+        testImgUrl = s?.publicUrl;
+      }
+      if (!testImgUrl) {
+        testImgUrl = "https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?w=1080&h=1350&fit=crop&q=80";
+      }
+      testPostResult = await publishToInstagram({
+        imageUrl: testImgUrl,
+        content: "學而不思則罔，思而不學則殆",
+        author: "KKNews 系統連線測試",
+        proverbId: 0,
+      });
+    }
+
+    audit(req, "test_instagram_connection", `${adm.email} verified IG @${meData.username || meData.name}`);
+    res.json({
+      ok: true,
+      account: {
+        id: meData.id,
+        name: meData.name || "",
+        username: meData.username || meData.name || "",
+        avatar: meData.profile_picture_url || null,
+      },
+      testPost: testPostResult,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || "連線逾時或網路錯誤" });
+  }
+});
+
 // 後台整合同步端點：單次請求合併取得投稿、帳號、表單、管理員與系統指標，大幅降低網路與資料庫負載
 app.get("/api/admin/sync", async (req, res) => {
   const adm = adminOf(req);
@@ -4003,12 +4614,13 @@ app.get("/api/admin/sync", async (req, res) => {
   try {
     const forceFresh = req.query.force === "1";
     const proverbs = await fetchProverbsList();
-    const [users, m, dfcStore, adminList, auditLogs] = await Promise.all([
+    const [users, m, dfcStore, adminList, auditLogs, instagram] = await Promise.all([
       fetchEnrichedUsersList(proverbs),
       fetchSupabaseRealMetrics(),
       getDfcStoreWithDb(forceFresh),
       readSysStore("admins", [], forceFresh),
       fetchAdminAuditLogs().catch(() => []),
+      getInstagramSummaryForAdmin().catch(() => ({ config: {}, status: {} })),
     ]);
     const accessCfg = await getMergedDfcAccessConfig(dfcStore);
     const liveAdm = adminOf(req) || adm;
@@ -4019,6 +4631,7 @@ app.get("/api/admin/sync", async (req, res) => {
     res.json({
       proverbs,
       users,
+      instagram,
       dfc: {
         activeFormId: dfcStore.activeFormId || forms[0]?.id || "default-dfc",
         accessMode: accessCfg.accessMode,

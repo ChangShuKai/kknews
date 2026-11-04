@@ -25,7 +25,32 @@ alter table public.proverbs
   add column if not exists user_meta jsonb,
   add column if not exists device_info text,
   add column if not exists user_agent text,
-  add column if not exists ip_address text;
+  add column if not exists ip_address text,
+  add column if not exists image_url text,
+  add column if not exists ig_post_id text,
+  add column if not exists ig_permalink text,
+  add column if not exists ig_status text,
+  add column if not exists ig_posted_at timestamptz;
+
+-- Instagram 自動發布歷史紀錄表
+create table if not exists public.instagram_logs (
+  id bigint generated always as identity primary key,
+  proverb_id bigint references public.proverbs(id) on delete set null,
+  content text,
+  author text,
+  image_url text,
+  status text not null, -- 'success', 'failed', 'skipped'
+  ig_media_id text,
+  ig_permalink text,
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.instagram_logs enable row level security;
+alter table public.instagram_logs force row level security;
+revoke all on public.instagram_logs from anon, authenticated;
+drop policy if exists "allow service_role instagram_logs" on public.instagram_logs;
+create policy "allow service_role instagram_logs" on public.instagram_logs for all to service_role using (true) with check (true);
 
 -- 開啟並強制 RLS：
 -- 即使有人從別處拿到 anon 或 user token，也完全無法直接讀寫資料表

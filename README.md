@@ -52,7 +52,13 @@
   - `現代引言`：大引號雜誌感設計。
   - `典雅雙框`：藝廊裝裱風格雙重線條。
   - `潮流海報`：強烈左飾條社群感。
-- **自訂主題配色**：經典米白、午夜深藍、森林綠、暖陽、以及自訂色票選取器。
+- **自訂主題配色與背景相片**：經典米白、午夜深藍、森林綠、暖陽、自訂色票選取器，並支援學生上傳自己的背景照片/插圖（自動圓角裁切與半透明防眩遮罩）。
+- **📸 收到圖片自動發布貼文至 Instagram (Instagram Auto-Publish)**：
+  - 學生提交卡片或上傳圖片時，系統即時轉繪為符合 Meta 官方 API 規範的 **4:5 縱向高解析度 JPEG (1080×1350)**。
+  - 支援 **Meta Instagram Graph API (商業/創作者帳號)** 與 **自訂 Webhook (Zapier / Make.com / n8n)** 雙模自動化發布。
+  - 圖檔原生上傳至 Supabase Storage 全球 CDN 公開存取桶（具備本機快取備援），Meta 伺服器秒級抓取。
+  - 後台專屬「📸 IG 發布管理」：即時連線測試、說明範本自訂標籤 `{content}` / `{author}` / `{id}`、歷史發布紀錄與貼文連結。
+  - 支援後台管理員對任一學生投稿卡片一鍵「📸 發布至 IG」。
 - **匯出與下載**：支援單張高解析度 PNG 即時下載，後台更支援全校投稿**一鍵打包為 ZIP 壓縮檔**。
 
 ### 2. DFC 沉浸式影音問答 (Design For Change)
@@ -201,6 +207,16 @@ ADMIN_OTP_EMAIL=kai1010210@gmail.com
 
 # Cloudflare Turnstile 人機驗證金鑰
 TURNSTILE_SECRET_KEY=your-turnstile-secret-key
+
+# Instagram 自動發布設定 (選填，亦可直接於後台 GUI 介面設定)
+# 方式 A：Meta 官方 Instagram Graph API (商業/創作者帳號)
+INSTAGRAM_ACCOUNT_ID=17841400000000000
+INSTAGRAM_ACCESS_TOKEN=EAAB...
+INSTAGRAM_AUTO_POST=true
+INSTAGRAM_CAPTION_TEMPLATE={content}\n\n— {author}\n\n#KKNews #校園金句 #諺語工坊 #花蓮教育
+
+# 方式 B：自訂 Webhook 自動化 (支援 Zapier / Make.com / n8n / 自建 Bot)
+INSTAGRAM_WEBHOOK_URL=https://hook.make.com/...
 ```
 
 ### 步驟 5：啟動伺服器
