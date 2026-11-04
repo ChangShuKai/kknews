@@ -178,6 +178,35 @@ revoke all on public.dfc_forms from anon, authenticated;
 drop policy if exists "allow service_role dfc_forms" on public.dfc_forms;
 create policy "allow service_role dfc_forms" on public.dfc_forms for all to service_role using (true) with check (true);
 
+-- ===== DFC 問卷個別題目資料表（每道題目獨立一筆 Row，原生儲存於 Supabase，支援隨時查詢、修改與統計） =====
+create table if not exists public.dfc_questions (
+  id text primary key,
+  form_id text not null references public.dfc_forms(id) on delete cascade,
+  question_order integer not null default 0,
+  time_seconds numeric not null default 0,
+  step_label text default '',
+  title text not null,
+  type text not null default 'radio' check (type in ('radio', 'checkbox', 'rating', 'dropdown', 'boolean', 'text', 'textarea')),
+  options jsonb not null default '[]'::jsonb,
+  description text default '',
+  required boolean not null default true,
+  placeholder text default '',
+  min_val integer default 1,
+  max_val integer default 5,
+  entry_id text default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists dfc_questions_form_order on public.dfc_questions (form_id, question_order asc);
+create index if not exists dfc_questions_form_time on public.dfc_questions (form_id, time_seconds asc);
+
+alter table public.dfc_questions enable row level security;
+alter table public.dfc_questions force row level security;
+revoke all on public.dfc_questions from anon, authenticated;
+drop policy if exists "allow service_role dfc_questions" on public.dfc_questions;
+create policy "allow service_role dfc_questions" on public.dfc_questions for all to service_role using (true) with check (true);
+
 -- ===== DFC 學生問卷填答與統計結果資料表（原生儲存於 Supabase，後台直接檢視分析與匯出 CSV） =====
 create table if not exists public.dfc_responses (
   id uuid primary key default gen_random_uuid(),
@@ -218,6 +247,30 @@ revoke all on public.sys_settings from anon, authenticated;
 drop policy if exists "allow service_role sys_settings" on public.sys_settings;
 create policy "allow service_role sys_settings" on public.sys_settings for all to service_role using (true) with check (true);
 
+-- 提供後台即時取得 DFC 表單數、題目數與填答紀錄數指標（僅供 service_role 呼叫）
+create or replace function public.get_dfc_stats()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  forms_count int;
+  questions_count int;
+  responses_count int;
+  access_count int;
+begin
+  select count(*) into forms_count from public.dfc_forms;
+  select count(*) into questions_count from public.dfc_questions;
+  select count(*) into responses_count from public.dfc_responses;
+  select count(*) into access_count from public.dfc_access_list;
+  return jsonb_build_object(
+    'forms_count', coalesce(forms_count, 0),
+    'questions_count', coalesce(questions_count, 0),
+    'responses_count', coalesce(responses_count, 0),
+    'access_count', coalesce(access_count, 0)
+  );
+end $$;
+
+revoke all on function public.get_dfc_stats() from public, anon, authenticated;
+grant execute on function public.get_dfc_stats() to service_role;
+
 -- 預設 DFC 表單種子資料（若無資料時建立）
 insert into public.dfc_forms (
   id, title, description, video_url, fallback_duration,
@@ -244,3 +297,27 @@ insert into public.dfc_forms (
     {"id": "q7", "time": 22, "stepLabel": "階段四 · 分享 Share (第2題)", "title": "你對本次校園 DFC 方案的整體推薦評分？", "type": "rating", "options": [], "desc": "1~5 星評分量表，作答後表單即完成！", "min": 1, "max": 5, "required": true}
   ]'::jsonb
 ) on conflict (id) do nothing;
+
+-- 預設 DFC 問卷個別題目種子資料（對應 DFC_問卷題目範例.csv 與 DFC_問卷題目範本.csv 全部 7 道題目，儲存至 public.dfc_questions）
+insert into public.dfc_questions (
+  id, form_id, question_order, time_seconds, step_label, title, type, options, description, required, min_val, max_val, entry_id
+) values
+  ('q1', 'default-dfc', 1, 4, '階段一 · 感受 Feel (第1題)', '在剛才影片片段中，你觀察到最核心的校園問題是什麼？', 'radio', '["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"]'::jsonb, '請選擇一個最貼近你觀察到的現象。', true, 1, 5, 'entry.111111111'),
+  ('q2', 'default-dfc', 2, 4, '階段一 · 感受 Feel (第2題)', '你認為這個問題對哪一群體的影響最大？', 'checkbox', '["全體學生", "導師與行政組長", "家長與校友", "學校訪客"]'::jsonb, '支援同時間點連續提問。', true, 1, 5, 'entry.111111112'),
+  ('q3', 'default-dfc', 3, 10, '階段二 · 想像 Imagine (第1題)', '針對這個問題，你認為哪些創意解方最值得嘗試？', 'checkbox', '["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"]'::jsonb, '此題為多選題，可勾選一或多項方案。', true, 1, 5, 'entry.222222222'),
+  ('q4', 'default-dfc', 4, 10, '階段二 · 想像 Imagine (第2題)', '你認為以上解方的實施難易度為何？', 'dropdown', '["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"]'::jsonb, '評估解方可行性。', false, 1, 5, 'entry.22222223'),
+  ('q5', 'default-dfc', 5, 18, '階段三 · 實踐 Do', '請簡述你在本次行動中擔任的角色或預計實踐的項目', 'textarea', '[]'::jsonb, '限 50 字以內，簡要描述即可。', false, 1, 5, 'entry.333333333'),
+  ('q6', 'default-dfc', 6, 22, '階段四 · 分享 Share (第1題)', '你是否願意將本次成果分享於全校互動成果牆？', 'boolean', '[]'::jsonb, '二選一是非題', true, 1, 5, 'entry.555555555'),
+  ('q7', 'default-dfc', 7, 22, '階段四 · 分享 Share (第2題)', '你對本次校園 DFC 方案的整體推薦評分？', 'rating', '[]'::jsonb, '1~5 星評分量表，作答後表單即完成！', true, 1, 5, 'entry.666666666')
+on conflict (id) do update set
+  title = excluded.title,
+  step_label = excluded.step_label,
+  time_seconds = excluded.time_seconds,
+  type = excluded.type,
+  options = excluded.options,
+  description = excluded.description,
+  required = excluded.required,
+  min_val = excluded.min_val,
+  max_val = excluded.max_val,
+  entry_id = excluded.entry_id,
+  updated_at = now();

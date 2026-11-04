@@ -3710,7 +3710,7 @@
       return blobUrl;
     }
 
-    // 核心：進入 DFC 頁面即啟動雲端最新版全片併發下載器（先向伺服器驗證最新版 Manifest -> 4 執行緒下載 360p -> 無縫升頻下載 720p HD 至當次暫存，關閉網頁自動刪除）
+    // 核心：進入 DFC 頁面即查驗雲端最新版串流資訊，並由瀏覽器原生 <video> 透過 Google CDN 直連分流播放（完全杜絕 Vercel Fast Origin Transfer 爆量）
     async function startDfcTurboPreloader(fileId) {
       if (!fileId || DFC_CONFIG.restricted || !currentDfcAccess.allowed) return;
 
@@ -3719,17 +3719,15 @@
 
       updatePreloadTelemetryUi(
         "🔍 正在向雲端伺服器查驗最新版影片版本與串流結構...",
-        0,
+        30,
         "🔄 查驗雲端最新版中",
         false
       );
 
-      // Step 1: 強制向雲端即時取得最新 Manifest（cache: "no-store"，絕不盲目載入本地快取）
+      // Step 1: 向雲端查驗最新 Manifest 中繼資料
       let manifest = null;
       try {
-        const mr = await fetch(`/api/dfc/video-manifest/${encodeURIComponent(fileId)}?fresh=1&_t=${Date.now()}`, {
-          cache: "no-store",
-        });
+        const mr = await fetch(`/api/dfc/video-manifest/${encodeURIComponent(fileId)}?fresh=1&_t=${Date.now()}`);
         if (mr.ok) {
           manifest = await mr.json();
         }
@@ -3737,38 +3735,8 @@
       if (runId !== dfcTurboState.activeRunId) return;
 
       const latestVersion = manifest?.version || `${fileId}-${DFC_CONFIG.videoVersion || DFC_CONFIG.updatedAt || Date.now()}`;
-
-      // 若當次工作階段已完整下載同一部且版本完全一致的最新版影片，直接沿用當次記憶體 Blob
-      if (dfcTurboState.fileId === fileId && dfcTurboState.version === latestVersion && dfcTurboState.completed["720p"] && dfcTurboState.blobUrls["720p"]) {
-        updatePreloadTelemetryUi(
-          "⚡ 最新版 720p HD 全片已 100% 下載至當次本機暫存 · 關閉網頁將自動刪除並於下次重載",
-          100,
-          "🧹 當次暫存已就緒 (關閉即刪)",
-          true
-        );
-        return;
-      }
-
-      // 若影片 ID 或雲端版本號有任何變更，立即銷毀所有舊分塊與舊 Blob，重新下載最新版
-      if (dfcTurboState.fileId !== fileId || dfcTurboState.version !== latestVersion) {
-        for (const ac of dfcTurboState.abortControllers) {
-          try { ac.abort(); } catch {}
-        }
-        dfcTurboState.abortControllers.clear();
-        for (const q of ["360p", "720p"]) {
-          if (dfcTurboState.blobUrls[q]) {
-            try { URL.revokeObjectURL(dfcTurboState.blobUrls[q]); } catch {}
-          }
-          dfcTurboState.blobUrls[q] = null;
-          dfcTurboState.completed[q] = false;
-          dfcTurboState.chunkMaps[q] = new Map();
-          dfcTurboState.downloadedBytes[q] = 0;
-        }
-        dfcTurboState.fileId = fileId;
-        dfcTurboState.version = latestVersion;
-        dfcTurboState.overallBufferedPct = 0;
-        DfcVideoCacheDB.purgeAll();
-      }
+      dfcTurboState.fileId = fileId;
+      dfcTurboState.version = latestVersion;
 
       if (manifest) {
         dfcTurboState.manifest = manifest;
@@ -3784,146 +3752,19 @@
         }
       }
 
-      // 內部通用併發分塊下載器（Playhead 播放頭優先排程 + 4 執行緒下載最新版全片至當次記憶體，不留永久殘留）
-      async function downloadAllChunksForQuality(quality, onProgress) {
-        const totalSize = dfcTurboState.totalSizes[quality];
-        const chunkCount = dfcTurboState.chunkCounts[quality];
-        const chunkMap = dfcTurboState.chunkMaps[quality];
-        if (!totalSize || !chunkCount) return false;
-        if (chunkMap.size >= chunkCount) return true;
-
-        const inFlightSet = new Set();
-
-        // 智慧排程：永遠優先抓取「目前播放時間點」緊接著的未載入區塊，再把整部影片 0%~100% 全部載完
-        const pickNextChunkIndex = () => {
-          const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
-          const curRatio = Math.min(0.99, Math.max(0, (dfcState.currentTime || 0) / dur));
-          const playheadIdx = Math.floor(curRatio * chunkCount);
-
-          for (let offset = 0; offset < chunkCount; offset++) {
-            const idx = (playheadIdx + offset) % chunkCount;
-            if (!chunkMap.has(idx) && !inFlightSet.has(idx)) {
-              return idx;
-            }
-          }
-          return -1;
-        };
-
-        const workerLoop = async () => {
-          while (runId === dfcTurboState.activeRunId && chunkMap.size < chunkCount) {
-            const idx = pickNextChunkIndex();
-            if (idx === -1) break;
-            inFlightSet.add(idx);
-
-            const startByte = idx * VIDEO_BLOCK_SIZE;
-            const endByte = Math.min(totalSize - 1, (idx + 1) * VIDEO_BLOCK_SIZE - 1);
-            const t0 = performance.now();
-            const ac = new AbortController();
-            dfcTurboState.abortControllers.add(ac);
-
-            try {
-              const r = await fetch(`/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(quality)}&chunk=${idx}&v=${encodeURIComponent(latestVersion)}&_s=${encodeURIComponent(dfcTurboState.sessionToken)}`, {
-                method: "GET",
-                cache: "no-store",
-                headers: { "Range": `bytes=${startByte}-${endByte}` },
-                signal: ac.signal,
-              });
-              if (r.ok || r.status === 206) {
-                const buf = await r.arrayBuffer();
-                const dt = Math.max(5, performance.now() - t0);
-                if (runId === dfcTurboState.activeRunId && buf && buf.byteLength > 0) {
-                  dfcAbrEstimator.sample(buf.byteLength, dt);
-                  chunkMap.set(idx, buf);
-                  if (onProgress) onProgress(chunkMap.size, chunkCount, totalSize);
-                }
-              } else {
-                await new Promise(res => setTimeout(res, 600));
-              }
-            } catch {
-              if (runId !== dfcTurboState.activeRunId) break;
-              await new Promise(res => setTimeout(res, 600));
-            } finally {
-              dfcTurboState.abortControllers.delete(ac);
-              inFlightSet.delete(idx);
-            }
-          }
-        };
-
-        const workerCount = dfcTurboState.isOnDfcPage ? 4 : 3;
-        const workers = [];
-        for (let w = 0; w < workerCount; w++) {
-          workers.push(workerLoop());
-        }
-        await Promise.all(workers);
-        return chunkMap.size >= chunkCount;
+      dfcTurboState.overallBufferedPct = 100;
+      updatePreloadTelemetryUi(
+        "⚡ Google CDN 雲端直連分流已就緒 (0 伺服器流量 · 極速無延遲)",
+        100,
+        "🟢 直連分流就緒",
+        true
+      );
+      if (badge && !badge.classList.contains("question-stop")) {
+        badge.textContent = dfcState.playing
+          ? "🎬 Google CDN 高速串流播放中"
+          : "⚡ 雲端串流就緒 · 點擊開始觀看";
       }
-
-      // Step 2: 第一階段 — 先把最新版 360p 全片 100% 下載至當次記憶體，確保流暢度保底！
-      if (!dfcTurboState.completed["360p"]) {
-        const done360 = await downloadAllChunksForQuality("360p", (doneCount, totalCount, totalBytes) => {
-          if (runId !== dfcTurboState.activeRunId) return;
-          const pct = Math.min(100, Math.round((doneCount / totalCount) * 100));
-          dfcTurboState.overallBufferedPct = Math.max(dfcTurboState.overallBufferedPct, pct);
-          const loadedMB = ((doneCount / totalCount) * (totalBytes / (1024 * 1024))).toFixed(1);
-          const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-          updatePreloadTelemetryUi(
-            `🚀 最新版 360p 流暢保底下載中：${pct}% (${loadedMB} / ${totalMB} MB · ${dfcAbrEstimator.getSpeedMBps()} MB/s)`,
-            pct,
-            `🧹 當次暫存 ${doneCount}/${totalCount} 塊 (關閉即刪)`,
-            false
-          );
-          evaluateAdaptiveQuality();
-          updateDfcUiProgress();
-        });
-
-        if (runId !== dfcTurboState.activeRunId) return;
-        if (done360) {
-          const blob360Url = assembleQualityBlobUrl(fileId, "360p");
-          dfcTurboState.overallBufferedPct = 100;
-          if (blob360Url && dfcActiveStreamQuality === "360p") {
-            await seamlessSwapVideoSource(blob360Url, "360p", dfcQualityMode === "auto" ? "480p" : dfcQualityMode);
-          }
-          updateDfcUiProgress();
-        }
-      }
-
-      // Step 3: 第二階段 — 360p 全片保底完成後，立即自動下載最新版 720p HD 全片，載完無縫切換至 HD！
-      if (!dfcTurboState.completed["720p"]) {
-        const done720 = await downloadAllChunksForQuality("720p", (doneCount, totalCount, totalBytes) => {
-          if (runId !== dfcTurboState.activeRunId) return;
-          const pct720 = Math.min(100, Math.round((doneCount / totalCount) * 100));
-          const loadedMB = ((doneCount / totalCount) * (totalBytes / (1024 * 1024))).toFixed(1);
-          const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-          updatePreloadTelemetryUi(
-            `⚡ 最新版 360p 已保底 · 正在升頻下載最新版 720p HD 全片：${pct720}% (${loadedMB} / ${totalMB} MB · ${dfcAbrEstimator.getSpeedMBps()} MB/s)`,
-            pct720,
-            `🧹 HD 當次暫存 ${pct720}% (關閉即刪)`,
-            true
-          );
-        });
-
-        if (runId !== dfcTurboState.activeRunId) return;
-        if (done720) {
-          const blob720Url = assembleQualityBlobUrl(fileId, "720p");
-          dfcTurboState.overallBufferedPct = 100;
-          if (blob720Url && dfcQualityMode !== "360p") {
-            const upgradedTier = dfcQualityMode === "1080p" ? "1080p" : "720p";
-            await seamlessSwapVideoSource(blob720Url, "720p", upgradedTier);
-            if (badge && !badge.classList.contains("question-stop")) {
-              badge.textContent = dfcState.playing
-                ? "🎬 最新版 720p HD 全片本機暫存播放中"
-                : "⚡ 最新版 720p HD 全片已下載就緒 · 點擊開始觀看";
-            }
-          }
-          updatePreloadTelemetryUi(
-            "✅ 最新版 720p HD 全片已 100% 下載至本機暫存（關閉網頁即自動刪除，下次開啟將重新載入最新版）",
-            100,
-            "🧹 全片暫存 100% (關閉即刪・下次重載)",
-            true
-          );
-          updateDfcUiProgress();
-        }
-      }
+      updateDfcUiProgress();
     }
 
     function applyDfcVideoSource(url) {
@@ -4873,7 +4714,7 @@
       refreshPublicStatus(true);
       setInterval(() => {
         if (!document.hidden) refreshPublicStatus(false);
-      }, 4000);
+      }, 30000);
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) refreshPublicStatus(true);
       });

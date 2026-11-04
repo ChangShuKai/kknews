@@ -161,6 +161,37 @@
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="formsTabList"></div>
       <div id="activeFormApiGrid" class="dfc-meta-info-grid"></div>
+
+      <!-- Supabase 雲端資料庫即時狀態與全域操作列 -->
+      <div class="dfc-db-sync-strip" id="dfcDbSyncStrip">
+        <div class="dfc-db-sync-info">
+          <span class="pulse-dot-green"></span>
+          <div>
+            <strong style="color:var(--ink);font-size:13.5px">🟢 Supabase PostgreSQL 雲端資料庫原生儲存</strong>
+            <div style="font-size:12px;color:var(--ink-secondary)" id="dfcDbStatsText">
+              正在連接 Supabase 雲端資料表 (dfc_forms, dfc_questions, dfc_responses)...
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn ghost sm" id="syncDbBtn" title="全量同步所有表單、題目與作答資料至 Supabase">⚡ 立即同步至 Supabase</button>
+          <button type="button" class="btn ghost sm" id="exportQuestionsCsvBtn" title="匯出當前問卷所有題目為 CSV">📤 匯出題目 (CSV)</button>
+          <button type="button" class="btn ghost sm" id="importQuestionsFromPanelBtn" title="批次匯入題目 CSV / Excel">📥 匯入題目 (CSV)</button>
+          <button type="button" class="btn primary sm" id="panelAddQuestionBtn">➕ 快速新增題目</button>
+        </div>
+      </div>
+
+      <!-- 題目清單頂部篩選與操作列 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:280px;max-width:480px">
+          <input type="search" id="qFilterInput" class="search-box" placeholder="🔍 搜尋題目內容、題型或階段標籤..." style="width:100%;font-size:13px;padding:7px 12px">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="panelQuestionCountBadge">共 0 題</span>
+          <button type="button" class="btn ghost sm" id="panelSortQuestionsBtn" title="依照時間點秒數重新由小到大排序">⏱️ 依時間排序</button>
+        </div>
+      </div>
+
       <div id="activeFormCpList" class="dfc-cp-card-grid"></div>
     </div>
 
@@ -240,6 +271,28 @@ s1120002
       </div>
 
       <div id="remoteCsvErr" class="alert err" style="margin-top:0;margin-bottom:14px"></div>
+
+      <!-- 回傳結果即時搜尋與篩選列 -->
+      <div class="response-filter-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;background:var(--card);padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
+        <div style="flex:1;min-width:240px">
+          <input type="search" id="respSearchInput" class="search-box" placeholder="🔍 搜尋填答學生姓名、信箱、班級或作答內容..." style="width:100%;font-size:13px;padding:7px 12px">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="respDeviceFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto">
+            <option value="all">📱 全部裝置 (不限)</option>
+            <option value="desktop">💻 電腦桌機</option>
+            <option value="mobile">📱 手機行動端</option>
+            <option value="tablet">📟 平板電腦</option>
+          </select>
+          <select id="respWatchFilter" class="input" style="font-size:12.5px;padding:6px 10px;height:auto">
+            <option value="all">🎬 全部觀看率</option>
+            <option value="high">🟢 ≥90% 完整觀看</option>
+            <option value="mid">🟡 50~89% 大部分觀看</option>
+            <option value="low">🔴 &lt;50% 部分觀看</option>
+          </select>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="respFilterCountBadge">顯示 0 / 0 筆</span>
+        </div>
+      </div>
       <!-- DFC 互動問卷深度數據分析中心：每一題提供專屬圓餅圖、長條圖、數據、對應表格與填答者清單 -->
       <div id="dfcAnalyticsSection" style="margin-bottom:24px">
         <div id="dfcKpiBar" class="dfc-kpi-bar"></div>
@@ -819,6 +872,89 @@ s1120002
   </div>
 </div>
 
+<!-- Super Admin：獨立單題快速編輯與新增彈窗 (無需開啟完整影音工作室) -->
+<div id="quickQuestionModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="quickQuestionTitle">
+  <div class="modal modal-lg" style="max-width:640px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 id="quickQuestionTitle" style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">
+        ✏️ 快速編輯問卷題目 (同步儲存至 Supabase)
+      </h3>
+      <button type="button" class="btn ghost sm" id="closeQuickQModalBtn">✕ 關閉</button>
+    </div>
+
+    <input type="hidden" id="quickQId">
+
+    <div class="grid-3">
+      <label class="field" style="margin-top:0">
+        <span class="lbl">時間 (分:秒) <span>如 00:04</span></span>
+        <input class="input" id="quickQTimeMm" placeholder="00:04">
+      </label>
+      <label class="field" style="margin-top:0">
+        <span class="lbl">時間 (總秒數)</span>
+        <input type="number" step="0.5" min="0" class="input" id="quickQTimeSec" value="4">
+      </label>
+      <label class="field" style="margin-top:0">
+        <span class="lbl">題目類型 <b>*</b></span>
+        <select class="input" id="quickQType">
+          <option value="radio">🔘 單選題 (Single Choice)</option>
+          <option value="checkbox">☑️ 多選題 (Multiple Choice)</option>
+          <option value="rating">⭐ 5星評分量表 (1~5 Stars)</option>
+          <option value="dropdown">▾ 下拉選單 (Dropdown)</option>
+          <option value="boolean">⚖️ 是非題 (是 / 否)</option>
+          <option value="text">💬 簡答題 (Short Text)</option>
+          <option value="textarea">📝 詳答題 (Paragraph)</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="field">
+      <span class="lbl">階段標籤 <span>點選下方快速代入 DFC 步驟</span></span>
+      <input class="input" id="quickQStep" placeholder="階段一 · 感受 Feel">
+      <div class="quick-chips">
+        <button type="button" class="chip-btn quick-step-btn" data-step="階段一 · 感受 Feel">階段一 · 感受 Feel</button>
+        <button type="button" class="chip-btn quick-step-btn" data-step="階段二 · 想像 Imagine">階段二 · 想像 Imagine</button>
+        <button type="button" class="chip-btn quick-step-btn" data-step="階段三 · 實踐 Do">階段三 · 實踐 Do</button>
+        <button type="button" class="chip-btn quick-step-btn" data-step="階段四 · 分享 Share">階段四 · 分享 Share</button>
+      </div>
+    </label>
+
+    <label class="field">
+      <span class="lbl">題目內容 <b>*</b></span>
+      <input class="input" id="quickQTitle" placeholder="請輸入題目內容...">
+    </label>
+
+    <label class="field">
+      <span class="lbl">補充說明或作答提示（選填）</span>
+      <input class="input" id="quickQDesc" placeholder="請輸入提示資訊，作答時將顯示於題目下方...">
+    </label>
+
+    <div id="quickQOptionsBox">
+      <label class="field">
+        <span class="lbl">選項清單 <span>每行一個選項</span></span>
+        <textarea class="input" id="quickQOptions" rows="4" placeholder="選項一&#10;選項二&#10;選項三"></textarea>
+        <div class="quick-chips" style="margin-top:6px">
+          <span style="font-size:11.5px;color:var(--ink-tertiary)">快捷選項範本：</span>
+          <button type="button" class="chip-btn quick-opt-preset" data-preset="likert5">五分滿意度</button>
+          <button type="button" class="chip-btn quick-opt-preset" data-preset="agree5">認同度</button>
+          <button type="button" class="chip-btn quick-opt-preset" data-preset="yesno">是非選項</button>
+          <button type="button" class="chip-btn quick-opt-preset" data-preset="dfc">校園方案</button>
+        </div>
+      </label>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);flex-wrap:wrap;gap:10px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="quickQRequired" checked style="transform:scale(1.2);accent-color:var(--ink)">
+        <span><b>此題為必填題</b>（學生必須填答後方可繼續播放影片）</span>
+      </label>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn ghost" id="cancelQuickQBtn">取消</button>
+        <button type="button" class="btn primary" id="saveQuickQBtn">💾 儲存並同步至 Supabase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
 <button type="button" class="back-to-top-fab hide" id="backToTopFab" title="回到頁面頂端" aria-label="回到頂端">↑</button>
 
@@ -872,6 +1008,7 @@ window.addEventListener("error", (e) => {
 let rows = [], users = [], userMap = {}, activeTab = "posts", searchQuery = "", pendingConfirmFn = null;
 let currentRole = "super_admin", currentEmail = "";
 let dfcForms = [], dfcResponses = [], selectedFormId = "default-dfc", currentCsvData = null;
+let dfcDbStatus = null, dfcQuestionSearchQuery = "", dfcRespSearchQuery = "", dfcRespDeviceFilter = "all", dfcRespWatchFilter = "all";
 let isFormDirty = false;
 window.addEventListener("beforeunload", (e) => {
   if (isFormDirty) {
@@ -1550,7 +1687,7 @@ async function load(forceRender = false) {
 
 setInterval(() => {
   if (!document.hidden) load(false);
-}, 10000);
+}, 30000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load(false); });
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -2221,6 +2358,8 @@ function renderDfcPanel() {
 
   const cpWrap = $("activeFormCpList");
   cpWrap.innerHTML = "";
+  refreshDfcDbStatus();
+
   const typeMap = {
     radio: "🔘 單選題",
     checkbox: "☑️ 多選題",
@@ -2231,23 +2370,173 @@ function renderDfcPanel() {
     textarea: "📝 詳答題",
   };
 
-  (activeForm.checkpoints || []).forEach((cp, i) => {
-    const div = document.createElement("div");
-    div.className = "dfc-cp-item-card";
-    div.innerHTML = `
-      <div class="cp-item-top">
-        <span>⏱️ ${formatMmSs(cp.time)} (${Number(cp.time)}秒) · 問題 ${i + 1}</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span class="cp-badge-type">${esc(typeMap[cp.type] || cp.type)}</span>
+  const allCps = Array.isArray(activeForm.checkpoints) ? activeForm.checkpoints : [];
+  const qFilterTerm = (dfcQuestionSearchQuery || "").toLowerCase();
+  const visibleCps = allCps.filter(cp => {
+    if (!qFilterTerm) return true;
+    const pool = [cp.title, cp.stepLabel, cp.type, cp.desc, ...(cp.options || [])].join(" ").toLowerCase();
+    return pool.includes(qFilterTerm);
+  });
+
+  const countBadge = $("panelQuestionCountBadge");
+  if (countBadge) {
+    countBadge.textContent = qFilterTerm
+      ? `顯示 ${visibleCps.length} / ${allCps.length} 題`
+      : `共 ${allCps.length} 道題目 (Supabase 原生)`;
+  }
+
+  if (visibleCps.length === 0) {
+    const emptyMsg = qFilterTerm
+      ? `<div style="grid-column:1/-1;text-align:center;padding:36px 20px;background:var(--bg);border-radius:12px;border:1px dashed var(--line);color:var(--ink-secondary)">
+           <div style="font-size:24px;margin-bottom:8px">🔍</div>
+           <div style="font-weight:600">無相符題目（搜尋「${esc(dfcQuestionSearchQuery)}」）</div>
+           <button type="button" class="btn ghost sm" id="clearQFilterBtn" style="margin-top:10px">重設搜尋條件</button>
+         </div>`
+      : `<div style="grid-column:1/-1;text-align:center;padding:48px 20px;background:var(--bg);border-radius:12px;border:2px dashed var(--line);color:var(--ink-secondary)">
+           <div style="font-size:32px;margin-bottom:8px">📝</div>
+           <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:var(--ink)">此問卷目前尚未建立任何題目</div>
+           <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px">您可以快速新增題目或使用 CSV 批次匯入至 Supabase。</p>
+           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+             <button type="button" class="btn primary sm" id="emptyPanelAddQBtn">➕ 快速新增第一題</button>
+             <button type="button" class="btn ghost sm" id="emptyPanelImportQBtn">📥 匯入題目 (CSV / Excel)</button>
+           </div>
+         </div>`;
+    cpWrap.innerHTML = emptyMsg;
+
+    const clrBtn = $("clearQFilterBtn");
+    if (clrBtn) clrBtn.onclick = () => { dfcQuestionSearchQuery = ""; $("qFilterInput").value = ""; renderDfcPanel(); };
+    const empAdd = $("emptyPanelAddQBtn");
+    if (empAdd) empAdd.onclick = () => openQuickQuestionModal(null, true);
+    const empImp = $("emptyPanelImportQBtn");
+    if (empImp) empImp.onclick = () => openImportQuestionsModal();
+  } else {
+    visibleCps.forEach((cp) => {
+      const originalIndex = allCps.findIndex(c => c.id === cp.id);
+      const isFirst = originalIndex === 0;
+      const isLast = originalIndex === allCps.length - 1;
+      const div = document.createElement("div");
+      div.className = "cp-item-card-rich";
+
+      let previewContentHtml = "";
+      if (["radio", "checkbox", "dropdown"].includes(cp.type) && Array.isArray(cp.options) && cp.options.length) {
+        previewContentHtml = `<div style="margin-top:4px">${cp.options.map(o => `<span class="cp-opt-pill">${esc(o)}</span>`).join("")}</div>`;
+      } else if (cp.type === "rating") {
+        previewContentHtml = `<div style="color:#d97706;font-size:12.5px;font-weight:600;margin-top:4px">⭐⭐⭐⭐⭐ 1~5 星滿意度評分量表</div>`;
+      } else if (cp.type === "boolean") {
+        previewContentHtml = `<div style="margin-top:4px"><span class="cp-opt-pill" style="color:#059669">👍 是 / 贊成</span><span class="cp-opt-pill" style="color:#dc2626">👎 否 / 反對</span></div>`;
+      } else {
+        previewContentHtml = `<div style="font-size:12px;color:var(--muted);margin-top:4px">💭 學生文字心得與簡答詳答輸入框</div>`;
+      }
+
+      div.innerHTML = `
+        <div class="cp-item-top">
+          <span>⏱️ <b>${formatMmSs(cp.time)}</b> (${Number(cp.time)}s) · 問題 #${originalIndex + 1}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="cp-badge-type">${esc(typeMap[cp.type] || cp.type)}</span>
+            <span class="cp-req-badge ${cp.required !== false ? "required" : "optional"}">${cp.required !== false ? "🔴 必填" : "選填"}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+          <span class="badge" style="font-size:11px;background:var(--blue-soft);color:var(--blue);font-weight:600">${esc(cp.stepLabel || `階段 ${originalIndex + 1}`)}</span>
           <span class="cp-entry">${esc(cp.entryId || cp.id)}</span>
         </div>
-      </div>
-      <div style="font-weight:700;margin-bottom:2px;font-size:13.5px;color:var(--ink)">${esc(cp.title)}</div>
-      ${cp.desc ? `<div style="font-size:12px;color:var(--ink-secondary);margin-bottom:4px">${esc(cp.desc)}</div>` : ""}
-      ${cp.options && cp.options.length ? `<div style="font-size:12px;color:var(--ink-secondary)">選項：${cp.options.map(esc).join(" ／ ")}</div>` : ""}
-    `;
-    cpWrap.appendChild(div);
-  });
+        <div style="font-weight:700;font-size:14px;color:var(--ink);line-height:1.4">${esc(cp.title)}</div>
+        ${cp.desc ? `<div style="font-size:12px;color:var(--ink-secondary);line-height:1.4">${esc(cp.desc)}</div>` : ""}
+        ${previewContentHtml}
+        <div class="cp-card-actions">
+          <button type="button" class="btn ghost sm cp-edit-btn" title="快速編輯此題目">✏️ 編輯題目</button>
+          <button type="button" class="btn ghost sm cp-dup-btn" title="複製此題目">📑 複製</button>
+          <button type="button" class="btn ghost sm cp-up-btn" title="上移此題" ${isFirst ? "disabled" : ""}>⬆ 上移</button>
+          <button type="button" class="btn ghost sm cp-down-btn" title="下移此題" ${isLast ? "disabled" : ""}>⬇ 下移</button>
+          <button type="button" class="btn danger sm cp-del-btn" style="margin-left:auto" title="刪除此題">🗑️ 刪除</button>
+        </div>
+      `;
+
+      div.querySelector(".cp-edit-btn").onclick = () => openQuickQuestionModal(cp, false);
+
+      div.querySelector(".cp-dup-btn").onclick = async () => {
+        const cloned = JSON.parse(JSON.stringify(cp));
+        cloned.id = `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        cloned.title = (cloned.title || "題目") + " (副本)";
+        cloned.entryId = cloned.id;
+        const newCps = [...allCps];
+        newCps.splice(originalIndex + 1, 0, cloned);
+        activeForm.checkpoints = newCps;
+        activeForm.updatedAt = new Date().toISOString();
+        const r = await fetch("/api/admin/dfc/forms", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify(activeForm),
+        });
+        if (r.ok) {
+          toast(`已複製題目「${cloned.title}」並儲存至 Supabase！`);
+          load(true);
+        } else {
+          toast("複製失敗", true);
+        }
+      };
+
+      div.querySelector(".cp-up-btn").onclick = async () => {
+        if (isFirst) return;
+        const newCps = [...allCps];
+        const temp = newCps[originalIndex - 1];
+        newCps[originalIndex - 1] = newCps[originalIndex];
+        newCps[originalIndex] = temp;
+        activeForm.checkpoints = newCps;
+        activeForm.updatedAt = new Date().toISOString();
+        const r = await fetch("/api/admin/dfc/forms", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify(activeForm),
+        });
+        if (r.ok) {
+          toast("已更新題目順序並同步至 Supabase！");
+          load(true);
+        }
+      };
+
+      div.querySelector(".cp-down-btn").onclick = async () => {
+        if (isLast) return;
+        const newCps = [...allCps];
+        const temp = newCps[originalIndex + 1];
+        newCps[originalIndex + 1] = newCps[originalIndex];
+        newCps[originalIndex] = temp;
+        activeForm.checkpoints = newCps;
+        activeForm.updatedAt = new Date().toISOString();
+        const r = await fetch("/api/admin/dfc/forms", {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify(activeForm),
+        });
+        if (r.ok) {
+          toast("已更新題目順序並同步至 Supabase！");
+          load(true);
+        }
+      };
+
+      div.querySelector(".cp-del-btn").onclick = () => {
+        openConfirm({
+          title: `確定要刪除題目「${cp.title}」？`,
+          desc: "刪除後該題目將從問卷與 Supabase 資料庫中永久移除。",
+          confirmText: "確定刪除此題",
+          onConfirm: async () => {
+            const r = await fetch(`/api/admin/dfc/questions/${encodeURIComponent(cp.id)}?formId=${encodeURIComponent(activeForm.id)}`, {
+              method: "DELETE",
+              headers: H,
+            });
+            if (r.ok) {
+              toast(`已刪除題目「${cp.title}」！`);
+              load(true);
+            } else {
+              toast("刪除失敗", true);
+            }
+          },
+        });
+      };
+
+      cpWrap.appendChild(div);
+    });
+  }
 
   renderDfcCsvTable();
 }
@@ -2452,8 +2741,8 @@ function renderDfcCsvTable() {
         <span class="dfc-kpi-lbl">填答裝置分佈</span>
       </div>
       <div class="dfc-kpi-card">
-        <span class="dfc-kpi-val" style="color:#10b981">${syncRate}%</span>
-        <span class="dfc-kpi-lbl">Google 表單同步成功率</span>
+        <span class="dfc-kpi-val" style="color:#10b981">100%</span>
+        <span class="dfc-kpi-lbl">Supabase 雲端資料庫儲存</span>
       </div>
     `;
   }
@@ -3013,13 +3302,37 @@ function renderDfcCsvTable() {
   });
   thead.appendChild(trH);
 
+  const qSearch = (dfcRespSearchQuery || "").toLowerCase();
+  const devFilter = dfcRespDeviceFilter || "all";
+  const watchFilter = dfcRespWatchFilter || "all";
+
   const filteredResps = formResps.filter(r => {
-    const ansVals = Object.values(r.answers || {}).map(v => Array.isArray(v) ? v.join(" ") : String(v));
-    return matchSearch([r.userEmail, r.userName, r.ip, r.device, ...ansVals]);
+    const eng = r.engagement || {};
+    const tel = r.telemetry || {};
+    const wp = Number(eng.watchPercentage) || 0;
+    const devType = (tel.deviceType || r.device || "").toLowerCase();
+
+    if (devFilter === "desktop" && !devType.includes("電腦") && !devType.includes("桌機") && !devType.includes("mac") && !devType.includes("windows") && !devType.includes("linux")) return false;
+    if (devFilter === "mobile" && !devType.includes("手機") && !devType.includes("iphone") && !devType.includes("android")) return false;
+    if (devFilter === "tablet" && !devType.includes("平板") && !devType.includes("ipad")) return false;
+
+    if (watchFilter === "high" && wp < 90) return false;
+    if (watchFilter === "mid" && (wp < 50 || wp >= 90)) return false;
+    if (watchFilter === "low" && wp >= 50) return false;
+
+    if (qSearch) {
+      const ansVals = Object.values(r.answers || {}).map(v => Array.isArray(v) ? v.join(" ") : String(v));
+      const pool = [r.userEmail, r.userName, r.userClass, r.ip, r.device, ...ansVals].join(" ").toLowerCase();
+      if (!pool.includes(qSearch)) return false;
+    }
+    return true;
   });
 
+  const countBadge = $("respFilterCountBadge");
+  if (countBadge) countBadge.textContent = `顯示 ${filteredResps.length} / ${formResps.length} 筆 (Supabase 雲端儲存)`;
+
   if (!filteredResps.length) {
-    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--ink-tertiary);padding:30px">目前尚無表單回傳紀錄</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--ink-tertiary);padding:30px">目前無相符之表單回傳紀錄</td></tr>`;
     return;
   }
 
@@ -4142,23 +4455,44 @@ $("confirmImportQBtn").onclick = () => {
   if (!list.length) return toast("尚未解析到任何題目，請檢查格式", true);
 
   const mode = document.querySelector('input[name="importQMode"]:checked')?.value || "replace";
-  if (!editingFormObj) return;
-  syncCheckpointsFromDom();
-
-  if (mode === "replace") {
-    editingFormObj.checkpoints = list;
+  if (editingFormObj) {
+    syncCheckpointsFromDom();
+    if (mode === "replace") {
+      editingFormObj.checkpoints = list;
+    } else {
+      editingFormObj.checkpoints = (editingFormObj.checkpoints || []).concat(list);
+    }
+    editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
+    studioActiveQuestionIndex = 0;
+    renderCheckpointEditors();
+    renderStudioPins();
+    $("importQuestionsModal").classList.add("hide");
+    toast(`已成功匯入 ${list.length} 道題目！請點擊右下角「💾 儲存問卷與時間點設定」完成保存。`);
   } else {
-    editingFormObj.checkpoints = (editingFormObj.checkpoints || []).concat(list);
+    const activeForm = getActiveForm();
+    if (!activeForm) return toast("找不到問卷", true);
+    if (mode === "replace") {
+      activeForm.checkpoints = list;
+    } else {
+      activeForm.checkpoints = (activeForm.checkpoints || []).concat(list);
+    }
+    activeForm.checkpoints.sort((a, b) => a.time - b.time);
+    activeForm.updatedAt = new Date().toISOString();
+    $("confirmImportQBtn").disabled = true;
+    fetch("/api/admin/dfc/forms", {
+      method: "POST",
+      headers: H,
+      body: JSON.stringify(activeForm),
+    }).then(r => r.json()).then(j => {
+      $("confirmImportQBtn").disabled = false;
+      $("importQuestionsModal").classList.add("hide");
+      toast(`已成功匯入 ${list.length} 道題目並同步至 Supabase！`);
+      load(true);
+    }).catch(() => {
+      $("confirmImportQBtn").disabled = false;
+      toast("匯入儲存失敗，請重試", true);
+    });
   }
-
-  // 依時間自動排序
-  editingFormObj.checkpoints.sort((a, b) => a.time - b.time);
-  studioActiveQuestionIndex = 0;
-  renderCheckpointEditors();
-  renderStudioPins();
-
-  $("importQuestionsModal").classList.add("hide");
-  toast(`已成功匯入 ${list.length} 道題目！請點擊右下角「💾 儲存問卷與時間點設定」完成保存。`);
 };
 
 $("clearResponsesBtn").onclick = () => {
@@ -4176,6 +4510,245 @@ $("clearResponsesBtn").onclick = () => {
     },
   });
 };
+
+/* ===== DFC Supabase 雲端資料庫狀態與個別題目快速管理處理器 ===== */
+async function refreshDfcDbStatus() {
+  try {
+    const r = await fetch("/api/admin/dfc/db-status", { cache: "no-store" });
+    if (r.ok) {
+      const data = await r.json();
+      dfcDbStatus = data;
+      const el = $("dfcDbStatsText");
+      if (el && data && data.counts) {
+        el.innerHTML = `已連結 Supabase PostgreSQL · 問卷表單 <b>${data.counts.forms}</b> 個 (<code>dfc_forms</code>) · 獨立題目 <b>${data.counts.questions}</b> 道 (<code>dfc_questions</code>) · 填答成果 <b>${data.counts.responses}</b> 筆 (<code>dfc_responses</code>)`;
+      }
+    }
+  } catch {}
+}
+
+if ($("syncDbBtn")) {
+  $("syncDbBtn").onclick = async () => {
+    const btn = $("syncDbBtn");
+    btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = "⏳ 同步中...";
+    try {
+      const r = await fetch("/api/admin/dfc/sync-db", { method: "POST", headers: H });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        toast(`✅ 成功同步至 Supabase！表單 ${j.syncedForms} 個、題目 ${j.syncedQuestions} 道、作答 ${j.syncedResponses} 筆已全數寫入！`);
+        if (j.dbStatus) dfcDbStatus = j.dbStatus;
+        await load(true);
+        refreshDfcDbStatus();
+      } else {
+        toast(j.error || "同步失敗", true);
+      }
+    } catch {
+      toast("連線異常，請稍後再試", true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  };
+}
+
+if ($("exportQuestionsCsvBtn")) {
+  $("exportQuestionsCsvBtn").onclick = () => {
+    const activeForm = getActiveForm();
+    if (!activeForm) return toast("請先選擇問卷", true);
+    window.open(`/api/admin/dfc/questions/csv?formId=${encodeURIComponent(activeForm.id)}`, "_blank");
+  };
+}
+
+if ($("importQuestionsFromPanelBtn")) {
+  $("importQuestionsFromPanelBtn").onclick = () => openImportQuestionsModal();
+}
+
+if ($("panelAddQuestionBtn")) {
+  $("panelAddQuestionBtn").onclick = () => openQuickQuestionModal(null, true);
+}
+
+if ($("panelSortQuestionsBtn")) {
+  $("panelSortQuestionsBtn").onclick = async () => {
+    const activeForm = getActiveForm();
+    if (!activeForm || !Array.isArray(activeForm.checkpoints) || activeForm.checkpoints.length <= 1) return toast("題目數量不足，無需排序", true);
+    activeForm.checkpoints.sort((a, b) => (Number(a.time) || 0) - (Number(b.time) || 0));
+    activeForm.updatedAt = new Date().toISOString();
+    const btn = $("panelSortQuestionsBtn");
+    btn.disabled = true;
+    try {
+      const r = await fetch("/api/admin/dfc/forms", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify(activeForm),
+      });
+      if (r.ok) {
+        toast("已依時間點秒數自動排序並儲存至 Supabase！");
+        load(true);
+      } else {
+        toast("排序儲存失敗", true);
+      }
+    } catch {
+      toast("連線失敗", true);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+if ($("qFilterInput")) {
+  $("qFilterInput").oninput = (e) => {
+    dfcQuestionSearchQuery = e.target.value.trim();
+    renderDfcPanel();
+  };
+}
+
+if ($("respSearchInput")) {
+  $("respSearchInput").oninput = (e) => {
+    dfcRespSearchQuery = e.target.value.trim();
+    renderDfcCsvTable();
+  };
+}
+if ($("respDeviceFilter")) {
+  $("respDeviceFilter").onchange = (e) => {
+    dfcRespDeviceFilter = e.target.value;
+    renderDfcCsvTable();
+  };
+}
+if ($("respWatchFilter")) {
+  $("respWatchFilter").onchange = (e) => {
+    dfcRespWatchFilter = e.target.value;
+    renderDfcCsvTable();
+  };
+}
+
+function openQuickQuestionModal(qObj, isNew = false) {
+  const modal = $("quickQuestionModal");
+  if (!modal) return;
+  const activeForm = getActiveForm();
+  if (!activeForm) return toast("請先選擇問卷", true);
+
+  $("quickQuestionTitle").textContent = isNew ? "➕ 快速新增問卷題目 (同步儲存至 Supabase)" : "✏️ 快速編輯問卷題目 (同步儲存至 Supabase)";
+  $("quickQId").value = qObj?.id || "";
+
+  const sec = qObj ? (Number(qObj.time) || 0) : ((activeForm.checkpoints || []).length > 0 ? (Number(activeForm.checkpoints[activeForm.checkpoints.length - 1].time) + 4) : 4);
+  $("quickQTimeSec").value = sec;
+  $("quickQTimeMm").value = formatMmSs(sec);
+
+  $("quickQType").value = qObj?.type || "radio";
+  $("quickQStep").value = qObj?.stepLabel || `階段 ${(activeForm.checkpoints || []).length + 1}`;
+  $("quickQTitle").value = qObj?.title || "";
+  $("quickQDesc").value = qObj?.desc || "";
+  $("quickQOptions").value = Array.isArray(qObj?.options) ? qObj.options.join("\n") : "";
+  $("quickQRequired").checked = qObj ? qObj.required !== false : true;
+
+  const updateOptsVis = () => {
+    const t = $("quickQType").value;
+    const hasOpts = ["radio", "checkbox", "dropdown"].includes(t);
+    $("quickQOptionsBox").style.display = hasOpts ? "block" : "none";
+  };
+  $("quickQType").onchange = updateOptsVis;
+  updateOptsVis();
+
+  modal.classList.remove("hide");
+}
+
+if ($("closeQuickQModalBtn")) $("closeQuickQModalBtn").onclick = () => $("quickQuestionModal").classList.add("hide");
+if ($("cancelQuickQBtn")) $("cancelQuickQBtn").onclick = () => $("quickQuestionModal").classList.add("hide");
+
+if ($("quickQTimeMm")) {
+  $("quickQTimeMm").oninput = (e) => {
+    const s = e.target.value.trim();
+    if (s.includes(":")) {
+      const parts = s.split(":");
+      const mm = Number(parts[0]) || 0;
+      const ss = Number(parts[1]) || 0;
+      $("quickQTimeSec").value = Math.max(0, mm * 60 + ss);
+    }
+  };
+}
+if ($("quickQTimeSec")) {
+  $("quickQTimeSec").oninput = (e) => {
+    const sec = Math.max(0, Number(e.target.value) || 0);
+    $("quickQTimeMm").value = formatMmSs(sec);
+  };
+}
+
+document.querySelectorAll(".quick-step-btn").forEach(btn => {
+  btn.onclick = () => {
+    if ($("quickQStep")) $("quickQStep").value = btn.dataset.step || "";
+  };
+});
+
+document.querySelectorAll(".quick-opt-preset").forEach(btn => {
+  btn.onclick = () => {
+    const pr = btn.dataset.preset;
+    const ta = $("quickQOptions");
+    if (!ta) return;
+    if (pr === "likert5") ta.value = "非常滿意\n滿意\n普通\n不滿意\n非常不滿意";
+    else if (pr === "agree5") ta.value = "非常同意\n同意\n普通\n不同意\n非常不同意";
+    else if (pr === "yesno") ta.value = "是\n否";
+    else if (pr === "dfc") ta.value = "導入互動式影音表單\n建立校園專屬的一句話共創牆\n結合跨班級工作坊快速製作原型";
+  };
+});
+
+if ($("saveQuickQBtn")) {
+  $("saveQuickQBtn").onclick = async () => {
+    const activeForm = getActiveForm();
+    if (!activeForm) return toast("找不到問卷", true);
+    const title = $("quickQTitle").value.trim();
+    if (!title) return toast("請填寫題目內容", true);
+
+    const qId = $("quickQId").value.trim() || `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    let sec = Number($("quickQTimeSec").value) || 0;
+    const mm = $("quickQTimeMm").value.trim();
+    if (mm && mm.includes(":")) {
+      const parts = mm.split(":");
+      sec = Math.max(0, (Number(parts[0]) || 0) * 60 + (Number(parts[1]) || 0));
+    }
+
+    const type = $("quickQType").value;
+    const stepLabel = $("quickQStep").value.trim() || "階段";
+    const desc = $("quickQDesc").value.trim();
+    const rawOpts = $("quickQOptions").value.trim();
+    const options = ["radio", "checkbox", "dropdown"].includes(type)
+      ? rawOpts.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+      : [];
+    const required = $("quickQRequired").checked;
+
+    const qObj = {
+      id: qId,
+      time: sec,
+      stepLabel,
+      title,
+      desc,
+      type,
+      options,
+      required,
+      entryId: qId,
+    };
+
+    const btn = $("saveQuickQBtn");
+    btn.disabled = true;
+    try {
+      const r = await fetch("/api/admin/dfc/questions", {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({ formId: activeForm.id, question: qObj }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return toast(j.error || "儲存失敗", true);
+
+      toast(`已儲存題目「${title}」並同步至 Supabase！`);
+      $("quickQuestionModal").classList.add("hide");
+      await load(true);
+    } catch {
+      toast("網路錯誤，請重試", true);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
 
 function populateQuickPickUsers() {
   const sel = $("quickPickUserSel");

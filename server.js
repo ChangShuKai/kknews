@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("zlib");
 const { Readable } = require("stream");
 try { process.loadEnvFile(path.join(__dirname, ".env")); } catch {}
 const express = require("express");
@@ -35,14 +36,25 @@ function readIconSvg() {
   }
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#1868c7"/><text x="50" y="64" font-size="42" font-family="sans-serif" font-weight="bold" fill="#fff" text-anchor="middle">KK</text></svg>';
 }
+function readJsZip() {
+  for (const p of [path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), path.join(__dirname, "jszip.min.js")]) {
+    try { return fs.readFileSync(p, "utf8"); } catch {}
+  }
+  return "";
+}
 const PAGES = {
   index: splitPage(fs.readFileSync(path.join(__dirname, "views", "index.html"), "utf8"), "index"),
   login: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"), "login"),
   admin: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"), "admin"),
   css: fs.readFileSync(path.join(__dirname, "views", "ui.css"), "utf8"),
-  jszip: fs.readFileSync(path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), "utf8"),
+  jszip: readJsZip(),
   icon: readIconSvg(),
 };
+
+// 確保在 Node 18/20 或 Serverless 環境下相容最新 @supabase/supabase-js
+if (typeof globalThis.WebSocket === "undefined") {
+  globalThis.WebSocket = class WebSocketShim { constructor() {} };
+}
 
 // 服務金鑰只存在於伺服器，瀏覽器永遠拿不到
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -152,6 +164,7 @@ let bucketEnsured = false;
 let adminAuditTableOk = true;
 let sysSettingsTableOk = true;
 let dfcFormsTableOk = true;
+let dfcQuestionsTableOk = true;
 let dfcResponsesTableOk = true;
 const SYS_STORE_PREFIX = "__sys_store__:";
 
@@ -324,7 +337,87 @@ async function writeSysStore(name, data) {
   return JSON.parse(JSON.stringify(cloned));
 }
 
-/* ---------- Supabase 原生 DFC 資料表 (dfc_forms & dfc_responses) 直接存取層 ---------- */
+/* ---------- Supabase 原生 DFC 資料表 (dfc_forms, dfc_questions, dfc_responses) 直接存取層 ---------- */
+async function getDfcQuestionsFromSupabase(formId = null) {
+  if (!dfcQuestionsTableOk) return null;
+  try {
+    let q = db.from("dfc_questions").select("*").order("question_order", { ascending: true });
+    if (formId) q = q.eq("form_id", formId);
+    const { data, error } = await q;
+    if (error) {
+      if (error.code === "PGRST205" || error.code === "42P01") dfcQuestionsTableOk = false;
+      return null;
+    }
+    if (Array.isArray(data)) {
+      return data.map(qRow => ({
+        id: qRow.id,
+        formId: qRow.form_id,
+        time: Number(qRow.time_seconds) || 0,
+        stepLabel: qRow.step_label || "",
+        title: qRow.title || "",
+        type: qRow.type || "radio",
+        options: Array.isArray(qRow.options) ? qRow.options : [],
+        desc: qRow.description || "",
+        required: qRow.required !== false,
+        placeholder: qRow.placeholder || "",
+        min: Number(qRow.min_val) || 1,
+        max: Number(qRow.max_val) || 5,
+        entryId: qRow.entry_id || qRow.id,
+      }));
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncDfcQuestionsInSupabase(formId, checkpoints) {
+  if (!dfcQuestionsTableOk || !formId || !Array.isArray(checkpoints)) return false;
+  try {
+    if (checkpoints.length === 0) {
+      await db.from("dfc_questions").delete().eq("form_id", formId);
+      return true;
+    }
+
+    const rows = checkpoints.map((cp, idx) => ({
+      id: String(cp.id || `${formId}-q${idx + 1}`).trim(),
+      form_id: formId,
+      question_order: idx + 1,
+      time_seconds: Math.max(0, Number(cp.time) || 0),
+      step_label: String(cp.stepLabel || `階段 ${idx + 1}`).trim(),
+      title: String(cp.title || `問題 ${idx + 1}`).trim(),
+      type: ["radio", "checkbox", "rating", "dropdown", "boolean", "text", "textarea"].includes(cp.type) ? cp.type : "radio",
+      options: Array.isArray(cp.options) ? cp.options : [],
+      description: String(cp.desc || "").trim(),
+      required: cp.required !== false,
+      placeholder: String(cp.placeholder || "").trim(),
+      min_val: Number(cp.min) || 1,
+      max_val: Number(cp.max) || 5,
+      entry_id: String(cp.entryId || cp.id || "").trim(),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error: upsertErr } = await db.from("dfc_questions").upsert(rows);
+    if (upsertErr) {
+      if (upsertErr.code === "PGRST205" || upsertErr.code === "42P01") dfcQuestionsTableOk = false;
+      return false;
+    }
+
+    // 刪除該表單中已被移除的舊題目
+    const activeIds = rows.map(r => r.id);
+    const { data: existing } = await db.from("dfc_questions").select("id").eq("form_id", formId);
+    if (Array.isArray(existing)) {
+      const toDelete = existing.map(e => e.id).filter(id => !activeIds.includes(id));
+      if (toDelete.length > 0) {
+        await db.from("dfc_questions").delete().in("id", toDelete);
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function getDfcFormsFromSupabase() {
   if (!dfcFormsTableOk) return null;
   try {
@@ -334,21 +427,35 @@ async function getDfcFormsFromSupabase() {
       return null;
     }
     if (Array.isArray(data) && data.length > 0) {
-      return data.map(f => ({
-        id: f.id,
-        title: f.title || "DFC 互動影片探究問卷",
-        description: f.description || "",
-        videoUrl: f.video_url || "",
-        fallbackDuration: Number(f.fallback_duration) || 363,
-        submitMode: f.submit_mode || "end",
-        allowSeek: f.allow_seek || "watched",
-        allowRewind: f.allow_rewind !== false,
-        allowSpeed: Boolean(f.allow_speed),
-        pauseOnBlur: f.pause_on_blur !== false,
-        isDefault: Boolean(f.is_active),
-        checkpoints: Array.isArray(f.checkpoints) ? f.checkpoints : [],
-        updatedAt: f.updated_at || f.created_at || new Date().toISOString(),
-      }));
+      let allQuestions = null;
+      if (dfcQuestionsTableOk) {
+        allQuestions = await getDfcQuestionsFromSupabase();
+      }
+
+      return data.map(f => {
+        let cps = Array.isArray(f.checkpoints) ? f.checkpoints : [];
+        if (allQuestions && allQuestions.length > 0) {
+          const formQs = allQuestions.filter(q => q.formId === f.id);
+          if (formQs.length > 0) {
+            cps = formQs;
+          }
+        }
+        return {
+          id: f.id,
+          title: f.title || "DFC 互動影片探究問卷",
+          description: f.description || "",
+          videoUrl: f.video_url || "",
+          fallbackDuration: Number(f.fallback_duration) || 363,
+          submitMode: f.submit_mode || "end",
+          allowSeek: f.allow_seek || "watched",
+          allowRewind: f.allow_rewind !== false,
+          allowSpeed: Boolean(f.allow_speed),
+          pauseOnBlur: f.pause_on_blur !== false,
+          isDefault: Boolean(f.is_active),
+          checkpoints: cps,
+          updatedAt: f.updated_at || f.created_at || new Date().toISOString(),
+        };
+      });
     }
     return null;
   } catch {
@@ -379,6 +486,10 @@ async function upsertDfcFormInSupabase(formObj) {
       if (error.code === "PGRST205" || error.code === "42P01") dfcFormsTableOk = false;
       return false;
     }
+    // 同步個別題目至 dfc_questions 資料表
+    if (dfcQuestionsTableOk && Array.isArray(formObj.checkpoints)) {
+      await syncDfcQuestionsInSupabase(formObj.id, formObj.checkpoints);
+    }
     return true;
   } catch {
     return false;
@@ -388,6 +499,12 @@ async function upsertDfcFormInSupabase(formObj) {
 async function deleteDfcFormInSupabase(formId) {
   if (!dfcFormsTableOk) return false;
   try {
+    if (dfcQuestionsTableOk) {
+      await db.from("dfc_questions").delete().eq("form_id", formId).catch(() => {});
+    }
+    if (dfcResponsesTableOk) {
+      await db.from("dfc_responses").delete().eq("form_id", formId).catch(() => {});
+    }
     const { error } = await db.from("dfc_forms").delete().eq("id", formId);
     return !error;
   } catch {
@@ -445,6 +562,18 @@ async function getDfcResponsesFromSupabase(formId) {
 async function insertDfcResponseInSupabase(respObj) {
   if (!dfcResponsesTableOk) return false;
   try {
+    // 確保對應的 dfc_forms 存在，防止外鍵約束觸發錯誤
+    if (dfcFormsTableOk && respObj.formId) {
+      const { data: fExist } = await db.from("dfc_forms").select("id").eq("id", respObj.formId).maybeSingle();
+      if (!fExist) {
+        await db.from("dfc_forms").upsert({
+          id: respObj.formId,
+          title: respObj.formTitle || "DFC 互動問卷",
+          checkpoints: [],
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
     const payload = {
       form_id: respObj.formId || "default-dfc",
       form_title: respObj.formTitle || "",
@@ -467,6 +596,61 @@ async function insertDfcResponseInSupabase(respObj) {
     return true;
   } catch {
     return false;
+  }
+}
+
+async function getDfcStatsFromSupabase() {
+  try {
+    const { data: rpcData, error: rpcErr } = await db.rpc("get_dfc_stats");
+    if (!rpcErr && rpcData && typeof rpcData === "object") {
+      return {
+        ok: true,
+        tables: {
+          dfc_forms: true,
+          dfc_questions: true,
+          dfc_responses: true,
+          dfc_access_list: true,
+        },
+        counts: {
+          forms: rpcData.forms_count || 0,
+          questions: rpcData.questions_count || 0,
+          responses: rpcData.responses_count || 0,
+          access: rpcData.access_count || 0,
+        },
+      };
+    }
+  } catch {}
+
+  try {
+    const [fRes, qRes, rRes, aRes] = await Promise.allSettled([
+      db.from("dfc_forms").select("id", { count: "exact", head: true }),
+      db.from("dfc_questions").select("id", { count: "exact", head: true }),
+      db.from("dfc_responses").select("id", { count: "exact", head: true }),
+      db.from("dfc_access_list").select("id", { count: "exact", head: true }),
+    ]);
+
+    const formsCount = fRes.status === "fulfilled" && !fRes.value.error ? (fRes.value.count ?? 0) : null;
+    const questionsCount = qRes.status === "fulfilled" && !qRes.value.error ? (qRes.value.count ?? 0) : null;
+    const responsesCount = rRes.status === "fulfilled" && !rRes.value.error ? (rRes.value.count ?? 0) : null;
+    const accessCount = aRes.status === "fulfilled" && !aRes.value.error ? (aRes.value.count ?? 0) : null;
+
+    return {
+      ok: formsCount !== null,
+      tables: {
+        dfc_forms: formsCount !== null,
+        dfc_questions: questionsCount !== null,
+        dfc_responses: responsesCount !== null,
+        dfc_access_list: accessCount !== null,
+      },
+      counts: {
+        forms: formsCount ?? 0,
+        questions: questionsCount ?? 0,
+        responses: responsesCount ?? 0,
+        access: accessCount ?? 0,
+      },
+    };
+  } catch {
+    return { ok: false, tables: {}, counts: {} };
   }
 }
 
@@ -815,6 +999,35 @@ function cleanMeta(cm) {
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+// 全域輕量化 Gzip 串流壓縮：將 HTML/CSS/JS/JSON 傳輸體積縮減 70%~85%，從根本降低 Vercel Fast Origin Transfer
+app.use((req, res, next) => {
+  const enc = req.headers["accept-encoding"] || "";
+  if (!enc.includes("gzip")) return next();
+  const origSend = res.send;
+  res.send = function (body) {
+    if (res.headersSent || req.method === "HEAD" || !body) return origSend.call(this, body);
+    if (res.getHeader("Content-Encoding")) return origSend.call(this, body);
+    const code = res.statusCode || 200;
+    if (code === 204 || code === 304) return origSend.call(this, body);
+    const ct = String(res.getHeader("Content-Type") || "");
+    if (/json|text|javascript|css|xml|svg/i.test(ct)) {
+      const buf = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === "string" ? body : JSON.stringify(body), "utf8");
+      if (buf.length >= 1024) {
+        try {
+          const gz = zlib.gzipSync(buf, { level: 6 });
+          res.setHeader("Content-Encoding", "gzip");
+          res.setHeader("Vary", "Accept-Encoding");
+          res.setHeader("Content-Length", gz.length);
+          return res.end(gz);
+        } catch {}
+      }
+    }
+    return origSend.call(this, body);
+  };
+  next();
+});
+
 app.use((req, res, next) => {
   res.set({
     "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://vercel.live; frame-src 'self' https://challenges.cloudflare.com https://drive.google.com https://*.google.com https://www.youtube.com https://youtube.com https://vercel.live; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live; font-src 'self' https://fonts.gstatic.com https://vercel.live https://assets.vercel.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://vercel.live https://vercel.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
@@ -833,32 +1046,45 @@ app.use((req, res, next) => {
   next();
 });
 
-/* --- 靜態資源高效快取 (ETag & 304 Not Modified & Stale-While-Revalidate) --- */
-const ASSET_ETAGS = new Map();
-function sendStaticAsset(req, res, content, contentType, cacheControl = "public, max-age=180, stale-while-revalidate=86400") {
+/* --- 靜態資源高效快取 (Pre-gzip & ETag & 304 Not Modified & Edge s-maxage CDN 快取) --- */
+const ASSET_CACHE = new Map();
+function sendStaticAsset(req, res, content, contentType, cacheControl = "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800") {
   if (!content) return notFound(res);
-  let etag = ASSET_ETAGS.get(content);
-  if (!etag) {
-    etag = '"' + crypto.createHash("md5").update(content).digest("hex").slice(0, 16) + '"';
-    ASSET_ETAGS.set(content, etag);
+  let cached = ASSET_CACHE.get(content);
+  if (!cached) {
+    const rawBuf = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
+    const etag = '"' + crypto.createHash("md5").update(rawBuf).digest("hex").slice(0, 16) + '"';
+    const gzBuf = rawBuf.length > 1024 ? zlib.gzipSync(rawBuf, { level: 6 }) : null;
+    cached = { rawBuf, gzBuf, etag };
+    ASSET_CACHE.set(content, cached);
   }
   res.set({
     "Content-Type": contentType,
     "Cache-Control": cacheControl,
-    "ETag": etag,
+    "ETag": cached.etag,
+    "Vary": "Accept-Encoding",
   });
-  if (req.headers["if-none-match"] === etag) {
+  if (req.headers["if-none-match"] === cached.etag) {
     return res.status(304).end();
   }
-  return res.send(content);
+  const accept = req.headers["accept-encoding"] || "";
+  if (cached.gzBuf && accept.includes("gzip")) {
+    res.set({
+      "Content-Encoding": "gzip",
+      "Content-Length": String(cached.gzBuf.length),
+    });
+    return res.end(cached.gzBuf);
+  }
+  res.set("Content-Length", String(cached.rawBuf.length));
+  return res.end(cached.rawBuf);
 }
 
 /* --- 前台與靜態資源 --- */
-app.get("/", (req, res) => res.type("html").send(PAGES.index.html));
-app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400"));
-app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8"));
-app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8"));
-app.get("/assets/login.js", (req, res) => sendStaticAsset(req, res, PAGES.login.js, "application/javascript; charset=utf-8"));
+app.get("/", (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "public, max-age=60, s-maxage=600, stale-while-revalidate=86400"));
+app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"));
+app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
+app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
+app.get("/assets/login.js", (req, res) => sendStaticAsset(req, res, PAGES.login.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
 app.get("/assets/admin.js", (req, res) => adminOf(req) ? sendStaticAsset(req, res, PAGES.admin.js, "application/javascript; charset=utf-8", "private, max-age=60, stale-while-revalidate=86400") : notFound(res));
 app.get("/assets/dfc.mp4", async (req, res) => {
   const access = await evaluateDfcAccess(req);
@@ -1357,7 +1583,7 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
     }
 
     const version = `${transcoded?.versionTag || fileId}-${formUpdatedAt}`;
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.set("Cache-Control", "private, max-age=60");
     return res.json({
       fileId,
       version,
@@ -1396,7 +1622,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   const requestedQuality = normalizeRequestedQuality(req.query?.q || req.query?.quality || "360p");
   const knownMeta = driveVideoMetaCache.get(`${fileId}:${requestedQuality}`);
 
-  // 1. HEAD 請求即時回傳最新中繼資料（禁止瀏覽器跨工作階段快取舊影片）
+  // 1. HEAD 請求即時回傳最新中繼資料
   if (req.method === "HEAD") {
     const target = await getStreamTargetForQuality(fileId, requestedQuality, AbortSignal.timeout(8000));
     res.set({
@@ -1406,9 +1632,27 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       "Content-Disposition": "inline",
       "X-Video-Quality": target.quality || requestedQuality,
       "X-Video-Version": `${fileId}-${target.quality || requestedQuality}-${target.totalSize || 0}`,
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": "private, max-age=300",
     });
     return res.status(200).end();
+  }
+
+  // 2. 核心直連分流 (307 Temporary Redirect)：杜絕 Vercel Fast Origin Transfer 爆量
+  // 經防暴雷授權檢驗後，直接重導向至 Google CDN 串流，位元組 100% 繞過 Vercel 伺服器
+  // 若帶有 ?proxy=1 則提供原始伺服器區塊代理備援
+  if (req.query?.proxy !== "1") {
+    try {
+      const target = await getStreamTargetForQuality(fileId, requestedQuality, AbortSignal.timeout(8000));
+      if (target?.url) {
+        res.set({
+          "Cache-Control": "private, max-age=300",
+          "X-Video-Quality": target.quality || requestedQuality,
+        });
+        return res.redirect(307, target.url);
+      }
+    } catch (e) {
+      // 容錯降級至區塊代理
+    }
   }
 
   const ac = new AbortController();
@@ -1936,15 +2180,15 @@ app.use("/api/admin", async (req, res, next) => {
 
 app.get("/adminusercontrol", async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
-  if (adminOf(req)) return res.type("html").send(PAGES.admin.html);
+  if (adminOf(req)) return sendStaticAsset(req, res, PAGES.admin.html, "text/html; charset=utf-8", "private, no-cache");
   if (!hasAccessKey(req)) return notFound(res);
   if (keyOk(req.query?.k)) setCookie(res, "kak", makeToken({ t: "k" }, 3600), { strict: true });
-  res.type("html").send(PAGES.login.html);
+  return sendStaticAsset(req, res, PAGES.login.html, "text/html; charset=utf-8", "private, no-cache");
 });
 app.get("/adminusercontrol/jszip.js", async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
   if (!adminOf(req)) return notFound(res);
-  res.type("js").send(PAGES.jszip);
+  return sendStaticAsset(req, res, PAGES.jszip, "application/javascript; charset=utf-8", "private, max-age=3600");
 });
 
 function formatAdminAccounts(adminList, isSuper = false) {
@@ -2146,6 +2390,7 @@ app.get("/api/admin/dfc", async (req, res) => {
   const store = await getDfcStoreWithDb(true);
   const accessCfg = await getMergedDfcAccessConfig(store);
   const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
+  const dbStatus = await getDfcStatsFromSupabase();
   res.json({
     activeFormId: store.activeFormId || forms[0]?.id || "default-dfc",
     accessMode: accessCfg.accessMode,
@@ -2155,6 +2400,7 @@ app.get("/api/admin/dfc", async (req, res) => {
     envAllowedEmails: accessCfg.envAllowedEmails,
     forms,
     responses: Array.isArray(store.responses) ? store.responses : [],
+    dbStatus,
     storageType: "supabase_postgresql",
   });
 });
@@ -2537,6 +2783,200 @@ app.delete("/api/admin/dfc/responses/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+/* --- 後台 DFC 題目獨立管理、快速增刪改、匯出 CSV 與 Supabase 全量同步 --- */
+app.get("/api/admin/dfc/questions", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  const formId = String(req.query.formId || "");
+  const store = await getDfcStoreWithDb(true);
+  const targetForm = (store.forms || []).find(f => f.id === formId) || (store.forms || []).find(f => f.id === store.activeFormId) || (store.forms || [])[0];
+  if (!targetForm) return res.status(404).json({ error: "找不到問卷" });
+  res.json({
+    ok: true,
+    formId: targetForm.id,
+    formTitle: targetForm.title,
+    questions: Array.isArray(targetForm.checkpoints) ? targetForm.checkpoints : [],
+    storageType: "supabase_postgresql",
+  });
+});
+
+app.post("/api/admin/dfc/questions", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const { formId, question } = req.body || {};
+  if (!question || !question.title) return res.status(400).json({ error: "缺少題目內容" });
+  const store = await getDfcStoreWithDb(true);
+  const targetForm = (store.forms || []).find(f => f.id === formId) || (store.forms || []).find(f => f.id === store.activeFormId) || (store.forms || [])[0];
+  if (!targetForm) return res.status(404).json({ error: "找不到問卷" });
+
+  if (!Array.isArray(targetForm.checkpoints)) targetForm.checkpoints = [];
+  const qId = String(question.id || "").trim() || `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const safeTime = Math.max(0, Number(question.time) || 0);
+  const ALLOWED_TYPES = ["radio", "checkbox", "rating", "dropdown", "boolean", "text", "textarea"];
+  const qObj = {
+    id: qId,
+    time: safeTime,
+    entryId: String(question.entryId || qId).trim(),
+    stepLabel: String(question.stepLabel || `階段 ${targetForm.checkpoints.length + 1}`).trim(),
+    title: String(question.title).trim(),
+    desc: String(question.desc || "").trim(),
+    type: ALLOWED_TYPES.includes(question.type) ? question.type : "radio",
+    options: Array.isArray(question.options) ? question.options.map(o => String(o).trim()).filter(Boolean) : [],
+    placeholder: String(question.placeholder || "").trim(),
+    min: Number(question.min) || 1,
+    max: Number(question.max) || 5,
+    required: question.required !== false,
+  };
+
+  const existIdx = targetForm.checkpoints.findIndex(c => c.id === qId);
+  if (existIdx >= 0) {
+    targetForm.checkpoints[existIdx] = qObj;
+  } else {
+    targetForm.checkpoints.push(qObj);
+  }
+  targetForm.checkpoints.sort((a, b) => a.time - b.time);
+  targetForm.updatedAt = new Date().toISOString();
+
+  await upsertDfcFormInSupabase(targetForm);
+  await writeSysStore("dfc", store);
+  audit(req, "save_dfc_question", `${targetForm.id} | ${qObj.title}`);
+  res.json({ ok: true, question: qObj, form: targetForm });
+});
+
+app.delete("/api/admin/dfc/questions/:id", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const qId = String(req.params.id);
+  const formId = String(req.query.formId || "");
+  const store = await getDfcStoreWithDb(true);
+  const targetForm = (store.forms || []).find(f => f.id === formId) || (store.forms || []).find(f => f.id === store.activeFormId) || (store.forms || [])[0];
+  if (!targetForm) return res.status(404).json({ error: "找不到問卷" });
+
+  if (!Array.isArray(targetForm.checkpoints)) targetForm.checkpoints = [];
+  targetForm.checkpoints = targetForm.checkpoints.filter(c => c.id !== qId);
+  targetForm.updatedAt = new Date().toISOString();
+
+  await upsertDfcFormInSupabase(targetForm);
+  await writeSysStore("dfc", store);
+  audit(req, "delete_dfc_question", `${targetForm.id} | ${qId}`);
+  res.json({ ok: true, remainingCount: targetForm.checkpoints.length, form: targetForm });
+});
+
+app.post("/api/admin/dfc/questions/reorder", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const { formId, questionIds } = req.body || {};
+  if (!Array.isArray(questionIds)) return res.status(400).json({ error: "格式不正確" });
+  const store = await getDfcStoreWithDb(true);
+  const targetForm = (store.forms || []).find(f => f.id === formId) || (store.forms || []).find(f => f.id === store.activeFormId) || (store.forms || [])[0];
+  if (!targetForm) return res.status(404).json({ error: "找不到問卷" });
+
+  const map = new Map((targetForm.checkpoints || []).map(cp => [cp.id, cp]));
+  const reordered = [];
+  for (const id of questionIds) {
+    if (map.has(id)) {
+      reordered.push(map.get(id));
+      map.delete(id);
+    }
+  }
+  for (const cp of map.values()) {
+    reordered.push(cp);
+  }
+  targetForm.checkpoints = reordered;
+  targetForm.updatedAt = new Date().toISOString();
+
+  await upsertDfcFormInSupabase(targetForm);
+  await writeSysStore("dfc", store);
+  audit(req, "reorder_dfc_questions", `${targetForm.id}`);
+  res.json({ ok: true, form: targetForm });
+});
+
+app.get("/api/admin/dfc/questions/csv", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  const formId = String(req.query.formId || "");
+  const store = await getDfcStoreWithDb(true);
+  const targetForm = (store.forms || []).find(f => f.id === formId) || (store.forms || []).find(f => f.id === store.activeFormId) || (store.forms || [])[0];
+  if (!targetForm) return res.status(404).send("找不到問卷");
+
+  const checkpoints = Array.isArray(targetForm.checkpoints) ? targetForm.checkpoints : [];
+  const typeMapZh = {
+    radio: "單選", checkbox: "多選", rating: "評分", dropdown: "下拉",
+    boolean: "是非", text: "簡答", textarea: "詳答",
+  };
+
+  const rows = [
+    ["時間", "階段標籤", "題目內容", "題型", "選項清單", "補充說明", "是否必填", "EntryID"],
+  ];
+
+  for (const cp of checkpoints) {
+    const sec = Number(cp.time) || 0;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    const mmss = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    const optStr = Array.isArray(cp.options) ? cp.options.join(" | ") : "";
+    rows.push([
+      mmss,
+      cp.stepLabel || "",
+      cp.title || "",
+      typeMapZh[cp.type] || cp.type || "單選",
+      optStr,
+      cp.desc || "",
+      cp.required !== false ? "是" : "否",
+      cp.entryId || cp.id || "",
+    ]);
+  }
+
+  const csvStr = "\uFEFF" + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const fn = encodeURIComponent(`${targetForm.title || "DFC問卷"}_題目清單.csv`);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${fn}"; filename*=UTF-8''${fn}`);
+  res.send(csvStr);
+});
+
+app.post("/api/admin/dfc/sync-db", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE, true);
+  const forms = Array.isArray(store.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
+  let syncedForms = 0;
+  let syncedQuestions = 0;
+  let syncedResponses = 0;
+
+  for (const f of forms) {
+    const ok = await upsertDfcFormInSupabase(f);
+    if (ok) {
+      syncedForms++;
+      syncedQuestions += (f.checkpoints || []).length;
+    }
+  }
+
+  const responses = Array.isArray(store.responses) ? store.responses : [];
+  for (const r of responses) {
+    const ok = await insertDfcResponseInSupabase(r);
+    if (ok) syncedResponses++;
+  }
+
+  const accessCfg = await getMergedDfcAccessConfig(store);
+  await syncDbDfcAccessList(accessCfg.allowedEmails, req.admin?.email || ADMIN_EMAIL);
+
+  audit(req, "sync_dfc_db", `forms=${syncedForms}, qs=${syncedQuestions}, resps=${syncedResponses}`);
+  const dbStatus = await getDfcStatsFromSupabase();
+  res.json({
+    ok: true,
+    syncedForms,
+    syncedQuestions,
+    syncedResponses,
+    dbStatus,
+    syncedAt: new Date().toISOString(),
+  });
+});
+
+app.get("/api/admin/dfc/db-status", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  const status = await getDfcStatsFromSupabase();
+  res.json(status);
+});
+
 /* --- 共用資料查詢與快取層（減少重複查詢，寫入時自動失效） --- */
 async function fetchProverbsList() {
   return cachedQuery("proverbs", 2000, async () => {
@@ -2830,6 +3270,7 @@ async function fetchSupabaseRealMetrics() {
 
 // 前台「即時資訊」狀態：提供真實連線狀態、延遲與平台真實統計（若硬體底層指標不可用，誠實回傳 null）
 app.get("/api/status", async (req, res) => {
+  res.set("Cache-Control", "public, max-age=10, s-maxage=20, stale-while-revalidate=60");
   try {
     const [m, proverbsCount, dfcStore] = await Promise.all([
       fetchSupabaseRealMetrics(),

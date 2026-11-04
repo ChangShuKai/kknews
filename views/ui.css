@@ -6227,3 +6227,108 @@ table.data-tbl tr:hover td { background: var(--surface-tint); }
   }
 }
 
+/* ===== DFC Supabase 雲端資料庫狀態面板與題目快捷管理卡片 ===== */
+.dfc-db-sync-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--surface-translucent, rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  border-left: 4px solid #10b981;
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  margin: 16px 0;
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="dark"] .dfc-db-sync-strip {
+  background: rgba(30, 41, 59, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
+  border-left-color: #10b981;
+}
+.dfc-db-sync-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pulse-dot-green {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 2s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.cp-item-card-rich {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.cp-item-card-rich:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+[data-theme="dark"] .cp-item-card-rich {
+  background: #1e293b;
+  border-color: #334155;
+}
+.cp-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  flex-wrap: wrap;
+}
+.cp-req-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+}
+.cp-req-badge.required {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.cp-req-badge.optional {
+  background: var(--bg);
+  color: var(--ink-tertiary);
+  border: 1px solid var(--line);
+}
+.cp-opt-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-secondary);
+  margin: 2px 4px 2px 0;
+}
+[data-theme="dark"] .cp-opt-pill {
+  background: #0f172a;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+
