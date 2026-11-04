@@ -625,10 +625,10 @@
             <!-- 強制全螢幕鎖定提示遮罩：若觀看中意外退出全螢幕，強制暫停並提示點擊恢復 -->
             <div class="dfc-fs-lock-overlay hide" id="dfcFsLockOverlay">
               <div class="dfc-fs-lock-box">
-                <span class="dfc-fs-lock-badge">🔒 測驗模式 · 全程強制全螢幕</span>
-                <div class="dfc-fs-lock-icon">📺</div>
-                <h3 class="dfc-fs-lock-title">請保持全螢幕觀看與作答</h3>
-                <p class="dfc-fs-lock-desc">
+                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 測驗模式 · 全程強制全螢幕</span>
+                <div class="dfc-fs-lock-icon" id="dfcFsLockIcon">📺</div>
+                <h3 class="dfc-fs-lock-title" id="dfcFsLockTitle">請保持全螢幕觀看與作答</h3>
+                <p class="dfc-fs-lock-desc" id="dfcFsLockDesc">
                   依本問卷影片測驗規範，觀看影片及題目作答期間必須全程保持全螢幕模式，直到全部結束為止。<br>
                   請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。
                 </p>
@@ -2549,7 +2549,9 @@
           if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
         }
         if (navigator.keyboard && typeof navigator.keyboard.lock === "function") {
-          navigator.keyboard.lock(["Escape"]).catch(() => {});
+          navigator.keyboard.lock(["Escape", "F11"]).catch(() => {
+            navigator.keyboard.lock(["Escape"]).catch(() => {});
+          });
         }
         return true;
       } catch (err) {
@@ -2571,7 +2573,140 @@
       }
     }
 
-    function showDfcFsLockOverlay() {
+    let lastWinKeyPressTime = 0;
+    let lastF11PressTime = 0;
+    let lastVoiceAlertTime = 0;
+
+    if ("speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.getVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            try { window.speechSynthesis.getVoices(); } catch (e) {}
+          };
+        }
+      } catch (e) {}
+    }
+
+    function isWinKey(e) {
+      return Boolean(
+        e.key === "Meta" ||
+        e.key === "OS" ||
+        e.code === "MetaLeft" ||
+        e.code === "MetaRight" ||
+        e.code === "OSLeft" ||
+        e.code === "OSRight" ||
+        e.keyCode === 91 ||
+        e.keyCode === 92 ||
+        e.which === 91 ||
+        e.which === 92 ||
+        e.metaKey
+      );
+    }
+
+    function updateDfcFsLockOverlayContent(isWinKey = false) {
+      const badge = $("dfcFsLockBadge");
+      const icon = $("dfcFsLockIcon");
+      const title = $("dfcFsLockTitle");
+      const desc = $("dfcFsLockDesc");
+      if (isWinKey) {
+        if (badge) badge.textContent = "⚠️ 警示 · 偵測到使用 Windows 鍵退出";
+        if (icon) icon.textContent = "🔊";
+        if (title) title.textContent = "請完整看完並填寫此份問卷";
+        if (desc) desc.innerHTML = "依本問卷測驗規範，<strong>觀看影片與填答期間請完整看完並填寫此份問卷</strong>。<br>系統已自動將影片暫停並調至<strong>最大音量</strong>進行語音提醒，請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續作答。";
+      } else {
+        if (badge) badge.textContent = "🔒 測驗模式 · 全程強制全螢幕";
+        if (icon) icon.textContent = "📺";
+        if (title) title.textContent = "請保持全螢幕觀看與作答";
+        if (desc) desc.innerHTML = "依本問卷影片測驗規範，觀看影片及題目作答期間必須全程保持全螢幕模式，直到全部結束為止。<br>請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。";
+      }
+    }
+
+    function playMaxVolumeVoiceNotice(msg = "請完整看完並填寫此份問卷") {
+      // 1. 強制將影片與網頁音量調至最大 (100% / 1.0)
+      const v = $("dfcVideo");
+      if (v) {
+        v.muted = false;
+        v.volume = 1.0;
+      }
+      const volSlider = $("dfcVolSlider");
+      if (volSlider) volSlider.value = 1;
+      const muteBtn = $("dfcMuteBtn");
+      if (muteBtn) muteBtn.textContent = "🔊";
+
+      // 2. Web Audio 警示提示音 (最大音量，先發出高辨識度提示音)
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const actx = new AudioCtx();
+          if (actx.state === "suspended") actx.resume();
+          const t0 = actx.currentTime;
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, t0); // A5
+          osc.frequency.setValueAtTime(659.25, t0 + 0.14); // E5
+          gain.gain.setValueAtTime(1.0, t0); // 100% 最大音量
+          gain.gain.exponentialRampToValueAtTime(0.01, t0 + 0.5);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.5);
+        }
+      } catch (err) {
+        console.warn("Web Audio alert notice error:", err);
+      }
+
+      // 3. Web Speech Synthesis API 語音朗讀（100% 最大音量）
+      if ("speechSynthesis" in window) {
+        try {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+          window.speechSynthesis.cancel(); // 停止目前所有佇列，確保立即發聲
+          const utter = new SpeechSynthesisUtterance(msg);
+          utter.volume = 1.0; // 最大音量 (1.0)
+          utter.rate = 0.95;  // 穩定清晰語速
+          utter.pitch = 1.0;  // 自然音高
+          utter.lang = "zh-TW";
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const zhVoice = voices.find(vo => vo.lang === "zh-TW" || vo.lang === "zh_TW" || (vo.lang.startsWith("zh") && (vo.name.includes("Taiwan") || vo.name.includes("Traditional") || vo.name.includes("國語") || vo.name.includes("中文"))))
+              || voices.find(vo => vo.lang.startsWith("zh"));
+            if (zhVoice) utter.voice = zhVoice;
+          }
+          window.speechSynthesis.speak(utter);
+        } catch (err) {
+          console.warn("Speech synthesis error:", err);
+        }
+      }
+    }
+
+    function triggerWinKeyExitAlert() {
+      // 1. 暫停影片
+      if (dfcState.playing) {
+        setDfcPlaying(false);
+      }
+      const v = $("dfcVideo");
+      if (v && !v.paused) {
+        try { v.pause(); } catch (e) {}
+      }
+
+      // 2. 調整至最大音量並播放語音提示
+      const now = Date.now();
+      if (now - lastVoiceAlertTime > 2000) {
+        lastVoiceAlertTime = now;
+        playMaxVolumeVoiceNotice("請完整看完並填寫此份問卷");
+      }
+
+      // 3. 顯示鎖定遮罩與提示
+      showDfcFsLockOverlay(true);
+      showDfcLockToast("⚠️ 偵測到使用 Windows 鍵！請完整看完並填寫此份問卷");
+    }
+
+    function showDfcFsLockOverlay(isWinKey = false) {
+      updateDfcFsLockOverlayContent(isWinKey);
       const overlay = $("dfcFsLockOverlay");
       if (overlay) overlay.classList.remove("hide");
     }
@@ -2579,6 +2714,7 @@
     function hideDfcFsLockOverlay() {
       const overlay = $("dfcFsLockOverlay");
       if (overlay) overlay.classList.add("hide");
+      updateDfcFsLockOverlayContent(false);
     }
 
     function handleDfcCompletion() {
@@ -3248,6 +3384,11 @@
       if (play) {
         if (dfcState.activeCheckpointIndex !== -1) return;
         dfcState.watchSessionActive = true;
+
+        // 播放 DFC 問卷影片時強制全螢幕
+        if (!isDfcFullscreenActive() && !isDfcFinished()) {
+          requestDfcFullscreen().catch(() => {});
+        }
 
         // 若為實體影片且尚未載入就緒，進入等待佇列，切勿提前開啟計時跑表！
         if (dfcState.useRealVideo && !dfcState.videoReady) {
@@ -4171,19 +4312,49 @@
         };
       }
 
-      // 全螢幕狀態變更監聽：若測驗中意外退出全螢幕，立即強制暫停並彈出全螢幕阻擋鎖定遮罩
+      // 全螢幕狀態變更監聽：若測驗中意外退出全螢幕，立即強制暫停並處理（F11 自動再開啟、Win 鍵最大音量語音）
       const handleFullscreenChange = () => {
         const isFs = isDfcFullscreenActive();
         if (isFs) {
           hideDfcFsLockOverlay();
           if (navigator.keyboard && typeof navigator.keyboard.lock === "function") {
-            navigator.keyboard.lock(["Escape"]).catch(() => {});
+            navigator.keyboard.lock(["Escape", "F11"]).catch(() => {
+              navigator.keyboard.lock(["Escape"]).catch(() => {});
+            });
           }
         } else {
           if (navigator.keyboard && typeof navigator.keyboard.unlock === "function") {
             try { navigator.keyboard.unlock(); } catch (e) {}
           }
           if (isDfcWatchOngoing()) {
+            // 1. 若使用 Windows 鍵退出全螢幕：暫停影片、最大音量語音提醒
+            if (Date.now() - lastWinKeyPressTime < 3000) {
+              triggerWinKeyExitAlert();
+              return;
+            }
+
+            // 2. 若按 F11 退出：自動再次開啟全螢幕
+            if (Date.now() - lastF11PressTime < 3000) {
+              requestDfcFullscreen().then(ok => {
+                if (ok) {
+                  hideDfcFsLockOverlay();
+                  showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+                  if (dfcState.activeCheckpointIndex === -1 && !isDfcFinished()) {
+                    setDfcPlaying(true);
+                  }
+                } else {
+                  if (dfcState.playing) setDfcPlaying(false);
+                  showDfcFsLockOverlay();
+                  showDfcLockToast("🔒 觀看 DFC 問卷影片請保持全螢幕，已自動暫停");
+                }
+              }).catch(() => {
+                if (dfcState.playing) setDfcPlaying(false);
+                showDfcFsLockOverlay();
+              });
+              return;
+            }
+
+            // 3. 其他非預期退出
             if (dfcState.playing) {
               setDfcPlaying(false);
             }
@@ -4197,7 +4368,7 @@
 
       // 強制全螢幕鎖定遮罩之恢復與離開事件綁定
       const resumeFsFromOverlay = async (e) => {
-        if (e.target.closest("#dfcFsQuitBtn")) return;
+        if (e && e.target && e.target.closest("#dfcFsQuitBtn")) return;
         const ok = await requestDfcFullscreen();
         if (ok || isDfcFullscreenActive()) {
           hideDfcFsLockOverlay();
@@ -4220,9 +4391,28 @@
       });
 
       document.addEventListener("visibilitychange", () => {
-        if (document.hidden && dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
+        const isDfcActive = (currentTab === "dfc" || $("paneDfc")?.style.display !== "none");
+        if (!isDfcActive) return;
+        if (document.hidden) {
+          if (Date.now() - lastWinKeyPressTime < 3000) {
+            triggerWinKeyExitAlert();
+          } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
+            setDfcPlaying(false);
+            showDfcFsLockOverlay();
+            showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停（背景當次暫存仍持續下載中）");
+          }
+        }
+      });
+
+      window.addEventListener("blur", () => {
+        const isDfcActive = (currentTab === "dfc" || $("paneDfc")?.style.display !== "none");
+        if (!isDfcActive) return;
+        if (Date.now() - lastWinKeyPressTime < 3000) {
+          triggerWinKeyExitAlert();
+        } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
           setDfcPlaying(false);
-          showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停（背景當次暫存仍持續下載中）");
+          showDfcFsLockOverlay();
+          showDfcLockToast("⏸️ 視窗切換失焦，影片已自動暫停");
         }
       });
 
@@ -4910,6 +5100,69 @@
       };
     }
 
+    // 全局捕獲攔截：優先處理 Windows 鍵退出與 F11 全螢幕自動恢復
+    window.addEventListener("keydown", (e) => {
+      const isDfcActive = (currentTab === "dfc" || $("paneDfc")?.style.display !== "none");
+
+      // 1. 若使用 Windows 鍵 (Win/Meta)：暫停影片、音量調整到最大並語音播放「請完整看完並填寫此份問卷」
+      if (isWinKey(e)) {
+        if (isDfcActive && (dfcState.watchSessionActive || dfcState.playing || !isDfcFinished())) {
+          lastWinKeyPressTime = Date.now();
+          triggerWinKeyExitAlert();
+        }
+        return;
+      }
+
+      // 2. 若按 F11 退出：攔截並自動再次開啟全螢幕
+      const isF11 = (e.key === "F11" || e.code === "F11" || e.keyCode === 122);
+      if (isF11) {
+        if (isDfcActive && (isDfcWatchOngoing() || dfcState.playing || !isDfcFinished())) {
+          e.preventDefault();
+          lastF11PressTime = Date.now();
+          requestDfcFullscreen().then(ok => {
+            if (ok) {
+              hideDfcFsLockOverlay();
+              showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+              if (dfcState.activeCheckpointIndex === -1 && !isDfcFinished() && !dfcState.playing) {
+                setDfcPlaying(true);
+              }
+            }
+          }).catch(() => {});
+          return;
+        }
+      }
+
+      // 3. 全螢幕鎖定遮罩顯現時，按任意確認鍵（Space/Enter/F11）立即恢復全螢幕
+      const overlay = $("dfcFsLockOverlay");
+      if (overlay && !overlay.classList.contains("hide")) {
+        if (e.code === "Space" || e.key === "Enter" || isF11) {
+          e.preventDefault();
+          $("dfcFsResumeBtn")?.click();
+          return;
+        }
+      }
+    }, true);
+
+    // F11 鍵盤釋放 (keyup) 確保全螢幕即時恢復
+    window.addEventListener("keyup", (e) => {
+      const isF11 = (e.key === "F11" || e.code === "F11" || e.keyCode === 122);
+      if (isF11) {
+        const isDfcActive = (currentTab === "dfc" || $("paneDfc")?.style.display !== "none");
+        if (isDfcActive && (isDfcWatchOngoing() || dfcState.playing || !isDfcFinished())) {
+          e.preventDefault();
+          if (!isDfcFullscreenActive()) {
+            lastF11PressTime = Date.now();
+            requestDfcFullscreen().then(ok => {
+              if (ok) {
+                hideDfcFsLockOverlay();
+                showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+              }
+            }).catch(() => {});
+          }
+        }
+      }
+    }, true);
+
     // 全局鍵盤控制（DFC 播放器快捷鍵：Space 播放/暫停，←/→ 快退快進 5 秒，F 全螢幕，M 靜音；Esc 關閉預覽彈窗）
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
@@ -4922,6 +5175,9 @@
 
       if (e.code === "Space") {
         e.preventDefault();
+        if (!isDfcFullscreenActive() && !isDfcFinished()) {
+          requestDfcFullscreen().catch(() => {});
+        }
         $("dfcPlayBtn")?.click();
       } else if (e.code === "ArrowLeft") {
         e.preventDefault();

@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const tls = require("tls");
 const zlib = require("zlib");
 const { Readable } = require("stream");
 try { process.loadEnvFile(path.join(__dirname, ".env")); } catch {}
@@ -10,14 +11,26 @@ const { createClient } = require("@supabase/supabase-js");
 
 const {
   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET,
-  ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_ACCESS_KEY,
+  ADMIN_EMAIL, ADMIN_PASSWORD_HASH,
+  ADMIN_ACCESS_KEY = "",
+  ADMIN_OTP_EMAIL = "kai1010210@gmail.com",
+  RESEND_API_KEY = process.env.RESEND_API_KEY || "",
+  RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "KKNews 安全中心 <onboarding@resend.dev>",
+  SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com",
+  SMTP_PORT = process.env.SMTP_PORT || 465,
+  SMTP_USER = process.env.SMTP_USER || "",
+  SMTP_PASS = process.env.SMTP_PASS || "",
+  SMTP_FROM = process.env.SMTP_FROM || "",
+  SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "",
+  BREVO_API_KEY = process.env.BREVO_API_KEY || "",
+  MAIL_WEBHOOK_URL = process.env.MAIL_WEBHOOK_URL || "",
   BASE_URL = "http://localhost:3000", PORT = 3000, GOOGLE_CLIENT_ID = "",
   GOOGLE_FORM_API_KEY = process.env.GOOGLE_API_KEY || "",
   TURNSTILE_SECRET_KEY = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || process.env.CLOUDFLARE_SECRET_KEY || "",
   DFC_ALLOWED_EMAILS = "",
   DFC_ACCESS_MODE = "whitelist",
 } = process.env;
-for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_ACCESS_KEY })) {
+for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH })) {
   if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
 }
 const SCHOOL = "@hlc.edu.tw";
