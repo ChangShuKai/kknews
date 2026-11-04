@@ -2755,28 +2755,40 @@ app.post("/api/admin/login", async (req, res) => {
   };
   pendingOtpChallenges.set(challenge, pendingRecord);
 
-  sendAdminOtpMail({
+  // 寄發 OTP 郵件
+  const mailResult = await sendAdminOtpMail({
     to: ADMIN_OTP_EMAIL,
     otp,
     accountEmail: matchedAdmin.email,
     ip: pendingRecord.ip,
     ua: pendingRecord.ua,
-  }).catch(e => console.error("[MAIL] sendAdminOtpMail error:", e));
+  }).catch(e => {
+    console.error("[MAIL] sendAdminOtpMail error:", e);
+    return { ok: false, sent: false, to: ADMIN_OTP_EMAIL, errorDetail: e.message };
+  });
 
-  audit(req, "admin_otp_requested", `申請帳號: ${matchedAdmin.email} | 驗證碼傳送至: ${ADMIN_OTP_EMAIL}`);
+  const actualTarget = mailResult?.to || ADMIN_OTP_EMAIL;
+  audit(req, "admin_otp_requested", `申請帳號: ${matchedAdmin.email} | 驗證碼傳送至: ${actualTarget} (狀態: ${mailResult?.sent ? "成功" : "失敗"})`);
 
-  const atIdx = ADMIN_OTP_EMAIL.indexOf("@");
+  const atIdx = actualTarget.indexOf("@");
   const maskedEmail = atIdx > 3
-    ? ADMIN_OTP_EMAIL.slice(0, 3) + "***" + ADMIN_OTP_EMAIL.slice(atIdx - 2)
-    : ADMIN_OTP_EMAIL;
+    ? actualTarget.slice(0, 3) + "***" + actualTarget.slice(atIdx - 2)
+    : actualTarget;
+
+  let hintMessage = `一次性授權驗證碼已傳送至信箱 (${actualTarget})，每個裝置僅需驗證一次。`;
+  if (mailResult && !mailResult.sent) {
+    hintMessage = `⚠️ 發信未成功 (${mailResult.errorDetail || "請設定 Gmail 應用程式密碼"})。請至 Vercel Runtime Logs 或 Supabase admin_audit 查看驗證碼。`;
+  } else if (actualTarget !== ADMIN_OTP_EMAIL) {
+    hintMessage = `💡 因 Resend 限制，驗證碼已轉寄至您的 Resend 註冊信箱：${actualTarget}，請至該信箱查收！`;
+  }
 
   return res.json({
     ok: false,
     requireOtp: true,
     challenge,
-    targetEmail: ADMIN_OTP_EMAIL,
+    targetEmail: actualTarget,
     targetMasked: maskedEmail,
-    message: `一次性授權驗證碼已傳送至主管信箱 (${ADMIN_OTP_EMAIL})，每個裝置僅需驗證一次。`,
+    message: hintMessage,
     expiresIn: 600,
   });
 });
@@ -2863,16 +2875,24 @@ app.post("/api/admin/resend-otp", async (req, res) => {
   pending.expiresAt = now + 10 * 60 * 1000;
   pending.attempts = 0;
 
-  sendAdminOtpMail({
+  const mailResult = await sendAdminOtpMail({
     to: ADMIN_OTP_EMAIL,
     otp: pending.otp,
     accountEmail: pending.admin.email,
     ip: pending.ip,
     ua: pending.ua,
-  }).catch(e => console.error("[MAIL] sendAdminOtpMail error:", e));
+  }).catch(e => {
+    console.error("[MAIL] sendAdminOtpMail error:", e);
+    return { ok: false, sent: false, to: ADMIN_OTP_EMAIL, errorDetail: e.message };
+  });
 
-  audit(req, "admin_otp_resent", `${pending.admin.email} -> ${ADMIN_OTP_EMAIL}`);
-  res.json({ ok: true, message: `已重新發送驗證碼至主管信箱 (${ADMIN_OTP_EMAIL})` });
+  const actualTarget = mailResult?.to || ADMIN_OTP_EMAIL;
+  audit(req, "admin_otp_resent", `${pending.admin.email} -> ${actualTarget}`);
+  let msg = `已重新發送驗證碼至主管信箱 (${actualTarget})`;
+  if (actualTarget !== ADMIN_OTP_EMAIL) {
+    msg = `已重新發送驗證碼至 Resend 註冊信箱 (${actualTarget})`;
+  }
+  res.json({ ok: true, message: msg, targetEmail: actualTarget });
 });
 
 /* --- 裝置信任撤銷管理 --- */
