@@ -101,6 +101,8 @@ const adminOf = req => {
   if (Array.isArray(cachedAdmins)) {
     const liveAcc = cachedAdmins.find(a => String(a.email || "").trim().toLowerCase() === email);
     if (!liveAcc) return null;
+    // 密碼重設後強制舊 Token 失效 (Session Revocation)
+    if (p.pwAt && liveAcc.pwUpdatedAt && p.pwAt !== liveAcc.pwUpdatedAt) return null;
     const liveRole = normalizeAdminRole(liveAcc.role, email);
     return {
       ...p,
@@ -121,7 +123,7 @@ const forbidReadOnly = res => res.status(403).json({ error: "權限不足：一�
 const notFound = (res) => res.status(404).type("text/plain").send("Not found");
 const clientIp = req => String(req.ip || "");   // 交給 Express trust proxy 解析，避免被偽造的 X-Forwarded-For 欺騙
 
-/* 限流：優先存 Supabase（serverless 多實例也有效），資料表不存在時退回記憶體 */
+/* 限流：本地記憶體極速過濾 + Supabase 分布式同步（防止高併發打爆 DB 連線池） */
 const hits = new Map();
 function limitedMem(key, max, windowMs) {
   const now = Date.now(), arr = (hits.get(key) || []).filter(t => now - t < windowMs);
@@ -130,13 +132,15 @@ function limitedMem(key, max, windowMs) {
 }
 setInterval(() => hits.clear(), 3600e3).unref();
 async function limited(key, max, windowMs) {
+  // 1. 本地記憶體極速前置防護：若已超出閾值 1.5 倍，直接在記憶體阻擋，不觸發 DB 查詢避免連線池枯竭
+  if (limitedMem(key, Math.ceil(max * 1.5), windowMs)) return true;
   try {
     const { error: e1 } = await db.from("rate_limits").insert({ key });
     if (e1) throw e1;
     const since = new Date(Date.now() - windowMs).toISOString();
     const { count, error: e2 } = await db.from("rate_limits").select("key", { count: "exact", head: true }).eq("key", key).gte("created_at", since);
     if (e2) throw e2;
-    if (Math.random() < 0.02) db.from("rate_limits").delete().lt("created_at", new Date(Date.now() - 86400e3).toISOString()).then(() => {}, () => {});
+    if (Math.random() < 0.02) db.from("rate_limits").delete().lt("created_at", new Date(Date.now() - 86400e3).toISOString()).catch(() => {});
     return count > max;
   } catch { return limitedMem(key, max, windowMs); }
 }
@@ -1000,7 +1004,46 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-// 全域輕量化 Gzip 串流壓縮：將 HTML/CSS/JS/JSON 傳輸體積縮減 70%~85%，從根本降低 Vercel Fast Origin Transfer
+// 1. 阻擋危險/不支援的 HTTP 方法（防範 TRACE / TRACK 跨站追蹤漏洞、CONNECT 等非預期呼叫）
+const ALLOWED_HTTP_METHODS = new Set(["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"]);
+app.use((req, res, next) => {
+  if (!ALLOWED_HTTP_METHODS.has(req.method)) {
+    return res.status(405).type("text/plain").send("Method Not Allowed");
+  }
+  next();
+});
+
+// 2. 惡意掃描防禦盾：攔截常見敏感檔案掃描路徑與自動化弱點掃描工具
+const BLOCKED_PATH_PATTERNS = [
+  /^\/\.env/i, /^\/\.git/i, /^\/\.svn/i, /^\/\.aws/i, /^\/\.vscode/i, /^\/\.DS_Store/i,
+  /\/wp-(?:admin|login|content|includes)/i, /xmlrpc\.php/i,
+  /\/phpmyadmin/i, /\/pma/i, /\/adminer/i,
+  /\/actuator/i, /\/console/i, /\/cgi-bin/i,
+  /\.\.(?:\/|\\)/, /%2e%2e/i,
+];
+const BLOCKED_UA_PATTERNS = [
+  /sqlmap/i, /nikto/i, /masscan/i, /acunetix/i, /nmap/i, /havij/i, /zgrab/i, /dirbuster/i, /wpscan/i
+];
+app.use((req, res, next) => {
+  const p = req.path || "";
+  const ua = req.headers["user-agent"] || "";
+  if (BLOCKED_PATH_PATTERNS.some(re => re.test(p)) || BLOCKED_UA_PATTERNS.some(re => re.test(ua))) {
+    return notFound(res);
+  }
+  next();
+});
+
+// 3. HTTP 參數污染 (HPP: HTTP Parameter Pollution) 防護
+app.use((req, res, next) => {
+  if (req.query && typeof req.query === "object") {
+    for (const [k, v] of Object.entries(req.query)) {
+      if (Array.isArray(v)) req.query[k] = v[v.length - 1];
+    }
+  }
+  next();
+});
+
+// 4. 全域輕量化 Gzip 串流壓縮：將 HTML/CSS/JS/JSON 傳輸體積縮減 70%~85%，從根本降低 Vercel Fast Origin Transfer
 app.use((req, res, next) => {
   const enc = req.headers["accept-encoding"] || "";
   if (!enc.includes("gzip")) return next();
@@ -1028,21 +1071,82 @@ app.use((req, res, next) => {
   next();
 });
 
+// 5. 強化級 HTTP 安全回應標頭 (Security Headers & Strict CSP)
 app.use((req, res, next) => {
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' https://challenges.cloudflare.com https://vercel.live https://static.cloudflareinsights.com",
+    "frame-src 'self' https://challenges.cloudflare.com https://drive.google.com https://*.google.com https://www.youtube.com https://youtube.com https://vercel.live",
+    "worker-src 'self' blob:",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live",
+    "font-src 'self' https://fonts.gstatic.com https://vercel.live https://assets.vercel.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://vercel.live https://vercel.com",
+    "media-src 'self' https: data: blob:",
+    "connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://vercel.live https://*.pusher.com wss://*.pusher.com",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'self' https://docs.google.com",
+    "object-src 'none'",
+    ...(SECURE ? ["upgrade-insecure-requests"] : []),
+  ].join("; ");
+
   res.set({
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://vercel.live; frame-src 'self' https://challenges.cloudflare.com https://drive.google.com https://*.google.com https://www.youtube.com https://youtube.com https://vercel.live; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live; font-src 'self' https://fonts.gstatic.com https://vercel.live https://assets.vercel.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://vercel.live https://vercel.com; media-src 'self' https: data: blob:; connect-src 'self' https://challenges.cloudflare.com https://docs.google.com https://script.google.com https://script.googleusercontent.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self' https://docs.google.com; object-src 'none'",
-    "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
-    "Permissions-Policy": "camera=(), geolocation=(self), microphone=(), payment=(), usb=(), interest-cohort=()",
+    "Content-Security-Policy": cspDirectives,
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), display-capture=(), screen-wake-lock=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
-    "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "X-Permitted-Cross-Domain-Policies": "none",
+    "X-DNS-Prefetch-Control": "off",
+    "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow",
   });
-  if (SECURE) res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  if (SECURE) {
+    res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  }
   next();
 });
+
+// 6. 請求主體大小限制 (防範記憶體溢出攻擊)
 app.use(express.json({ limit: "250kb" }));
-// 所有寫入操作必須帶自訂標頭（簡易 CSRF 防護，搭配 SameSite cookie）
+
+// 7. API 寫入請求 Content-Type 檢驗
+app.use("/api", (req, res, next) => {
+  if (req.method === "POST" || req.method === "PATCH" || req.method === "PUT") {
+    const cl = req.headers["content-length"];
+    const ct = req.headers["content-type"] || "";
+    if (cl && cl !== "0" && !ct.includes("application/json") && !ct.includes("multipart/form-data")) {
+      return res.status(415).json({ error: "Unsupported Media Type: expected application/json" });
+    }
+  }
+  next();
+});
+
+// 8. 所有寫入操作必須帶自訂標頭與合法來源驗證（防範 CSRF、跨站偽造寫入）
 app.use((req, res, next) => {
-  if (req.method !== "GET" && req.method !== "HEAD" && req.headers["x-requested-with"] !== "fetch") return notFound(res);
+  if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+    if (req.headers["x-requested-with"] !== "fetch") return notFound(res);
+
+    // 嚴格校驗 Origin 標頭（若存在）防範惡意第三方站點偽造請求
+    const origin = req.headers.origin;
+    if (origin) {
+      try {
+        const originUrl = new URL(origin);
+        const hostHeader = (req.headers.host || "").split(":")[0].toLowerCase();
+        const originHost = originUrl.hostname.toLowerCase();
+        const isLocal = originHost === "localhost" || originHost === "127.0.0.1";
+        const isMatchedHost = hostHeader && originHost === hostHeader;
+        const isVercelLive = originHost.endsWith(".vercel.app") || originHost === "vercel.live";
+        if (!isLocal && !isMatchedHost && !isVercelLive) {
+          return notFound(res);
+        }
+      } catch {
+        return notFound(res);
+      }
+    }
+  }
   next();
 });
 
@@ -1523,12 +1627,22 @@ function extractGoogleDriveFileId(input = "") {
   return "";
 }
 
+// 防範 SSRF / 開放代理漏洞：嚴格校驗欲播放或串流之 Google Drive FileId 是否存在於發布問卷中或為預設影片
+function isAllowedVideoFileId(fileId, store) {
+  if (!fileId) return false;
+  if (fileId === DEFAULT_DFC_VIDEO_ID) return true;
+  const forms = Array.isArray(store?.forms) ? store.forms : [];
+  return forms.some(f => extractGoogleDriveFileId(f.videoUrl) === fileId);
+}
+
 // DFC 影片多畫質串流 Manifest 端點（強制即時檢驗最新版影片資訊，禁止瀏覽器快取舊版 Manifest）
 app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.params.fileId);
   if (!fileId) return notFound(res);
 
   const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  if (!isAllowedVideoFileId(fileId, store)) return notFound(res);
+
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
@@ -1603,6 +1717,9 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.params.fileId);
   if (!fileId) return notFound(res);
 
+  const store = await readSysStore("dfc", DEFAULT_DFC_STORE);
+  if (!isAllowedVideoFileId(fileId, store)) return notFound(res);
+
   res.set({
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
@@ -1614,7 +1731,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   // 防暴雷權限攔截：未授權帳號一律禁止載入影片位元組
-  const access = await evaluateDfcAccess(req);
+  const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
   }
@@ -2182,7 +2299,11 @@ app.get("/adminusercontrol", async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
   if (adminOf(req)) return sendStaticAsset(req, res, PAGES.admin.html, "text/html; charset=utf-8", "private, no-cache");
   if (!hasAccessKey(req)) return notFound(res);
-  if (keyOk(req.query?.k)) setCookie(res, "kak", makeToken({ t: "k" }, 3600), { strict: true });
+  // 若網址帶有 ?k= 金鑰參數，設定安全 Cookie 後立即 302 重導向，從瀏覽器網址列徹底消除金鑰
+  if (keyOk(req.query?.k)) {
+    setCookie(res, "kak", makeToken({ t: "k" }, 3600), { strict: true });
+    return res.redirect(302, "/adminusercontrol");
+  }
   return sendStaticAsset(req, res, PAGES.login.html, "text/html; charset=utf-8", "private, no-cache");
 });
 app.get("/adminusercontrol/jszip.js", async (req, res) => {
@@ -2246,6 +2367,7 @@ app.post("/api/admin/login", async (req, res) => {
         role,
         name: subAcc.name || (role === "super_admin" ? "Super Admin" : "一般管理員（唯讀）"),
         isPrimary: false,
+        pwUpdatedAt: subAcc.pwUpdatedAt || subAcc.createdAt || "",
       };
     }
   }
@@ -2259,6 +2381,7 @@ app.post("/api/admin/login", async (req, res) => {
         role: "super_admin",
         name: "SixStar Culture 主管理員",
         isPrimary: true,
+        pwUpdatedAt: "primary",
       };
     }
   }
@@ -2272,6 +2395,7 @@ app.post("/api/admin/login", async (req, res) => {
     role: matchedAdmin.role,
     name: matchedAdmin.name,
     isPrimary: Boolean(matchedAdmin.isPrimary),
+    pwAt: matchedAdmin.pwUpdatedAt || "",
   }, 4 * 3600), { strict: true });
   clearCookie(res, "kak");
   res.json({ ok: true, role: matchedAdmin.role, email: matchedAdmin.email, name: matchedAdmin.name });
@@ -2362,6 +2486,7 @@ app.patch("/api/admin/accounts/:id", async (req, res) => {
   if (req.body?.password) {
     if (String(req.body.password).length < 6) return res.status(400).json({ error: "新密碼長度至少需 6 個字元" });
     target.passwordHash = await hashPassword(String(req.body.password));
+    target.pwUpdatedAt = new Date().toISOString();
     delete target.plainPassword;
   }
   await writeSysStore("admins", adminList);
