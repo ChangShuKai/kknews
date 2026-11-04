@@ -289,12 +289,12 @@ insert into public.dfc_forms (
   true,
   '[
     {"id": "q1", "time": 4, "stepLabel": "階段一 · 感受 Feel (第1題)", "title": "在剛才影片片段中，你觀察到最核心的校園問題是什麼？", "type": "radio", "options": ["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"], "desc": "請選擇一個最貼近你觀察到的現象。", "required": true},
-    {"id": "q2", "time": 4, "stepLabel": "階段一 · 感受 Feel (第2題)", "title": "你認為這個問題對哪一群體的影響最大？", "type": "checkbox", "options": ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], "desc": "支援同時間點連續提問。", "required": true},
+    {"id": "q2", "time": 4, "stepLabel": "階段一 · 感受 Feel (第2題)", "title": "你認為這個問題對哪一群體的影響最大？", "type": "checkbox", "options": ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], "desc": "本題為多選題，可複選最關鍵的影響對象。", "required": true},
     {"id": "q3", "time": 10, "stepLabel": "階段二 · 想像 Imagine (第1題)", "title": "針對這個問題，你認為哪些創意解方最值得嘗試？", "type": "checkbox", "options": ["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"], "desc": "此題為多選題，可勾選一或多項方案。", "required": true},
-    {"id": "q4", "time": 10, "stepLabel": "階段二 · 想像 Imagine (第2題)", "title": "你認為以上解方的實施難易度為何？", "type": "dropdown", "options": ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], "desc": "評估解方可行性。", "required": false},
+    {"id": "q4", "time": 10, "stepLabel": "階段二 · 想像 Imagine (第2題)", "title": "你認為以上解方的實施難易度為何？", "type": "dropdown", "options": ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], "desc": "請評估此項解方在校園推行的可行性與難易度。", "required": false},
     {"id": "q5", "time": 18, "stepLabel": "階段三 · 實踐 Do", "title": "請簡述你在本次行動中擔任的角色或預計實踐的項目", "type": "textarea", "options": [], "desc": "限 50 字以內，簡要描述即可。", "required": false},
-    {"id": "q6", "time": 22, "stepLabel": "階段四 · 分享 Share (第1題)", "title": "你是否願意將本次成果分享於全校互動成果牆？", "type": "boolean", "options": [], "desc": "二選一是非題", "required": true},
-    {"id": "q7", "time": 22, "stepLabel": "階段四 · 分享 Share (第2題)", "title": "你對本次校園 DFC 方案的整體推薦評分？", "type": "rating", "options": [], "desc": "1~5 星評分量表，作答後表單即完成！", "min": 1, "max": 5, "required": true}
+    {"id": "q6", "time": 22, "stepLabel": "階段四 · 分享 Share (第1題)", "title": "你是否願意將本次成果分享於全校互動成果牆？", "type": "boolean", "options": [], "desc": "請選擇是否願意公開分享。", "required": true},
+    {"id": "q7", "time": 22, "stepLabel": "階段四 · 分享 Share (第2題)", "title": "你對本次校園 DFC 方案的整體推薦評分？", "type": "rating", "options": [], "desc": "請給予 1 至 5 星綜合推薦評分（1 星最低，5 星最高）。", "min": 1, "max": 5, "required": true}
   ]'::jsonb
 ) on conflict (id) do nothing;
 
@@ -303,12 +303,12 @@ insert into public.dfc_questions (
   id, form_id, question_order, time_seconds, step_label, title, type, options, description, required, min_val, max_val, entry_id
 ) values
   ('q1', 'default-dfc', 1, 4, '階段一 · 感受 Feel (第1題)', '在剛才影片片段中，你觀察到最核心的校園問題是什麼？', 'radio', '["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"]'::jsonb, '請選擇一個最貼近你觀察到的現象。', true, 1, 5, 'entry.111111111'),
-  ('q2', 'default-dfc', 2, 4, '階段一 · 感受 Feel (第2題)', '你認為這個問題對哪一群體的影響最大？', 'checkbox', '["全體學生", "導師與行政組長", "家長與校友", "學校訪客"]'::jsonb, '支援同時間點連續提問。', true, 1, 5, 'entry.111111112'),
+  ('q2', 'default-dfc', 2, 4, '階段一 · 感受 Feel (第2題)', '你認為這個問題對哪一群體的影響最大？', 'checkbox', '["全體學生", "導師與行政組長", "家長與校友", "學校訪客"]'::jsonb, '本題為多選題，可複選最關鍵的影響對象。', true, 1, 5, 'entry.111111112'),
   ('q3', 'default-dfc', 3, 10, '階段二 · 想像 Imagine (第1題)', '針對這個問題，你認為哪些創意解方最值得嘗試？', 'checkbox', '["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"]'::jsonb, '此題為多選題，可勾選一或多項方案。', true, 1, 5, 'entry.222222222'),
-  ('q4', 'default-dfc', 4, 10, '階段二 · 想像 Imagine (第2題)', '你認為以上解方的實施難易度為何？', 'dropdown', '["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"]'::jsonb, '評估解方可行性。', false, 1, 5, 'entry.22222223'),
+  ('q4', 'default-dfc', 4, 10, '階段二 · 想像 Imagine (第2題)', '你認為以上解方的實施難易度為何？', 'dropdown', '["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"]'::jsonb, '請評估此項解方在校園推行的可行性與難易度。', false, 1, 5, 'entry.22222223'),
   ('q5', 'default-dfc', 5, 18, '階段三 · 實踐 Do', '請簡述你在本次行動中擔任的角色或預計實踐的項目', 'textarea', '[]'::jsonb, '限 50 字以內，簡要描述即可。', false, 1, 5, 'entry.333333333'),
-  ('q6', 'default-dfc', 6, 22, '階段四 · 分享 Share (第1題)', '你是否願意將本次成果分享於全校互動成果牆？', 'boolean', '[]'::jsonb, '二選一是非題', true, 1, 5, 'entry.555555555'),
-  ('q7', 'default-dfc', 7, 22, '階段四 · 分享 Share (第2題)', '你對本次校園 DFC 方案的整體推薦評分？', 'rating', '[]'::jsonb, '1~5 星評分量表，作答後表單即完成！', true, 1, 5, 'entry.666666666')
+  ('q6', 'default-dfc', 6, 22, '階段四 · 分享 Share (第1題)', '你是否願意將本次成果分享於全校互動成果牆？', 'boolean', '[]'::jsonb, '請選擇是否願意公開分享。', true, 1, 5, 'entry.555555555'),
+  ('q7', 'default-dfc', 7, 22, '階段四 · 分享 Share (第2題)', '你對本次校園 DFC 方案的整體推薦評分？', 'rating', '[]'::jsonb, '請給予 1 至 5 星綜合推薦評分（1 星最低，5 星最高）。', true, 1, 5, 'entry.666666666')
 on conflict (id) do update set
   title = excluded.title,
   step_label = excluded.step_label,

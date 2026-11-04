@@ -492,28 +492,28 @@
     </section>
 
     <!-- ==================== 系統 2：DFC 沉浸式影音表單 (DFC Interactive) ==================== -->
-    <section class="view-pane" id="paneDfc" aria-label="DFC 沉浸式影音表單" style="display:none">
+    <section class="view-pane" id="paneDfc" aria-label="DFC 互動影音探究" style="display:none">
       <div class="dfc-container">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音 · 觀看時全程強制全螢幕</span>
+          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回主選單</button>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">🎬 DFC 互動影音探究 · 全螢幕專注沉浸</span>
         </div>
 
-        <!-- 防暴雷保護艙：當帳號未列入授權名單時顯示，完全隱藏影片與題目避免暴雷 -->
+        <!-- 權限保護艙：當帳號未列入授權名單時顯示，完全隱藏影片與題目避免提前曝光 -->
         <div class="spoiler-vault-card hide" id="dfcRestrictedBox">
           <div class="spoiler-vault-icon">🛡️</div>
-          <div class="spoiler-vault-badge">🔒 DFC 防暴雷保護機制已啟動</div>
-          <h3 class="spoiler-vault-title">此帳號尚未開放觀看 DFC 影片與問卷</h3>
+          <div class="spoiler-vault-badge">🔒 DFC 影音學習權限保護</div>
+          <h3 class="spoiler-vault-title">目前帳號尚未開放觀看 DFC 影音問卷</h3>
           <p class="spoiler-vault-desc" id="dfcRestrictedMsg">
-            為防止劇情與探究題目提前曝光（禁止暴雷），目前 DFC 互動影片僅開放管理員於資料庫或後台設定之規定帳號觀看。
+            為維護最佳學習情境與探究引導體驗，目前此影音問卷僅開放指定班級或授權帳號參與作答。
           </p>
           <div class="spoiler-vault-meta">
             <div><strong>目前登入帳號：</strong><span id="dfcRestrictedEmail">—</span></div>
-            <div style="margin-top:4px"><strong>開放規則說明：</strong>系統管理員可隨時於「管理後台 › DFC 觀看權限管理」或資料庫 <code>dfc_access_list</code> 自由新增授權信箱或學號區段。</div>
+            <div style="margin-top:4px"><strong>權限開通說明：</strong>若需參與此單元探究，請洽任課教師或系統管理員協助開通觀看權限。</div>
           </div>
           <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-            <button type="button" class="btn primary" id="dfcRestrictedBackBtn">← 返回方形主選單</button>
-            <button type="button" class="btn ghost" id="dfcRestrictedRetryBtn" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">🔄 重新檢查授權狀態</button>
+            <button type="button" class="btn primary" id="dfcRestrictedBackBtn">← 返回主選單</button>
+            <button type="button" class="btn ghost" id="dfcRestrictedRetryBtn" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">🔄 重新整理授權狀態</button>
           </div>
         </div>
 
@@ -521,13 +521,13 @@
           <div class="dfc-top-bar" style="margin-top:4px">
             <div>
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
-                <h2 id="dfcTitle" style="margin:0;font-size:24px">DFC 沉浸式互動影片表單</h2>
+                <h2 id="dfcTitle" style="margin:0;font-size:24px">DFC 互動影音探究問卷</h2>
                 <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
                   <span style="font-weight:700;color:var(--ink-secondary)">📋 切換問卷：</span>
                   <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
                 </div>
               </div>
-              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至時間標記時將展開互動問答，請依序觀看並作答（觀看過程全程強制全螢幕直到結束）。</p>
+              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:14px">影片播放至關鍵段落時將展開互動問答，請專注觀看並依序作答。</p>
             </div>
             <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
@@ -536,16 +536,17 @@
             <!-- 影片劇院區塊 -->
             <div class="dfc-video-pane">
               <div class="video-cinema-box" id="dfcCinemaBox">
-                <div class="video-floating-badge" id="dfcVideoBadge">準備播放 · 點擊進入全螢幕</div>
-                <div class="video-mode-badge" id="dfcModeBadge">⚡ 智慧漸進畫質 (360p ➔ HD)</div>
+                <!-- 上方左右膠囊已取消（依需求隱藏保留 DOM 確保狀態機相容） -->
+                <div class="video-floating-badge hide" id="dfcVideoBadge" style="display:none !important"></div>
+                <div class="video-mode-badge hide" id="dfcModeBadge" style="display:none !important"></div>
                 <div class="video-loading-overlay hide" id="dfcVideoLoading">
                   <div class="video-spinner"></div>
-                  <span id="dfcLoadingText">⚡ 正在以低畫質極速預載緩衝，確保播放不卡頓...</span>
+                  <span id="dfcLoadingText">影片載入緩衝中，請稍候...</span>
                 </div>
                 <div class="video-center-play" id="dfcCenterPlay" title="點擊全螢幕開始觀看">
                   <div class="video-center-play-circle">▶</div>
                 </div>
-                <div class="video-lock-toast" id="dfcLockToast">🔒 請依序觀看影片，不可快轉跳過未觀看片段</div>
+                <div class="video-lock-toast" id="dfcLockToast">請循序觀看影片，未解鎖片段暫不支援快轉</div>
                 <!-- 自訂播放器專屬容器（含無縫畫質切換凍結幀橋接畫布） -->
                 <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
                 <canvas id="dfcBridgeCanvas" class="video-bridge-canvas" width="1280" height="720"></canvas>
@@ -555,7 +556,7 @@
                   <div class="video-error-card">
                     <div class="video-error-icon">📡</div>
                     <h3 class="video-error-title">影音串流連線重試中</h3>
-                    <p class="video-error-desc">可能受到校園防火牆或網路暫時延遲影響，請點選下方按鈕重新連線或刷新頁面。</p>
+                    <p class="video-error-desc">若連線時間過長，可能受到校園網路連線影響，請點選下方按鈕重新連線。</p>
                     <button type="button" class="btn primary sm" id="dfcRetryStreamBtn">🔄 重新連線影片</button>
                   </div>
                 </div>
@@ -572,15 +573,15 @@
                   <div id="dfcMarkers"></div>
                 </div>
                 <span class="cinema-time-label" id="dfcTimeLabel">00:00 / 06:03</span>
-                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="點擊切換畫質策略（YouTube ABR：先 360p 極速保底不卡頓，再步進式升 720p HD）">⚡ 自動(360p➔HD)</button>
+                <button type="button" class="cinema-quality-pill" id="dfcQualityBtn" title="畫質切換（依連線速度自動調整最佳畫質）">⚡ 自動畫質</button>
                 <div class="cinema-vol-wrap">
                   <button type="button" class="cinema-icon-btn" id="dfcMuteBtn" title="靜音 / 取消靜音" style="padding:0 8px">🔊</button>
                   <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
                 </div>
                 <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="切換播放速度">1.0x</button>
-                <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕劇院模式" style="padding:0 8px">⛶</button>
+                <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕專注模式" style="padding:0 8px">⛶</button>
                 <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
-                  style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或關閉右側問卷題目">📝
+                  style="white-space:nowrap;font-size:12.5px;font-weight:700" title="開啟或收合右側題目卡片">📝
                   填寫問卷</button>
               </div>
 
@@ -591,11 +592,11 @@
 
               <!-- YouTube ABR 畫質演進與雲端最新版全片本機暫存狀態列（收合摺疊，保持畫面焦點） -->
               <details class="dfc-telemetry-details" style="margin-top:10px;font-size:12.5px">
-                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 播放詳細技術資訊與緩衝狀態（點擊展開）</summary>
+                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 影片播放與緩衝狀態（點擊展開）</summary>
                 <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry" style="margin-top:6px">
                   <div class="dfc-preload-row">
-                    <span class="dfc-preload-status-text" id="dfcPreloadStatusText">🚀 正在同步雲端最新版影片並下載至當次本機暫存...</span>
-                    <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">🧹 當次本機暫存（關閉即刪・下次重載）</span>
+                    <span class="dfc-preload-status-text" id="dfcPreloadStatusText">影片緩衝就緒</span>
+                    <span class="dfc-preload-cache-badge" id="dfcPreloadCacheBadge">快取就緒</span>
                   </div>
                   <div class="dfc-preload-bar-track">
                     <div class="dfc-preload-bar-fill" id="dfcPreloadBarFill"></div>
@@ -622,20 +623,20 @@
               </div>
             </div>
 
-            <!-- 強制全螢幕鎖定提示遮罩：若觀看中意外退出全螢幕，強制暫停並提示點擊恢復 -->
+            <!-- 專注模式提示遮罩：若觀看中意外退出全螢幕，暫停並提示點擊恢復 -->
             <div class="dfc-fs-lock-overlay hide" id="dfcFsLockOverlay">
               <div class="dfc-fs-lock-box">
-                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 測驗模式 · 全程強制全螢幕</span>
+                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 專注模式 · 全螢幕學習</span>
                 <div class="dfc-fs-lock-icon" id="dfcFsLockIcon">📺</div>
                 <h3 class="dfc-fs-lock-title" id="dfcFsLockTitle">請保持全螢幕觀看與作答</h3>
                 <p class="dfc-fs-lock-desc" id="dfcFsLockDesc">
-                  依本問卷影片測驗規範，觀看影片及題目作答期間必須全程保持全螢幕模式，直到全部結束為止。<br>
+                  為了維持最佳的影音沉浸感與專注學習體驗，觀看影片及題目作答期間請保持全螢幕模式。<br>
                   請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。
                 </p>
                 <button type="button" class="dfc-fs-lock-btn" id="dfcFsResumeBtn">
-                  <span>⛶</span> 立即恢復全螢幕並繼續播放
+                  <span>⛶</span> 立即恢復全螢幕並繼續
                 </button>
-                <button type="button" class="dfc-fs-lock-quit" id="dfcFsQuitBtn">暫停並放棄當次作答返回首頁</button>
+                <button type="button" class="dfc-fs-lock-quit" id="dfcFsQuitBtn">退出並返回首頁</button>
               </div>
             </div>
           </div>
@@ -644,10 +645,9 @@
           <div class="alert ok hide" id="dfcCompleteBox" style="margin-top:24px;padding:20px 24px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
               <div>
-                <h3 style="margin:0 0 4px;font-size:18px;color:var(--green)" id="dfcCompleteTitle">🎉 已完成所有階段問答並送出 Google
-                  表單！</h3>
+                <h3 style="margin:0 0 4px;font-size:18px;color:var(--green)" id="dfcCompleteTitle">🎉 恭喜完成所有階段問答與觀看！</h3>
                 <p style="margin:0;font-size:13.5px;color:var(--ink-secondary)" id="dfcCompleteDesc">
-                  感謝你的參與，所有時間點的回答皆已成功記錄。</p>
+                  感謝你的認真參與，所有問答紀錄皆已成功送出並儲存。</p>
               </div>
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <button type="button" class="btn primary sm" id="dfcCertBtn" style="background:linear-gradient(135deg,#d97706,#b45309);border:none;color:#fff;box-shadow:0 2px 8px rgba(180,83,9,0.25)">🎓 產生並下載 DFC 結業榮譽證書 (PNG)</button>
@@ -667,7 +667,7 @@
     <section class="view-pane" id="paneStatus" aria-label="系統即時資訊" style="display:none">
       <div class="status-shell">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回方形主選單</button>
+          <button type="button" class="subpage-back-btn" data-go-home="1">← 返回主選單</button>
           <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">📊 雲端資料庫與即時系統指標</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
@@ -2314,10 +2314,10 @@
       const hubFoot = $("hubDfcFootText");
       if (hubBadge) {
         hubBadge.className = "hub-square-badge " + (isAllowed ? "ok" : "lock");
-        hubBadge.textContent = isAllowed ? "🟢 已授權觀看" : "🔒 防暴雷保護中";
+        hubBadge.textContent = isAllowed ? "🟢 已開放探索" : "🔒 尚未開通權限";
       }
       if (hubFoot) {
-        hubFoot.textContent = isAllowed ? "進入互動劇院" : "查看防暴雷說明";
+        hubFoot.textContent = isAllowed ? "開始影音探究" : "查看開放說明";
       }
 
       const restrictedBox = $("dfcRestrictedBox");
@@ -2331,7 +2331,7 @@
       }
       if ($("dfcRestrictedMsg")) {
         $("dfcRestrictedMsg").textContent = DFC_CONFIG.message || currentDfcAccess?.message ||
-          "為防止劇情與探究題目提前曝光（禁止暴雷），目前 DFC 互動影片僅開放規定帳號觀看。";
+          "為維護學習情境與探究引導體驗，目前此影音問卷僅開放指定班級或授權帳號參與作答。";
       }
       if (!isAllowed) {
         const v = $("dfcVideo");
@@ -2610,15 +2610,15 @@
       const title = $("dfcFsLockTitle");
       const desc = $("dfcFsLockDesc");
       if (isWinKey) {
-        if (badge) badge.textContent = "⚠️ 警示 · 偵測到使用 Windows 鍵退出";
+        if (badge) badge.textContent = "⚠️ 溫馨提醒 · 請保持全螢幕專注模式";
         if (icon) icon.textContent = "🔊";
-        if (title) title.textContent = "請完整看完並填寫此份問卷";
-        if (desc) desc.innerHTML = "依本問卷測驗規範，<strong>觀看影片與填答期間請完整看完並填寫此份問卷</strong>。<br>系統已自動將影片暫停並調至<strong>最大音量</strong>進行語音提醒，請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續作答。";
+        if (title) title.textContent = "請完整觀看並完成問卷作答";
+        if (desc) desc.innerHTML = "為維護良好學習體驗，<strong>觀看影片與填答期間請保持全螢幕</strong>。<br>系統已自動將影片暫停並進行語音提醒，請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續作答。";
       } else {
-        if (badge) badge.textContent = "🔒 測驗模式 · 全程強制全螢幕";
+        if (badge) badge.textContent = "🔒 專注模式 · 請保持全螢幕觀看";
         if (icon) icon.textContent = "📺";
         if (title) title.textContent = "請保持全螢幕觀看與作答";
-        if (desc) desc.innerHTML = "依本問卷影片測驗規範，觀看影片及題目作答期間必須全程保持全螢幕模式，直到全部結束為止。<br>請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。";
+        if (desc) desc.innerHTML = "為了維持最佳的影音沉浸感與專注學習體驗，觀看影片及題目作答期間請保持全螢幕模式。<br>請點擊下方按鈕或畫面任意處，立即恢復全螢幕繼續。";
       }
     }
 
@@ -2702,7 +2702,7 @@
 
       // 3. 顯示鎖定遮罩與提示
       showDfcFsLockOverlay(true);
-      showDfcLockToast("⚠️ 偵測到使用 Windows 鍵！請完整看完並填寫此份問卷");
+      showDfcLockToast("⚠️ 偵測到視窗離開，請保持全螢幕並完成問卷");
     }
 
     function showDfcFsLockOverlay(isWinKey = false) {
@@ -2723,7 +2723,7 @@
       if (isDfcFullscreenActive()) {
         exitDfcFullscreen();
       }
-      showDfcLockToast("🎉 DFC 影片與問卷已全部完成！已自動解除全螢幕");
+      showDfcLockToast("🎉 DFC 影音與問卷已順利完成！");
     }
 
     function showDfcLockToast(msg) {
@@ -2965,8 +2965,10 @@
 
       const badge = $("dfcVideoBadge");
       const groupHint = groupTotal > 1 ? ` · (本時段第 ${subIdx}/${groupTotal} 題)` : "";
-      badge.textContent = `問題時間點 (${fmtSec(cp.time)})${groupHint} · 請於右側作答`;
-      badge.classList.add("question-stop");
+      if (badge) {
+        badge.textContent = `問題時間點 (${fmtSec(cp.time)})${groupHint} · 請於右側作答`;
+        badge.classList.add("question-stop");
+      }
 
       const stepText = cp.stepLabel || ("STEP " + (idx + 1));
       const multiHint = groupTotal > 1 ? ` [本時段第 ${subIdx}/${groupTotal} 題]` : "";
@@ -2982,9 +2984,9 @@
       if (!isLastInGroup) {
         $("dfcAnswerBtn").textContent = `下一步：作答本時段下一題 (${subIdx}/${groupTotal}) →`;
       } else if (isOverallLast) {
-        $("dfcAnswerBtn").textContent = "完成全部作答並送出表單 ✨";
+        $("dfcAnswerBtn").textContent = "完成全部作答並送出問卷 ✨";
       } else {
-        $("dfcAnswerBtn").textContent = "確認作答，繼續播放 →";
+        $("dfcAnswerBtn").textContent = "確認作答，繼續觀看 →";
       }
       const area = $("dfcQInputArea");
       area.innerHTML = "";
@@ -3242,7 +3244,7 @@
           dfcState.submitted = true;
           logAction("送出 DFC 問卷", `完成表單 [${DFC_CONFIG.title}] 全部 ${DFC_CONFIG.checkpoints.length} 題作答`);
           $("dfcCompleteBox").classList.remove("hide");
-          $("dfcCompleteDesc").textContent = "所有時間點的問題皆已成功儲存至雲端資料庫！感謝你的參與！";
+          $("dfcCompleteDesc").textContent = "感謝你的認真參與，所有問答紀錄皆已成功送出並儲存！";
 
           // 渲染作答摘要
           const summaryCard = $("dfcSummaryCard");
@@ -3288,8 +3290,10 @@
         setDfcPlaying(true);
       } else {
         const badge = $("dfcVideoBadge");
-        badge.textContent = "✓ 影片與問答已完成";
-        badge.classList.remove("question-stop");
+        if (badge) {
+          badge.textContent = "✓ 影片與問答已完成";
+          badge.classList.remove("question-stop");
+        }
         if (isDfcFinished()) {
           handleDfcCompletion();
         }
@@ -3895,9 +3899,9 @@
 
       dfcTurboState.overallBufferedPct = 100;
       updatePreloadTelemetryUi(
-        "⚡ Google CDN 雲端直連分流已就緒 (0 伺服器流量 · 極速無延遲)",
+        "⚡ 影音串流已就緒 (高速播放不卡頓)",
         100,
-        "🟢 直連分流就緒",
+        "🟢 串流就緒",
         true
       );
       if (badge && !badge.classList.contains("question-stop")) {
@@ -4298,7 +4302,7 @@
         fsBtn.onclick = () => {
           if (isDfcWatchOngoing()) {
             if (isDfcFullscreenActive()) {
-              showDfcLockToast("🔒 測驗進行中強制全螢幕，全部完成後將自動解除");
+              showDfcLockToast("🔒 專注模式進行中，完成全部問卷後將自動解除全螢幕");
               return;
             }
             requestDfcFullscreen();
@@ -4338,14 +4342,14 @@
               requestDfcFullscreen().then(ok => {
                 if (ok) {
                   hideDfcFsLockOverlay();
-                  showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+                  showDfcLockToast("🔒 已恢復全螢幕專注模式，請繼續作答或觀看");
                   if (dfcState.activeCheckpointIndex === -1 && !isDfcFinished()) {
                     setDfcPlaying(true);
                   }
                 } else {
                   if (dfcState.playing) setDfcPlaying(false);
                   showDfcFsLockOverlay();
-                  showDfcLockToast("🔒 觀看 DFC 問卷影片請保持全螢幕，已自動暫停");
+                  showDfcLockToast("🔒 觀看 DFC 影音請保持全螢幕，已自動暫停");
                 }
               }).catch(() => {
                 if (dfcState.playing) setDfcPlaying(false);
@@ -4359,7 +4363,7 @@
               setDfcPlaying(false);
             }
             showDfcFsLockOverlay();
-            showDfcLockToast("🔒 觀看 DFC 問卷影片請保持全螢幕，已自動暫停");
+            showDfcLockToast("🔒 觀看 DFC 影音請保持全螢幕，已自動暫停");
           }
         }
       };
@@ -4399,7 +4403,7 @@
           } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
             setDfcPlaying(false);
             showDfcFsLockOverlay();
-            showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停（背景當次暫存仍持續下載中）");
+            showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停");
           }
         }
       });
@@ -4412,7 +4416,7 @@
         } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
           setDfcPlaying(false);
           showDfcFsLockOverlay();
-          showDfcLockToast("⏸️ 視窗切換失焦，影片已自動暫停");
+          showDfcLockToast("⏸️ 偵測到視窗離開，影片已自動暫停");
         }
       });
 
@@ -5122,7 +5126,7 @@
           requestDfcFullscreen().then(ok => {
             if (ok) {
               hideDfcFsLockOverlay();
-              showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+              showDfcLockToast("🔒 已恢復全螢幕專注模式，請繼續作答或觀看");
               if (dfcState.activeCheckpointIndex === -1 && !isDfcFinished() && !dfcState.playing) {
                 setDfcPlaying(true);
               }
@@ -5155,7 +5159,7 @@
             requestDfcFullscreen().then(ok => {
               if (ok) {
                 hideDfcFsLockOverlay();
-                showDfcLockToast("🔒 DFC 測驗進行中強制全螢幕，已自動重新開啟全螢幕！");
+                showDfcLockToast("🔒 已恢復全螢幕專注模式，請繼續作答或觀看");
               }
             }).catch(() => {});
           }
