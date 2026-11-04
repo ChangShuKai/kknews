@@ -7225,3 +7225,874 @@ body {
   margin-bottom: 8px;
 }
 
+/* ============================================================================
+ * 極簡美學整合系統 (Minimalist Integration Architecture)
+ * 將次要按鈕、文字說明與進階工具巧妙收納於膠囊選單與分段抽屜中
+ * ============================================================================ */
+
+/* 頂部極簡導覽膠囊 */
+.top-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--spring-smooth);
+  white-space: nowrap;
+}
+.top-nav-pill:hover {
+  color: var(--ink);
+  background: rgba(120, 120, 128, 0.08);
+}
+.top-nav-pill.active {
+  background: var(--surface-solid);
+  color: var(--blue);
+  border-color: var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 頂部版面一鍵切換膠囊 (桌面簡約版 ⇄ 9:16 行動版) */
+.ui-mode-switch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-solid);
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.ui-mode-switch-pill:hover {
+  color: var(--blue);
+  border-color: rgba(0, 113, 227, 0.35);
+  background: var(--blue-soft);
+}
+
+.mobile-only-page-tag {
+  display: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--blue-soft);
+  color: var(--blue);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* 整合式控制中心膠囊與懸浮面板 (Unified Control Hub Capsule & Popover) */
+.hub-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.hub-capsule-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 5px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+.hub-capsule-trigger:hover {
+  border-color: rgba(0, 113, 227, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.hub-capsule-trigger .user-av {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+.hub-capsule-trigger .user-meta {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hub-chevron {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  transition: transform 0.2s ease;
+}
+.hub-capsule-trigger[aria-expanded="true"] .hub-chevron {
+  transform: rotate(180deg);
+}
+
+.hub-control-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 310px;
+  background: var(--surface-elevated, var(--surface-solid));
+  backdrop-filter: saturate(190%) blur(28px);
+  -webkit-backdrop-filter: saturate(190%) blur(28px);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06);
+  z-index: 1200;
+  animation: applePop 0.22s var(--spring-smooth) both;
+}
+
+.hub-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-subtle);
+  margin-bottom: 12px;
+}
+.hub-pop-user {
+  min-width: 0;
+}
+.hub-pop-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-pop-sub {
+  font-size: 11.5px;
+  color: var(--ink-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-pop-logout-btn {
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 59, 48, 0.25);
+  background: var(--red-soft);
+  color: var(--red);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.hub-pop-logout-btn:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+.hub-pop-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-subtle);
+}
+.hub-pop-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-tertiary);
+  margin-bottom: 8px;
+}
+.hub-pop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.hub-tool-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line-subtle);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: center;
+}
+.hub-tool-tile:hover {
+  border-color: rgba(0, 113, 227, 0.35);
+  background: var(--blue-soft);
+  transform: translateY(-1px);
+}
+.hub-tile-icon {
+  font-size: 18px;
+  line-height: 1.1;
+}
+.hub-tile-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.hub-tile-sub {
+  font-size: 10px;
+  color: var(--ink-tertiary);
+}
+
+/* 3 段式版面切換器 (自動偵測 / 桌面簡約 / 9:16 手機) */
+.ui-mode-segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-subtle);
+}
+.ui-mode-seg-btn {
+  padding: 6px 4px;
+  border-radius: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ui-mode-seg-btn.active {
+  background: var(--surface-solid);
+  color: var(--blue);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* 登入卡片極簡底部連結 */
+.entry-minimal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-subtle);
+}
+.minimal-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.minimal-link-btn:hover {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+.minimal-divider-dot {
+  color: var(--ink-tertiary);
+  font-size: 12px;
+}
+
+/* 首頁極簡橫幅與底部快捷列 */
+.minimal-mission-banner {
+  padding: 24px 28px;
+  margin-bottom: 18px;
+}
+.hub-square-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.minimal-home-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+}
+.minimal-home-quick-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.minimal-pill-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.minimal-pill-action:hover {
+  color: var(--blue);
+  border-color: rgba(0, 113, 227, 0.35);
+  background: var(--blue-soft);
+}
+.minimal-guide-drawer {
+  position: relative;
+}
+.minimal-guide-summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-tertiary);
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  transition: color 0.18s ease;
+}
+.minimal-guide-summary::-webkit-details-marker {
+  display: none;
+}
+.minimal-guide-summary:hover {
+  color: var(--ink);
+}
+.minimal-guide-body {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line-subtle);
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+}
+
+/* 格言創作室：極簡標題列、靈感抽屜與 4-Tab 樣式工作台 */
+.minimal-studio-header {
+  padding: 14px 20px !important;
+  margin-bottom: 16px !important;
+}
+.studio-compact-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.inspire-popover-details {
+  position: relative;
+}
+.inspire-popover-trigger {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.inspire-popover-trigger::-webkit-details-marker {
+  display: none;
+}
+.inspire-chips-wrap {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(340px, 86vw);
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.14);
+  z-index: 60;
+}
+
+.studio-segmented-Inspector {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--bg);
+  padding: 10px;
+}
+.studio-seg-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(120, 120, 128, 0.08);
+  margin-bottom: 10px;
+}
+.studio-seg-tab {
+  padding: 7px 4px;
+  border-radius: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.studio-seg-tab:hover {
+  color: var(--ink);
+}
+.studio-seg-tab.active {
+  background: var(--surface-solid);
+  color: var(--blue);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+.studio-tab-pane {
+  padding: 4px 2px 2px;
+}
+
+/* 畫布右上角與工具列「⋯ 更多」收納選單 */
+.preview-actions-minimal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.preview-more-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.preview-more-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 210px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pop-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pop-menu-item:hover {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+.pop-menu-divider {
+  height: 1px;
+  background: var(--line-subtle);
+  margin: 4px 0;
+}
+.pop-menu-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+/* DFC 劇院極簡摺疊遙測列 */
+.minimal-dfc-header {
+  padding: 14px 20px !important;
+  margin-bottom: 14px !important;
+}
+.dfc-telemetry-details {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+.dfc-telemetry-summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.55);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dfc-telemetry-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 9:16 行動版底部導覽列預設於桌面隱藏 */
+.mobile-916-bottom-dock {
+  display: none;
+}
+
+/* ============================================================================
+ * 9:16 手機直式專屬獨立版面系統 (Dedicated 9:16 Mobile Portrait UI Suite)
+ * 當系統自動偵測為手機/9:16比例 (html[data-device-ui="mobile"]) 時啟動「另一套」原生直向排版
+ * ============================================================================ */
+
+html[data-device-ui="mobile"] body {
+  padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+  overflow-x: hidden !important;
+}
+
+/* 1. 頂部 Header 極簡化：永不超出螢幕、絕不強迫橫向旋轉 */
+html[data-device-ui="mobile"] .desktop-only-nav,
+html[data-device-ui="mobile"] .desktop-only-sync,
+html[data-device-ui="mobile"] .desktop-zoom-section {
+  display: none !important;
+}
+
+html[data-device-ui="mobile"] .mobile-only-page-tag {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+html[data-device-ui="mobile"] .top-header,
+html[data-device-ui="mobile"] .admin-header {
+  height: 52px !important;
+  min-height: 52px !important;
+  padding: 0 12px !important;
+  gap: 6px !important;
+  justify-content: space-between !important;
+}
+
+html[data-device-ui="mobile"] .brand-title {
+  font-size: 15px !important;
+}
+
+html[data-device-ui="mobile"] .ui-mode-switch-pill {
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+}
+
+html[data-device-ui="mobile"] .hub-capsule-trigger {
+  padding: 3px 8px 3px 4px !important;
+  gap: 5px !important;
+}
+
+html[data-device-ui="mobile"] .hub-capsule-trigger .user-meta {
+  max-width: 68px !important;
+  font-size: 11.5px !important;
+}
+
+/* 2. 9:16 專屬底部雙手大拇指導覽列 (Native Bottom Tab Dock) */
+html[data-device-ui="mobile"] .mobile-916-bottom-dock {
+  position: fixed !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  height: 62px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: saturate(200%) blur(28px) !important;
+  -webkit-backdrop-filter: saturate(200%) blur(28px) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  align-items: center !important;
+  padding: 4px 6px !important;
+  z-index: 1150 !important;
+}
+
+html[data-device-ui="mobile"][data-theme="dark"] .mobile-916-bottom-dock {
+  background: rgba(28, 28, 30, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-device-ui="mobile"] .mobile-916-bottom-dock.admin-mob-dock {
+  grid-template-columns: repeat(6, 1fr) !important;
+  left: 8px !important;
+  right: 8px !important;
+  padding: 4px !important;
+}
+
+html[data-device-ui="mobile"] .mob-dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ink-tertiary);
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.2s var(--spring-smooth);
+  padding: 2px 0;
+  min-width: 0;
+}
+
+html[data-device-ui="mobile"] .mob-dock-item.active {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+html[data-device-ui="mobile"] .mob-dock-icon {
+  font-size: 18px;
+  line-height: 1.1;
+  transition: transform 0.2s var(--spring-bounce);
+}
+
+html[data-device-ui="mobile"] .mob-dock-item.active .mob-dock-icon {
+  transform: translateY(-1px) scale(1.08);
+}
+
+html[data-device-ui="mobile"] .mob-dock-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+html[data-device-ui="mobile"] .mob-dock-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 113, 227, 0.3);
+}
+
+/* 3. 控制面板在 9:16 手機下自動轉為原生底部抽屜 (Bottom Sheet) */
+html[data-device-ui="mobile"] .hub-control-popover {
+  position: fixed !important;
+  top: auto !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  width: auto !important;
+  max-height: 72vh !important;
+  overflow-y: auto !important;
+  border-radius: 24px !important;
+  padding: 16px !important;
+  box-shadow: 0 -10px 44px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* 4. 9:16 首頁工作台：濃縮為單頁一覽無遺的直向啟動卡片 */
+html[data-device-ui="mobile"] .app-shell,
+html[data-device-ui="mobile"] .admin-container {
+  max-width: 520px !important;
+  margin: 0 auto !important;
+  padding: 10px 12px 24px !important;
+}
+
+html[data-device-ui="mobile"] .minimal-mission-banner {
+  padding: 16px 18px !important;
+  margin-bottom: 12px !important;
+  border-radius: 20px !important;
+}
+
+html[data-device-ui="mobile"] .mission-title {
+  font-size: 20px !important;
+}
+
+html[data-device-ui="mobile"] .mission-desc {
+  font-size: 13px !important;
+  margin-top: 4px !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-btn {
+  min-height: 0 !important;
+  padding: 14px 16px !important;
+  border-radius: 20px !important;
+  display: grid !important;
+  grid-template-columns: 48px 1fr !important;
+  grid-template-areas:
+    "icon head"
+    "icon desc"
+    "icon cta" !important;
+  column-gap: 14px !important;
+  row-gap: 3px !important;
+  align-items: center !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-top {
+  display: contents !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-icon {
+  grid-area: icon !important;
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 24px !important;
+  border-radius: 14px !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-badge {
+  position: absolute !important;
+  top: 12px !important;
+  right: 14px !important;
+  font-size: 10.5px !important;
+  padding: 2px 8px !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-title {
+  grid-area: head !important;
+  font-size: 16px !important;
+  margin: 0 !important;
+  padding-right: 76px !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-desc {
+  grid-area: desc !important;
+  font-size: 12.5px !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+html[data-device-ui="mobile"] .hub-square-cta {
+  grid-area: cta !important;
+  font-size: 12px !important;
+  margin-top: 2px !important;
+}
+
+/* 5. 9:16 格言創作室：置頂即時卡片預覽 + 下方 4-Tab 單手調色盤 */
+html[data-device-ui="mobile"] .post-studio-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+html[data-device-ui="mobile"] .studio-preview-box {
+  order: -1 !important;
+  position: sticky !important;
+  top: 56px !important;
+  z-index: 45 !important;
+  padding: 10px 12px !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: saturate(180%) blur(20px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-device-ui="mobile"][data-theme="dark"] .studio-preview-box {
+  background: rgba(28, 28, 30, 0.92) !important;
+}
+
+html[data-device-ui="mobile"] .studio-preview-box .preview-stage,
+html[data-device-ui="mobile"] .studio-preview-box .canvas-gallery-frame {
+  max-height: 205px !important;
+  padding: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+html[data-device-ui="mobile"] #previewCanvas,
+html[data-device-ui="mobile"] #liveCardCanvas {
+  max-height: 185px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+}
+
+html[data-device-ui="mobile"] .studio-controls-col {
+  padding: 14px !important;
+  border-radius: 20px !important;
+}
+
+html[data-device-ui="mobile"] .studio-seg-tab {
+  font-size: 11.5px !important;
+  padding: 7px 2px !important;
+}
+
+/* 6. 9:16 DFC 互動劇院：直立式劇院，無須旋轉手機即可邊看邊答 */
+html[data-device-ui="mobile"] .dfc-theater-card {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+html[data-device-ui="mobile"] .dfc-question-sheet {
+  padding: 14px !important;
+  border-radius: 18px !important;
+}
+
+/* 7. 9:16 管理後台專屬直向卡片排版 */
+html[data-device-ui="mobile"] .admin-toolbar {
+  padding: 10px 12px !important;
+  border-radius: 18px !important;
+  gap: 8px !important;
+}
+
+html[data-device-ui="mobile"] .admin-grid,
+html[data-device-ui="mobile"] .users-grid {
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+html[data-device-ui="mobile"] #backToTopFab {
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+  right: 14px !important;
+}
+
+

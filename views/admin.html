@@ -15,128 +15,205 @@
 </head>
 <body>
 
-<!-- ==================== Apple Global Nav 後台頂部毛玻璃導覽列 ==================== -->
+<!-- ==================== 極簡後台頂部導覽列 (桌面與 9:16 手機雙系統自動適配) ==================== -->
 <header class="admin-header">
   <div class="brand-wrap">
     <div class="brand" style="cursor:default">
       <img src="/icon.svg" class="brand-icon" width="24" height="24" alt="KKNews Console">
       <span>KKNews</span>
       <small>CONSOLE</small>
+      <span class="mobile-only-page-tag" id="adminMobilePageTag">格言畫廊</span>
     </div>
-    <div class="sync-indicator">
+    <div class="sync-indicator desktop-only-sync">
       <span class="sync-pulse"></span>
-      <span id="syncText">雲端即時同步中</span>
+      <span id="syncText">即時同步</span>
     </div>
   </div>
 
-  <!-- 頂部中央 Apple 液態玻璃 Dock 導覽 -->
-  <nav class="dock-bar admin-dock" id="adminDock" aria-label="後台管理導覽">
+  <!-- 桌面版頂部中央極簡 Dock (9:16 手機模式下自動切換為底部專屬導覽列，徹底解決頂部 Dock 超出手機螢幕問題) -->
+  <nav class="dock-bar admin-dock desktop-only-nav" id="adminDock" aria-label="後台管理導覽">
     <div class="dock-glider" id="adminDockGlider"></div>
     <button type="button" class="dock-item active" id="dockPosts">
-      <span>📝 格言畫廊</span>
+      <span>📝 格言</span>
       <span class="dock-badge" id="pCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockUsers">
-      <span>👥 學員名冊</span>
+      <span>👥 名冊</span>
       <span class="dock-badge" id="uCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockForms">
-      <span>🎬 DFC 工作室</span>
+      <span>🎬 DFC</span>
       <span class="dock-badge" id="fCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockAdmins">
-      <span>🛡️ 權限與審計</span>
+      <span>🛡️ 權限</span>
       <span class="dock-badge" id="aCount">1</span>
     </button>
     <button type="button" class="dock-item" id="dockInstagram">
-      <span>📸 IG 自動發布</span>
+      <span>📸 IG</span>
       <span class="dock-badge" id="igCount">0</span>
     </button>
     <button type="button" class="dock-item" id="dockStatus">
       <span class="dot" id="sysDot"></span>
-      <span>📊 雲端遙測</span>
+      <span>📊 遙測</span>
     </button>
   </nav>
 
-  <!-- 右上角管理員帳號與顯示器光學縮放區 -->
+  <!-- 右上角極簡控制區：將系統檢測、縮放、版面切換與帳號整合至單一選單 -->
   <div class="acct-zone">
-    <a href="/diagnostics" class="btn ghost sm" style="font-size:12px;padding:5px 12px;text-decoration:none" title="開啟全系統功能檢測驗收中心">🩺 系統檢測</a>
-
-    <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
-      <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
-      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與高解析度適配" aria-haspopup="true" aria-expanded="false">
-        <span class="zoom-icon">🔍</span>
-        <span class="zoom-text" id="zoomText">100%</span>
-        <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
-      </button>
-      <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
-
-      <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
-        <div class="zoom-dropdown-header">
-          <span class="zoom-res-title">顯示器原生解析度</span>
-          <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
-        </div>
-        <div class="zoom-dropdown-divider"></div>
-        <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
-          <span>✨ 依顯示器自動最佳化</span>
-          <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
-        </button>
-        <div class="zoom-dropdown-divider"></div>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊視野</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K 高解析度螢幕</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K 超高解析度螢幕</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 大螢幕投影</button>
-        <div class="zoom-dropdown-divider"></div>
-        <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-          <span>🔄 還原自動適配</span>
-        </button>
-      </div>
-    </div>
+    <button type="button" class="ui-mode-switch-pill" id="uiModeQuickBtn" title="切換「9:16 手機專屬版」與「簡約電腦版」">
+      <span id="uiModeQuickIcon">✨</span>
+      <span id="uiModeQuickLabel">自動版面</span>
+    </button>
 
     <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換淺色或深色外觀" aria-label="切換深淺色外觀">🌙</button>
-    <div class="acct-pill">
-      <div class="acct-av" id="adminAv">A</div>
-      <span class="role-chip" id="adminRoleBadge">Super Admin</span>
-      <span class="acct-info" id="adminWho">管理員</span>
-      <button type="button" class="acct-logout" id="logout">登出</button>
+
+    <div class="hub-menu-wrap" id="adminHubMenuWrap">
+      <button type="button" class="hub-capsule-trigger" id="adminHubTriggerBtn" aria-haspopup="true" aria-expanded="false" title="管理員帳號、系統檢測與畫面設定">
+        <span class="acct-pill-inline">
+          <span class="acct-av" id="adminAv">A</span>
+          <span class="acct-info" id="adminWho">管理員</span>
+        </span>
+        <span class="hub-capsule-chevron">▾</span>
+      </button>
+
+      <div class="hub-control-popover hide" id="adminHubPopover" role="menu">
+        <div class="hub-pop-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="hub-pop-title">管理主控台</span>
+              <span class="role-chip" id="adminRoleBadge" style="font-size:10px;padding:1px 7px">Super Admin</span>
+            </div>
+            <div class="hub-pop-sub" id="adminPopEmailSub">雲端安全審計連線中</div>
+          </div>
+          <button type="button" class="acct-logout" id="logout">登出</button>
+        </div>
+
+        <div class="hub-pop-section">
+          <div class="hub-pop-label">系統驗收與前台入口</div>
+          <div class="hub-pop-grid">
+            <a href="/diagnostics" class="hub-tool-tile" style="text-decoration:none;color:inherit">
+              <span class="hub-tool-ico">🩺</span>
+              <span class="hub-tool-txt">系統檢測中心</span>
+            </a>
+            <a href="/" class="hub-tool-tile" style="text-decoration:none;color:inherit">
+              <span class="hub-tool-ico">🏠</span>
+              <span class="hub-tool-txt">返回前台首頁</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="hub-pop-section">
+          <div class="hub-pop-label">介面比例模式（偵測手機自動切換 9:16 專屬版）</div>
+          <div class="ui-mode-segmented" id="uiModeSegmented">
+            <button type="button" class="ui-mode-seg-btn active" data-ui-mode="auto">✨ 自動偵測</button>
+            <button type="button" class="ui-mode-seg-btn" data-ui-mode="mobile">📱 9:16 手機版</button>
+            <button type="button" class="ui-mode-seg-btn" data-ui-mode="desktop">💻 電腦版</button>
+          </div>
+        </div>
+
+        <div class="hub-pop-section desktop-zoom-section">
+          <div class="hub-pop-label" style="display:flex;justify-content:space-between;align-items:center">
+            <span>畫面比例縮放</span>
+            <span id="zoomResDetail" style="font-weight:400;opacity:0.75">100%</span>
+          </div>
+          <div class="resolution-zoom-pill" id="resolutionZoomPill" style="width:100%;justify-content:space-between">
+            <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
+            <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例" aria-haspopup="true" aria-expanded="false">
+              <span class="zoom-icon">🔍</span>
+              <span class="zoom-text" id="zoomText">100%</span>
+              <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
+            </button>
+            <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
+
+            <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
+              <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
+                <span>✨ 依顯示器自動最佳化</span>
+                <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
+              </button>
+              <div class="zoom-dropdown-divider"></div>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊</button>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 適中</button>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準</button>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 放大</button>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K</button>
+              <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K</button>
+              <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">🔄 還原自動</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
+<!-- ==================== 9:16 手機專屬後台底部導覽列 (免轉橫向，直立單手完整切換 6 大模組) ==================== -->
+<nav class="mobile-916-bottom-dock admin-mob-dock" id="adminMobileBottomDock" aria-label="手機版後台底部導覽列">
+  <button type="button" class="mob-dock-item active" data-admin-mob-tab="posts">
+    <span class="mob-dock-ico">📝<sup class="mob-dock-badge" id="mobPCount">0</sup></span>
+    <span class="mob-dock-lbl">格言</span>
+  </button>
+  <button type="button" class="mob-dock-item" data-admin-mob-tab="users">
+    <span class="mob-dock-ico">👥<sup class="mob-dock-badge" id="mobUCount">0</sup></span>
+    <span class="mob-dock-lbl">名冊</span>
+  </button>
+  <button type="button" class="mob-dock-item" data-admin-mob-tab="forms">
+    <span class="mob-dock-ico">🎬<sup class="mob-dock-badge" id="mobFCount">0</sup></span>
+    <span class="mob-dock-lbl">DFC</span>
+  </button>
+  <button type="button" class="mob-dock-item" data-admin-mob-tab="admins">
+    <span class="mob-dock-ico">🛡️<sup class="mob-dock-badge" id="mobACount">1</sup></span>
+    <span class="mob-dock-lbl">權限</span>
+  </button>
+  <button type="button" class="mob-dock-item" data-admin-mob-tab="instagram">
+    <span class="mob-dock-ico">📸<sup class="mob-dock-badge" id="mobIgCount">0</sup></span>
+    <span class="mob-dock-lbl">IG</span>
+  </button>
+  <button type="button" class="mob-dock-item" data-admin-mob-tab="status">
+    <span class="mob-dock-ico">📊</span>
+    <span class="mob-dock-lbl">遙測</span>
+  </button>
+</nav>
+
 <main class="admin-main">
   <!-- 唯讀審計權限提示橫幅 -->
   <div id="readOnlyBanner" class="banner-notice hide">
-    <span>您目前以「一般管理員（唯讀審計權限）」登入：可檢視全部格言作品、學員名冊與 DFC 探究數據，寫入與刪除操作受系統保護。</span>
-    <span style="font-size:12.5px;color:var(--ink-secondary)">最高權限由 Super Admin 控管</span>
+    <span>您目前以「一般管理員（唯讀審計權限）」登入：可檢視全部作品、名冊與 DFC 數據。</span>
   </div>
 
-  <!-- 頂部搜尋與批次操作工具列 -->
+  <!-- 極簡搜尋與批次工具列 (將次要匯出與字級收合至「⋯ 工具」選單) -->
   <div class="action-toolbar" id="mainToolbar">
-    <div class="action-toolbar-group" style="flex:1;min-width:280px">
-      <div style="position:relative;width:100%;max-width:420px;display:flex;align-items:center">
-        <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋格言內容、署名、學校信箱或版型..." style="width:100%;padding-right:42px;border-radius:980px">
+    <div class="action-toolbar-group" style="flex:1;min-width:200px">
+      <div style="position:relative;width:100%;max-width:440px;display:flex;align-items:center">
+        <input type="search" id="searchInput" class="search-box" placeholder="🔍 搜尋格言、署名、信箱或版型..." style="width:100%;padding-right:42px;border-radius:980px">
         <kbd class="search-kbd-pill" title="快捷鍵：按下 / 或 ⌘K 快速聚焦搜尋">⌘K</kbd>
       </div>
-      <label class="font-size-control" id="szWrap" title="微調畫布預覽字級基準">
-        <span>預覽字級</span>
-        <input id="size" type="number" min="24" max="200" step="2">
-        <span style="font-size:11px;color:var(--ink-tertiary)">px</span>
-      </label>
     </div>
     <div class="action-toolbar-group">
-      <button type="button" id="reload" class="btn ghost sm" title="立即向雲端同步最新資料">🔄 同步更新</button>
-      <button type="button" id="exportPostsCsvBtn" class="btn ghost sm" title="匯出格言作品報表 CSV">📑 匯出作品 CSV</button>
-      <button type="button" id="exportUsersCsvBtn" class="btn ghost sm hide" title="匯出已驗證學校帳號名冊 CSV">👥 匯出名冊 CSV</button>
-      <button type="button" id="dlAll" class="btn primary sm" title="將全校格言卡片打包為高解析度 ZIP 壓縮檔">📦 打包全站卡片 ZIP</button>
+      <button type="button" id="reload" class="btn ghost sm" title="立即向雲端同步最新資料">🔄 同步</button>
+      <button type="button" id="dlAll" class="btn primary sm" title="將全校格言卡片打包為高解析度 ZIP 壓縮檔">📦 打包 ZIP</button>
+
+      <!-- 次要匯出與字級調整整合至極簡下拉選單 -->
+      <div class="preview-more-wrap" id="adminToolbarMoreWrap">
+        <button type="button" class="btn ghost sm" id="adminToolbarMoreBtn">⋯ 匯出與顯示</button>
+        <div class="preview-more-popover hide" id="adminToolbarMorePopover">
+          <button type="button" id="exportPostsCsvBtn" class="pop-menu-item">📑 匯出格言作品 CSV</button>
+          <button type="button" id="exportUsersCsvBtn" class="pop-menu-item hide">👥 匯出學員名冊 CSV</button>
+          <div class="pop-menu-field" id="szWrap">
+            <span>卡片預覽字級</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input id="size" type="number" min="24" max="200" step="2" style="width:64px;padding:4px 8px;border-radius:8px;border:1px solid var(--line)">
+              <span style="font-size:11px;color:var(--ink-tertiary)">px</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- 格言版面構圖篩選列 -->
   <div class="layout-filter-strip" id="postLayoutFilterStrip">
-    <button type="button" class="filter-chip active" data-filter="all">全部作品 (<span id="chipAllCount">0</span>)</button>
+    <button type="button" class="filter-chip active" data-filter="all">全部 (<span id="chipAllCount">0</span>)</button>
     <button type="button" class="filter-chip" data-filter="classic">🏛️ 經典居中</button>
     <button type="button" class="filter-chip" data-filter="vertical">📜 文青直排</button>
     <button type="button" class="filter-chip" data-filter="quote">💬 現代引言</button>
@@ -156,49 +233,41 @@
       <div class="panel-surface-head">
         <div>
           <span class="apple-eyebrow blue">互動影音與題庫管理</span>
-          <h3 style="display:flex;align-items:center;gap:8px;font-size:22px;letter-spacing:-0.02em">DFC 互動問卷與時間軸題庫工作室。</h3>
-          <p>所有問卷單元、時間點題目與學生作答行為數據均原生儲存於 Supabase PostgreSQL 雲端資料庫。</p>
+          <h3 style="display:flex;align-items:center;gap:8px;font-size:20px;letter-spacing:-0.02em;margin:0">DFC 時間軸題庫工作室</h3>
+          <p id="dfcDbStatsText" style="font-size:12.5px;color:var(--ink-secondary);margin:4px 0 0">正在連接雲端資料表...</p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" id="superFormActions">
-          <button type="button" class="btn ghost sm" id="addNewFormBtn">➕ 新增問卷單元</button>
-          <button type="button" class="btn primary sm" id="editActiveFormBtn">⚙️ 時間軸題庫工作室</button>
-          <button type="button" class="btn ghost sm" id="setActiveFormBtn" title="將此問卷設為前台預設展示單元">🌟 設為前台主推</button>
-          <button type="button" class="btn ghost sm" id="dupActiveFormBtn" title="複製此問卷建立新活動">📑 複製問卷</button>
-          <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新分頁直接體驗此問卷">👁️ 前台預覽</button>
-          <button type="button" class="btn danger sm hide" id="delActiveFormBtn">🗑️ 刪除問卷</button>
-        </div>
-      </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" id="superFormActions">
+          <button type="button" class="btn primary sm" id="editActiveFormBtn">⚙️ 題庫工作室</button>
+          <button type="button" class="btn ghost sm" id="panelAddQuestionBtn">➕ 新增單題</button>
+          <button type="button" class="btn ghost sm" id="previewActiveFormBtn" title="於新分頁直接體驗此問卷">👁️ 預覽</button>
 
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="formsTabList"></div>
-      <div id="activeFormApiGrid" class="dfc-meta-info-grid"></div>
-
-      <!-- Supabase 雲端資料庫即時狀態與全域操作列 -->
-      <div class="dfc-db-sync-strip" id="dfcDbSyncStrip">
-        <div class="dfc-db-sync-info">
-          <span class="pulse-dot-green"></span>
-          <div>
-            <strong style="color:var(--ink);font-size:13.5px">Supabase PostgreSQL 原生雲端引擎運行中</strong>
-            <div style="font-size:12px;color:var(--ink-secondary)" id="dfcDbStatsText">
-              正在連接雲端資料表 (dfc_forms, dfc_questions, dfc_responses)...
+          <!-- 將其餘 7 個次要管理按鈕整合至單一「⋯ 單元操作」選單，徹底消除按鈕堆疊 -->
+          <div class="preview-more-wrap" id="dfcFormMoreWrap">
+            <button type="button" class="btn ghost sm" id="dfcFormMoreBtn">⋯ 單元與匯出入</button>
+            <div class="preview-more-popover hide" id="dfcFormMorePopover" style="min-width:210px">
+              <button type="button" class="pop-menu-item" id="addNewFormBtn">➕ 新增問卷單元</button>
+              <button type="button" class="pop-menu-item" id="setActiveFormBtn">🌟 設為前台主推單元</button>
+              <button type="button" class="pop-menu-item" id="dupActiveFormBtn">📑 複製此問卷單元</button>
+              <button type="button" class="pop-menu-item" id="syncDbBtn">⚡ 立即同步至雲端</button>
+              <button type="button" class="pop-menu-item" id="exportQuestionsCsvBtn">📤 匯出題庫 (CSV)</button>
+              <button type="button" class="pop-menu-item" id="importQuestionsFromPanelBtn">📥 匯入題庫 (CSV)</button>
+              <button type="button" class="pop-menu-item hide" id="delActiveFormBtn" style="color:var(--red)">🗑️ 刪除問卷單元</button>
             </div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn ghost sm" id="syncDbBtn" title="全量同步表單、題目與作答資料至 Supabase">⚡ 立即同步至雲端</button>
-          <button type="button" class="btn ghost sm" id="exportQuestionsCsvBtn" title="匯出當前問卷題目為 CSV">📤 匯出題庫 (CSV)</button>
-          <button type="button" class="btn ghost sm" id="importQuestionsFromPanelBtn" title="批次匯入題目 CSV / Excel">📥 匯入題庫 (CSV)</button>
-          <button type="button" class="btn primary sm" id="panelAddQuestionBtn">➕ 新增單題</button>
-        </div>
       </div>
 
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="formsTabList"></div>
+      <div id="activeFormApiGrid" class="dfc-meta-info-grid"></div>
+
       <!-- 題目清單頂部篩選與操作列 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:280px;max-width:480px">
-          <input type="search" id="qFilterInput" class="search-box" placeholder="🔍 搜尋題目內容、題型或 DFC 四步驟標籤..." style="width:100%;font-size:13px;padding:8px 14px;border-radius:980px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;max-width:460px">
+          <input type="search" id="qFilterInput" class="search-box" placeholder="🔍 搜尋題目內容、題型或 DFC 四步驟..." style="width:100%;font-size:13px;padding:8px 14px;border-radius:980px">
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="panelQuestionCountBadge">共 0 題</span>
-          <button type="button" class="btn ghost sm" id="panelSortQuestionsBtn" title="依照影片時間點秒數由小到大排序">⏱️ 依時間軸排序</button>
+          <button type="button" class="btn ghost sm" id="panelSortQuestionsBtn" title="依照影片時間點秒數由小到大排序">⏱️ 排序</button>
         </div>
       </div>
 
@@ -5601,6 +5670,31 @@ function updateAdminDockGlider(tab, animate = true) {
   glider.style.opacity = "1";
 }
 
+const ADMIN_MOB_TITLES = {
+  posts: "格言畫廊",
+  users: "學員名冊",
+  forms: "DFC 工作室",
+  admins: "權限與審計",
+  instagram: "IG 自動發布",
+  status: "雲端遙測"
+};
+
+function syncMobileAdminBadges() {
+  const pairs = [
+    ["pCount", "mobPCount"],
+    ["uCount", "mobUCount"],
+    ["fCount", "mobFCount"],
+    ["aCount", "mobACount"],
+    ["igCount", "mobIgCount"]
+  ];
+  pairs.forEach(([srcId, dstId]) => {
+    const s = $(srcId), d = $(dstId);
+    if (s && d && d.textContent !== s.textContent) {
+      d.textContent = s.textContent;
+    }
+  });
+}
+
 function switchAdminDock(tab) {
   activeTab = tab;
   $("dockPosts").classList.toggle("active", tab === "posts");
@@ -5610,7 +5704,15 @@ function switchAdminDock(tab) {
   $("dockInstagram")?.classList.toggle("active", tab === "instagram");
   $("dockStatus").classList.toggle("active", tab === "status");
 
+  document.querySelectorAll("#adminMobileBottomDock .mob-dock-item[data-admin-mob-tab]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-admin-mob-tab") === tab);
+  });
+  if ($("adminMobilePageTag")) {
+    $("adminMobilePageTag").textContent = ADMIN_MOB_TITLES[tab] || "管理後台";
+  }
+
   updateAdminDockGlider(tab, true);
+  syncMobileAdminBadges();
 
   $("grid").classList.toggle("hide", tab !== "posts");
   $("usersGrid").classList.toggle("hide", tab !== "users");
@@ -5628,6 +5730,7 @@ function switchAdminDock(tab) {
 
   if (tab === "forms") loadAndRenderCsv(false);
   if (tab === "instagram") renderIgLogs(igLogsState);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 let isAdminGliderDragging = false;
@@ -5730,6 +5833,48 @@ $("dockAdmins").onclick = () => { if (Date.now() >= adminSuppressClickUntil) swi
 if ($("dockInstagram")) $("dockInstagram").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("instagram"); };
 $("dockStatus").onclick = () => { if (Date.now() >= adminSuppressClickUntil) switchAdminDock("status"); };
 
+/* 9:16 行動版底部原生導覽列與徽章同步 */
+document.querySelectorAll("#adminMobileBottomDock .mob-dock-item[data-admin-mob-tab]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.getAttribute("data-admin-mob-tab");
+    if (tab) switchAdminDock(tab);
+  });
+});
+
+["pCount", "uCount", "fCount", "aCount", "igCount"].forEach(id => {
+  const el = $(id);
+  if (el && typeof MutationObserver !== "undefined") {
+    new MutationObserver(syncMobileAdminBadges).observe(el, { childList: true, characterData: true, subtree: true });
+  }
+});
+syncMobileAdminBadges();
+
+/* 簡約整合控制中心與更多選單 Popovers */
+function setupAdminPopover(triggerId, popoverId, wrapId) {
+  const trigger = $(triggerId);
+  const popover = $(popoverId);
+  const wrap = $(wrapId);
+  if (!trigger || !popover) return;
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isHidden = popover.classList.contains("hide");
+    ["adminHubPopover", "adminToolbarMorePopover", "dfcFormMorePopover"].forEach(pid => {
+      if (pid !== popoverId) $(pid)?.classList.add("hide");
+    });
+    popover.classList.toggle("hide", !isHidden);
+    trigger.setAttribute("aria-expanded", String(isHidden));
+  });
+  document.addEventListener("click", (e) => {
+    if (!popover.classList.contains("hide") && wrap && !wrap.contains(e.target)) {
+      popover.classList.add("hide");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+setupAdminPopover("adminHubTriggerBtn", "adminHubPopover", "adminHubMenuWrap");
+setupAdminPopover("adminToolbarMoreBtn", "adminToolbarMorePopover", "adminToolbarMoreWrap");
+setupAdminPopover("dfcFormMoreBtn", "dfcFormMorePopover", "dfcFormMoreWrap");
+
 function toCsvField(v) {
   let s = String(v ?? "");
   // 防範試算表公式注入 (Formula Injection: =, +, -, @, \t, \r)
@@ -5812,11 +5957,14 @@ if (document.fonts?.ready) {
 }
 
 /* ============================================================================
- * 管理後台跨裝置解析度智慧自動縮放系統 (Admin Resolution Zoom System)
+ * 管理後台跨裝置解析度與 9:16 專屬版面自動切換系統
  * ============================================================================ */
 let currentAppliedZoom = 1.0;
 let userZoomPreference = (() => {
   try { return localStorage.getItem("kk_admin_resolution_zoom") || "auto"; } catch { return "auto"; }
+})();
+let userUiModePref = (() => {
+  try { return localStorage.getItem("kk_ui_mode") || "auto"; } catch { return "auto"; }
 })();
 
 function getAdminDeviceMetrics() {
@@ -5829,22 +5977,24 @@ function getAdminDeviceMetrics() {
   const ua = navigator.userAgent || "";
   const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(ua);
   const isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+  const aspectRatio = vw / Math.max(vh, 1);
+  const isPortrait916 = vw <= 740 || (aspectRatio <= 0.78 && vw <= 920) || (isMobileUA && vw <= 920);
 
   let layout = "desktop";
   let label = "💻 電腦版面";
-  if (vw < 680 || (isMobileUA && vw < 900)) {
+  if (isPortrait916) {
     layout = "mobile";
-    label = "📱 手機版面";
+    label = "📱 9:16 手機版";
   } else if (vw < 1024 || isTabletUA) {
     layout = "tablet";
     label = "📟 平板版面";
   }
-  return { layout, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA };
+  return { layout, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA, isPortrait916, aspectRatio };
 }
 
 function calculateAdminOptimalZoom(metrics) {
-  const { vw, vh, sw, sh, dpr, isMobileUA } = metrics;
-  if (vw < 680 || (isMobileUA && vw < 860)) return 1.0;
+  const { vw, vh, sw, dpr, isPortrait916 } = metrics;
+  if (isPortrait916 || vw < 740) return 1.0;
   if (vw >= 3000 || sw >= 3400) return 1.35; // 4K
   if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) return 1.20; // 2K QHD
   if (vw >= 1950) return 1.12;
@@ -5856,10 +6006,11 @@ function calculateAdminOptimalZoom(metrics) {
 }
 
 function applyAdminResolutionZoom(zoomVal, isAuto = false) {
-  const zoomNum = Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
+  const isMob = document.documentElement.getAttribute("data-device-ui") === "mobile";
+  const zoomNum = isMob ? 1.0 : Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
   currentAppliedZoom = zoomNum;
 
-  document.documentElement.style.zoom = String(zoomNum);
+  document.documentElement.style.zoom = isMob ? "" : String(zoomNum);
   document.documentElement.style.setProperty("--app-zoom", String(zoomNum));
   document.documentElement.setAttribute("data-zoom", Math.round(zoomNum * 100));
   document.documentElement.setAttribute("data-zoom-auto", isAuto ? "1" : "0");
@@ -5884,9 +6035,35 @@ function applyAdminResolutionZoom(zoomVal, isAuto = false) {
   try { updateAdminDockGlider(activeTab, false); } catch {}
 }
 
+function applyAdminUiMode(modePref, metrics) {
+  userUiModePref = modePref || "auto";
+  try { localStorage.setItem("kk_ui_mode", userUiModePref); } catch {}
+  const m = metrics || getAdminDeviceMetrics();
+  let effectiveMode = "desktop";
+  if (userUiModePref === "mobile") effectiveMode = "mobile";
+  else if (userUiModePref === "desktop") effectiveMode = "desktop";
+  else effectiveMode = m.isPortrait916 ? "mobile" : "desktop";
+
+  document.documentElement.setAttribute("data-device-ui", effectiveMode);
+  document.documentElement.setAttribute("data-ui-pref", userUiModePref);
+  document.body?.classList.toggle("mobile-916-mode", effectiveMode === "mobile");
+
+  if ($("uiModeQuickIcon")) $("uiModeQuickIcon").textContent = effectiveMode === "mobile" ? "📱" : "💻";
+  if ($("uiModeQuickLabel")) {
+    $("uiModeQuickLabel").textContent = userUiModePref === "auto"
+      ? (effectiveMode === "mobile" ? "9:16 行動版" : "桌面簡約版")
+      : (effectiveMode === "mobile" ? "9:16 鎖定" : "桌面鎖定");
+  }
+  document.querySelectorAll("#uiModeSegmented .ui-mode-seg-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-ui-mode") === userUiModePref);
+  });
+  return effectiveMode;
+}
+
 function detectAdminDeviceLayout() {
   const metrics = getAdminDeviceMetrics();
-  document.documentElement.setAttribute("data-layout", metrics.layout);
+  const effectiveMode = applyAdminUiMode(userUiModePref, metrics);
+  document.documentElement.setAttribute("data-layout", effectiveMode === "mobile" ? "mobile" : metrics.layout);
   document.documentElement.setAttribute("data-orientation", metrics.vw >= metrics.vh ? "landscape" : "portrait");
 
   const optimal = calculateAdminOptimalZoom(metrics);
@@ -5908,6 +6085,30 @@ function initAdminZoomControls() {
   const displayBtn = $("zoomDisplayBtn");
   const outBtn = $("zoomOutBtn");
   const inBtn = $("zoomInBtn");
+
+  $("uiModeQuickBtn")?.addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-device-ui") || "desktop";
+    const next = cur === "mobile" ? "desktop" : "mobile";
+    applyAdminUiMode(next);
+    detectAdminDeviceLayout();
+    toast(next === "mobile" ? "📱 已切換至 9:16 手機專屬後台版面" : "💻 已切換至桌面寬螢幕後台版面");
+  });
+
+  document.querySelectorAll("#uiModeSegmented .ui-mode-seg-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const mode = btn.getAttribute("data-ui-mode") || "auto";
+      applyAdminUiMode(mode);
+      detectAdminDeviceLayout();
+      const msgMap = {
+        auto: "🔄 已設為自動偵測裝置比例",
+        mobile: "📱 已切換為 9:16 手機專屬後台版面",
+        desktop: "💻 已切換為桌面簡約後台版面"
+      };
+      toast(msgMap[mode] || "已更新版面模式");
+    });
+  });
+
   if (!pill) return;
 
   const toggleDropdown = (show) => {

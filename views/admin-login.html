@@ -135,9 +135,9 @@
 
     <!-- 步驟一：管理員憑證登入 -->
     <div id="stepCredentials">
-      <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-0.024em;text-align:center">登入管理中心。</h1>
-      <p class="sub" style="margin:0 auto 28px;font-size:14px;line-height:1.5;text-align:center;color:var(--ink-secondary)">
-        請使用授權的管理員信箱與密碼，存取格言創作審閱、DFC 影音問卷與系統安全紀錄。
+      <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;letter-spacing:-0.024em;text-align:center">管理中心登入</h1>
+      <p class="sub" style="margin:0 auto 24px;font-size:13.5px;line-height:1.5;text-align:center;color:var(--ink-secondary)">
+        驗證授權信箱或 Passkey 以進入主控台。
       </p>
 
       <form id="loginForm" autocomplete="off">
@@ -157,19 +157,15 @@
           <input class="input" id="pw" type="password" placeholder="請輸入管理員密碼" autocomplete="current-password" required style="border-radius:14px;padding:13px 16px">
         </label>
 
-        <button type="submit" class="btn primary block" id="btn" style="margin-top:28px;padding:14px 20px;font-size:15px">繼續並進入主控台 →</button>
+        <button type="submit" class="btn primary block" id="btn" style="margin-top:24px;padding:13px 20px;font-size:15px">進入主控台 →</button>
       </form>
 
-      <div style="display:flex;align-items:center;gap:12px;margin:20px 0 16px;color:var(--ink-tertiary);font-size:12px">
-        <span style="flex:1;height:1px;background:var(--line)"></span>
-        <span>或使用生物辨識通行密鑰</span>
-        <span style="flex:1;height:1px;background:var(--line)"></span>
+      <div class="entry-minimal-links" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:center">
+        <button type="button" class="minimal-link-btn" id="adminPasskeyLoginBtn">
+          <span>🔑</span>
+          <span>使用 Passkey (Face ID / Touch ID) 登入</span>
+        </button>
       </div>
-
-      <button type="button" class="apple-passkey-btn" id="adminPasskeyLoginBtn">
-        <span style="font-size:17px">🔑</span>
-        <span>使用 Passkey 通行密鑰 (Face ID / Touch ID) 登入</span>
-      </button>
     </div>
 
     <!-- 步驟二：雙重認證 (2FA OTP 二次授權) -->
@@ -244,22 +240,27 @@ function applyLoginDeviceProfile() {
   const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(navigator.userAgent || "");
   const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
   const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+  const aspectRatio = vw / Math.max(vh, 1);
+  const isPortrait916 = vw <= 740 || (aspectRatio <= 0.78 && vw <= 920) || (isMobileUA && vw <= 920);
 
   let zoom = 1.0;
-  if (vw >= 3000 || sw >= 3400) zoom = 1.35;
-  else if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) zoom = 1.20;
-  else if (vw >= 1950) zoom = 1.12;
-  else if (vw >= 1750 && vh >= 940) zoom = 1.05;
-  else if (vh < 740 && vw >= 1024) zoom = 0.92;
-  else if (vw < 680 || isMobileUA) zoom = 1.0;
+  if (!isPortrait916) {
+    if (vw >= 3000 || sw >= 3400) zoom = 1.35;
+    else if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) zoom = 1.20;
+    else if (vw >= 1950) zoom = 1.12;
+    else if (vw >= 1750 && vh >= 940) zoom = 1.05;
+    else if (vh < 740 && vw >= 1024) zoom = 0.92;
+  }
 
-  document.documentElement.style.zoom = String(zoom);
+  document.documentElement.style.zoom = isPortrait916 ? "" : String(zoom);
   document.documentElement.style.setProperty("--app-zoom", String(zoom));
 
-  const layout = vw < 680 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
+  const layout = isPortrait916 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
   document.documentElement.setAttribute("data-layout", layout);
-  const label = layout === "mobile" ? "行動裝置" : layout === "tablet" ? "平板版面" : "桌面顯示器";
-  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = `${label} · ${vw}×${vh} (${Math.round(zoom * 100)}%)`;
+  document.documentElement.setAttribute("data-device-ui", isPortrait916 ? "mobile" : "desktop");
+  document.body?.classList.toggle("mobile-916-mode", isPortrait916);
+  const label = isPortrait916 ? "📱 9:16 行動版" : layout === "tablet" ? "📟 平板版" : "💻 桌面版";
+  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = label;
 }
 applyLoginDeviceProfile();
 window.addEventListener("resize", applyLoginDeviceProfile);

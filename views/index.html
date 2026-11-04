@@ -42,21 +42,21 @@
     </div>
   </div>
 
-  <!-- ==================== 登入門戶 (教育帳號驗證中心) ==================== -->
+  <!-- ==================== 登入門戶 (教育帳號驗證中心 · 極簡美學) ==================== -->
   <div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true"
     aria-labelledby="entryGateTitle">
     <div class="entry-gate-card">
-      <div class="entry-gate-brand" style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:6px">
-        <div class="entry-gate-icon-wrap" style="width:64px;height:64px;border-radius:18px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.06)">
+      <div class="entry-gate-brand" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:4px">
+        <div class="entry-gate-icon-wrap" style="width:56px;height:56px;border-radius:16px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;box-shadow:0 4px 16px rgba(0,0,0,0.05)">
           <img src="/icon.svg" class="entry-gate-icon" width="44" height="44" alt="KKNews Logo">
         </div>
-        <span class="apple-eyebrow blue" style="margin-bottom:0">KKNews 校園共創平台</span>
-        <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
+        <span class="apple-eyebrow blue" style="margin-bottom:0">KKNews</span>
+        <span class="device-profile-badge hide" id="loginDeviceBadge"></span>
       </div>
 
       <h1 class="entry-gate-title" id="entryGateTitle">靈感，在此匯聚。</h1>
       <p class="entry-gate-subtitle">
-        專為校園打造的格言排版創作室與 DFC 沉浸式影音探究平台。<br>請使用學校授權帳號登入以繼續。
+        使用花蓮縣 <strong>@hlc.edu.tw</strong> 教育帳號進入創作與探究空間。
       </p>
 
       <div class="entry-action-box">
@@ -74,18 +74,13 @@
           <span>使用 Google 教育帳號繼續</span>
         </button>
 
-        <button type="button" class="apple-passkey-btn" id="entryPasskeyLoginBtn" style="margin-top:10px">
-          <span style="font-size:17px">🔑</span>
-          <span>使用 Passkey 通行密鑰 (Face ID / Touch ID) 登入</span>
-        </button>
-
-        <div class="entry-domain-note" style="margin-top:14px;font-size:12.5px;color:var(--ink-tertiary)">
-          僅開放花蓮縣教育網路 <strong>@hlc.edu.tw</strong> 教職員生帳號登入（支援綁定 Passkey 通行密鑰）
-        </div>
-
-        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);width:100%;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn ghost sm" id="entryOpenWalletBtn" style="font-size:12.5px">
-             Apple Wallet 數位證書票卡
+        <div class="entry-minimal-links">
+          <button type="button" class="minimal-link-btn" id="entryPasskeyLoginBtn" title="使用 Face ID / Touch ID 通行密鑰免密碼登入">
+            <span>🔑 Passkey 登入</span>
+          </button>
+          <span class="minimal-dot-sep">·</span>
+          <button type="button" class="minimal-link-btn" id="entryOpenWalletBtn" title="開啟 Apple Wallet 數位榮譽證書票卡">
+            <span> Wallet 證書</span>
           </button>
         </div>
 
@@ -94,101 +89,162 @@
     </div>
   </div>
 
-  <!-- ==================== 頂部毛玻璃導覽列 ==================== -->
+  <!-- ==================== 頂部極簡導覽列 (桌面與 9:16 手機雙模自動適配) ==================== -->
   <header class="top-header">
     <div class="brand-logo" id="brandHomeBtn" title="返回 KKNews 首頁">
       <img src="/icon.svg" class="brand-icon" width="26" height="26" alt="KKNews Logo">
       <span>KKNews</span>
+      <span class="mobile-only-page-tag" id="mobileHeaderPageTag">首頁</span>
     </div>
 
-    <div class="top-nav-minimal" aria-label="頂部精簡狀態與頁面切換列">
-      <button type="button" class="top-page-btn" id="topCurrentPageBtn" title="點擊返回首頁或快速切換創作空間">
+    <!-- 桌面版中央極簡分段導覽 (9:16 手機模式下自動切換為底部專屬 Dock，絕不擠壓頂部) -->
+    <nav class="top-nav-minimal desktop-only-nav" aria-label="頂部精簡頁面切換列">
+      <button type="button" class="top-nav-pill active" id="topNavHomeBtn" data-nav-target="home">首頁</button>
+      <button type="button" class="top-nav-pill" id="topNavPostBtn" data-nav-target="post">格言工坊</button>
+      <button type="button" class="top-nav-pill" id="topNavDfcBtn" data-nav-target="dfc">DFC 劇院</button>
+      <button type="button" class="top-nav-pill" id="topStatusBtn" data-nav-target="status" title="檢視雲端資料庫與即時系統遙測">
+        <span class="dot" id="sysDot"></span>
+        <span id="topStatusBtnText">系統狀態</span>
+      </button>
+      <!-- 保留相容狀態指示節點 -->
+      <button type="button" class="top-page-btn hide" id="topCurrentPageBtn">
         <span class="page-tag-dot"></span>
         <span id="topCurrentPageLabel">首頁總覽</span>
         <span class="page-switch-hint" id="topCurrentPageHint">探索</span>
       </button>
+    </nav>
 
-      <button type="button" class="top-status-btn" id="topStatusBtn" title="檢視雲端資料庫與即時系統遙測">
-        <span class="dot" id="sysDot"></span>
-        <span id="topStatusBtnText">雲端狀態</span>
-      </button>
-
-      <button type="button" class="top-status-btn" id="topWalletBtn" title="開啟 Apple Wallet 數位榮譽證書與票卡工作室 (.pkpass)">
-        <span></span>
-        <span>Wallet 證書</span>
-      </button>
-
-      <button type="button" class="top-status-btn" id="topPasskeyBtn" title="管理 Passkey (Face ID / Touch ID) 生物辨識通行密鑰">
-        <span>🔑</span>
-        <span>Passkey</span>
-      </button>
-
-      <button type="button" class="top-status-btn hide" id="topDiagBtn" title="管理員專屬：開啟全系統 API、圖片與功能檢測驗收矩陣">
-        <span>🩺</span>
-        <span>系統檢測</span>
-      </button>
-    </div>
-
-    <!-- 右上角顯示器縮放、外觀切換與帳號膠囊 -->
+    <!-- 右上角極簡控制區：將所有次要工具、憑證、縮放與帳號巧妙整合至單一膠囊選單 -->
     <div class="acct-zone">
-      <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
-        <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
-        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與高解析度螢幕適配" aria-haspopup="true" aria-expanded="false">
-          <span class="zoom-icon">🔍</span>
-          <span class="zoom-text" id="zoomText">100%</span>
-          <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
-        </button>
-        <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
-
-        <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
-          <div class="zoom-dropdown-header">
-            <span class="zoom-res-title">顯示器原生解析度</span>
-            <span class="zoom-res-detail" id="zoomResDetail">1920 × 1080 (@1.0x)</span>
-          </div>
-          <div class="zoom-dropdown-divider"></div>
-          <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
-            <span>✨ 依顯示器自動最佳化</span>
-            <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
-          </button>
-          <div class="zoom-dropdown-divider"></div>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊視野</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K 高解析度螢幕</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K 超高解析度螢幕</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 劇院大螢幕投影</button>
-          <div class="zoom-dropdown-divider"></div>
-          <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-            <span>🔄 還原自動比例適配</span>
-          </button>
-        </div>
-      </div>
+      <button type="button" class="ui-mode-switch-pill" id="uiModeQuickBtn" title="點擊切換「9:16 手機專屬版」與「簡約電腦版」">
+        <span id="uiModeQuickIcon">✨</span>
+        <span id="uiModeQuickLabel">自動版面</span>
+      </button>
 
       <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換淺色或深色外觀" aria-label="切換深淺色外觀">🌙</button>
-      <div class="acct-pill hide" id="acctUser">
-        <div class="av" id="topAv">U</div>
-        <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
-        <span class="acct-info" id="topWho"></span>
-        <button type="button" class="acct-logout" id="topLogoutBtn">登出</button>
+
+      <!-- 整合式極簡控制中心膠囊按鈕 -->
+      <div class="hub-menu-wrap" id="hubMenuWrap">
+        <button type="button" class="hub-capsule-trigger" id="hubMenuTriggerBtn" aria-haspopup="true" aria-expanded="false" title="開啟帳號、數位證書、Passkey 與顯示設定">
+          <span class="acct-pill-inline" id="acctUser">
+            <span class="av" id="topAv">✦</span>
+            <img class="av hide" id="topAvImg" alt="" referrerpolicy="no-referrer">
+            <span class="acct-info" id="topWho">選單</span>
+          </span>
+          <span class="hub-capsule-chevron">▾</span>
+        </button>
+
+        <!-- 懸浮毛玻璃整合控制面板 (桌面為下拉選單，9:16 手機自動轉為底部原生抽屜 Sheet) -->
+        <div class="hub-control-popover hide" id="hubControlPopover" role="menu">
+          <div class="hub-pop-head">
+            <div>
+              <div class="hub-pop-title" id="hubPopUserName">KKNews 控制中心</div>
+              <div class="hub-pop-sub" id="hubPopUserEmail">校園共創與探究平台</div>
+            </div>
+            <button type="button" class="acct-logout" id="topLogoutBtn">登出</button>
+          </div>
+
+          <div class="hub-pop-section">
+            <div class="hub-pop-label">數位憑證與安全工具</div>
+            <div class="hub-pop-grid">
+              <button type="button" class="hub-tool-tile" id="topWalletBtn" title="開啟 Apple Wallet 數位榮譽證書與票卡工作室 (.pkpass)">
+                <span class="hub-tool-ico"></span>
+                <span class="hub-tool-txt">Wallet 證書</span>
+              </button>
+              <button type="button" class="hub-tool-tile" id="topPasskeyBtn" title="管理 Passkey (Face ID / Touch ID) 生物辨識通行密鑰">
+                <span class="hub-tool-ico">🔑</span>
+                <span class="hub-tool-txt">Passkey 密鑰</span>
+              </button>
+              <button type="button" class="hub-tool-tile hide" id="topDiagBtn" title="管理員專屬：開啟全系統 API、圖片與功能檢測驗收矩陣">
+                <span class="hub-tool-ico">🩺</span>
+                <span class="hub-tool-txt">系統檢測中心</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="hub-pop-section">
+            <div class="hub-pop-label">介面比例模式（偵測手機自動切換 9:16 專屬版）</div>
+            <div class="ui-mode-segmented" id="uiModeSegmented">
+              <button type="button" class="ui-mode-seg-btn active" data-ui-mode="auto">✨ 自動偵測</button>
+              <button type="button" class="ui-mode-seg-btn" data-ui-mode="mobile">📱 9:16 手機版</button>
+              <button type="button" class="ui-mode-seg-btn" data-ui-mode="desktop">💻 電腦版</button>
+            </div>
+          </div>
+
+          <!-- 桌面光學縮放整合於選單內，不再佔用頂部導覽空間 -->
+          <div class="hub-pop-section desktop-zoom-section">
+            <div class="hub-pop-label" style="display:flex;justify-content:space-between;align-items:center">
+              <span>畫面比例縮放</span>
+              <span id="zoomResDetail" style="font-weight:400;opacity:0.75">100%</span>
+            </div>
+            <div class="resolution-zoom-pill" id="resolutionZoomPill" style="width:100%;justify-content:space-between">
+              <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
+              <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例" aria-haspopup="true" aria-expanded="false">
+                <span class="zoom-icon">🔍</span>
+                <span class="zoom-text" id="zoomText">100%</span>
+                <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
+              </button>
+              <button type="button" class="zoom-btn zoom-in" id="zoomInBtn" title="放大畫面 (Alt + +)" aria-label="放大畫面">+</button>
+
+              <div class="zoom-dropdown hide" id="zoomDropdown" role="menu">
+                <button type="button" class="zoom-opt-btn active" data-zoom-val="auto">
+                  <span>✨ 依顯示器自動最佳化</span>
+                  <span class="zoom-opt-hint" id="zoomAutoCalcHint">100%</span>
+                </button>
+                <div class="zoom-dropdown-divider"></div>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="0.80">80% · 緊湊</button>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 適中</button>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準</button>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 放大</button>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K</button>
+                <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K</button>
+                <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">🔄 還原自動</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
+  <!-- ==================== 9:16 手機專屬底部懸浮導覽列 (Mobile 9:16 Portrait Dock) ==================== -->
+  <nav class="mobile-916-bottom-dock" id="mobileBottomDock" aria-label="手機版底部導覽列">
+    <button type="button" class="mob-dock-item active" data-mob-nav="home">
+      <span class="mob-dock-ico">🏠</span>
+      <span class="mob-dock-lbl">首頁</span>
+    </button>
+    <button type="button" class="mob-dock-item" data-mob-nav="post">
+      <span class="mob-dock-ico">✍️</span>
+      <span class="mob-dock-lbl">格言創作</span>
+    </button>
+    <button type="button" class="mob-dock-item" data-mob-nav="dfc">
+      <span class="mob-dock-ico">🎬</span>
+      <span class="mob-dock-lbl">DFC 劇院</span>
+    </button>
+    <button type="button" class="mob-dock-item" data-mob-nav="status">
+      <span class="mob-dock-ico">📊</span>
+      <span class="mob-dock-lbl">雲端狀態</span>
+    </button>
+    <button type="button" class="mob-dock-item" id="mobDockMenuBtn">
+      <span class="mob-dock-ico">✦</span>
+      <span class="mob-dock-lbl">憑證設定</span>
+    </button>
+  </nav>
+
   <!-- ==================== 無縫網頁切換舞台 ==================== -->
   <div class="view-stage" id="viewStage">
 
-    <!-- ==================== 視圖 0：首頁主選單 (Home Hub) ==================== -->
+    <!-- ==================== 視圖 0：首頁主選單 (極簡留白美學 & 9:16 雙版型) ==================== -->
     <section class="view-pane active-view" id="paneHome" aria-label="KKNews 首頁總覽">
-      <div style="width:min(1120px, 100%);margin:0 auto">
+      <div class="home-minimal-container">
         <div class="mission-banner">
           <div class="mission-head">
-            <span class="apple-eyebrow">KKNews 校園共創與探究平台</span>
-            <h1 class="mission-title">創作有深度。學習有溫度。</h1>
-            <span class="device-profile-badge" id="homeDeviceBadge" style="margin-top:4px"></span>
+            <span class="apple-eyebrow">KKNews · 校園共創空間</span>
+            <h1 class="mission-title">創作有深度，學習有溫度。</h1>
+            <span class="device-profile-badge hide" id="homeDeviceBadge"></span>
           </div>
           <p class="mission-desc">
-            結合即時卡片排版美學與 Design For Change 互動探究劇院。每一個想法，都值得被優雅呈現。
+            即時卡片排版美學與 Design For Change 互動探究劇院。
           </p>
         </div>
 
@@ -196,14 +252,14 @@
           <button type="button" class="hub-square-btn" id="hubBtnPost">
             <div class="hub-square-top">
               <div class="hub-square-icon">✍️</div>
-              <span class="hub-square-badge ok">格言工坊</span>
+              <span class="hub-square-badge ok">即時排版</span>
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">格言創作工坊</h2>
-              <p class="hub-square-desc">寫下一句格言與署名，五款劇院級版型與多維度色彩即時渲染，輸出高解析度專屬卡片。</p>
+              <p class="hub-square-desc">五款構圖、三款字體與朱砂印章，一鍵生成高畫質卡片。</p>
             </div>
             <div class="hub-square-foot">
-              <span>進入創作室</span>
+              <span>開始創作</span>
               <span>›</span>
             </div>
           </button>
@@ -215,7 +271,7 @@
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">DFC 互動劇院</h2>
-              <p class="hub-square-desc">跟隨感受、想像、實踐、分享四個步驟，在關鍵段落沉浸思考作答，獲頒完課榮譽證書。</p>
+              <p class="hub-square-desc">感受、想像、實踐、分享四步驟影音問答與完課認證。</p>
             </div>
             <div class="hub-square-foot">
               <span id="hubDfcFootText">進入劇院</span>
@@ -230,65 +286,84 @@
             </div>
             <div class="hub-square-body">
               <h2 class="hub-square-title">雲端系統遙測</h2>
-              <p class="hub-square-desc">全天候即時觀測 Supabase PostgreSQL 叢集健康、API 響應延遲與全站核心指標。</p>
+              <p class="hub-square-desc">即時觀測資料庫健康、API 延遲與全站學習指標。</p>
             </div>
             <div class="hub-square-foot">
-              <span>檢視系統指標</span>
+              <span>檢視指標</span>
               <span>›</span>
             </div>
           </button>
         </div>
 
-        <!-- 雙欄設計導覽卡 -->
-        <div class="home-guide-strip">
-          <div class="home-guide-card">
-            <div>
-              <span class="apple-eyebrow blue">創作與探究流程</span>
-              <h3 class="home-guide-title">三步驟，讓靈感優雅落地。</h3>
-              <ul class="home-guide-list" style="margin-top:14px">
-                <li><strong>01. 雕琢格言卡片</strong> — 自由切換經典居中、文青直排與現代引言，搭配專屬色票與朱砂篆刻印章。</li>
-                <li><strong>02. 沉浸影音探究</strong> — 進入全螢幕專注模式觀看 DFC 影片，於關鍵時間點完成六大互動題型。</li>
-                <li><strong>03. 分享與榮譽認證</strong> — 卡片自動以 4:5 高畫質同步發表至官方 Instagram，並可下載個人結業證書。</li>
-              </ul>
-            </div>
-            <div class="home-guide-action" style="margin-top:18px;flex-wrap:wrap;gap:8px">
-              <span class="home-guide-subtext">1080 × 1350 高畫質輸出 · 支援 Apple Wallet</span>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button type="button" class="btn ghost sm" id="homeOpenPasskeyBtn">🔑 Passkey 通行密鑰</button>
-                <button type="button" class="btn ghost sm" id="homeQuickStartPost">前往格言工坊 ›</button>
+        <!-- 極簡整合式底部快捷條與收合式指南（取代原本擁擠的雙欄長文卡片） -->
+        <div class="minimal-home-footer-bar">
+          <div class="minimal-home-quick-pills">
+            <button type="button" class="minimal-pill-action" id="homeOpenWalletBtn">
+              <span></span>
+              <span>Apple Wallet 數位證書</span>
+            </button>
+            <button type="button" class="minimal-pill-action" id="homeOpenPasskeyBtn">
+              <span>🔑</span>
+              <span>Passkey 通行密鑰</span>
+            </button>
+          </div>
+
+          <details class="minimal-guide-drawer">
+            <summary class="minimal-guide-summary">
+              <span>✦ 探索三步驟流程與 DFC 核心精神</span>
+              <span class="drawer-arrow">▾</span>
+            </summary>
+            <div class="home-guide-strip" style="margin-top:14px">
+              <div class="home-guide-card">
+                <span class="apple-eyebrow blue">創作與探究三步驟</span>
+                <h3 class="home-guide-title">讓靈感優雅落地。</h3>
+                <ul class="home-guide-list" style="margin-top:10px">
+                  <li><strong>01. 雕琢卡片</strong> — 切換五款版型與朱砂印章，即時預覽高畫質卡片。</li>
+                  <li><strong>02. 影音探究</strong> — 觀看 DFC 影片並於關鍵時間點完成六大互動題型。</li>
+                  <li><strong>03. 榮譽認證</strong> — 自動同步至官方 IG 並核發 Apple Wallet 數位證書。</li>
+                </ul>
+                <div style="margin-top:12px">
+                  <button type="button" class="btn ghost sm" id="homeQuickStartPost">前往格言工坊 ›</button>
+                </div>
+              </div>
+              <div class="home-guide-card">
+                <span class="apple-eyebrow green">DFC 設計思考精神</span>
+                <h3 class="home-guide-title">把「我做不到」化為「我們可以怎麼做」。</h3>
+                <p class="home-guide-quote">透過感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share，讓思考成為改變的起點。</p>
+                <div style="margin-top:12px">
+                  <button type="button" class="btn ghost sm" id="homeQuickStartDfc">進入 DFC 劇院 ›</button>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="home-guide-card">
-            <div>
-              <span class="apple-eyebrow green">DFC 設計思考核心精神</span>
-              <h3 class="home-guide-title">把「我做不到」，化為「我們可以怎麼做」。</h3>
-              <p class="home-guide-quote">「從校園日常的細微觀察出發，透過感受、想像、實踐與分享，讓每一份思考成為改變的起點。」</p>
-            </div>
-            <div class="home-guide-action" style="flex-wrap:wrap;gap:8px">
-              <span class="home-guide-subtext">感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share</span>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button type="button" class="btn ghost sm" id="homeOpenWalletBtn"> Wallet 證書 (.pkpass)</button>
-                <button type="button" class="btn ghost sm" id="homeQuickStartDfc">進入 DFC 劇院 ›</button>
-              </div>
-            </div>
-          </div>
+          </details>
         </div>
       </div>
     </section>
 
-    <!-- ==================== 視圖 1：格言創作工坊 ==================== -->
+    <!-- ==================== 視圖 1：格言創作工坊 (分段式極簡工作台 & 9:16 上下即時預覽) ==================== -->
     <section class="view-pane" id="panePost" aria-label="格言創作工坊" style="display:none">
       <div class="post-shell">
-        <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">格言創作工坊 · 即時排版創作室</span>
+        <div class="subpage-nav minimal-studio-header">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button type="button" class="subpage-back-btn" data-go-home="1">‹ 首頁</button>
+            <div>
+              <h1 class="studio-compact-title">格言創作工坊</h1>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button type="button" class="inspire-chip surprise-btn" id="randomQuoteBtn" title="隨機挑選一句精選金句並自動配對美學版型">🎲 隨機靈感</button>
+            <button type="button" class="btn ghost sm" id="toggleInspireDrawerBtn" title="展開或收合精選靈感金句庫">✨ 靈感庫 ▾</button>
+          </div>
         </div>
 
-        <div class="apple-section-head">
-          <span class="apple-eyebrow">即時排版創作室</span>
-          <h1 class="apple-section-title">字裡行間，皆成藝術。</h1>
-          <p class="apple-section-sub">寫下你想傳遞的一句話與署名。即時預覽五種排版、三款字體與細膩色彩，一鍵輸出高解析度畫作。</p>
+        <!-- 收合式靈感抽屜 (預設隱藏，點擊展開，保持版面極簡乾淨) -->
+        <div class="inspire-chips-container hide" id="inspireChipsDrawer" aria-label="精選格言靈感庫">
+          <span class="inspire-chip-label">精選金句：</span>
+          <button type="button" class="inspire-chip" data-quote="生活不是等待風暴過去，而是學會在雨中跳舞。" data-author="校園生活">🌧️ 雨中跳舞</button>
+          <button type="button" class="inspire-chip" data-quote="每一個不曾起舞的日子，都是對生命的辜負。" data-author="尼采">💃 迎風起舞</button>
+          <button type="button" class="inspire-chip" data-quote="千里之行，始於足下；勇於探索，收穫微光。" data-author="勵志格言">🌱 始於足下</button>
+          <button type="button" class="inspire-chip" data-quote="心之所向，素履以往；生如逆旅，一葦以航。" data-author="七堇年">⛵ 素履以往</button>
+          <button type="button" class="inspire-chip" data-quote="把『我做不到』變成『我們可以怎麼做』。" data-author="DFC 設計思考">💡 思考轉念</button>
         </div>
 
         <div id="loadingView">
@@ -315,246 +390,246 @@
 
         <div id="formView" class="hide">
           <div class="post-studio-layout">
-            <div>
-              <label class="field" style="margin-top:0">
-                <span class="lbl">格言或心語內容 <span id="cc">0/100</span></span>
-                <textarea class="input" id="content" rows="3" maxlength="100"
-                  placeholder="寫下一句觸動人心的話語。例如：生活不是等待風暴過去，而是學會在雨中跳舞。（支援 Ctrl+Enter 快速發表）"></textarea>
-              </label>
+            <!-- 左欄（9:16 手機自動轉為下半部互動工作台）：輸入與四合一分段美學設定 -->
+            <div class="studio-controls-col">
+              <div class="studio-inputs-card">
+                <label class="field" style="margin-top:0">
+                  <span class="lbl">格言內容 <span id="cc">0/100</span></span>
+                  <textarea class="input" id="content" rows="2" maxlength="100"
+                    placeholder="寫下一句觸動人心的話語..."></textarea>
+                </label>
 
-              <!-- 靈感隨手選 (Curated Inspiration Chips) -->
-              <div class="inspire-chips-container" aria-label="精選格言靈感庫">
-                <span class="inspire-chip-label">✨ 精選靈感：</span>
-                <button type="button" class="inspire-chip" data-quote="生活不是等待風暴過去，而是學會在雨中跳舞。" data-author="校園生活">🌧️ 雨中跳舞</button>
-                <button type="button" class="inspire-chip" data-quote="每一個不曾起舞的日子，都是對生命的辜負。" data-author="尼采">💃 迎風起舞</button>
-                <button type="button" class="inspire-chip" data-quote="千里之行，始於足下；勇於探索，收穫微光。" data-author="勵志格言">🌱 始於足下</button>
-                <button type="button" class="inspire-chip" data-quote="心之所向，素履以往；生如逆旅，一葦以航。" data-author="七堇年">⛵ 素履以往</button>
-                <button type="button" class="inspire-chip" data-quote="把『我做不到』變成『我們可以怎麼做』。" data-author="DFC 設計思考">💡 思考轉念</button>
-                <button type="button" class="inspire-chip surprise-btn" id="randomQuoteBtn" title="隨機挑選一句精選金句並自動配對美學版型">🎲 隨機靈感</button>
+                <label class="field" style="margin-top:10px">
+                  <span class="lbl">落款署名 <span id="ac">0/30</span></span>
+                  <input class="input" id="author" maxlength="30" placeholder="例如：林同學 · 八年一班">
+                </label>
               </div>
 
-              <label class="field">
-                <span class="lbl">落款署名或出處 <span id="ac">0/30</span></span>
-                <input class="input" id="author" maxlength="30" placeholder="例如：林同學 · 八年一班">
-              </label>
+              <!-- 極簡四合一分段美學選擇器 (不再將 35 個按鈕垂直堆疊在同一畫面) -->
+              <div class="studio-segmented-Inspector">
+                <div class="studio-seg-tabs" id="studioInspectorTabs" role="tablist">
+                  <button type="button" class="studio-seg-tab active" data-studio-tab="presets">🎨 主題風格</button>
+                  <button type="button" class="studio-seg-tab" data-studio-tab="layout">📐 構圖字體</button>
+                  <button type="button" class="studio-seg-tab" data-studio-tab="color">🌈 色彩底圖</button>
+                  <button type="button" class="studio-seg-tab" data-studio-tab="seal">🔖 字級落款</button>
+                </div>
 
-              <!-- 風格主題套餐 (Curated Studio Presets) -->
-              <div class="style-block" style="margin-bottom:14px">
-                <div class="style-head">
-                  <span class="style-title">🎨 大師級主題風格</span>
-                  <span class="style-active-badge" id="presetBadge">一鍵套用</span>
+                <!-- 分頁 1：大師級主題套餐 -->
+                <div class="studio-tab-pane active" data-studio-pane="presets">
+                  <div class="style-block" style="margin-bottom:0">
+                    <div class="style-head">
+                      <span class="style-title">一鍵主題風格</span>
+                      <span class="style-active-badge" id="presetBadge">一鍵套用</span>
+                    </div>
+                    <div class="style-presets-grid" id="stylePresetPicker">
+                      <button type="button" class="preset-card-chip" data-preset="japanese" title="文青直排 · 莫蘭迪綠 · 律動書風">
+                        <span class="preset-chip-dot" style="background:#536b55"></span>
+                        <span class="preset-chip-name">📜 和風書畫</span>
+                      </button>
+                      <button type="button" class="preset-card-chip" data-preset="reader" title="現代引言 · 經典米白 · 典雅宋體">
+                        <span class="preset-chip-dot" style="background:#0071e3"></span>
+                        <span class="preset-chip-name">📖 人文讀者</span>
+                      </button>
+                      <button type="button" class="preset-card-chip" data-preset="minimal" title="潮流海報 · 曜石極黑 · 現代黑體">
+                        <span class="preset-chip-dot" style="background:#38bdf8"></span>
+                        <span class="preset-chip-name">🌌 曜石極簡</span>
+                      </button>
+                      <button type="button" class="preset-card-chip" data-preset="sakura" title="典雅雙框 · 櫻花粉霧 · 律動書風">
+                        <span class="preset-chip-dot" style="background:#d946ef"></span>
+                        <span class="preset-chip-name">🌸 春櫻手札</span>
+                      </button>
+                      <button type="button" class="preset-card-chip" data-preset="sunset" title="經典居中 · 落日暖杏 · 典雅宋體">
+                        <span class="preset-chip-dot" style="background:#ea580c"></span>
+                        <span class="preset-chip-name">🌅 落日文青</span>
+                      </button>
+                      <button type="button" class="preset-card-chip" data-preset="azure" title="現代引言 · 晨曦蔚藍 · 現代黑體">
+                        <span class="preset-chip-dot" style="background:#0284c7"></span>
+                        <span class="preset-chip-name">🌊 晨曦蔚藍</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div class="style-presets-grid" id="stylePresetPicker">
-                  <button type="button" class="preset-card-chip" data-preset="japanese" title="文青直排 · 莫蘭迪綠 · 律動書風">
-                    <span class="preset-chip-dot" style="background:#536b55"></span>
-                    <span class="preset-chip-name">📜 和風書畫</span>
-                  </button>
-                  <button type="button" class="preset-card-chip" data-preset="reader" title="現代引言 · 經典米白 · 典雅宋體">
-                    <span class="preset-chip-dot" style="background:#0071e3"></span>
-                    <span class="preset-chip-name">📖 人文讀者</span>
-                  </button>
-                  <button type="button" class="preset-card-chip" data-preset="minimal" title="潮流海報 · 曜石極黑 · 現代黑體">
-                    <span class="preset-chip-dot" style="background:#38bdf8"></span>
-                    <span class="preset-chip-name">🌌 曜石極簡</span>
-                  </button>
-                  <button type="button" class="preset-card-chip" data-preset="sakura" title="典雅雙框 · 櫻花粉霧 · 律動書風">
-                    <span class="preset-chip-dot" style="background:#d946ef"></span>
-                    <span class="preset-chip-name">🌸 春櫻手札</span>
-                  </button>
-                  <button type="button" class="preset-card-chip" data-preset="sunset" title="經典居中 · 落日暖杏 · 典雅宋體">
-                    <span class="preset-chip-dot" style="background:#ea580c"></span>
-                    <span class="preset-chip-name">🌅 落日文青</span>
-                  </button>
-                  <button type="button" class="preset-card-chip" data-preset="azure" title="現代引言 · 晨曦蔚藍 · 現代黑體">
-                    <span class="preset-chip-dot" style="background:#0284c7"></span>
-                    <span class="preset-chip-name">🌊 晨曦蔚藍</span>
-                  </button>
-                </div>
-              </div>
 
-              <!-- 版面選擇 -->
-              <div class="style-block">
-                <div class="style-head">
-                  <span class="style-title">版面構圖</span>
-                  <span class="style-active-badge" id="layoutBadge">經典居中</span>
-                </div>
-                <div class="layout-picker-grid" id="layoutPicker">
-                  <button type="button" class="layout-card-btn active" data-layout="classic" title="經典居中：對稱大器">
-                    <div class="layout-icon-thumb">
-                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none"
-                        stroke-width="2">
-                        <line x1="4" y1="9" x2="20" y2="9" />
-                        <line x1="7" y1="14" x2="17" y2="14" />
-                      </svg>
+                <!-- 分頁 2：版面構圖與字體美學 -->
+                <div class="studio-tab-pane hide" data-studio-pane="layout">
+                  <div class="style-block">
+                    <div class="style-head">
+                      <span class="style-title">版面構圖</span>
+                      <span class="style-active-badge" id="layoutBadge">經典居中</span>
                     </div>
-                    <span class="layout-name">經典居中</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-layout="vertical" title="文青直排：古樸典雅">
-                    <div class="layout-icon-thumb">
-                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none"
-                        stroke-width="2">
-                        <line x1="16" y1="4" x2="16" y2="20" />
-                        <line x1="11" y1="6" x2="11" y2="18" />
-                        <line x1="6" y1="8" x2="6" y2="15" />
-                      </svg>
+                    <div class="layout-picker-grid" id="layoutPicker">
+                      <button type="button" class="layout-card-btn active" data-layout="classic" title="經典居中：對稱大器">
+                        <div class="layout-icon-thumb">
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                            <line x1="4" y1="9" x2="20" y2="9" />
+                            <line x1="7" y1="14" x2="17" y2="14" />
+                          </svg>
+                        </div>
+                        <span class="layout-name">經典居中</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-layout="vertical" title="文青直排：古樸典雅">
+                        <div class="layout-icon-thumb">
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                            <line x1="16" y1="4" x2="16" y2="20" />
+                            <line x1="11" y1="6" x2="11" y2="18" />
+                            <line x1="6" y1="8" x2="6" y2="15" />
+                          </svg>
+                        </div>
+                        <span class="layout-name">文青直排</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-layout="quote" title="現代引言：大引號雜誌感">
+                        <div class="layout-icon-thumb" style="font-family:serif;font-size:22px;font-weight:bold;color:var(--blue)">“</div>
+                        <span class="layout-name">現代引言</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-layout="framed" title="典雅雙框：藝廊雙框">
+                        <div class="layout-icon-thumb">
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <rect x="6" y="6" width="12" height="12" rx="1" />
+                          </svg>
+                        </div>
+                        <span class="layout-name">典雅雙框</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-layout="poster" title="潮流海報：社群飾條">
+                        <div class="layout-icon-thumb">
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                            <line x1="4" y1="4" x2="4" y2="20" stroke-width="3" />
+                            <line x1="8" y1="8" x2="18" y2="8" />
+                            <line x1="8" y1="13" x2="15" y2="13" />
+                          </svg>
+                        </div>
+                        <span class="layout-name">潮流海報</span>
+                      </button>
                     </div>
-                    <span class="layout-name">文青直排</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-layout="quote" title="現代引言：大引號雜誌感">
-                    <div class="layout-icon-thumb"
-                      style="font-family:serif;font-size:22px;font-weight:bold;color:var(--blue)">
-                      “
-                    </div>
-                    <span class="layout-name">現代引言</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-layout="framed" title="典雅雙框：藝廊雙框">
-                    <div class="layout-icon-thumb">
-                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none"
-                        stroke-width="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <rect x="6" y="6" width="12" height="12" rx="1" />
-                      </svg>
-                    </div>
-                    <span class="layout-name">典雅雙框</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-layout="poster" title="潮流海報：社群飾條">
-                    <div class="layout-icon-thumb">
-                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none"
-                        stroke-width="2">
-                        <line x1="4" y1="4" x2="4" y2="20" stroke-width="3" />
-                        <line x1="8" y1="8" x2="18" y2="8" />
-                        <line x1="8" y1="13" x2="15" y2="13" />
-                      </svg>
-                    </div>
-                    <span class="layout-name">潮流海報</span>
-                  </button>
-                </div>
-              </div>
+                  </div>
 
-              <!-- 字體風格選擇 -->
-              <div class="style-block">
-                <div class="style-head">
-                  <span class="style-title">字體美學</span>
-                  <span class="style-active-badge" id="fontBadge">律動書風</span>
-                </div>
-                <div class="layout-picker-grid" id="fontPicker">
-                  <button type="button" class="layout-card-btn active" data-font="reggae" title="律動書風：活潑書法手寫感">
-                    <div class="layout-icon-thumb" style="font-family:'Reggae One',cursive;font-size:18px">筆</div>
-                    <span class="layout-name">律動書風</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-font="serif" title="典雅宋體：典雅人文宋體">
-                    <div class="layout-icon-thumb" style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700">文</div>
-                    <span class="layout-name">典雅宋體</span>
-                  </button>
-                  <button type="button" class="layout-card-btn" data-font="sans" title="現代黑體：乾淨俐落黑體">
-                    <div class="layout-icon-thumb" style="font-family:sans-serif;font-size:18px;font-weight:800">雅</div>
-                    <span class="layout-name">現代黑體</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- 字級比例與落款印章選項 -->
-              <div class="style-block">
-                <div class="style-head">
-                  <span class="style-title">光學字級與落款印章</span>
-                  <span class="style-active-badge" id="sizeBadge">標準 (100%)</span>
-                </div>
-                <div class="size-stepper-grid" id="sizePicker">
-                  <button type="button" class="size-chip-btn" data-scale="0.88" title="精巧留白：88% 比例">
-                    <span style="font-size:12px;font-weight:600">A-</span>
-                    <span>緊湊 (88%)</span>
-                  </button>
-                  <button type="button" class="size-chip-btn active" data-scale="1.0" title="標準比例：100% 黃金視覺">
-                    <span style="font-size:14px;font-weight:700">A</span>
-                    <span>標準 (100%)</span>
-                  </button>
-                  <button type="button" class="size-chip-btn" data-scale="1.14" title="大器醒目：114% 放大比例">
-                    <span style="font-size:16px;font-weight:800">A+</span>
-                    <span>大器 (114%)</span>
-                  </button>
-                </div>
-                <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-                  <label class="seal-toggle-item" title="於署名旁加蓋傳統朱砂篆刻落款印章" style="display:inline-flex;align-items:center;cursor:pointer">
-                    <input type="checkbox" id="showSealToggle" checked style="accent-color:var(--red,#ff3b30);cursor:pointer;width:15px;height:15px">
-                    <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600;margin-left:7px;cursor:pointer">加蓋朱砂篆刻落款印章</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 配色選擇 -->
-              <div class="style-block">
-                <div class="style-head">
-                  <span class="style-title">色彩主題</span>
-                  <span class="style-active-badge" id="colorBadge">經典米白</span>
-                </div>
-                <div class="swatches-wrap" id="palettePicker"></div>
-                <div class="custom-color-panel hide" id="customColorRow">
-                  <label class="color-pick-item">
-                    <span>畫布底色</span>
-                    <input type="color" id="customBg" value="#f4f2ee">
-                    <span id="customBgVal"
-                      style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#f4f2ee</span>
-                  </label>
-                  <label class="color-pick-item">
-                    <span>筆墨字色</span>
-                    <input type="color" id="customText" value="#1c1917">
-                    <span id="customTextVal"
-                      style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#1c1917</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 自訂背景相片 / 插圖 -->
-              <div class="style-block">
-                <div class="style-head">
-                  <span class="style-title">📷 自訂影像底圖（選填）</span>
-                  <span class="style-active-badge" id="customImgBadge">無自訂圖</span>
-                </div>
-                <div class="custom-img-upload-box">
-                  <input type="file" id="customCardImgInput" accept="image/png,image/jpeg,image/webp" style="display:none">
-                  <button type="button" class="btn ghost sm" id="pickCustomImgBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--line-strong);border-radius:14px;padding:10px">
-                    <span>🖼️ 選擇攝影作品或插畫作為卡片底圖</span>
-                  </button>
-                  <div id="customImgPreviewRow" class="hide" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface-muted);border-radius:10px">
-                    <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
-                      <img id="customImgThumb" src="" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" alt="底圖預覽">
-                      <span id="customImgName" style="font-size:12px;color:var(--ink-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">已載入影像</span>
+                  <div class="style-block" style="margin-bottom:0">
+                    <div class="style-head">
+                      <span class="style-title">字體美學</span>
+                      <span class="style-active-badge" id="fontBadge">律動書風</span>
                     </div>
-                    <button type="button" class="btn ghost sm" id="removeCustomImgBtn" style="padding:2px 8px;font-size:11.5px;color:var(--red)">✕ 移除</button>
+                    <div class="layout-picker-grid" id="fontPicker">
+                      <button type="button" class="layout-card-btn active" data-font="reggae" title="律動書風：活潑書法手寫感">
+                        <div class="layout-icon-thumb" style="font-family:'Reggae One',cursive;font-size:18px">筆</div>
+                        <span class="layout-name">律動書風</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-font="serif" title="典雅宋體：典雅人文宋體">
+                        <div class="layout-icon-thumb" style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700">文</div>
+                        <span class="layout-name">典雅宋體</span>
+                      </button>
+                      <button type="button" class="layout-card-btn" data-font="sans" title="現代黑體：乾淨俐落黑體">
+                        <div class="layout-icon-thumb" style="font-family:sans-serif;font-size:18px;font-weight:800">雅</div>
+                        <span class="layout-name">現代黑體</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 分頁 3：色彩與自訂影像底圖 -->
+                <div class="studio-tab-pane hide" data-studio-pane="color">
+                  <div class="style-block">
+                    <div class="style-head">
+                      <span class="style-title">色彩主題</span>
+                      <span class="style-active-badge" id="colorBadge">經典米白</span>
+                    </div>
+                    <div class="swatches-wrap" id="palettePicker"></div>
+                    <div class="custom-color-panel hide" id="customColorRow">
+                      <label class="color-pick-item">
+                        <span>畫布底色</span>
+                        <input type="color" id="customBg" value="#f4f2ee">
+                        <span id="customBgVal" style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#f4f2ee</span>
+                      </label>
+                      <label class="color-pick-item">
+                        <span>筆墨字色</span>
+                        <input type="color" id="customText" value="#1c1917">
+                        <span id="customTextVal" style="font-family:monospace;font-size:12px;color:var(--ink-tertiary)">#1c1917</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="style-block" style="margin-bottom:0">
+                    <div class="style-head">
+                      <span class="style-title">📷 自訂影像底圖</span>
+                      <span class="style-active-badge" id="customImgBadge">無自訂圖</span>
+                    </div>
+                    <div class="custom-img-upload-box">
+                      <input type="file" id="customCardImgInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+                      <button type="button" class="btn ghost sm" id="pickCustomImgBtn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--line-strong);border-radius:14px;padding:10px">
+                        <span>🖼️ 選擇相片或插畫作為底圖</span>
+                      </button>
+                      <div id="customImgPreviewRow" class="hide" style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surface-muted);border-radius:10px">
+                        <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+                          <img id="customImgThumb" src="" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" alt="底圖預覽">
+                          <span id="customImgName" style="font-size:12px;color:var(--ink-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">已載入影像</span>
+                        </div>
+                        <button type="button" class="btn ghost sm" id="removeCustomImgBtn" style="padding:2px 8px;font-size:11.5px;color:var(--red)">✕ 移除</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 分頁 4：光學字級與朱砂印章 -->
+                <div class="studio-tab-pane hide" data-studio-pane="seal">
+                  <div class="style-block" style="margin-bottom:0">
+                    <div class="style-head">
+                      <span class="style-title">光學字級與落款印章</span>
+                      <span class="style-active-badge" id="sizeBadge">標準 (100%)</span>
+                    </div>
+                    <div class="size-stepper-grid" id="sizePicker">
+                      <button type="button" class="size-chip-btn" data-scale="0.88" title="精巧留白：88% 比例">
+                        <span style="font-size:12px;font-weight:600">A-</span>
+                        <span>緊湊 (88%)</span>
+                      </button>
+                      <button type="button" class="size-chip-btn active" data-scale="1.0" title="標準比例：100% 黃金視覺">
+                        <span style="font-size:14px;font-weight:700">A</span>
+                        <span>標準 (100%)</span>
+                      </button>
+                      <button type="button" class="size-chip-btn" data-scale="1.14" title="大器醒目：114% 放大比例">
+                        <span style="font-size:16px;font-weight:800">A+</span>
+                        <span>大器 (114%)</span>
+                      </button>
+                    </div>
+                    <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between">
+                      <label class="seal-toggle-item" title="於署名旁加蓋傳統朱砂篆刻落款印章" style="display:inline-flex;align-items:center;cursor:pointer">
+                        <input type="checkbox" id="showSealToggle" checked style="accent-color:var(--red,#ff3b30);cursor:pointer;width:15px;height:15px">
+                        <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600;margin-left:7px;cursor:pointer">加蓋朱砂篆刻落款印章</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <button type="button" class="btn primary block" id="submit" style="margin-top:24px;padding:14px 20px;font-size:15px">發表作品並收錄至雲端畫廊</button>
-              <div style="margin-top:10px;font-size:12px;color:var(--ink-tertiary);text-align:center;display:flex;align-items:center;justify-content:center;gap:5px">
-                <span>📸 作品提交後將自動輸出 1080×1350 高畫質圖檔並同步發表至官方 Instagram</span>
+              <div class="studio-submit-bar">
+                <button type="button" class="btn primary block" id="submit" style="padding:13px 20px;font-size:15px">發表作品並收錄至雲端畫廊</button>
               </div>
             </div>
 
-            <!-- 右側即時畫布預覽 (Sticky Studio Showcase) -->
+            <!-- 右側即時畫布預覽 (9:16 手機模式下自動置頂為精巧即時畫布舞台) -->
             <div class="studio-preview-box">
               <div class="preview-toolbar">
-                <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600">
+                <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px">
                   <span class="page-tag-dot" style="width:6px;height:6px"></span>
-                  Live Canvas 即時預覽
+                  即時預覽
                 </span>
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                  <button type="button" class="btn ghost sm" id="enlargePreviewBtn" style="padding:3px 9px;font-size:12px" title="全螢幕檢視高解析度卡片">🔍 全螢幕</button>
-                  <button type="button" class="btn ghost sm" id="copyProverbBtn" style="padding:3px 9px;font-size:12px" title="複製格言文字與署名">複製文字</button>
-                  <button type="button" class="btn ghost sm" id="copyCardImgBtn" style="padding:3px 9px;font-size:12px" title="複製高清卡片影像至剪貼簿">複製影像</button>
-                  <button type="button" class="btn ghost sm" id="resetCardStyleBtn" style="padding:3px 9px;font-size:12px" title="還原預設經典米白版型">重設</button>
-                  <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px;font-weight:600">下載 PNG</button>
+                <div class="preview-actions-minimal">
+                  <button type="button" class="btn ghost sm" id="enlargePreviewBtn" style="padding:4px 10px;font-size:12px" title="全螢幕檢視高解析度卡片">🔍 放大</button>
+                  <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px;font-weight:600">⬇ 下載 PNG</button>
+
+                  <!-- 次要動作收合至「⋯」極簡選單，不再擠在同一排 -->
+                  <div class="preview-more-wrap" id="previewMoreWrap">
+                    <button type="button" class="btn ghost sm" id="previewMoreBtn" style="padding:4px 10px;font-size:12px" title="更多分享與輸出動作">⋯ 更多</button>
+                    <div class="preview-more-popover hide" id="previewMorePopover">
+                      <button type="button" class="pop-menu-item" id="copyCardImgBtn">🖼️ 複製高清卡片影像</button>
+                      <button type="button" class="pop-menu-item" id="copyProverbBtn">📋 複製格言文字與署名</button>
+                      <button type="button" class="pop-menu-item" id="postOpenWalletBtn"> 匯出 Apple Wallet 證書</button>
+                      <button type="button" class="pop-menu-item" id="resetCardStyleBtn" style="color:var(--red)">↺ 重設為預設樣式</button>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊展開全螢幕高畫質預覽">
                 <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
                 <div class="canvas-zoom-hint"><span>🔍 點擊展開全螢幕預覽</span></div>
-              </div>
-              <div style="margin-top:12px;display:flex;justify-content:center">
-                <button type="button" class="apple-wallet-badge-btn" id="postOpenWalletBtn">
-                  <span></span>
-                  <span>匯出 Apple Wallet 格言創作證書 (.pkpass)</span>
-                </button>
               </div>
             </div>
           </div>
@@ -564,12 +639,17 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 2：DFC 沉浸式互動劇院 ==================== -->
+    <!-- ==================== 視圖 2：DFC 沉浸式互動劇院 (極簡劇院 & 9:16 直向問答模式) ==================== -->
     <section class="view-pane" id="paneDfc" aria-label="DFC 互動劇院" style="display:none">
       <div class="dfc-container">
-        <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">DFC 互動劇院 · 全螢幕專注探究</span>
+        <div class="subpage-nav" style="margin-bottom:12px">
+          <button type="button" class="subpage-back-btn" data-go-home="1">‹ 首頁</button>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
+              <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
+            </div>
+            <span style="font-size:12px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">DFC 互動劇院</span>
+          </div>
         </div>
 
         <!-- 防暴雷保護艙 (Spoiler Vault) -->
@@ -591,17 +671,10 @@
         </div>
 
         <div id="dfcAuthorizedContent">
-          <div class="dfc-top-bar" style="margin-top:4px">
+          <div class="dfc-top-bar" style="margin-top:0;margin-bottom:14px">
             <div>
-              <span class="apple-eyebrow">DFC 設計思考互動影音探究</span>
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">
-                <h2 id="dfcTitle" style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.022em">DFC 沉浸式影音探究問卷</h2>
-                <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
-                  <span style="font-weight:600;color:var(--ink-secondary)">切換單元：</span>
-                  <select id="dfcSurveySelect" class="dfc-survey-select" aria-label="切換 DFC 問卷"></select>
-                </div>
-              </div>
-              <p id="dfcSubtitle" class="sub" style="margin:0;font-size:15px">當影片播放至關鍵思考節點時，畫面將平滑展開互動問答。請全神貫注觀看並依序完成作答。</p>
+              <h2 id="dfcTitle" style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em">DFC 沉浸式影音探究問卷</h2>
+              <p id="dfcSubtitle" class="sub" style="margin:2px 0 0;font-size:13.5px">影片播放至關鍵節點時將展開思考問答，請依序完成作答。</p>
             </div>
             <div class="dfc-step-indicators" id="dfcStepPills"></div>
           </div>
@@ -616,7 +689,7 @@
                   <div class="video-spinner"></div>
                   <span id="dfcLoadingText">正在緩衝高畫質影音串流...</span>
                 </div>
-                <div class="video-center-play" id="dfcCenterPlay" title="點擊進入全螢幕劇院開始觀看">
+                <div class="video-center-play" id="dfcCenterPlay" title="點擊開始觀看">
                   <div class="video-center-play-circle">▶</div>
                 </div>
                 <div class="video-lock-toast" id="dfcLockToast">請循序觀看影片，未解鎖段落暫不開放快轉跳躍</div>
@@ -650,18 +723,13 @@
                   <input type="range" class="cinema-vol-slider" id="dfcVolSlider" min="0" max="1" step="0.05" value="1" aria-label="音量調整">
                 </div>
                 <button type="button" class="cinema-icon-btn hide" id="dfcSpeedBtn" title="調整播放速率">1.0x</button>
-                <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕專注模式" style="padding:0 8px">⛶</button>
+                <button type="button" class="cinema-icon-btn" id="dfcFsBtn" title="全螢幕模式" style="padding:0 8px">⛶</button>
                 <button type="button" class="btn ghost sm" id="dfcToggleQBtn"
-                  style="white-space:nowrap;font-size:12.5px;font-weight:600" title="展開或收合右側思考問題卡">📝
-                  思考問答</button>
+                  style="white-space:nowrap;font-size:12.5px;font-weight:600" title="展開或收合思考問題卡">📝 問答</button>
               </div>
 
-              <div class="cinema-shortcuts-bar">
-                <span>⌨️ 劇院快捷鍵：<b>Space</b> 播放/暫停 · <b>←/→</b> 微調進度 5 秒 · <b>F</b> 全螢幕 · <b>M</b> 靜音切換</span>
-              </div>
-
-              <details class="dfc-telemetry-details" style="margin-top:10px;font-size:12.5px">
-                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:4px 0">📊 ABR 串流緩衝與本機快取遙測（點擊展開）</summary>
+              <details class="dfc-telemetry-details" style="margin-top:8px;font-size:12px">
+                <summary style="cursor:pointer;color:var(--ink-tertiary);user-select:none;padding:2px 0">ⓘ 串流緩衝狀態與劇院快捷鍵</summary>
                 <div class="dfc-preload-telemetry" id="dfcPreloadTelemetry" style="margin-top:6px">
                   <div class="dfc-preload-row">
                     <span class="dfc-preload-status-text" id="dfcPreloadStatusText">串流緩衝就緒</span>
@@ -669,6 +737,9 @@
                   </div>
                   <div class="dfc-preload-bar-track">
                     <div class="dfc-preload-bar-fill" id="dfcPreloadBarFill"></div>
+                  </div>
+                  <div class="cinema-shortcuts-bar" style="margin-top:6px">
+                    <span>⌨️ 快捷鍵：<b>Space</b> 播放/暫停 · <b>←/→</b> 微調 5 秒 · <b>F</b> 全螢幕 · <b>M</b> 靜音</span>
                   </div>
                 </div>
               </details>
@@ -1335,87 +1406,77 @@
     setupTurnstile();
 
     /* ============================================================================
-     * 跨裝置解析度智慧自動縮放系統 (Apple-Grade Auto Resolution Zoom & Device Adapter)
-     * 自動依據裝置解析度（4K、2K、1080p、筆電、平板、手機）放大或縮小頁面，支援自訂手動縮放與快捷鍵
+     * 跨裝置解析度智慧縮放與「9:16 手機專屬版」雙系統自動切換引擎
+     * 自動偵測手機與 9:16 直立比例並無縫切換為「另一套」手機專屬介面，亦支援手動一鍵切換預覽
      * ============================================================================ */
     let currentAppliedZoom = 1.0;
     let userZoomPreference = (() => {
       try { return localStorage.getItem("kk_resolution_zoom") || "auto"; } catch { return "auto"; }
     })();
+    let userUiModePreference = (() => {
+      try { return localStorage.getItem("kk_ui_mode") || "auto"; } catch { return "auto"; }
+    })();
 
     function getDeviceMetrics() {
       const zoom = currentAppliedZoom || 1.0;
-      // 計算未縮放前的真實可視區與螢幕物理尺寸，避免多次縮放反饋跳動
       const vw = Math.round((window.innerWidth || document.documentElement.clientWidth || 1280) * zoom);
       const vh = Math.round((window.innerHeight || document.documentElement.clientHeight || 800) * zoom);
       const sw = Math.round(window.screen?.width || vw);
       const sh = Math.round(window.screen?.height || vh);
       const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
       const ua = navigator.userAgent || "";
-      const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(ua);
+      const isMobileUA = /Mobile|iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua);
       const isTabletUA = /iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+      const aspectRatio = vh > 0 ? (vw / vh) : 1.77;
+      // 9:16 直向手機判定：真實手機 UA、窄視窗 (<=740px) 或直立長寬比 <= 0.78 (如 9:16 = 0.5625)
+      const isNaturalMobile916 = vw <= 740 || (aspectRatio <= 0.78 && vw <= 920) || (isMobileUA && vw <= 920);
 
       let layout = "desktop";
-      let label = "💻 電腦版面";
-      if (vw < 680 || (isMobileUA && vw < 900)) {
+      let label = "💻 簡約電腦版";
+      if (userUiModePreference === "mobile" || (userUiModePreference === "auto" && isNaturalMobile916)) {
         layout = "mobile";
-        label = "📱 手機版面";
+        label = "📱 9:16 手機專屬版";
+      } else if (userUiModePreference === "desktop") {
+        layout = "desktop";
+        label = "💻 簡約電腦版";
       } else if (vw < 1024 || isTabletUA) {
         layout = "tablet";
-        label = "📟 平板版面";
+        label = "📟 平板簡約版";
       }
 
-      return { layout, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA };
+      const activeUiMode = layout === "mobile" ? "mobile" : "desktop";
+      return { layout, activeUiMode, label, vw, vh, sw, sh, dpr, isMobileUA, isTabletUA, isNaturalMobile916, aspectRatio };
     }
 
     function calculateOptimalZoom(metrics) {
-      const { vw, vh, sw, sh, dpr, isMobileUA } = metrics;
-      // 1. 行動裝置：維持 1.0x 原始比例，依靠自適應版面確保點擊目標 >= 44px
-      if (vw < 680 || (isMobileUA && vw < 860)) {
+      const { vw, vh, sw, dpr, activeUiMode } = metrics;
+      // 9:16 手機專屬版：維持 1.0x 原生觸控比例，由專屬 CSS 版面負責 9:16 排版
+      if (activeUiMode === "mobile" || vw < 740) {
         return 1.0;
       }
-      // 2. 4K Ultra HD 或超寬螢幕 (3840×2160, 3440×1440, 或大於 3000px)
-      if (vw >= 3000 || sw >= 3400) {
-        return 1.35; // 放大 135%
-      }
-      // 3. 2K QHD 螢幕 (2560×1440 或 2200px 以上)
-      if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) {
-        return 1.20; // 放大 120%
-      }
-      if (vw >= 1950) {
-        return 1.12; // 放大 112%
-      }
-      // 4. 標準 Full HD (1920×1080 全螢幕且高度充足)
-      if (vw >= 1750 && vh >= 940) {
-        return 1.05; // 舒適放大 105%
-      }
-      // 5. 一般桌機 (1360px ~ 1749px, 正常高度)
-      if (vw >= 1360 && vh >= 740) {
-        return 1.0; // 基準 100%
-      }
-      // 6. 緊湊筆電或受限高度 (1366×768, 1280×720，高度 < 740px)
-      // 微縮至 92%~95%，避免工作室與大卡片垂直截斷
-      if (vh < 740 && vw >= 1024) {
-        return 0.92; // 縮小 92%
-      }
-      if (vw >= 900 && vw < 1200) {
-        return 0.95; // 縮小 95%
-      }
+      if (vw >= 3000 || sw >= 3400) return 1.35;
+      if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) return 1.20;
+      if (vw >= 1950) return 1.12;
+      if (vw >= 1750 && vh >= 940) return 1.05;
+      if (vw >= 1360 && vh >= 740) return 1.0;
+      if (vh < 740 && vw >= 1024) return 0.92;
+      if (vw >= 900 && vw < 1200) return 0.95;
       return 1.0;
     }
 
     function applyResolutionZoom(zoomVal, isAuto = false) {
-      const zoomNum = Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
-      currentAppliedZoom = zoomNum;
+      const metrics = getDeviceMetrics();
+      const effectiveZoom = metrics.activeUiMode === "mobile"
+        ? 1.0
+        : Math.max(0.6, Math.min(2.0, Number(Number(zoomVal).toFixed(2))));
+      currentAppliedZoom = effectiveZoom;
 
-      // 同步設定 CSS zoom 與自訂變數
-      document.documentElement.style.zoom = String(zoomNum);
-      document.documentElement.style.setProperty("--app-zoom", String(zoomNum));
-      document.documentElement.setAttribute("data-zoom", Math.round(zoomNum * 100));
+      document.documentElement.style.zoom = String(effectiveZoom);
+      document.documentElement.style.setProperty("--app-zoom", String(effectiveZoom));
+      document.documentElement.setAttribute("data-zoom", Math.round(effectiveZoom * 100));
       document.documentElement.setAttribute("data-zoom-auto", isAuto ? "1" : "0");
 
-      // 更新頂部按鈕文字與標籤
-      const pct = Math.round(zoomNum * 100);
+      const pct = Math.round(effectiveZoom * 100);
       if ($("zoomText")) $("zoomText").textContent = `${pct}%`;
       const autoBadge = $("zoomAutoBadge");
       if (autoBadge) {
@@ -1423,27 +1484,27 @@
         autoBadge.className = `zoom-auto-badge ${isAuto ? "auto" : "manual"}`;
       }
 
-      // 更新選單項目的啟用狀態
       const autoHint = $("zoomAutoCalcHint");
       if (autoHint) autoHint.textContent = `${pct}%`;
       document.querySelectorAll(".zoom-opt-btn").forEach(btn => {
         const val = btn.getAttribute("data-zoom-val");
         if (isAuto && val === "auto") btn.classList.add("active");
-        else if (!isAuto && val === zoomNum.toFixed(2)) btn.classList.add("active");
+        else if (!isAuto && val === effectiveZoom.toFixed(2)) btn.classList.add("active");
         else btn.classList.remove("active");
       });
 
-      // 更新版面資訊標籤
       updateDeviceBadges();
     }
 
     function detectAndApplyDeviceLayout() {
       const metrics = getDeviceMetrics();
       document.documentElement.setAttribute("data-layout", metrics.layout);
+      document.documentElement.setAttribute("data-device-ui", metrics.activeUiMode);
       document.documentElement.setAttribute("data-orientation", metrics.vw >= metrics.vh ? "landscape" : "portrait");
+      document.body?.classList.toggle("mobile-916-mode", metrics.activeUiMode === "mobile");
 
       const optimal = calculateOptimalZoom(metrics);
-      if (userZoomPreference === "auto") {
+      if (metrics.activeUiMode === "mobile" || userZoomPreference === "auto") {
         applyResolutionZoom(optimal, true);
       } else {
         const manualVal = parseFloat(userZoomPreference);
@@ -1451,11 +1512,28 @@
       }
 
       if ($("zoomResDetail")) {
-        $("zoomResDetail").textContent = `${metrics.sw} × ${metrics.sh} (@${metrics.dpr}x) · 視窗 ${metrics.vw}×${metrics.vh}`;
+        $("zoomResDetail").textContent = `${metrics.vw}×${metrics.vh} (${metrics.activeUiMode === "mobile" ? "9:16 手機" : "桌面"})`;
       }
+
+      // 同步更新頂部快速模式膠囊與控制面板按鈕
+      const quickIcon = $("uiModeQuickIcon");
+      const quickLbl = $("uiModeQuickLabel");
+      if (quickIcon && quickLbl) {
+        if (metrics.activeUiMode === "mobile") {
+          quickIcon.textContent = "📱";
+          quickLbl.textContent = userUiModePreference === "auto" ? "9:16 手機版" : "9:16 手機(鎖定)";
+        } else {
+          quickIcon.textContent = "💻";
+          quickLbl.textContent = userUiModePreference === "auto" ? "簡約電腦版" : "電腦版(鎖定)";
+        }
+      }
+      document.querySelectorAll("#uiModeSegmented .ui-mode-seg-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-ui-mode") === userUiModePreference);
+      });
 
       return {
         layout: metrics.layout,
+        activeUiMode: metrics.activeUiMode,
         vw: metrics.vw,
         vh: metrics.vh,
         sw: metrics.sw,
@@ -1469,17 +1547,24 @@
     function updateDeviceBadges() {
       const metrics = getDeviceMetrics();
       const pct = Math.round(currentAppliedZoom * 100);
-      const isAuto = userZoomPreference === "auto";
-      const badgeText = `${metrics.label} · ${metrics.vw}×${metrics.vh}px (${pct}% ${isAuto ? "自動適配" : "自訂"})`;
+      const badgeText = `${metrics.label} · ${metrics.vw}×${metrics.vh} (${pct}%)`;
+      if ($("loginDeviceBadge")) $("loginDeviceBadge").textContent = badgeText;
+      if ($("homeDeviceBadge")) $("homeDeviceBadge").textContent = badgeText;
+    }
 
-      if ($("loginDeviceBadge")) {
-        $("loginDeviceBadge").textContent = badgeText;
-        $("loginDeviceBadge").style.display = "inline-flex";
+    function setUiModePreference(mode) {
+      userUiModePreference = ["auto", "mobile", "desktop"].includes(mode) ? mode : "auto";
+      try { localStorage.setItem("kk_ui_mode", userUiModePreference); } catch {}
+      const res = detectAndApplyDeviceLayout();
+      if (typeof renderLivePreviewCard === "function" && currentTab === "post") {
+        setTimeout(renderLivePreviewCard, 60);
       }
-      if ($("homeDeviceBadge")) {
-        $("homeDeviceBadge").textContent = badgeText;
-        $("homeDeviceBadge").style.display = "inline-flex";
-      }
+      const modeName = userUiModePreference === "mobile"
+        ? "📱 已切換至「9:16 手機專屬版」介面"
+        : userUiModePreference === "desktop"
+          ? "💻 已切換至「簡約電腦版」介面"
+          : `✨ 已恢復自動偵測（目前為 ${res.activeUiMode === "mobile" ? "9:16 手機專屬版" : "簡約電腦版"}）`;
+      say(modeName, true);
     }
 
     function initResolutionZoomControls() {
@@ -1488,6 +1573,80 @@
       const displayBtn = $("zoomDisplayBtn");
       const outBtn = $("zoomOutBtn");
       const inBtn = $("zoomInBtn");
+
+      // 綁定 9:16 手機版 / 電腦版快速切換按鈕
+      $("uiModeQuickBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const metrics = getDeviceMetrics();
+        const nextMode = metrics.activeUiMode === "mobile" ? "desktop" : "mobile";
+        setUiModePreference(nextMode);
+      });
+
+      document.querySelectorAll("#uiModeSegmented .ui-mode-seg-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setUiModePreference(btn.getAttribute("data-ui-mode") || "auto");
+        });
+      });
+
+      // 綁定右上角極簡控制中心膠囊選單與手機底部設定抽屜
+      const hubWrap = $("hubMenuWrap");
+      const hubTrigger = $("hubMenuTriggerBtn");
+      const hubPop = $("hubControlPopover");
+      const toggleHubPopover = (forceShow) => {
+        if (!hubPop) return;
+        const willShow = forceShow !== undefined ? forceShow : hubPop.classList.contains("hide");
+        hubPop.classList.toggle("hide", !willShow);
+        hubTrigger?.setAttribute("aria-expanded", willShow ? "true" : "false");
+        $("mobDockMenuBtn")?.classList.toggle("active", willShow);
+      };
+      hubTrigger?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleHubPopover();
+      });
+      $("mobDockMenuBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleHubPopover();
+      });
+      // 點擊選單內功能按鈕後自動收合選單
+      ["topWalletBtn", "topPasskeyBtn", "topDiagBtn", "topLogoutBtn"].forEach(id => {
+        $(id)?.addEventListener("click", () => toggleHubPopover(false));
+      });
+
+      // 綁定格言工坊「⋯ 更多」操作選單与靈感庫抽屜
+      const moreBtn = $("previewMoreBtn");
+      const morePop = $("previewMorePopover");
+      const moreWrap = $("previewMoreWrap");
+      moreBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        morePop?.classList.toggle("hide");
+      });
+      ["copyCardImgBtn", "copyProverbBtn", "postOpenWalletBtn", "resetCardStyleBtn"].forEach(id => {
+        $(id)?.addEventListener("click", () => morePop?.classList.add("hide"));
+      });
+
+      $("toggleInspireDrawerBtn")?.addEventListener("click", () => {
+        const drw = $("inspireChipsDrawer");
+        if (!drw) return;
+        const isHidden = drw.classList.toggle("hide");
+        $("toggleInspireDrawerBtn").textContent = isHidden ? "✨ 靈感庫 ▾" : "✨ 收合靈感 ▴";
+      });
+
+      // 綁定格言工坊四合一分段美學切換列
+      document.querySelectorAll("#studioInspectorTabs .studio-seg-tab").forEach(tabBtn => {
+        tabBtn.addEventListener("click", () => {
+          const target = tabBtn.getAttribute("data-studio-tab") || "presets";
+          document.querySelectorAll("#studioInspectorTabs .studio-seg-tab").forEach(b => {
+            b.classList.toggle("active", b === tabBtn);
+          });
+          document.querySelectorAll(".studio-tab-pane").forEach(pane => {
+            const match = pane.getAttribute("data-studio-pane") === target;
+            pane.classList.toggle("hide", !match);
+            pane.classList.toggle("active", match);
+          });
+        });
+      });
+
       if (!pill) return;
 
       const toggleDropdown = (show) => {
@@ -1548,10 +1707,19 @@
         if (dropdown && !pill.contains(e.target)) {
           toggleDropdown(false);
         }
+        if (hubPop && !hubPop.classList.contains("hide") && !hubWrap?.contains(e.target) && !e.target.closest("#mobDockMenuBtn")) {
+          toggleHubPopover(false);
+        }
+        if (morePop && !morePop.classList.contains("hide") && !moreWrap?.contains(e.target)) {
+          morePop.classList.add("hide");
+        }
       });
 
-      // 支援鍵盤快速縮放 (Alt + Plus / Alt + Minus / Alt + 0)
       window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          toggleHubPopover(false);
+          morePop?.classList.add("hide");
+        }
         if (e.altKey && (e.key === "=" || e.key === "+")) {
           e.preventDefault();
           inBtn?.click();
@@ -1579,7 +1747,7 @@
     window.addEventListener("orientationchange", handleDeviceResize);
 
     /* ============================================================================
-     * 網頁高度整合路由與簡潔頂部標籤控制器 (Home Square Hub + 頂部自動切換標籤)
+     * 網頁高度整合路由與雙系統導覽控制器 (桌面頂部極簡膠囊 + 9:16 手機底部 Dock)
      * ============================================================================ */
     const PANES = {
       home: $("paneHome"),
@@ -1590,11 +1758,11 @@
     };
 
     const PAGE_LABELS = {
-      home: { title: "首頁總覽", hint: "切換空間" },
-      post: { title: "✍️ 格言工坊", hint: "返回首頁" },
-      dfc: { title: "🎬 DFC 互動劇院", hint: "返回首頁" },
-      status: { title: "📊 雲端遙測", hint: "返回首頁" },
-      diag: { title: "🩺 系統檢測中心", hint: "返回首頁" },
+      home: { title: "首頁總覽", short: "首頁", hint: "切換空間" },
+      post: { title: "✍️ 格言工坊", short: "格言工坊", hint: "返回首頁" },
+      dfc: { title: "🎬 DFC 互動劇院", short: "DFC 劇院", hint: "返回首頁" },
+      status: { title: "📊 雲端遙測", short: "雲端狀態", hint: "返回首頁" },
+      diag: { title: "🩺 系統檢測中心", short: "系統檢測", hint: "返回首頁" },
     };
 
     let currentTab = "home";
@@ -1604,7 +1772,18 @@
       const info = PAGE_LABELS[tabName] || PAGE_LABELS.home;
       if ($("topCurrentPageLabel")) $("topCurrentPageLabel").textContent = info.title;
       if ($("topCurrentPageHint")) $("topCurrentPageHint").textContent = info.hint;
-      if ($("topStatusBtn")) $("topStatusBtn").classList.toggle("active", tabName === "status");
+      if ($("mobileHeaderPageTag")) $("mobileHeaderPageTag").textContent = info.short;
+
+      // 同步桌面頂部導覽按鈕高亮
+      document.querySelectorAll(".top-nav-pill[data-nav-target]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-nav-target") === tabName);
+      });
+
+      // 同步 9:16 手機底部專屬 Dock 高亮
+      document.querySelectorAll("#mobileBottomDock .mob-dock-item[data-mob-nav]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-mob-nav") === tabName);
+      });
+
       if ($("topDiagBtn")) {
         $("topDiagBtn").classList.toggle("hide", !isCurrentAdmin);
         $("topDiagBtn").classList.toggle("active", tabName === "diag" && isCurrentAdmin);
@@ -1674,14 +1853,13 @@
       navigateToTab(hash, false);
     });
 
-    // 頂部精簡按鈕與方形主選單按鈕綁定
+    // 頂部精簡導覽、9:16 手機底部 Dock 與首頁卡片綁定
     $("brandHomeBtn")?.addEventListener("click", () => navigateToTab("home"));
+    $("topNavHomeBtn")?.addEventListener("click", () => navigateToTab("home"));
+    $("topNavPostBtn")?.addEventListener("click", () => navigateToTab("post"));
+    $("topNavDfcBtn")?.addEventListener("click", () => navigateToTab("dfc"));
     $("topCurrentPageBtn")?.addEventListener("click", () => {
-      if (currentTab !== "home") {
-        navigateToTab("home");
-      } else {
-        navigateToTab("post");
-      }
+      navigateToTab(currentTab !== "home" ? "home" : "post");
     });
     $("topStatusBtn")?.addEventListener("click", () => {
       navigateToTab(currentTab === "status" ? "home" : "status");
@@ -1689,6 +1867,14 @@
     $("topDiagBtn")?.addEventListener("click", () => {
       if (!isCurrentAdmin) return;
       navigateToTab(currentTab === "diag" ? "home" : "diag");
+    });
+    document.querySelectorAll("#mobileBottomDock .mob-dock-item[data-mob-nav]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-mob-nav") || "home";
+        $("hubControlPopover")?.classList.add("hide");
+        $("mobDockMenuBtn")?.classList.remove("active");
+        navigateToTab(target);
+      });
     });
     $("hubBtnPost")?.addEventListener("click", () => navigateToTab("post"));
     $("hubBtnDfc")?.addEventListener("click", () => navigateToTab("dfc"));
@@ -2764,10 +2950,18 @@
         }
       }
 
-      $("acctUser")?.classList.toggle("hide", !isAuth);
+      $("topLogoutBtn")?.classList.toggle("hide", !isAuth);
       updateDfcAccessUi(currentDfcAccess);
 
       if (!isAuth) {
+        if ($("topWho")) $("topWho").textContent = "選單";
+        if ($("topAv")) {
+          $("topAv").textContent = "✦";
+          $("topAv").classList.remove("hide");
+        }
+        $("topAvImg")?.classList.add("hide");
+        if ($("hubPopUserName")) $("hubPopUserName").textContent = "尚未登入";
+        if ($("hubPopUserEmail")) $("hubPopUserEmail").textContent = "請使用 @hlc.edu.tw 帳號登入";
         show("loginView");
         if (isDiagRoute) navigateToTab("diag", false);
         return;
@@ -2777,6 +2971,8 @@
       const initial = (me.name || me.email || "U")[0].toUpperCase();
       $("topWho").textContent = label;
       $("topWho").title = me.email;
+      if ($("hubPopUserName")) $("hubPopUserName").textContent = me.name || "校園創作者";
+      if ($("hubPopUserEmail")) $("hubPopUserEmail").textContent = me.email || "";
       const avImg = $("topAvImg");
       const avTxt = $("topAv");
       if (avImg) {
@@ -2917,6 +3113,8 @@
     const SPEED_STEPS = [0.75, 1.0, 1.25, 1.5];
 
     function isDfcFullscreenActive() {
+      // 在 9:16 手機專屬模式下，支援直向沉浸觀看與問答，不強制鎖定橫向全螢幕
+      if (document.documentElement.getAttribute("data-device-ui") === "mobile") return true;
       const stage = $("dfcStage");
       const v = $("dfcVideo");
       const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
@@ -2939,10 +3137,14 @@
       return true;
     }
 
-    async function requestDfcFullscreen() {
+    async function requestDfcFullscreen(forceExplicit = false) {
+      if (!forceExplicit && document.documentElement.getAttribute("data-device-ui") === "mobile") {
+        return true;
+      }
       const stage = $("dfcStage");
       if (!stage) return false;
-      if (isDfcFullscreenActive()) return true;
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (fsEl && (fsEl === stage || stage?.contains(fsEl))) return true;
       try {
         if (stage.requestFullscreen) {
           await stage.requestFullscreen();
