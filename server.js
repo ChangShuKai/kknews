@@ -728,12 +728,12 @@ const DEFAULT_DFC_ACCESS_MODE = ["whitelist", "all_school", "closed"].includes(S
 
 const DEFAULT_DFC_CHECKPOINTS = [
   { id: "q1", time: 4, stepLabel: "階段一 · 感受 Feel (第1題)", title: "在剛才影片片段中，你觀察到最核心的校園問題是什麼？", type: "radio", options: ["資訊傳遞分散", "空間與動線視覺凌亂", "缺乏即時回饋管道"], desc: "請選擇一個最貼近你觀察到的現象。", required: true },
-  { id: "q2", time: 4, stepLabel: "階段一 · 感受 Feel (第2題)", title: "你認為這個問題對哪一群體的影響最大？", type: "checkbox", options: ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], desc: "支援同時間點連續提問。", required: true },
+  { id: "q2", time: 4, stepLabel: "階段一 · 感受 Feel (第2題)", title: "你認為這個問題對哪一群體的影響最大？", type: "checkbox", options: ["全體學生", "導師與行政組長", "家長與校友", "學校訪客"], desc: "本題為多選題，可複選最關鍵的影響對象。", required: true },
   { id: "q3", time: 10, stepLabel: "階段二 · 想像 Imagine (第1題)", title: "針對這個問題，你認為哪些創意解方最值得嘗試？", type: "checkbox", options: ["導入互動式影音表單", "建立校園專屬的一句話共創牆", "結合跨班級工作坊快速製作原型"], desc: "此題為多選題，可勾選一或多項方案。", required: true },
-  { id: "q4", time: 10, stepLabel: "階段二 · 想像 Imagine (第2題)", title: "你認為以上解方的實施難易度為何？", type: "dropdown", options: ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], desc: "評估解方可行性。", required: false },
+  { id: "q4", time: 10, stepLabel: "階段二 · 想像 Imagine (第2題)", title: "你認為以上解方的實施難易度為何？", type: "dropdown", options: ["非常容易立即推行", "需要跨處室合作", "需要較多經費與時間"], desc: "請評估此項解方在校園推行的可行性與難易度。", required: false },
   { id: "q5", time: 18, stepLabel: "階段三 · 實踐 Do", title: "請簡述你在本次行動中擔任的角色或預計實踐的項目", type: "textarea", options: [], desc: "限 50 字以內，簡要描述即可。", required: false },
-  { id: "q6", time: 22, "stepLabel": "階段四 · 分享 Share (第1題)", title: "你是否願意將本次成果分享於全校互動成果牆？", type: "boolean", options: [], desc: "二選一是非題", required: true },
-  { id: "q7", time: 22, "stepLabel": "階段四 · 分享 Share (第2題)", title: "你對本次校園 DFC 方案的整體推薦評分？", type: "rating", options: [], desc: "1~5 星評分量表，作答後表單即完成！", min: 1, max: 5, required: true }
+  { id: "q6", time: 22, "stepLabel": "階段四 · 分享 Share (第1題)", title: "你是否願意將本次成果分享於全校互動成果牆？", type: "boolean", options: [], desc: "請選擇是否願意公開分享。", required: true },
+  { id: "q7", time: 22, "stepLabel": "階段四 · 分享 Share (第2題)", title: "你對本次校園 DFC 方案的整體推薦評分？", type: "rating", options: [], desc: "請給予 1 至 5 星綜合推薦評分（1 星最低，5 星最高）。", min: 1, max: 5, required: true }
 ];
 
 const DEFAULT_DFC_STORE = {
@@ -891,7 +891,7 @@ async function evaluateDfcAccess(req, storeArg = null) {
       isAdmin: false,
       mode: "closed",
       reason: "closed",
-      message: "防暴雷保護中：目前 DFC 互動影片專區暫未開放觀看，敬請期待正式場次開放。",
+      message: "目前 DFC 影音問卷專區暫未開放觀看，敬請期待後續活動公告。",
       allowedEmails: cfg.allowedEmails,
     };
   }
@@ -921,7 +921,7 @@ async function evaluateDfcAccess(req, storeArg = null) {
     isAdmin: false,
     mode: "whitelist",
     reason: "not_in_whitelist",
-    message: "防暴雷保護中：目前 DFC 互動影片僅開放指定規定帳號觀看，您的帳號（" + email + "）尚未列入授權名單。",
+    message: "目前 DFC 影音問卷僅開放指定班級或授權帳號觀看，您的帳號（" + email + "）尚未列入開放名單。",
     allowedEmails: cfg.allowedEmails,
   };
 }
@@ -1206,7 +1206,7 @@ app.get("/assets/admin.js", (req, res) => adminOf(req) ? sendStaticAsset(req, re
 app.get("/assets/dfc.mp4", async (req, res) => {
   const access = await evaluateDfcAccess(req);
   if (!access.allowed) {
-    return res.status(403).json({ error: access.message || "防暴雷保護中：僅限授權帳號觀看" });
+    return res.status(403).json({ error: access.message || "權限保護中：僅限授權帳號觀看" });
   }
   res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
@@ -1658,7 +1658,7 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
 
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
-    return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
+    return res.status(403).json({ error: access.message || "權限保護中：此帳號未獲授權觀看 DFC 影片" });
   }
 
   try {
@@ -1746,7 +1746,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   // 防暴雷權限攔截：未授權帳號一律禁止載入影片位元組
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
-    return res.status(403).json({ error: access.message || "防暴雷保護中：此帳號未獲授權觀看 DFC 影片" });
+    return res.status(403).json({ error: access.message || "權限保護中：此帳號未獲授權觀看 DFC 影片" });
   }
 
   const requestedQuality = normalizeRequestedQuality(req.query?.q || req.query?.quality || "360p");
@@ -2211,7 +2211,7 @@ app.get("/api/dfc/config", async (req, res) => {
       reason: access.reason,
       message: access.message,
       id: "restricted",
-      title: "DFC 互動影片專區（防暴雷保護中）",
+      title: "DFC 互動影音探究問卷",
       description: access.message,
       videoUrl: "",
       fallbackDuration: 0,
@@ -2248,7 +2248,7 @@ app.post("/api/dfc/submit", async (req, res) => {
   const store = await getDfcStoreWithDb(true);
   const access = await evaluateDfcAccess(req, store);
   if (!access.allowed) {
-    return res.status(403).json({ error: access.message || "防暴雷保護中：僅限規定授權帳號提交問卷" });
+    return res.status(403).json({ error: access.message || "權限保護中：僅限授權帳號提交問卷" });
   }
 
   const { formId = "default-dfc", answers = {}, telemetry = {}, engagement = {}, userInfo = {} } = req.body || {};
@@ -2472,10 +2472,34 @@ async function sendAdminOtpMail({ to = ADMIN_OTP_EMAIL, otp, accountEmail, ip, u
           text,
         }),
       });
-      if (res.ok) sent = true;
-      else {
+      if (res.ok) {
+        sent = true;
+      } else {
         const j = await res.json().catch(() => ({}));
         errorDetail = `Resend error (${res.status}): ${j.message || res.statusText}`;
+        // 若觸發 Resend 測試網域 (onboarding@resend.dev) 限制（僅允許寄給 Resend 帳號註冊信箱），自動轉發至該已驗證信箱
+        const allowedMatch = j.message?.match(/own email address \(([^)]+)\)/);
+        if (allowedMatch && allowedMatch[1] && allowedMatch[1] !== to) {
+          console.log(`[MAIL] 偵測到 Resend 測試網域限制，自動轉發驗證碼至已驗證主管信箱: ${allowedMatch[1]}`);
+          const retryRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${RESEND_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: RESEND_FROM_EMAIL,
+              to: [allowedMatch[1]],
+              subject,
+              html,
+              text,
+            }),
+          });
+          if (retryRes.ok) {
+            sent = true;
+            to = allowedMatch[1];
+          }
+        }
       }
     } catch (e) {
       errorDetail = `Resend error: ${e.message}`;
