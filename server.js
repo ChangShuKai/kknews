@@ -2293,32 +2293,329 @@ app.post("/api/dfc/submit", async (req, res) => {
   res.json({ ok: true, savedToSupabase: true, demo: false });
 });
 
-/* --- 後台（未驗證一律回 404，不洩漏存在與否） --- */
-const keyOk = v => eq(v || "", ADMIN_ACCESS_KEY);
-const hasAccessKey = req => {
-  if (keyOk(req.query?.k) || keyOk(req.headers["x-access-key"])) return true;
-  const p = readToken(cookies(req).kak);
-  return Boolean(p && p.t === "k");
-};
+/* --- 後台安全防護、郵件一次性驗證碼 (OTP) 與裝置信任授權機制 --- */
+const escapeHtml = s => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// 原生零相依 TLS SMTP 發信核心（相容 Gmail 應用程式密碼及所有標準 SMTP）
+function sendSmtpMail({ host = "smtp.gmail.com", port = 465, user, pass, from, to, subject, html, text }) {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    const cleanUser = String(user || "").trim();
+    const cleanPass = String(pass || "").replace(/\s+/g, "");
+    const cleanFrom = from && from.includes("<") ? from.match(/<([^>]+)>/)?.[1] || cleanUser : (cleanUser || "no-reply@kknews.org");
+    const cleanTo = to && to.includes("<") ? to.match(/<([^>]+)>/)?.[1] || to : to;
+
+    const socket = tls.connect(Number(port) || 465, host, { servername: host }, () => {});
+    socket.setTimeout(12000, () => cleanup(new Error("SMTP 連線逾時 (12 秒)")));
+
+    let buffer = "";
+    let step = 0;
+
+    function cleanup(err, res) {
+      if (resolved) return;
+      resolved = true;
+      try { socket.end(); } catch {}
+      try { socket.destroy(); } catch {}
+      if (err) reject(err);
+      else resolve(res);
+    }
+
+    socket.on("error", err => cleanup(err));
+    socket.on("close", () => {
+      if (!resolved) cleanup(new Error("SMTP 連線意外中斷"));
+    });
+
+    socket.on("data", chunk => {
+      buffer += chunk.toString("utf8");
+      const lines = buffer.split("\r\n");
+      if (lines.length <= 1) return;
+      const lastLine = lines[lines.length - 2];
+      const match = lastLine.match(/^(\d{3})(?: (.*))?$/);
+      if (!match) return;
+
+      const code = parseInt(match[1], 10);
+      buffer = "";
+
+      try {
+        if (code >= 400) return cleanup(new Error(`SMTP 回應錯誤 (${code}): ${lastLine}`));
+
+        if (step === 0) {
+          step = 1;
+          socket.write(`EHLO ${host}\r\n`);
+        } else if (step === 1) {
+          step = 2;
+          socket.write("AUTH LOGIN\r\n");
+        } else if (step === 2) {
+          if (code !== 334) return cleanup(new Error(`AUTH LOGIN 失敗: ${lastLine}`));
+          step = 3;
+          socket.write(Buffer.from(cleanUser).toString("base64") + "\r\n");
+        } else if (step === 3) {
+          if (code !== 334) return cleanup(new Error(`SMTP 帳號驗證失敗: ${lastLine}`));
+          step = 4;
+          socket.write(Buffer.from(cleanPass).toString("base64") + "\r\n");
+        } else if (step === 4) {
+          if (code !== 235) return cleanup(new Error(`SMTP 密碼驗證失敗: ${lastLine}`));
+          step = 5;
+          socket.write(`MAIL FROM:<${cleanFrom}>\r\n`);
+        } else if (step === 5) {
+          step = 6;
+          socket.write(`RCPT TO:<${cleanTo}>\r\n`);
+        } else if (step === 6) {
+          step = 7;
+          socket.write("DATA\r\n");
+        } else if (step === 7) {
+          if (code !== 354) return cleanup(new Error(`DATA 指令失敗: ${lastLine}`));
+          step = 8;
+          const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const mailHeaders = [
+            `From: ${from || `KKNews 安全中心 <${cleanUser}>`}`,
+            `To: ${to}`,
+            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+            `MIME-Version: 1.0`,
+            `Date: ${new Date().toUTCString()}`,
+            `Content-Type: multipart/alternative; boundary="${boundary}"`,
+            "",
+            `--${boundary}`,
+            `Content-Type: text/plain; charset=UTF-8`,
+            `Content-Transfer-Encoding: base64`,
+            "",
+            Buffer.from(text || html.replace(/<[^>]+>/g, " ")).toString("base64"),
+            "",
+            `--${boundary}`,
+            `Content-Type: text/html; charset=UTF-8`,
+            `Content-Transfer-Encoding: base64`,
+            "",
+            Buffer.from(html).toString("base64"),
+            "",
+            `--${boundary}--`,
+            "",
+            ".",
+            "",
+          ].join("\r\n");
+          socket.write(mailHeaders);
+        } else if (step === 8) {
+          step = 9;
+          socket.write("QUIT\r\n");
+          cleanup(null, { ok: true, detail: lastLine });
+        }
+      } catch (e) {
+        cleanup(e);
+      }
+    });
+  });
+}
+
+// 發送一次性驗證碼 (OTP) 至中央主管信箱 (預設 kai1010210@gmail.com)
+async function sendAdminOtpMail({ to = ADMIN_OTP_EMAIL, otp, accountEmail, ip, ua }) {
+  const subject = `【KKNews 安全驗證碼】${otp} - 新裝置登入授權`;
+  const timeStr = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+  const html = `
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:24px;background:#f5f7fa;color:#1e293b">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.06)">
+    <div style="background:linear-gradient(135deg,#1868c7,#0d4b94);padding:24px;text-align:center;color:#ffffff">
+      <div style="font-size:12px;font-weight:700;letter-spacing:2px;opacity:0.85;margin-bottom:4px">KKNEWS SECURITY</div>
+      <h2 style="margin:0;font-size:22px;font-weight:800">新裝置安全授權驗證</h2>
+    </div>
+    <div style="padding:28px 24px">
+      <p style="margin:0 0 16px;font-size:14.5px;line-height:1.6;color:#334155">
+        您好，系統偵測到有管理員嘗試從<strong>新裝置或新瀏覽器</strong>登入 KKNews 後台主控台。
+      </p>
+      <div style="background:#f0f7ff;border:1.5px dashed #2563eb;border-radius:12px;padding:20px;text-align:center;margin:20px 0">
+        <div style="font-size:12px;font-weight:600;color:#2563eb;letter-spacing:1px;margin-bottom:8px">一次性安全授權驗證碼 (OTP)</div>
+        <div style="font-size:38px;font-weight:900;letter-spacing:10px;color:#1d4ed8;font-family:monospace;user-select:all">${otp}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:8px">有效期限 10 分鐘 · 僅可使用一次</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:20px 0;background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">
+        <tr><td style="padding:8px 12px;color:#64748b;width:90px">登入帳號</td><td style="padding:8px 12px;font-weight:600;color:#0f172a">${escapeHtml(accountEmail)}</td></tr>
+        <tr><td style="padding:8px 12px;color:#64748b">申請時間</td><td style="padding:8px 12px;color:#0f172a">${timeStr}</td></tr>
+        <tr><td style="padding:8px 12px;color:#64748b">來源 IP</td><td style="padding:8px 12px;font-family:monospace;color:#0f172a">${escapeHtml(ip)}</td></tr>
+        <tr><td style="padding:8px 12px;color:#64748b">瀏覽裝置</td><td style="padding:8px 12px;font-size:12px;color:#475569;word-break:break-all">${escapeHtml(ua)}</td></tr>
+      </table>
+      <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:4px;font-size:12.5px;line-height:1.6;color:#92400e;margin-top:16px">
+        <strong>⚠️ 安全提醒：</strong>
+        <ul style="margin:4px 0 0;padding-left:18px">
+          <li>每個裝置僅需驗證一次，通過後系統將自動信任該裝置。</li>
+          <li>若為受邀協同管理員登入，請主管確認身分後將此驗證碼提供給該管理員。</li>
+          <li>若非您或授權管理員本人操作，請切勿提供驗證碼，並建議儘速檢查後台密碼安全。</li>
+        </ul>
+      </div>
+    </div>
+    <div style="background:#f1f5f9;padding:14px;text-align:center;font-size:11.5px;color:#64748b;border-top:1px solid #e2e8f0">
+      KKNews 校園互動與 DFC 影音學習平台 · 自動安全發信系統
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+  const text = `【KKNews 安全驗證碼】\n您的 6 位數一次性驗證碼為：${otp}\n\n登入帳號：${accountEmail}\n申請時間：${timeStr}\n來源 IP：${ip}\n有效期限：10 分鐘\n\n本裝置驗證一次即自動信任。若非您本人或授權管理員操作，請勿將驗證碼提供給他人。`;
+
+  let sent = false;
+  let errorDetail = "";
+
+  // 1. Resend API
+  if (RESEND_API_KEY) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: RESEND_FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          text,
+        }),
+      });
+      if (res.ok) sent = true;
+      else {
+        const j = await res.json().catch(() => ({}));
+        errorDetail = `Resend error (${res.status}): ${j.message || res.statusText}`;
+      }
+    } catch (e) {
+      errorDetail = `Resend error: ${e.message}`;
+    }
+  }
+
+  // 2. SMTP (支援 Gmail 應用程式密碼及標準 TLS SMTP)
+  if (!sent && SMTP_USER && SMTP_PASS) {
+    try {
+      await sendSmtpMail({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+        from: SMTP_FROM || `KKNews 安全中心 <${SMTP_USER}>`,
+        to,
+        subject,
+        html,
+        text,
+      });
+      sent = true;
+    } catch (e) {
+      errorDetail = (errorDetail ? errorDetail + " | " : "") + `SMTP error: ${e.message}`;
+    }
+  }
+
+  // 3. SendGrid API
+  if (!sent && SENDGRID_API_KEY) {
+    try {
+      const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${SENDGRID_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: SMTP_FROM || "security@kknews.org", name: "KKNews 安全中心" },
+          subject,
+          content: [
+            { type: "text/plain", value: text },
+            { type: "text/html", value: html },
+          ],
+        }),
+      });
+      if (res.ok || res.status === 202) sent = true;
+      else {
+        const err = await res.text().catch(() => "");
+        errorDetail = (errorDetail ? errorDetail + " | " : "") + `SendGrid error: ${err}`;
+      }
+    } catch (e) {
+      errorDetail = (errorDetail ? errorDetail + " | " : "") + `SendGrid error: ${e.message}`;
+    }
+  }
+
+  // 4. Webhook
+  if (!sent && MAIL_WEBHOOK_URL) {
+    try {
+      const res = await fetch(MAIL_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, otp, accountEmail, ip, ua, subject, html, text }),
+      });
+      if (res.ok) sent = true;
+    } catch (e) {
+      errorDetail = (errorDetail ? errorDetail + " | " : "") + `Webhook error: ${e.message}`;
+    }
+  }
+
+  // 永遠同步輸出至伺服器 Console，讓管理員在未配妥 SMTP 時也能立即查看驗證碼順利登入
+  console.log(`\n============================================================`);
+  console.log(`[KKNews 安全驗證碼 (OTP) 派送]`);
+  console.log(`目標主管信箱: ${to}`);
+  console.log(`登入管理員帳號: ${accountEmail}`);
+  console.log(`6 位數一次性驗證碼: ${otp} (有效時間 10 分鐘)`);
+  console.log(`發信通道狀態: ${sent ? "✅ 已成功寄出" : "⚠️ 未寄出 (" + (errorDetail || "請設定 SMTP_USER/SMTP_PASS 或 RESEND_API_KEY") + ")"}`);
+  console.log(`來源 IP: ${ip} | 時間: ${timeStr}`);
+  console.log(`============================================================\n`);
+
+  // 原生儲存至 Supabase 稽核紀錄
+  try {
+    await db.from("admin_audit").insert({
+      action: "[安全驗證] 派發新裝置授權驗證碼",
+      target: `帳號: ${accountEmail} | 目標信箱: ${to} | 驗證碼: ${otp} | 狀態: ${sent ? "已寄出" : "待發信服務設定"}`,
+      ip,
+    });
+  } catch {}
+
+  return { ok: true, sent, errorDetail };
+}
+
+/* ---------- 裝置信任世代與長效信任判斷（一個裝置只要驗證一次） ---------- */
+let cachedDeviceTrustEpoch = 1;
+async function getDeviceTrustEpoch() {
+  const cached = sysCache.get("device_trust_epoch")?.data;
+  if (cached && typeof cached.epoch === "number") return cached.epoch;
+  try {
+    const s = await readSysStore("device_trust_epoch", { epoch: 1 });
+    cachedDeviceTrustEpoch = Number(s?.epoch) || 1;
+    return cachedDeviceTrustEpoch;
+  } catch {
+    return cachedDeviceTrustEpoch;
+  }
+}
+
+async function isTrustedDevice(req) {
+  const p = readToken(cookies(req).kdt);
+  if (!p || p.t !== "dev" || !p.id) return false;
+  const currentEpoch = await getDeviceTrustEpoch();
+  if (typeof p.epoch === "number" && p.epoch < currentEpoch) return false;
+  return true;
+}
+
+// 待處理之 OTP 挑戰暫存
+const pendingOtpChallenges = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ch, item] of pendingOtpChallenges.entries()) {
+    if (now > item.expiresAt) pendingOtpChallenges.delete(ch);
+  }
+}, 5 * 60 * 1000).unref();
 
 app.use("/api/admin", async (req, res, next) => {
-  if (!sysCache.has("admins") && req.path !== "/login" && req.path !== "/logout") {
+  if (!sysCache.has("admins") && req.path !== "/login" && req.path !== "/logout" && req.path !== "/verify-otp" && req.path !== "/resend-otp") {
     await readSysStore("admins", []).catch(() => {});
   }
   next();
 });
 
+// 後台主入口：直接訪問 /adminusercontrol 即可（已全面取消 ?k= 金鑰限制）
 app.get("/adminusercontrol", async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
   if (adminOf(req)) return sendStaticAsset(req, res, PAGES.admin.html, "text/html; charset=utf-8", "private, no-cache");
-  if (!hasAccessKey(req)) return notFound(res);
-  // 若網址帶有 ?k= 金鑰參數，設定安全 Cookie 後立即 302 重導向，從瀏覽器網址列徹底消除金鑰
-  if (keyOk(req.query?.k)) {
-    setCookie(res, "kak", makeToken({ t: "k" }, 3600), { strict: true });
+  // 若網址帶有舊版 ?k= 金鑰參數，302 重導向徹底消除網址列雜訊
+  if (req.query?.k) {
     return res.redirect(302, "/adminusercontrol");
   }
   return sendStaticAsset(req, res, PAGES.login.html, "text/html; charset=utf-8", "private, no-cache");
 });
+
 app.get("/adminusercontrol/jszip.js", async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
   if (!adminOf(req)) return notFound(res);
@@ -2354,10 +2651,9 @@ function formatAdminAccounts(adminList, isSuper = false) {
   return [primary, ...others];
 }
 
-/* --- 多管理員登入（支援 Super Admin 與新增的一般唯讀 Admin） --- */
+/* --- 管理員登入：密碼驗證 + 裝置信任 / OTP 二次授權 --- */
 app.post("/api/admin/login", async (req, res) => {
-  if (!hasAccessKey(req)) return notFound(res);
-  if (await limited("login:" + clientIp(req), 8, 900e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
+  if (await limited("login:" + clientIp(req), 10, 900e3)) return res.status(429).json({ error: "嘗試次數過多，請稍後再試" });
   const { email, password } = req.body || {};
   const inputEmail = String(email || "").trim().toLowerCase();
   const inputPw = String(password || "");
@@ -2366,7 +2662,7 @@ app.post("/api/admin/login", async (req, res) => {
   const adminList = await readSysStore("admins", []);
   const subAcc = (Array.isArray(adminList) ? adminList : []).find(a => String(a.email || "").trim().toLowerCase() === inputEmail);
 
-  // 1. 若為後台新增的管理員帳號（且非系統主帳號），優先驗證該帳號獨立密碼與其設定之權限（admin 或 super_admin）
+  // 1. 若為後台新增的管理員帳號（且非系統主帳號），優先驗證該帳號獨立密碼與其設定之權限
   if (subAcc && !isPrimaryAdminEmail(inputEmail)) {
     const ok = await verifyPassword(inputPw, subAcc.passwordHash);
     if (ok) {
@@ -2399,19 +2695,183 @@ app.post("/api/admin/login", async (req, res) => {
     }
   }
 
-  audit(req, matchedAdmin ? `admin_login_ok:${matchedAdmin.role}` : "admin_login_fail", inputEmail);
+  audit(req, matchedAdmin ? `admin_login_pw_ok:${matchedAdmin.role}` : "admin_login_pw_fail", inputEmail);
   if (!matchedAdmin) return res.status(401).json({ error: "帳號或密碼錯誤" });
 
+  // 3. 檢查當前裝置是否已受信任（一個裝置只要驗證一次）
+  const deviceTrusted = await isTrustedDevice(req);
+  if (deviceTrusted) {
+    // 裝置已信任：直接核發登入 Session Cookie
+    setCookie(res, "ka", makeToken({
+      t: "a",
+      email: matchedAdmin.email,
+      role: matchedAdmin.role,
+      name: matchedAdmin.name,
+      isPrimary: Boolean(matchedAdmin.isPrimary),
+      pwAt: matchedAdmin.pwUpdatedAt || "",
+    }, 4 * 3600), { strict: true });
+    audit(req, "admin_login_trusted_device", `${matchedAdmin.email} | 裝置已信任直通進入`);
+    return res.json({ ok: true, trusted: true, role: matchedAdmin.role, email: matchedAdmin.email, name: matchedAdmin.name });
+  }
+
+  // 4. 新裝置或未信任裝置：一律產生 6 位數一次性驗證碼傳送至主管信箱 kai1010210@gmail.com
+  const otp = String(crypto.randomInt(100000, 1000000));
+  const challenge = crypto.randomBytes(24).toString("base64url");
+  const now = Date.now();
+  const pendingRecord = {
+    challenge,
+    otp,
+    admin: matchedAdmin,
+    ip: clientIp(req),
+    ua: req.headers["user-agent"] || "",
+    attempts: 0,
+    createdAt: now,
+    lastSentAt: now,
+    expiresAt: now + 10 * 60 * 1000, // 10 分鐘
+  };
+  pendingOtpChallenges.set(challenge, pendingRecord);
+
+  sendAdminOtpMail({
+    to: ADMIN_OTP_EMAIL,
+    otp,
+    accountEmail: matchedAdmin.email,
+    ip: pendingRecord.ip,
+    ua: pendingRecord.ua,
+  }).catch(e => console.error("[MAIL] sendAdminOtpMail error:", e));
+
+  audit(req, "admin_otp_requested", `申請帳號: ${matchedAdmin.email} | 驗證碼傳送至: ${ADMIN_OTP_EMAIL}`);
+
+  const atIdx = ADMIN_OTP_EMAIL.indexOf("@");
+  const maskedEmail = atIdx > 3
+    ? ADMIN_OTP_EMAIL.slice(0, 3) + "***" + ADMIN_OTP_EMAIL.slice(atIdx - 2)
+    : ADMIN_OTP_EMAIL;
+
+  return res.json({
+    ok: false,
+    requireOtp: true,
+    challenge,
+    targetEmail: ADMIN_OTP_EMAIL,
+    targetMasked: maskedEmail,
+    message: `一次性授權驗證碼已傳送至主管信箱 (${ADMIN_OTP_EMAIL})，每個裝置僅需驗證一次。`,
+    expiresIn: 600,
+  });
+});
+
+/* --- 新裝置 OTP 驗證：核發長效信任 Cookie (kdt) 與登入 Session (ka) --- */
+app.post("/api/admin/verify-otp", async (req, res) => {
+  if (await limited("verify_otp:" + clientIp(req), 15, 600e3)) return res.status(429).json({ error: "嘗試驗證過於頻繁，請稍後再試" });
+  const { challenge, code } = req.body || {};
+  const pending = pendingOtpChallenges.get(String(challenge || ""));
+  if (!pending || Date.now() > pending.expiresAt) {
+    if (pending) pendingOtpChallenges.delete(String(challenge));
+    return res.status(400).json({ error: "驗證碼已失效或過期，請重新登入" });
+  }
+
+  if (pending.attempts >= 5) {
+    pendingOtpChallenges.delete(String(challenge));
+    audit(req, "admin_otp_max_attempts", pending.admin.email);
+    return res.status(400).json({ error: "驗證錯誤次數過多，此驗證碼已失效，請重新登入" });
+  }
+
+  const inputCode = String(code || "").trim();
+  const ok = inputCode.length === 6 && eq(inputCode, pending.otp);
+  if (!ok) {
+    pending.attempts++;
+    const remaining = 5 - pending.attempts;
+    audit(req, "admin_otp_failed_attempt", `${pending.admin.email} (尚餘 ${remaining} 次)`);
+    return res.status(400).json({
+      error: remaining > 0 ? `驗證碼不正確，尚有 ${remaining} 次機會` : "驗證錯誤次數已達上限，請重新登入",
+      remaining,
+    });
+  }
+
+  // 驗證成功！
+  pendingOtpChallenges.delete(String(challenge));
+  const currentEpoch = await getDeviceTrustEpoch();
+  const devId = crypto.randomUUID();
+
+  // 1. 設定長效裝置信任 Cookie (180 天)
+  setCookie(res, "kdt", makeToken({
+    t: "dev",
+    id: devId,
+    epoch: currentEpoch,
+    at: Date.now(),
+  }, 180 * 86400), { maxAge: 180 * 86400, strict: false });
+
+  // 2. 設定管理員登入 Session Cookie (4 小時)
   setCookie(res, "ka", makeToken({
     t: "a",
-    email: matchedAdmin.email,
-    role: matchedAdmin.role,
-    name: matchedAdmin.name,
-    isPrimary: Boolean(matchedAdmin.isPrimary),
-    pwAt: matchedAdmin.pwUpdatedAt || "",
+    email: pending.admin.email,
+    role: pending.admin.role,
+    name: pending.admin.name,
+    isPrimary: Boolean(pending.admin.isPrimary),
+    pwAt: pending.admin.pwUpdatedAt || "",
   }, 4 * 3600), { strict: true });
-  clearCookie(res, "kak");
-  res.json({ ok: true, role: matchedAdmin.role, email: matchedAdmin.email, name: matchedAdmin.name });
+
+  audit(req, "admin_otp_verified_new_device", `${pending.admin.email} | 裝置已授權並信任 | DevId: ${devId}`);
+
+  return res.json({
+    ok: true,
+    trusted: true,
+    role: pending.admin.role,
+    email: pending.admin.email,
+    name: pending.admin.name,
+  });
+});
+
+/* --- 重發驗證碼 (OTP) --- */
+app.post("/api/admin/resend-otp", async (req, res) => {
+  if (await limited("resend_otp:" + clientIp(req), 6, 600e3)) return res.status(429).json({ error: "重發驗證碼過於頻繁，請稍候再試" });
+  const { challenge } = req.body || {};
+  const pending = pendingOtpChallenges.get(String(challenge || ""));
+  if (!pending || Date.now() > pending.expiresAt) {
+    return res.status(400).json({ error: "驗證請求已過期，請重新登入" });
+  }
+
+  const now = Date.now();
+  if (now - pending.lastSentAt < 45000) {
+    const waitSec = Math.ceil((45000 - (now - pending.lastSentAt)) / 1000);
+    return res.status(429).json({ error: `請等待 ${waitSec} 秒後再重新發送` });
+  }
+
+  pending.otp = String(crypto.randomInt(100000, 1000000));
+  pending.lastSentAt = now;
+  pending.expiresAt = now + 10 * 60 * 1000;
+  pending.attempts = 0;
+
+  sendAdminOtpMail({
+    to: ADMIN_OTP_EMAIL,
+    otp: pending.otp,
+    accountEmail: pending.admin.email,
+    ip: pending.ip,
+    ua: pending.ua,
+  }).catch(e => console.error("[MAIL] sendAdminOtpMail error:", e));
+
+  audit(req, "admin_otp_resent", `${pending.admin.email} -> ${ADMIN_OTP_EMAIL}`);
+  res.json({ ok: true, message: `已重新發送驗證碼至主管信箱 (${ADMIN_OTP_EMAIL})` });
+});
+
+/* --- 裝置信任撤銷管理 --- */
+app.post("/api/admin/devices/revoke-current", (req, res) => {
+  clearCookie(res, "kdt");
+  clearCookie(res, "ka");
+  audit(req, "admin_device_revoked_current", "已撤銷本裝置之信任狀態");
+  res.json({ ok: true, message: "已撤銷本裝置信任並登出" });
+});
+
+app.post("/api/admin/devices/revoke-all", async (req, res) => {
+  if (!adminOf(req)) return notFound(res);
+  if (!superAdminOf(req)) return forbidReadOnly(res);
+  const curEpoch = await getDeviceTrustEpoch();
+  const nextEpoch = curEpoch + 1;
+  cachedDeviceTrustEpoch = nextEpoch;
+  await writeSysStore("device_trust_epoch", {
+    epoch: nextEpoch,
+    revokedAt: new Date().toISOString(),
+    revokedBy: req.admin?.email || ADMIN_EMAIL,
+  });
+  audit(req, "[資安防護] 強制所有裝置重新驗證", `提升裝置世代至 ${nextEpoch}，所有已信任裝置下次登入皆須重新通過 OTP 驗證`);
+  res.json({ ok: true, epoch: nextEpoch, message: `已成功撤銷所有已信任裝置 (世代 ${nextEpoch})` });
 });
 
 app.post("/api/admin/logout", (req, res) => {
@@ -2433,6 +2893,9 @@ app.get("/api/admin/accounts", async (req, res) => {
     me: { email: liveAdm.email, role: liveAdm.role, name: liveAdm.name },
     accounts: formatAdminAccounts(adminList, Boolean(isSuper)),
     accessKey: isSuper ? ADMIN_ACCESS_KEY : "",
+    otpEmail: ADMIN_OTP_EMAIL,
+    deviceTrusted: await isTrustedDevice(req),
+    deviceEpoch: await getDeviceTrustEpoch(),
   });
 });
 
