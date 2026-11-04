@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>KKNews · Apple 級校園創作工坊與 DFC 影音探究平台</title>
+  <title>KKNews · 校園格言創作工坊與 DFC 影音探究平台</title>
   <meta name="description" content="KKNews 結合即時卡片排版美學與 Design For Change (DFC) 沉浸式影音探究學習，為校園共創與深度思考而生。">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="stylesheet" href="/assets/ui.css?v=20261104">
@@ -19,7 +19,7 @@
 
 <body>
 
-  <!-- 全域浮動通知 (Universal Apple Floating Capsule Toast) -->
+  <!-- 全域浮動通知 -->
   <div id="toast" class="toast hide" role="status" aria-live="polite"></div>
 
   <!-- 全螢幕 Cloudflare Turnstile 驗證遮罩 -->
@@ -32,8 +32,8 @@
           <path d="m9 12 2 2 4-4" />
         </svg>
       </div>
-      <span class="apple-eyebrow blue" style="justify-content:center;margin-bottom:4px">Apple Security Verification</span>
-      <h2 style="margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:-0.022em">連線安全驗證。</h2>
+      <span class="apple-eyebrow blue" style="justify-content:center;margin-bottom:4px">連線安全防護</span>
+      <h2 style="margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:-0.022em">連線安全驗證</h2>
       <p class="sub" style="margin-bottom:20px;font-size:14px">正在確認您的瀏覽器環境安全，請完成下方驗證以進入 KKNews 創作空間。</p>
       <div style="min-height:65px;display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:12px">
         <div id="cfTurnstileWidget"></div>
@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  <!-- ==================== 登入門戶 (Apple ID 風格教育帳號驗證中心) ==================== -->
+  <!-- ==================== 登入門戶 (教育帳號驗證中心) ==================== -->
   <div id="entryLoginGate" class="entry-gate-overlay active" role="dialog" aria-modal="true"
     aria-labelledby="entryGateTitle">
     <div class="entry-gate-card">
@@ -50,7 +50,7 @@
         <div class="entry-gate-icon-wrap" style="width:64px;height:64px;border-radius:18px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.06)">
           <img src="/icon.svg" class="entry-gate-icon" width="44" height="44" alt="KKNews Logo">
         </div>
-        <span class="apple-eyebrow blue" style="margin-bottom:0">KKNews Campus Studio</span>
+        <span class="apple-eyebrow blue" style="margin-bottom:0">KKNews 校園共創平台</span>
         <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
       </div>
 
@@ -76,19 +76,16 @@
 
         <button type="button" class="apple-passkey-btn" id="entryPasskeyLoginBtn" style="margin-top:10px">
           <span style="font-size:17px">🔑</span>
-          <span>使用 Apple Passkey (Face ID / Touch ID) 登入</span>
+          <span>使用 Passkey 通行密鑰 (Face ID / Touch ID) 登入</span>
         </button>
 
         <div class="entry-domain-note" style="margin-top:14px;font-size:12.5px;color:var(--ink-tertiary)">
-          僅開放花蓮縣教育網路 <strong>@hlc.edu.tw</strong> 教職員生帳號登入（支援綁定 Apple Passkey）
+          僅開放花蓮縣教育網路 <strong>@hlc.edu.tw</strong> 教職員生帳號登入（支援綁定 Passkey 通行密鑰）
         </div>
 
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);width:100%;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn ghost sm" id="entryOpenWalletBtn" style="font-size:12.5px">
              Apple Wallet 數位證書票卡
-          </button>
-          <button type="button" class="btn ghost sm" id="entryOpenDiagBtn" style="font-size:12.5px;color:var(--blue);border-color:rgba(0,113,227,0.22);background:rgba(0,113,227,0.05)">
-            🩺 開啟全系統功能檢測中心 ›
           </button>
         </div>
 
@@ -97,7 +94,7 @@
     </div>
   </div>
 
-  <!-- ==================== Apple Global Nav 頂部極簡毛玻璃導覽列 ==================== -->
+  <!-- ==================== 頂部毛玻璃導覽列 ==================== -->
   <header class="top-header">
     <div class="brand-logo" id="brandHomeBtn" title="返回 KKNews 首頁">
       <img src="/icon.svg" class="brand-icon" width="26" height="26" alt="KKNews Logo">
@@ -121,12 +118,12 @@
         <span>Wallet 證書</span>
       </button>
 
-      <button type="button" class="top-status-btn" id="topPasskeyBtn" title="管理 Apple Passkey (Face ID / Touch ID) 生物辨識通行密鑰">
+      <button type="button" class="top-status-btn" id="topPasskeyBtn" title="管理 Passkey (Face ID / Touch ID) 生物辨識通行密鑰">
         <span>🔑</span>
         <span>Passkey</span>
       </button>
 
-      <button type="button" class="top-status-btn" id="topDiagBtn" title="開啟全系統 API、圖片與功能檢測驗收矩陣">
+      <button type="button" class="top-status-btn hide" id="topDiagBtn" title="管理員專屬：開啟全系統 API、圖片與功能檢測驗收矩陣">
         <span>🩺</span>
         <span>系統檢測</span>
       </button>
@@ -136,7 +133,7 @@
     <div class="acct-zone">
       <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
         <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
-        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與 Retina 解析度適配" aria-haspopup="true" aria-expanded="false">
+        <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與高解析度螢幕適配" aria-haspopup="true" aria-expanded="false">
           <span class="zoom-icon">🔍</span>
           <span class="zoom-text" id="zoomText">100%</span>
           <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
@@ -158,12 +155,12 @@
           <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
           <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
           <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · Studio Display / 2K</button>
-          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · Pro Display XDR / 4K</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K 高解析度螢幕</button>
+          <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K 超高解析度螢幕</button>
           <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 劇院大螢幕投影</button>
           <div class="zoom-dropdown-divider"></div>
           <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-            <span>🔄 還原自動光學適配</span>
+            <span>🔄 還原自動比例適配</span>
           </button>
         </div>
       </div>
@@ -178,15 +175,15 @@
     </div>
   </header>
 
-  <!-- ==================== 無縫網頁切換舞台 (Apple Fluid View Stage) ==================== -->
+  <!-- ==================== 無縫網頁切換舞台 ==================== -->
   <div class="view-stage" id="viewStage">
 
-    <!-- ==================== 視圖 0：Apple Bento 首頁主選單 (Home Hub) ==================== -->
+    <!-- ==================== 視圖 0：首頁主選單 (Home Hub) ==================== -->
     <section class="view-pane active-view" id="paneHome" aria-label="KKNews 首頁總覽">
       <div style="width:min(1120px, 100%);margin:0 auto">
         <div class="mission-banner">
           <div class="mission-head">
-            <span class="apple-eyebrow">KKNews Studio · 2026 Edition</span>
+            <span class="apple-eyebrow">KKNews 校園共創與探究平台</span>
             <h1 class="mission-title">創作有深度。學習有溫度。</h1>
             <span class="device-profile-badge" id="homeDeviceBadge" style="margin-top:4px"></span>
           </div>
@@ -199,10 +196,10 @@
           <button type="button" class="hub-square-btn" id="hubBtnPost">
             <div class="hub-square-top">
               <div class="hub-square-icon">✍️</div>
-              <span class="hub-square-badge ok">Proverb Studio</span>
+              <span class="hub-square-badge ok">格言工坊</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">格言創作工坊。</h2>
+              <h2 class="hub-square-title">格言創作工坊</h2>
               <p class="hub-square-desc">寫下一句格言與署名，五款劇院級版型與多維度色彩即時渲染，輸出高解析度專屬卡片。</p>
             </div>
             <div class="hub-square-foot">
@@ -217,7 +214,7 @@
               <span class="hub-square-badge lock" id="hubDfcAccessBadge">🔒 權限驗證中</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">DFC 互動劇院。</h2>
+              <h2 class="hub-square-title">DFC 互動劇院</h2>
               <p class="hub-square-desc">跟隨感受、想像、實踐、分享四個步驟，在關鍵段落沉浸思考作答，獲頒完課榮譽證書。</p>
             </div>
             <div class="hub-square-foot">
@@ -232,7 +229,7 @@
               <span class="hub-square-badge ok" id="hubStatusBadge">連線正常</span>
             </div>
             <div class="hub-square-body">
-              <h2 class="hub-square-title">雲端系統遙測。</h2>
+              <h2 class="hub-square-title">雲端系統遙測</h2>
               <p class="hub-square-desc">全天候即時觀測 Supabase PostgreSQL 叢集健康、API 響應延遲與全站核心指標。</p>
             </div>
             <div class="hub-square-foot">
@@ -240,28 +237,13 @@
               <span>›</span>
             </div>
           </button>
-
-          <button type="button" class="hub-square-btn" id="hubBtnDiag">
-            <div class="hub-square-top">
-              <div class="hub-square-icon">🩺</div>
-              <span class="hub-square-badge ok" id="hubDiagBadge">即時驗收</span>
-            </div>
-            <div class="hub-square-body">
-              <h2 class="hub-square-title">系統檢測驗收。</h2>
-              <p class="hub-square-desc">自動化檢測全站 API 回應、頁面圖片、Canvas 渲染、DFC 題型與進階功能狀態。</p>
-            </div>
-            <div class="hub-square-foot">
-              <span>開啟檢測頁面</span>
-              <span>›</span>
-            </div>
-          </button>
         </div>
 
-        <!-- Apple Bento 雙欄設計導覽卡 -->
+        <!-- 雙欄設計導覽卡 -->
         <div class="home-guide-strip">
           <div class="home-guide-card">
             <div>
-              <span class="apple-eyebrow blue">Designed for Creators · 創作與探究流程</span>
+              <span class="apple-eyebrow blue">創作與探究流程</span>
               <h3 class="home-guide-title">三步驟，讓靈感優雅落地。</h3>
               <ul class="home-guide-list" style="margin-top:14px">
                 <li><strong>01. 雕琢格言卡片</strong> — 自由切換經典居中、文青直排與現代引言，搭配專屬色票與朱砂篆刻印章。</li>
@@ -270,21 +252,21 @@
               </ul>
             </div>
             <div class="home-guide-action" style="margin-top:18px;flex-wrap:wrap;gap:8px">
-              <span class="home-guide-subtext">1080 × 1350 Retina 級輸出 · 支援 Apple Wallet</span>
+              <span class="home-guide-subtext">1080 × 1350 高畫質輸出 · 支援 Apple Wallet</span>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button type="button" class="btn ghost sm" id="homeOpenPasskeyBtn">🔑 Apple Passkey</button>
+                <button type="button" class="btn ghost sm" id="homeOpenPasskeyBtn">🔑 Passkey 通行密鑰</button>
                 <button type="button" class="btn ghost sm" id="homeQuickStartPost">前往格言工坊 ›</button>
               </div>
             </div>
           </div>
           <div class="home-guide-card">
             <div>
-              <span class="apple-eyebrow green">Design For Change · 核心精神</span>
+              <span class="apple-eyebrow green">DFC 設計思考核心精神</span>
               <h3 class="home-guide-title">把「我做不到」，化為「我們可以怎麼做」。</h3>
               <p class="home-guide-quote">「從校園日常的細微觀察出發，透過感受、想像、實踐與分享，讓每一份思考成為改變的起點。」</p>
             </div>
             <div class="home-guide-action" style="flex-wrap:wrap;gap:8px">
-              <span class="home-guide-subtext">Feel · Imagine · Do · Share</span>
+              <span class="home-guide-subtext">感受 Feel · 想像 Imagine · 實踐 Do · 分享 Share</span>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button type="button" class="btn ghost sm" id="homeOpenWalletBtn"> Wallet 證書 (.pkpass)</button>
                 <button type="button" class="btn ghost sm" id="homeQuickStartDfc">進入 DFC 劇院 ›</button>
@@ -295,16 +277,16 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 1：格言創作工坊 (Proverb Studio) ==================== -->
+    <!-- ==================== 視圖 1：格言創作工坊 ==================== -->
     <section class="view-pane" id="panePost" aria-label="格言創作工坊" style="display:none">
       <div class="post-shell">
         <div class="subpage-nav">
           <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Proverb Studio · 即時排版創作室</span>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">格言創作工坊 · 即時排版創作室</span>
         </div>
 
         <div class="apple-section-head">
-          <span class="apple-eyebrow">Apple Canvas Engine</span>
+          <span class="apple-eyebrow">即時排版創作室</span>
           <h1 class="apple-section-title">字裡行間，皆成藝術。</h1>
           <p class="apple-section-sub">寫下你想傳遞的一句話與署名。即時預覽五種排版、三款字體與細膩色彩，一鍵輸出高解析度畫作。</p>
         </div>
@@ -564,7 +546,7 @@
                   <button type="button" class="home-status-link" id="dlPreviewBtn" style="font-size:12.5px;font-weight:600">下載 PNG</button>
                 </div>
               </div>
-              <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊展開全螢幕 Retina 預覽">
+              <div class="canvas-gallery-frame" id="canvasGalleryFrame" title="點擊展開全螢幕高畫質預覽">
                 <canvas id="liveCardCanvas" class="live-cv" width="768" height="1024"></canvas>
                 <div class="canvas-zoom-hint"><span>🔍 點擊展開全螢幕預覽</span></div>
               </div>
@@ -582,12 +564,12 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 2：DFC 沉浸式互動劇院 (DFC Interactive Cinema) ==================== -->
+    <!-- ==================== 視圖 2：DFC 沉浸式互動劇院 ==================== -->
     <section class="view-pane" id="paneDfc" aria-label="DFC 互動劇院" style="display:none">
       <div class="dfc-container">
         <div class="subpage-nav">
           <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">Apple Cinema Mode · 全螢幕專注探究</span>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600" id="dfcNavRightBadge">DFC 互動劇院 · 全螢幕專注探究</span>
         </div>
 
         <!-- 防暴雷保護艙 (Spoiler Vault) -->
@@ -611,7 +593,7 @@
         <div id="dfcAuthorizedContent">
           <div class="dfc-top-bar" style="margin-top:4px">
             <div>
-              <span class="apple-eyebrow">Design For Change · Interactive Cinema</span>
+              <span class="apple-eyebrow">DFC 設計思考互動影音探究</span>
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">
                 <h2 id="dfcTitle" style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.022em">DFC 沉浸式影音探究問卷</h2>
                 <div class="dfc-survey-picker hide" id="dfcSurveyPickerWrap">
@@ -713,7 +695,7 @@
             <!-- 全螢幕專注學習鎖定遮罩 -->
             <div class="dfc-fs-lock-overlay hide" id="dfcFsLockOverlay">
               <div class="dfc-fs-lock-box">
-                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 Apple Focus Mode · 全螢幕專注學習</span>
+                <span class="dfc-fs-lock-badge" id="dfcFsLockBadge">🔒 全螢幕專注學習模式</span>
                 <div class="dfc-fs-lock-icon" id="dfcFsLockIcon">📺</div>
                 <h3 class="dfc-fs-lock-title" id="dfcFsLockTitle">請保持全螢幕模式以繼續探究</h3>
                 <p class="dfc-fs-lock-desc" id="dfcFsLockDesc">
@@ -751,22 +733,21 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 3：雲端系統遙測 (Cloud Telemetry) ==================== -->
+    <!-- ==================== 視圖 3：雲端系統遙測 ==================== -->
     <section class="view-pane" id="paneStatus" aria-label="雲端系統遙測" style="display:none">
       <div class="status-shell">
         <div class="subpage-nav">
           <button type="button" class="subpage-back-btn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Cloud Telemetry · 雲端核心與即時遙測</span>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">雲端核心與即時遙測</span>
         </div>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap">
           <div>
-            <span class="apple-eyebrow blue">System Architecture & Live Metrics</span>
+            <span class="apple-eyebrow blue">雲端架構與即時監測</span>
             <h2 class="apple-section-title" style="margin:0 0 4px">雲端核心，即時脈動。</h2>
             <p class="apple-section-sub" style="font-size:14.5px">Supabase PostgreSQL 雲端叢集與伺服器連線指標，每 4 秒自動同步更新。</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn ghost sm" id="manualRefreshStatusBtn">🔄 立即同步指標</button>
-            <button type="button" class="btn primary sm" id="statusToDiagBtn">🩺 開啟全系統功能檢測 ›</button>
           </div>
         </div>
 
@@ -842,18 +823,18 @@
       </div>
     </section>
 
-    <!-- ==================== 視圖 4：Apple 全系統功能與資源檢測驗收中心 (System Diagnostics Matrix) ==================== -->
+    <!-- ==================== 視圖 4：全系統功能與資源檢測驗收中心（僅限後台管理員） ==================== -->
     <section class="view-pane" id="paneDiag" aria-label="全系統功能檢測中心" style="display:none">
       <div class="diag-shell">
         <div class="subpage-nav">
-          <button type="button" class="subpage-back-btn" id="diagBackHomeBtn" data-go-home="1">‹ 返回首頁總覽</button>
-          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">Apple Diagnostics · 全系統自動化檢測驗收矩陣</span>
+          <a href="/adminusercontrol" class="subpage-back-btn" id="diagBackHomeBtn" style="text-decoration:none">‹ 返回後台管理中心</a>
+          <span style="font-size:12.5px;color:var(--ink-secondary);font-weight:600">🛡️ 後台管理員專屬 · 全系統自動化檢測驗收矩陣</span>
         </div>
 
         <div class="diag-hero-bar">
           <div>
-            <span class="apple-eyebrow blue">System Verification & Feature Matrix</span>
-            <h1 class="apple-section-title" style="margin:0 0 8px">全系統功能與資源檢測中心。</h1>
+            <span class="apple-eyebrow blue">全站功能與資源即時驗收</span>
+            <h1 class="apple-section-title" style="margin:0 0 8px">全系統功能與資源檢測中心</h1>
             <p class="apple-section-sub" style="max-width:720px">
               即時檢測全站 API 回應、頁面圖片與向量圖示、Canvas 2D 排版渲染、DFC 影音六大題型、後台資安防護及未來擴充功能。<br>
               <strong>可以的功能標示綠色勾勾（✅）、不行的功能標示紅色叉叉（❌）、沒做或沒加上的功能標示灰色問號（❓）。</strong>
@@ -926,7 +907,7 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h3 id="legalTitle" style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.02em;text-align:center">KKNews 校園共創公約。</h3>
+      <h3 id="legalTitle" style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.02em;text-align:center">KKNews 校園共創公約</h3>
       <div
         style="background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px;font-size:13.5px;line-height:1.6;color:var(--ink-secondary);margin-bottom:22px">
         請以尊重、正向與誠摯的態度參與格言創作與 DFC 影音探究。系統已啟用全站安全審計與防刷保護，讓我們共同守護純粹的校園學習空間。
@@ -935,12 +916,12 @@
     </div>
   </div>
 
-  <!-- 卡片全螢幕 Retina 燈箱放大檢視 (Card Lightbox Modal) -->
+  <!-- 卡片全螢幕燈箱放大檢視 (Card Lightbox Modal) -->
   <div class="card-lightbox-overlay hide" id="cardLightboxModal" role="dialog" aria-modal="true" aria-label="卡片高解析度全螢幕檢視">
     <div class="card-lightbox-dialog">
       <div class="card-lightbox-header">
         <div class="card-lightbox-info">
-          <span class="card-lightbox-title">Retina 高解析度卡片預覽</span>
+          <span class="card-lightbox-title">高解析度卡片全螢幕預覽</span>
           <span class="card-lightbox-specs" id="cardLightboxSpecs">經典居中 · 律動書風 · 經典米白</span>
         </div>
         <div class="card-lightbox-actions">
@@ -955,18 +936,18 @@
     </div>
   </div>
 
-  <!-- ==================== Apple Passkey (WebAuthn / Face ID / Touch ID) 生物辨識管理彈窗 ==================== -->
+  <!-- ==================== Passkey (WebAuthn / Face ID / Touch ID) 生物辨識管理彈窗 ==================== -->
   <div id="passkeyModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="passkeyModalTitle">
     <div class="modal" style="max-width:480px;border-radius:28px;padding:32px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div>
-          <span class="apple-eyebrow blue" style="margin-bottom:2px">Apple Passkeys · WebAuthn</span>
-          <h3 id="passkeyModalTitle" style="margin:0;font-size:21px;font-weight:700;letter-spacing:-0.02em">Face ID / Touch ID 通行密鑰。</h3>
+          <span class="apple-eyebrow blue" style="margin-bottom:2px">生物辨識通行密鑰 · Passkey</span>
+          <h3 id="passkeyModalTitle" style="margin:0;font-size:21px;font-weight:700;letter-spacing:-0.02em">Face ID / Touch ID 通行密鑰</h3>
         </div>
         <button type="button" class="btn ghost sm" id="closePasskeyModalBtn">✕ 關閉</button>
       </div>
       <p style="font-size:13.5px;color:var(--ink-secondary);line-height:1.55;margin:0 0 16px">
-        將您的學校教育帳號 (<code>@hlc.edu.tw</code>) 與當前裝置的 Apple Secure Enclave 生物辨識（Touch ID / Face ID / Windows Hello）綁定，日後即可免密碼一鍵安全登入。
+        將您的學校教育帳號 (<code>@hlc.edu.tw</code>) 與當前裝置的硬體安全晶片生物辨識（Touch ID / Face ID / Windows Hello）綁定，日後即可免密碼一鍵安全登入。
       </p>
 
       <div id="passkeyAccountBanner" style="padding:12px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);font-size:13px;margin-bottom:14px">
@@ -993,20 +974,20 @@
     <div class="modal modal-lg" style="max-width:820px;border-radius:30px;padding:32px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
         <div>
-          <span class="apple-eyebrow blue" style="margin-bottom:2px">Apple Wallet PassKit Studio · .pkpass</span>
-          <h3 id="appleWalletModalTitle" style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em"> Apple Wallet 數位榮譽證書票卡。</h3>
+          <span class="apple-eyebrow blue" style="margin-bottom:2px">數位榮譽證書與票卡工作室 · .pkpass</span>
+          <h3 id="appleWalletModalTitle" style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em"> Apple Wallet 數位榮譽證書票卡</h3>
         </div>
         <button type="button" class="btn ghost sm" id="closeAppleWalletModalBtn">✕ 關閉</button>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;align-items:center">
-        <!-- 左側：iOS Apple Wallet 實體票卡即時預覽 -->
+        <!-- 左側：Apple Wallet 實體票卡即時預覽 -->
         <div>
           <div class="ios-wallet-card" id="iosWalletCardPreview">
             <div class="ios-wallet-top">
               <div class="ios-wallet-brand">
                 <img src="/icon.svg" width="22" height="22" style="border-radius:6px" alt="KK">
-                <span>KKNews Campus</span>
+                <span>KKNews 校園共創</span>
               </div>
               <span class="ios-wallet-tag" id="walletCardBadgeType">DFC PASS</span>
             </div>
@@ -1034,7 +1015,7 @@
 
             <div class="ios-wallet-qr-box">
               <canvas id="walletQrCanvas" width="132" height="132" style="width:132px;height:132px;display:block"></canvas>
-              <div class="ios-wallet-serial" id="walletCardSerialVal">KKN-DFC-2026APPLE</div>
+              <div class="ios-wallet-serial" id="walletCardSerialVal">KKN-DFC-2026PASS</div>
             </div>
           </div>
         </div>
@@ -1045,7 +1026,7 @@
             <span class="lbl">證書票卡類型</span>
             <select class="input" id="walletCertTypeSel">
               <option value="dfc">🎬 DFC 設計思考影音探究完課榮譽證書</option>
-              <option value="proverb">✍️ Proverb Studio 校園格言原創典藏證書</option>
+              <option value="proverb">✍️ 格言創作工坊原創典藏證書</option>
             </select>
           </label>
 
@@ -1065,7 +1046,7 @@
           </label>
 
           <div style="background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:12px;color:var(--ink-secondary);line-height:1.5">
-            <strong>PassKit 封裝技術：</strong>自動打包標準 <code>pass.json</code>、<code>icon@2x.png</code>、<code>manifest.json</code> (SHA-1) 與防偽查驗條碼為 <code>.pkpass</code> 票卡檔，並同步登錄至雲端防偽查驗庫。
+            <strong>數位證書封裝技術：</strong>自動打包標準 <code>pass.json</code>、<code>icon@2x.png</code>、<code>manifest.json</code> (SHA-1) 與防偽查驗條碼為 <code>.pkpass</code> 票卡檔，並同步登錄至雲端防偽查驗庫。
           </div>
 
           <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
@@ -1074,7 +1055,7 @@
               <span>加入 Apple Wallet 錢包下載 (.pkpass)</span>
             </button>
             <button type="button" class="btn primary block" id="downloadWalletCertPngBtn" style="padding:12px 20px">
-              🖼️ 下載 Retina 高解析度數位證書典藏卡 (PNG)
+              🖼️ 下載高解析度數位證書典藏卡 (PNG)
             </button>
           </div>
         </div>
@@ -1617,24 +1598,32 @@
     };
 
     let currentTab = "home";
+    let isCurrentAdmin = false;
 
     function updateTopHeaderButtons(tabName) {
       const info = PAGE_LABELS[tabName] || PAGE_LABELS.home;
       if ($("topCurrentPageLabel")) $("topCurrentPageLabel").textContent = info.title;
       if ($("topCurrentPageHint")) $("topCurrentPageHint").textContent = info.hint;
       if ($("topStatusBtn")) $("topStatusBtn").classList.toggle("active", tabName === "status");
-      if ($("topDiagBtn")) $("topDiagBtn").classList.toggle("active", tabName === "diag");
+      if ($("topDiagBtn")) {
+        $("topDiagBtn").classList.toggle("hide", !isCurrentAdmin);
+        $("topDiagBtn").classList.toggle("active", tabName === "diag" && isCurrentAdmin);
+      }
     }
 
     function navigateToTab(tabName, updateHistory = true) {
+      if (tabName === "diag" && !isCurrentAdmin) {
+        window.location.href = "/adminusercontrol";
+        return;
+      }
       if (!PANES[tabName]) tabName = "home";
       currentTab = tabName;
       updateTopHeaderButtons(tabName);
 
-      // 若開啟「系統檢測中心 (diag)」，即使尚未登入教育帳號亦允許直接檢視與執行全站檢測
+      // 僅在後台管理員身分驗證通過時允許開啟「系統檢測中心 (diag)」，一般用戶需完成教育帳號登入
       const gate = $("entryLoginGate");
       if (gate) {
-        if (tabName === "diag" || currentUser) {
+        if ((tabName === "diag" && isCurrentAdmin) || currentUser) {
           gate.classList.remove("active");
           document.body.classList.remove("entry-locked");
         } else {
@@ -1670,7 +1659,7 @@
       }
 
       if (tabName === "status") refreshPublicStatus(true);
-      if (tabName === "diag") runFullSystemDiagnostics();
+      if (tabName === "diag" && isCurrentAdmin) runFullSystemDiagnostics();
       if (tabName === "post") {
         initCardStyleControls();
         renderLivePreviewCard();
@@ -1698,14 +1687,12 @@
       navigateToTab(currentTab === "status" ? "home" : "status");
     });
     $("topDiagBtn")?.addEventListener("click", () => {
+      if (!isCurrentAdmin) return;
       navigateToTab(currentTab === "diag" ? "home" : "diag");
     });
-    $("entryOpenDiagBtn")?.addEventListener("click", () => navigateToTab("diag"));
     $("hubBtnPost")?.addEventListener("click", () => navigateToTab("post"));
     $("hubBtnDfc")?.addEventListener("click", () => navigateToTab("dfc"));
     $("hubBtnStatus")?.addEventListener("click", () => navigateToTab("status"));
-    $("hubBtnDiag")?.addEventListener("click", () => navigateToTab("diag"));
-    $("statusToDiagBtn")?.addEventListener("click", () => navigateToTab("diag"));
     document.querySelectorAll("[data-go-home]").forEach(btn => {
       btn.addEventListener("click", () => navigateToTab("home"));
     });
@@ -5792,8 +5779,8 @@
             id: "img-top-nav-logo",
             category: CAT3,
             code: "header img.brand-icon",
-            name: "前台頂部 Apple 毛玻璃導覽列品牌圖片",
-            desc: "檢測前台頂部 Global Nav 左側品牌徽標圖片是否正常顯示且無破圖。",
+            name: "前台頂部毛玻璃導覽列品牌圖片",
+            desc: "檢測前台頂部導覽列左側品牌徽標圖片是否正常顯示且無破圖。",
             status: (navLogoEl && navLogoEl.complete && navLogoEl.naturalWidth > 0) ? "ok" : (iconSvgProbe.ok ? "ok" : "err"),
             detail: navLogoEl ? `${navLogoEl.naturalWidth || 26}×${navLogoEl.naturalHeight || 26}px` : "DOM 已就緒"
           },
@@ -5802,7 +5789,7 @@
             category: CAT3,
             code: "admin-login.html img",
             name: "後台登入頁面品牌徽標圖片與防破圖備援",
-            desc: "檢測後台登入頁 Apple 風格圓角方塊內之徽標圖片與 KK 字樣自動降級保護。",
+            desc: "檢測後台登入頁圓角方塊內之徽標圖片與 KK 字樣自動降級保護。",
             status: (adminPageRes.ok && iconSvgProbe.ok) ? "ok" : "err",
             detail: "圖片與 Fallback 正常"
           },
@@ -5837,7 +5824,7 @@
             id: "img-card-lightbox",
             category: CAT3,
             code: "#cardLightboxImg",
-            name: "格言卡片 Retina 全螢幕燈箱高清放大預覽圖片",
+            name: "格言卡片全螢幕燈箱高畫質放大預覽圖片",
             desc: "點擊畫布時即時將 Canvas 轉譯為高解析度 DataURL 並於全螢幕毛玻璃燈箱展示。",
             status: Boolean($("cardLightboxModal") && $("cardLightboxImg")) ? "ok" : "err",
             detail: "全螢幕燈箱容器就緒"
@@ -5873,8 +5860,8 @@
             id: "asset-ui-css",
             category: CAT3,
             code: "/assets/ui.css",
-            name: "Apple Cupertino Design System 全站樣式表",
-            desc: "檢測全站共用 CSS 樣式表載入、Bento 網格排版與深淺色變數系統。",
+            name: "全站視覺與響應式排版樣式表 (ui.css)",
+            desc: "檢測全站共用 CSS 樣式表載入、網格排版與深淺色變數系統。",
             status: cssRes.ok ? "ok" : "err",
             detail: `HTTP ${cssRes.status} · ${cssRes.ms}ms`
           },
@@ -5901,8 +5888,8 @@
           {
             id: "ui-apple-nav",
             category: CAT4,
-            code: "Apple Global Nav",
-            name: "Apple 毛玻璃頂部導覽列與無縫視圖切換舞台",
+            code: "Top Navigation & Views",
+            name: "頂部毛玻璃導覽列與無縫視圖切換舞台",
             desc: "支援首頁總覽、格言工坊、DFC 劇院、雲端遙測與系統檢測五大視圖零刷新平滑切換。",
             status: (PANES.home && PANES.post && PANES.dfc && PANES.status && PANES.diag) ? "ok" : "err",
             detail: "5 大視圖路由就緒"
@@ -5911,7 +5898,7 @@
             id: "ui-retina-zoom",
             category: CAT4,
             code: "Auto Zoom Engine",
-            name: "跨裝置 Retina 解析度智慧縮放引擎 (80% ~ 150%)",
+            name: "跨裝置高解析度螢幕智慧縮放引擎 (80% ~ 150%)",
             desc: "自動偵測螢幕解析度與 DPR 計算最佳縮放比，並支援手動切換與 Alt +/- 快捷鍵。",
             status: Boolean($("resolutionZoomPill") && $("zoomDropdown")) ? "ok" : "err",
             detail: `目前縮放 ${$("zoomText")?.textContent || "100%"}`
@@ -5919,8 +5906,8 @@
           {
             id: "ui-dark-mode",
             category: CAT4,
-            code: "Cupertino / OLED Theme",
-            name: "Apple 淺色 (#F5F5F7) 與 Pro 深色 (#000000) 外觀切換",
+            code: "Light / Dark Theme",
+            name: "日間淺色 (#F5F5F7) 與夜間深色 (#000000) 外觀切換",
             desc: "支援系統偏好自動跟隨與手動一鍵切換深淺色主題，並持久化記憶於 LocalStorage。",
             status: Boolean($("themeToggleBtn") && document.documentElement.getAttribute("data-theme")) ? "ok" : "err",
             detail: `目前模式: ${document.documentElement.getAttribute("data-theme")}`
@@ -6121,8 +6108,8 @@
           {
             id: "feat-apple-passkey",
             category: CAT6,
-            code: "WebAuthn / Apple Passkeys",
-            name: "Apple Passkey / Face ID / Touch ID 生物辨識無密碼認證系統",
+            code: "WebAuthn / Passkeys",
+            name: "Passkey / Face ID / Touch ID 生物辨識無密碼認證系統",
             desc: "支援前台學校帳號 (@hlc.edu.tw) 與後台管理員綁定硬體生物辨識通行密鑰，實現一鍵免密碼安全登入。",
             status: (passkeyApiProbe.ok && passkeyData.ok && $("passkeyModal")) ? "ok" : "err",
             detail: passkeyApiProbe.ok ? `HTTP 200 · RP:${passkeyData.rpId || "ready"} · 已註冊 ${passkeyData.totalRegistered ?? 0} 把金鑰` : "端點異常"
@@ -6132,7 +6119,7 @@
             category: CAT6,
             code: "Apple Wallet (.pkpass)",
             name: "Apple Wallet 數位榮譽證書票卡封裝引擎 (.pkpass + QR 防偽查驗)",
-            desc: "支援將 DFC 探究完課榮譽證書與校園格言創作封裝為標準 Apple PassKit (.pkpass) 票卡及 Retina 典藏版 PNG。",
+            desc: "支援將 DFC 探究完課榮譽證書與校園格言創作封裝為標準 Apple PassKit (.pkpass) 票卡及高解析度典藏版 PNG。",
             status: (walletApiProbe.ok && walletData.ok && walletData.pkpassSize > 0 && $("appleWalletModal")) ? "ok" : "err",
             detail: walletApiProbe.ok ? `PKPass ${walletData.pkpassSize}B · 序號 ${walletData.serialNumber}` : "封裝異常"
           },
@@ -6285,7 +6272,7 @@
       if (!currentDiagItems.length) return;
       const report = {
         generatedAt: new Date().toISOString(),
-        platform: "KKNews Apple Design System 3.0",
+        platform: "KKNews 校園共創與探究平台",
         summary: {
           total: currentDiagItems.length,
           ok: currentDiagItems.filter(i => i.status === "ok").length,
@@ -6326,10 +6313,6 @@
       const initHash = window.location.hash.replace("#", "");
       const startInDiag = (initPath === "/diagnostics" || initPath === "/check" || initHash === "diag");
 
-      if (startInDiag) {
-        navigateToTab("diag", false);
-      }
-
       refreshPublicStatus(true);
       setInterval(() => {
         if (!document.hidden) refreshPublicStatus(false);
@@ -6344,6 +6327,8 @@
       ]);
       googleClientId = meData.googleClientId || "";
       baseUrl = meData.baseUrl || "";
+      isCurrentAdmin = Boolean(meData.isAdmin);
+      if ($("topDiagBtn")) $("topDiagBtn").classList.toggle("hide", !isCurrentAdmin);
 
       const authedUser = callbackUser || meData.user || null;
       const accessObj = callbackUser?.dfcAccess || meData.dfcAccess || { allowed: false, mode: "whitelist", reason: "unauthenticated" };
@@ -6352,12 +6337,17 @@
       await loadDfcConfig(targetFormId);
 
       if (startInDiag) {
-        navigateToTab("diag", false);
+        if (isCurrentAdmin) {
+          navigateToTab("diag", false);
+        } else {
+          window.location.href = "/adminusercontrol";
+          return;
+        }
       } else if (authedUser) {
         logAction("進入系統", `已驗證身分: ${authedUser.email}`);
         if (targetFormId) {
           navigateToTab("dfc", false);
-        } else if (["home", "post", "dfc", "status", "diag"].includes(initHash)) {
+        } else if (["home", "post", "dfc", "status"].includes(initHash)) {
           navigateToTab(initHash, false);
         } else {
           navigateToTab("home", false);
@@ -6417,13 +6407,13 @@
         const j = await r.json().catch(() => ({}));
         const keys = Array.isArray(j.passkeys) ? j.passkeys : [];
         if (!keys.length) {
-          listWrap.innerHTML = `<div style="padding:12px;border-radius:12px;background:var(--bg);color:var(--ink-tertiary);font-size:12.5px;text-align:center">目前尚未綁定任何 Apple Passkey 通行密鑰</div>`;
+          listWrap.innerHTML = `<div style="padding:12px;border-radius:12px;background:var(--bg);color:var(--ink-tertiary);font-size:12.5px;text-align:center">目前尚未綁定任何 Passkey 通行密鑰</div>`;
           return;
         }
         listWrap.innerHTML = keys.map(k => `
           <div class="passkey-item-row">
             <div>
-              <div style="font-weight:700;font-size:13px;color:var(--ink)">🔑 ${escapeHtml(k.deviceName || "Apple Passkey")}</div>
+              <div style="font-weight:700;font-size:13px;color:var(--ink)">🔑 ${escapeHtml(k.deviceName || "Passkey 通行密鑰")}</div>
               <div style="font-size:11.5px;color:var(--ink-tertiary)">${escapeHtml(k.email)} · 建立於 ${escapeHtml((k.createdAt || "").slice(0, 10))} · 驗證 ${Number(k.signCount) || 1} 次</div>
             </div>
             <button type="button" class="btn ghost sm del-user-pk-btn" data-pk-id="${escapeHtml(k.id)}" style="color:var(--red);font-size:11.5px">移除</button>
@@ -6438,7 +6428,7 @@
               headers: { "X-Requested-With": "fetch" }
             });
             if (dr.ok) {
-              showPasskeyAlert("✓ 已移除該把 Apple Passkey 通行密鑰", true);
+              showPasskeyAlert("✓ 已移除該把 Passkey 通行密鑰", true);
               refreshUserPasskeyList();
             }
           };
@@ -6459,7 +6449,7 @@
         return;
       }
       if (!window.PublicKeyCredential || !navigator.credentials?.create) {
-        showPasskeyAlert("您目前的瀏覽器環境不支援 WebAuthn / Apple Passkey。");
+        showPasskeyAlert("您目前的瀏覽器環境不支援 WebAuthn / Passkey。");
         return;
       }
       const btn = $("bindUserPasskeyBtn");
@@ -6521,8 +6511,8 @@
         const vj = await vr.json().catch(() => ({}));
         if (!vr.ok || !vj.ok) throw new Error(vj.error || "Passkey 儲存失敗");
 
-        showPasskeyAlert("🎉 Apple Passkey (Face ID / Touch ID) 綁定成功！下次可免密碼一鍵登入。", true);
-        say("✓ 已綁定 Apple Passkey 生物辨識通行密鑰", true);
+        showPasskeyAlert("🎉 Passkey (Face ID / Touch ID) 綁定成功！下次可免密碼一鍵登入。", true);
+        say("✓ 已綁定 Passkey 生物辨識通行密鑰", true);
         refreshUserPasskeyList();
       } catch (e) {
         if (e.name !== "NotAllowedError") {
@@ -6538,7 +6528,7 @@
 
     async function loginWithApplePasskey() {
       if (!window.PublicKeyCredential || !navigator.credentials?.get) {
-        say("您的瀏覽器環境不支援 WebAuthn / Apple Passkey，請使用 Google 教育帳號登入。");
+        say("您的瀏覽器環境不支援 WebAuthn / Passkey，請使用 Google 教育帳號登入。");
         return;
       }
       const pkBtn = $("entryPasskeyLoginBtn");
@@ -6590,7 +6580,7 @@
         renderMe(currentUser, vj.dfcAccess || { allowed: true, mode: "whitelist" });
         await loadDfcConfig();
         $("passkeyModal")?.classList.add("hide");
-        say(`🎉 歡迎回來，${vj.name || vj.email} (Apple Passkey 驗證通過)`, true);
+        say(`🎉 歡迎回來，${vj.name || vj.email} (Passkey 驗證通過)`, true);
         navigateToTab("home", false);
       } catch (e) {
         const msg = e.name === "NotAllowedError"
@@ -6616,8 +6606,8 @@
     /* ============================================================================
      * Apple Wallet (.pkpass) 數位榮譽證書與票卡工作室
      * ============================================================================ */
-    let currentWalletSerial = "KKN-DFC-2026APPLE";
-    let currentWalletVerifyUrl = `${location.origin}/api/wallet/verify/KKN-DFC-2026APPLE`;
+    let currentWalletSerial = "KKN-DFC-2026PASS";
+    let currentWalletVerifyUrl = `${location.origin}/api/wallet/verify/KKN-DFC-2026PASS`;
 
     function drawWalletQrMatrix(canvas, text) {
       if (!canvas) return;

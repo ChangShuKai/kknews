@@ -1203,7 +1203,11 @@ function sendStaticAsset(req, res, content, contentType, cacheControl = "public,
 
 /* --- 前台與靜態資源 --- */
 app.get("/", (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "public, max-age=60, s-maxage=600, stale-while-revalidate=86400"));
-app.get(["/diagnostics", "/check"], (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "no-store"));
+app.get(["/diagnostics", "/check"], async (req, res) => {
+  if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
+  if (!adminOf(req)) return res.redirect(302, "/adminusercontrol");
+  return sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "private, no-store");
+});
 app.get([("/icon.svg"), "/favicon.ico"], (req, res) => sendStaticAsset(req, res, PAGES.icon, "image/svg+xml; charset=utf-8", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"));
 app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "text/css; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
 app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
@@ -2068,7 +2072,9 @@ app.post("/api/auth/google", async (req, res) => {
 });
 
 app.get("/api/me", async (req, res) => {
-  const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, "") };
+  if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
+  const isAdmin = Boolean(adminOf(req));
+  const base = { googleClientId: GOOGLE_CLIENT_ID, baseUrl: BASE_URL.replace(/\/$/, ""), isAdmin };
   const u = userOf(req);
   if (!u) return res.json({ user: null, dfcAccess: { allowed: false, mode: "whitelist", reason: "unauthenticated" }, ...base });
   const dfcAccess = await evaluateDfcAccess(req);
@@ -4476,7 +4482,7 @@ app.get("/api/passkey/list", async (req, res) => {
         scope: k.scope,
         email: k.email,
         name: k.name || "",
-        deviceName: k.deviceName || "Apple Passkey (Face ID / Touch ID)",
+        deviceName: k.deviceName || "Passkey 通行密鑰 (Face ID / Touch ID)",
         createdAt: k.createdAt,
         lastUsedAt: k.lastUsedAt || k.createdAt,
         signCount: k.signCount || 1,
@@ -4534,7 +4540,7 @@ app.post("/api/passkey/register-options", async (req, res) => {
     challenge,
     challengeToken,
     rp: {
-      name: "KKNews Apple Campus Studio",
+      name: "KKNews 校園共創平台",
       id: rpId,
     },
     user: {
@@ -4879,7 +4885,7 @@ async function buildAppleWalletPassBundle(params, req) {
     passTypeIdentifier: "pass.tw.edu.hlc.kknews.certificate",
     serialNumber,
     teamIdentifier: "KKNEWS2026",
-    organizationName: "KKNews Apple Campus Studio",
+    organizationName: "KKNews 校園共創平台",
     description: certType === "proverb" ? "KKNews 校園格言原創典藏證書" : "KKNews DFC 設計思考探究完課榮譽證書",
     logoText: "KKNews · 校園榮譽證書",
     foregroundColor: "rgb(255, 255, 255)",
@@ -5092,14 +5098,16 @@ app.get("/api/wallet/verify/:serial", async (req, res) => {
     verified: validFormat,
     certificate: validFormat ? {
       serialNumber: serial,
-      issuer: "KKNews Apple Campus Studio",
+      issuer: "KKNews 校園共創平台",
       status: "VALID_SIGNATURE",
     } : null,
   });
 });
 
-// 系統全方位功能與資源自動診斷端點
+// 系統全方位功能與資源自動診斷端點（僅限後台管理員存取）
 app.get("/api/diagnostics", async (req, res) => {
+  if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
+  if (!adminOf(req)) return res.status(403).json({ ok: false, error: "僅限後台管理員查看系統檢測" });
   try {
     const [m, proverbsCount, dfcStore, igCfg, passkeysList, walletPasses] = await Promise.all([
       fetchSupabaseRealMetrics(),

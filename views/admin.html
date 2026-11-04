@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>KKNews Console · Apple 級雲端管理與審計中心</title>
+<title>KKNews · 後台管理與審計中心</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
 <link rel="stylesheet" href="/assets/ui.css?v=20261104">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap" rel="stylesheet">
@@ -60,11 +60,11 @@
 
   <!-- 右上角管理員帳號與顯示器光學縮放區 -->
   <div class="acct-zone">
-    <a href="/diagnostics" class="btn ghost sm" style="font-size:12px;padding:5px 12px;text-decoration:none" title="開啟 Apple 全系統功能檢測驗收中心">🩺 系統檢測</a>
+    <a href="/diagnostics" class="btn ghost sm" style="font-size:12px;padding:5px 12px;text-decoration:none" title="開啟全系統功能檢測驗收中心">🩺 系統檢測</a>
 
     <div class="resolution-zoom-pill" id="resolutionZoomPill" title="依顯示器解析度智慧縮放版面">
       <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn" title="縮小畫面 (Alt + -)" aria-label="縮小畫面">−</button>
-      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與 Retina 解析度適配" aria-haspopup="true" aria-expanded="false">
+      <button type="button" class="zoom-display-btn" id="zoomDisplayBtn" title="設定畫面縮放比例與高解析度適配" aria-haspopup="true" aria-expanded="false">
         <span class="zoom-icon">🔍</span>
         <span class="zoom-text" id="zoomText">100%</span>
         <span class="zoom-auto-badge" id="zoomAutoBadge">自動</span>
@@ -86,12 +86,12 @@
         <button type="button" class="zoom-opt-btn" data-zoom-val="0.90">90% · 筆電適中</button>
         <button type="button" class="zoom-opt-btn" data-zoom-val="1.00">100% · 標準比例</button>
         <button type="button" class="zoom-opt-btn" data-zoom-val="1.10">110% · 舒適放大</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · Studio Display / 2K</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · Pro Display XDR / 4K</button>
-        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 劇院大螢幕投影</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.20">120% · 2K 高解析度螢幕</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.35">135% · 4K 超高解析度螢幕</button>
+        <button type="button" class="zoom-opt-btn" data-zoom-val="1.50">150% · 大螢幕投影</button>
         <div class="zoom-dropdown-divider"></div>
         <button type="button" class="zoom-opt-btn reset-btn" data-zoom-val="reset">
-          <span>🔄 還原自動光學適配</span>
+          <span>🔄 還原自動適配</span>
         </button>
       </div>
     </div>
@@ -155,7 +155,7 @@
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <span class="apple-eyebrow blue">Design For Change · Studio & Telemetry</span>
+          <span class="apple-eyebrow blue">互動影音與題庫管理</span>
           <h3 style="display:flex;align-items:center;gap:8px;font-size:22px;letter-spacing:-0.02em">DFC 互動問卷與時間軸題庫工作室。</h3>
           <p>所有問卷單元、時間點題目與學生作答行為數據均原生儲存於 Supabase PostgreSQL 雲端資料庫。</p>
         </div>
@@ -209,7 +209,7 @@
     <div class="panel-surface" id="dfcAccessControlSurface">
       <div class="panel-surface-head">
         <div>
-          <span class="apple-eyebrow">Spoiler Vault & Access Control</span>
+          <span class="apple-eyebrow">防暴雷與觀看名單控管</span>
           <h3 style="display:flex;align-items:center;gap:8px;font-size:20px">DFC 劇院防暴雷與觀看白名單管理。</h3>
           <p>精準設定可進入 DFC 劇院之學校帳號（自動同步寫入雲端設定與 <code>public.dfc_access_list</code>），未授權帳號將啟動防暴雷保護艙。</p>
         </div>
@@ -270,7 +270,7 @@ s1120002
     <div class="panel-surface">
       <div class="panel-surface-head">
         <div>
-          <span class="apple-eyebrow blue">Analytics & Response Telemetry</span>
+          <span class="apple-eyebrow blue">作答數據與交叉統計</span>
           <h3 style="font-size:20px">探究作答成果與深度圖表分析。</h3>
           <p id="csvSourceHint">即時呈現 <code>public.dfc_responses</code> 中之填答明細、觀看完成率與各題統計圖表。</p>
         </div>
@@ -334,7 +334,7 @@ s1120002
         <div class="panel-surface" id="deviceTrustSecurityCard">
           <div class="panel-surface-head" style="margin-bottom:12px">
             <div>
-              <span class="apple-eyebrow blue">Two-Factor Authentication & Device Trust</span>
+              <span class="apple-eyebrow blue">雙重認證與裝置信任</span>
               <h3 style="margin:0 0 4px;font-size:20px">雙重認證與受信任裝置管理。</h3>
               <p style="margin:0;font-size:13px;color:var(--ink-secondary)">新裝置登入強制傳送 6 位數驗證碼至安全主管信箱，通過一次驗證即自動納入受信任裝置。</p>
             </div>
@@ -410,7 +410,7 @@ s1120002
       <div class="panel-surface" id="addAdminCard">
         <div class="panel-surface-head">
           <div>
-            <span class="apple-eyebrow">Role-Based Access Control</span>
+            <span class="apple-eyebrow">權限分級管理</span>
             <h3>新增協同管理員。</h3>
             <p>可手動輸入信箱，或從已登入之學校帳號快速帶入。</p>
           </div>
@@ -449,12 +449,12 @@ s1120002
           <button type="submit" class="btn primary block" id="createAdminBtn" style="margin-top:22px">建立管理員帳號</button>
         </form>
 
-        <!-- Apple Passkey (Face ID / Touch ID) 管理員硬體生物辨識金鑰綁定 -->
+        <!-- Passkey (Face ID / Touch ID) 管理員硬體生物辨識金鑰綁定 -->
         <div style="margin-top:22px;padding-top:20px;border-top:1px solid var(--line)">
-          <span class="apple-eyebrow blue" style="margin-bottom:4px">Apple Passkeys · WebAuthn</span>
+          <span class="apple-eyebrow blue" style="margin-bottom:4px">生物辨識通行密鑰 · Passkeys</span>
           <h4 style="margin:0 0 6px;font-size:16px">Face ID / Touch ID 通行密鑰綁定</h4>
           <p style="margin:0 0 12px;font-size:12.5px;color:var(--ink-secondary);line-height:1.5">
-            將您當前的 Mac (Touch ID)、iPhone 或 iPad (Face ID) 綁定為管理員硬體生物辨識金鑰，日後於後台登入頁可免密碼一鍵進入。
+            將您當前的裝置（Touch ID / Face ID / Windows Hello）綁定為管理員硬體生物辨識金鑰，日後於後台登入頁可免密碼一鍵進入。
           </p>
           <button type="button" class="apple-passkey-btn" id="bindAdminPasskeyBtn" style="margin-bottom:10px">
             <span>🔑</span>
@@ -501,7 +501,7 @@ s1120002
         <div class="panel-surface">
           <div class="panel-surface-head">
             <div>
-              <span class="apple-eyebrow">Meta Graph API & Webhook</span>
+              <span class="apple-eyebrow">社群自動同步</span>
               <h3>Instagram 自動發布設定。</h3>
               <p>支援 Meta 官方 Instagram Graph API 或 Make / Zapier / n8n Webhook 雙軌自動發布。</p>
             </div>
@@ -558,7 +558,7 @@ s1120002
           <div class="panel-surface">
             <div class="panel-surface-head" style="margin-bottom:8px">
               <div>
-                <span class="apple-eyebrow blue">Optical Image Pipeline</span>
+                <span class="apple-eyebrow blue">高畫質圖檔合成</span>
                 <h4 style="margin:0 0 4px;font-size:17px">Meta 官方影像規格自動適配。</h4>
               </div>
             </div>
@@ -619,7 +619,7 @@ s1120002
       <div class="panel-surface sys-panel-card">
         <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
           <div>
-            <span class="apple-eyebrow green">Database Cluster Telemetry</span>
+            <span class="apple-eyebrow green">資料庫叢集監控</span>
             <h3>Supabase 雲端資料庫叢集。</h3>
             <p>即時監控 PostgreSQL 實例連線池與硬體資源負載。</p>
           </div>
@@ -669,7 +669,7 @@ s1120002
       <div class="panel-surface sys-panel-card">
         <div class="panel-surface-head" style="margin-bottom:14px;padding-bottom:12px">
           <div>
-            <span class="apple-eyebrow blue">Runtime & I/O Performance</span>
+            <span class="apple-eyebrow blue">系統效能與吞吐量</span>
             <h3>效能指標與吞吐量。</h3>
             <p>API 延遲回應時間、快取命中率與 Node.js 執行環境指標。</p>
           </div>
@@ -715,16 +715,16 @@ s1120002
 </main>
 
 <!-- 照片放大燈箱 (含防破圖優雅降級) -->
-<div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片光學檢視">
+<div id="lightbox" class="modal-bg hide" role="dialog" aria-modal="true" aria-label="照片放大檢視">
   <div class="lightbox-box">
     <button type="button" class="lightbox-close-btn" id="lightboxCloseBtn" title="關閉預覽 (Esc)">✕</button>
-    <img id="lightboxImg" class="lightbox-preview-img" alt="ProRAW 光學預覽">
+    <img id="lightboxImg" class="lightbox-preview-img" alt="卡片高解析度預覽">
     <div id="lightboxFallback" class="media-fallback-slate hide" style="min-width:280px;background:var(--surface-solid)">
       <div class="media-fallback-icon">🖼️</div>
-      <div class="media-fallback-title">光學影像資源暫時無法載入</div>
+      <div class="media-fallback-title">影像資源暫時無法載入</div>
       <div class="media-fallback-desc">影像物件可能已由雲端清理或網路受限，點選背景即可關閉視窗。</div>
     </div>
-    <div class="lightbox-tip-caption">點選任意背景處或按 Esc 鍵關閉光學檢視器</div>
+    <div class="lightbox-tip-caption">點選任意背景處或按 Esc 鍵關閉檢視視窗</div>
   </div>
 </div>
 
@@ -744,12 +744,12 @@ s1120002
 <!-- 管理員權限編輯彈窗 -->
 <div id="editAdminModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="editAdminModalTitle">
   <div class="modal" style="max-width:440px">
-    <span class="apple-eyebrow" style="margin-bottom:4px">Access Role Studio</span>
+    <span class="apple-eyebrow" style="margin-bottom:4px">權限與密碼設定</span>
     <h3 id="editAdminModalTitle" style="margin:0 0 6px;font-size:20px;letter-spacing:-0.02em">編輯管理員權限與金鑰</h3>
     <p id="editAdminModalSub" class="sub" style="margin-bottom:16px;font-size:13.5px">配置該管理帳號之存取層級或重設登入密碼。</p>
     <form id="editAdminForm" autocomplete="off">
       <label class="field" style="margin-top:0">
-        <span class="lbl">電子郵件信箱 (Apple ID / Email)</span>
+        <span class="lbl">管理員電子郵件</span>
         <input class="input" id="editAdminEmail" type="email" readonly style="background:var(--bg);color:var(--ink-secondary)">
       </label>
       <label class="field">
@@ -783,7 +783,7 @@ s1120002
   <div class="modal modal-xl">
     <div class="studio-head">
       <div>
-        <span class="apple-eyebrow" style="margin-bottom:2px">Timeline &amp; Checkpoint Director</span>
+        <span class="apple-eyebrow" style="margin-bottom:2px">時間軸與題目編導</span>
         <h3 id="formConfigModalTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px;letter-spacing:-0.02em">🎬 DFC 互動時間軸與題目編導工作室</h3>
         <p class="sub" style="margin:2px 0 0;font-size:12.5px">即時預覽影片時間軸、精準釘選互動錨點與題型選項，所有變更直接同步至 Supabase 雲端資料庫。</p>
       </div>
@@ -973,7 +973,7 @@ s1120002
   <div class="modal modal-lg" style="max-width:800px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div>
-        <span class="apple-eyebrow" style="margin-bottom:2px">Batch Question Importer</span>
+        <span class="apple-eyebrow" style="margin-bottom:2px">批次題庫匯入</span>
         <h3 id="importQuestionsTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px">
           📥 批次匯入時間軸題目 (CSV / Excel)
         </h3>
@@ -1047,7 +1047,7 @@ s1120002
   <div class="modal modal-lg" style="max-width:680px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div>
-        <span class="apple-eyebrow" style="margin-bottom:2px">Submission Inspector</span>
+        <span class="apple-eyebrow" style="margin-bottom:2px">作答明細檢視</span>
         <h3 id="respDetailTitle" style="margin:0;font-size:19px">📝 學員作答紀錄完整檢視</h3>
       </div>
       <button type="button" class="btn ghost sm" id="closeRespDetailBtn">關閉</button>
@@ -1060,7 +1060,7 @@ s1120002
 <!-- 匯入 CSV 彈窗 -->
 <div id="importCsvModal" class="modal-bg hide" role="dialog" aria-modal="true" aria-labelledby="importCsvTitle">
   <div class="modal" style="max-width:540px">
-    <span class="apple-eyebrow" style="margin-bottom:4px">CSV Data Importer</span>
+    <span class="apple-eyebrow" style="margin-bottom:4px">CSV 紀錄匯入</span>
     <h3 id="importCsvTitle" style="margin:0 0 6px;font-size:19px">匯入問卷作答紀錄 CSV 至 Supabase</h3>
     <p class="sub" style="margin-bottom:12px;font-size:13.5px">選擇 <code>.csv</code> 檔案或直接貼上 CSV 格式文字進行批次寫入。</p>
     <label class="field" style="margin-top:0">
@@ -1083,7 +1083,7 @@ s1120002
   <div class="modal modal-lg" style="max-width:640px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div>
-        <span class="apple-eyebrow" style="margin-bottom:2px">Quick Checkpoint Editor</span>
+        <span class="apple-eyebrow" style="margin-bottom:2px">單題快速編輯</span>
         <h3 id="quickQuestionTitle" style="margin:0;font-size:19px;display:flex;align-items:center;gap:8px">
           ✏️ 快速編輯時間軸題目 (即時同步 Supabase)
         </h3>
@@ -6039,7 +6039,7 @@ async function refreshAdminPasskeys() {
     wrap.innerHTML = keys.map(k => `
       <div class="passkey-item-row">
         <div>
-          <div style="font-weight:700;color:var(--ink);font-size:13px">🔑 ${esc(k.deviceName || "Apple Passkey")}</div>
+          <div style="font-weight:700;color:var(--ink);font-size:13px">🔑 ${esc(k.deviceName || "Passkey 通行密鑰")}</div>
           <div style="font-size:11.5px;color:var(--ink-tertiary)">綁定於 ${esc((k.createdAt || "").slice(0, 10))} · 使用 ${Number(k.signCount) || 1} 次</div>
         </div>
         <button type="button" class="btn ghost sm del-admin-pk-btn" data-pk-id="${esc(k.id)}" style="color:var(--err);font-size:11.5px">移除</button>
@@ -6054,7 +6054,7 @@ async function refreshAdminPasskeys() {
           headers: { "X-Requested-With": "fetch" },
         });
         if (dr.ok) {
-          toast("已移除該把 Apple Passkey 金鑰");
+          toast("已移除該把 Passkey 通行密鑰");
           refreshAdminPasskeys();
         }
       };
@@ -6065,7 +6065,7 @@ async function refreshAdminPasskeys() {
 if ($("bindAdminPasskeyBtn")) {
   $("bindAdminPasskeyBtn").onclick = async () => {
     if (!window.PublicKeyCredential || !navigator.credentials?.create) {
-      toast("您的瀏覽器環境不支援 WebAuthn / Apple Passkey", true);
+      toast("您的瀏覽器環境不支援 Passkey 生物辨識", true);
       return;
     }
     const btn = $("bindAdminPasskeyBtn");
@@ -6134,7 +6134,7 @@ if ($("bindAdminPasskeyBtn")) {
       });
       const vj = await verRes.json().catch(() => ({}));
       if (!verRes.ok || !vj.ok) throw new Error(vj.error || "Passkey 儲存失敗");
-      toast("✓ 已成功綁定 Apple Passkey！下次可直接以 Face ID / Touch ID 登入後台");
+      toast("✓ 已成功綁定 Passkey 通行密鑰！下次可直接以 Face ID / Touch ID 登入後台");
       refreshAdminPasskeys();
     } catch (e) {
       if (e.name !== "NotAllowedError") {
