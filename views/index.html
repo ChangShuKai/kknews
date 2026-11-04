@@ -7,9 +7,14 @@
   <title>KKNews · 校園金句工坊與 DFC 影音學習平台</title>
   <meta name="description" content="KKNews 是一個專為校園打造的文字創作與 DFC (Design For Change) 影音互動探究學習平台，支援即時卡片排版合成與安全問答。">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
-  <link rel="stylesheet" href="/assets/ui.css">
+  <link rel="stylesheet" href="/assets/ui.css?v=20261104">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap"
     rel="stylesheet">
+  <style>
+    .brand-logo { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .brand-icon, img.brand-icon { width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
+    .entry-gate-icon, img.entry-gate-icon { width: 40px !important; height: 40px !important; max-width: 40px !important; max-height: 40px !important; border-radius: 12px; object-fit: contain; flex-shrink: 0; }
+  </style>
 </head>
 
 <body>
@@ -42,7 +47,7 @@
     <div class="entry-gate-card">
       <div class="entry-gate-brand">
         <div class="entry-gate-icon-wrap">
-          <img src="/icon.svg" class="entry-gate-icon" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('beforeend','<div class=\'brand-icon-fallback\'>KK</div>');">
+          <img src="/icon.svg" class="entry-gate-icon" width="40" height="40" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('beforeend','<div class=\'brand-icon-fallback\'>KK</div>');">
         </div>
         <span class="device-profile-badge" id="loginDeviceBadge" style="display:none"></span>
       </div>
@@ -76,7 +81,7 @@
   <!-- 頂部極簡導覽列：移除頂部 Dock 欄，僅保留「目前頁面標籤名稱按鈕(自動切換)」與「系統狀態按鈕」 -->
   <header class="top-header">
     <div class="brand-logo" id="brandHomeBtn" title="返回首頁">
-      <img src="/icon.svg" class="brand-icon" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
+      <img src="/icon.svg" class="brand-icon" width="28" height="28" alt="KKNews Logo" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
       <span>KKNEWS</span>
     </div>
 

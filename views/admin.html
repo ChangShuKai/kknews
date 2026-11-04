@@ -6,8 +6,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>KKNews · 後台管理系統</title>
 <link rel="icon" type="image/svg+xml" href="/icon.svg">
-<link rel="stylesheet" href="/assets/ui.css">
+<link rel="stylesheet" href="/assets/ui.css?v=20261104">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Reggae+One&display=swap" rel="stylesheet">
+<style>
+  .brand { display: inline-flex; align-items: center; gap: 10px; }
+  .brand img, .brand svg, .brand-icon { width: 24px !important; height: 24px !important; max-width: 24px !important; max-height: 24px !important; border-radius: 7px; object-fit: contain; flex-shrink: 0; }
+</style>
 </head>
 <body>
 
@@ -15,7 +19,7 @@
 <header class="admin-header">
   <div class="brand-wrap">
     <div class="brand" style="cursor:default">
-      <img src="/icon.svg" alt="" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
+      <img src="/icon.svg" class="brand-icon" width="24" height="24" alt="" onerror="this.onerror=null;this.classList.add('hide');this.parentElement.insertAdjacentHTML('afterbegin','<div class=\'brand-icon-fallback\'>KK</div>');">
       <span>KKNEWS</span>
       <small>CONSOLE</small>
     </div>

@@ -1986,7 +1986,21 @@ img {
   vertical-align: middle;
   object-fit: cover;
 }
-img.brand-icon, img.entry-gate-icon {
+img.brand-icon, .brand-icon {
+  width: 28px !important;
+  height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+img.entry-gate-icon, .entry-gate-icon {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  border-radius: 12px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -2884,15 +2898,40 @@ html[data-layout="mobile"] .spoiler-vault-card {
 }
 
 .brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   position: relative;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.14em;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  transition: transform 0.2s var(--spring-smooth), opacity 0.2s;
+}
+.brand-logo:hover {
+  opacity: 0.88;
+  transform: scale(0.985);
+}
+.brand-logo:active {
+  transform: scale(0.96);
+}
+.brand-logo span {
   background: linear-gradient(135deg, var(--ink) 0%, var(--ink-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-icon {
+  width: 28px !important;
+  height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
   box-shadow: 0 4px 14px rgba(0, 113, 227, 0.2) !important;
   transition: transform 0.3s var(--spring-bounce);
 }
