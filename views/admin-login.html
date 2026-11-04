@@ -160,6 +160,17 @@
 
         <button type="submit" class="btn primary block" id="btn" style="margin-top:28px;padding:14px 20px;font-size:15px">繼續並進入主控台 →</button>
       </form>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:20px 0 16px;color:var(--ink-tertiary);font-size:12px">
+        <span style="flex:1;height:1px;background:var(--line)"></span>
+        <span>或使用 Apple 生物辨識通行密鑰</span>
+        <span style="flex:1;height:1px;background:var(--line)"></span>
+      </div>
+
+      <button type="button" class="apple-passkey-btn" id="adminPasskeyLoginBtn">
+        <span style="font-size:17px">🔑</span>
+        <span>使用 Apple Passkey (Face ID / Touch ID) 登入</span>
+      </button>
     </div>
 
     <!-- 步驟二：Apple 級雙重認證 (2FA OTP 二次授權) -->
@@ -462,6 +473,96 @@ $("otpCode").addEventListener("input", e => {
     $("verifyOtpBtn").focus();
   }
 });
+
+// Apple Passkey (WebAuthn Face ID / Touch ID) 免密碼登入
+function b64urlToUint8(b64url) {
+  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+  const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function bufToB64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+if ($("adminPasskeyLoginBtn")) {
+  $("adminPasskeyLoginBtn").onclick = async () => {
+    sayErr("");
+    sayOk("");
+    if (!window.PublicKeyCredential || !navigator.credentials?.get) {
+      sayErr("您目前的瀏覽器環境不支援 WebAuthn / Apple Passkey，請改用信箱與密碼登入。");
+      return;
+    }
+    const pkBtn = $("adminPasskeyLoginBtn");
+    const origHtml = pkBtn.innerHTML;
+    pkBtn.disabled = true;
+    pkBtn.textContent = "🔑 正在喚起 Face ID / Touch ID 驗證...";
+    try {
+      const optRes = await fetch("/api/passkey/login-options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({ scope: "admin", email: ($("email")?.value || "").trim() }),
+      });
+      const opts = await optRes.json().catch(() => ({}));
+      if (!optRes.ok || !opts.challenge) {
+        throw new Error(opts.error || "無法初始化 Passkey 挑戰");
+      }
+
+      const publicKey = {
+        challenge: b64urlToUint8(opts.challenge),
+        rpId: opts.rpId || location.hostname,
+        timeout: opts.timeout || 60000,
+        userVerification: "required",
+      };
+      if (Array.isArray(opts.allowCredentials) && opts.allowCredentials.length > 0) {
+        publicKey.allowCredentials = opts.allowCredentials.map(c => ({
+          id: b64urlToUint8(c.id),
+          type: "public-key",
+          transports: c.transports || ["internal", "hybrid"],
+        }));
+      }
+
+      const assertion = await navigator.credentials.get({ publicKey });
+      if (!assertion) throw new Error("已取消 Passkey 驗證");
+
+      const verifyRes = await fetch("/api/passkey/login-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({
+          challengeToken: opts.challengeToken,
+          credential: {
+            id: assertion.id,
+            rawId: bufToB64url(assertion.rawId),
+            type: assertion.type,
+            clientDataJSON: bufToB64url(assertion.response.clientDataJSON),
+            authenticatorData: bufToB64url(assertion.response.authenticatorData),
+            signature: bufToB64url(assertion.response.signature),
+            userHandle: assertion.response.userHandle ? bufToB64url(assertion.response.userHandle) : "",
+          },
+        }),
+      });
+      const vj = await verifyRes.json().catch(() => ({}));
+      if (!verifyRes.ok || !vj.ok) {
+        throw new Error(vj.error || "Passkey 驗證未通過，請確認是否已於後台綁定此裝置");
+      }
+      sayOk("✓ Apple Passkey 生物辨識通過，正在進入管理中心...");
+      setTimeout(() => location.replace("/adminusercontrol"), 300);
+    } catch (e) {
+      pkBtn.disabled = false;
+      pkBtn.innerHTML = origHtml;
+      if (e.name === "NotAllowedError") {
+        sayErr("已取消 Face ID / Touch ID 驗證，或此裝置尚未於後台綁定管理員 Passkey。");
+      } else {
+        sayErr(e.message || "Passkey 驗證失敗，請先以帳密登入後至「管理員與安全」綁定 Passkey。");
+      }
+    }
+  };
+}
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "62fcc30a49fc4291b7d006d18ddf21d6"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

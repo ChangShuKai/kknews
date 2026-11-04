@@ -7049,3 +7049,179 @@ body {
   color: #a1a1a6;
   border-color: rgba(142, 142, 147, 0.3);
 }
+
+/* ==========================================================================
+   Apple Passkey (WebAuthn) & Apple Wallet (.pkpass) Studio Styles
+   ========================================================================== */
+.apple-passkey-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 22px;
+  border-radius: 980px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: rgba(29, 29, 31, 0.06);
+  color: var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.apple-passkey-btn:hover:not(:disabled) {
+  background: rgba(29, 29, 31, 0.1);
+  border-color: var(--blue);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.12);
+}
+[data-theme="dark"] .apple-passkey-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+[data-theme="dark"] .apple-passkey-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #2997ff;
+}
+
+.apple-wallet-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 980px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+.apple-wallet-badge-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+}
+[data-theme="dark"] .apple-wallet-badge-btn {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* iOS Apple Wallet Pass 實體票卡模擬器 */
+.ios-wallet-card {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: 24px;
+  background: linear-gradient(160deg, #1c1c1e 0%, #0f172a 55%, #090d16 100%);
+  color: #ffffff;
+  padding: 22px 22px 20px;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.ios-wallet-card.theme-proverb {
+  background: linear-gradient(160deg, #1d1d1f 0%, #2c1810 55%, #120a07 100%);
+}
+.ios-wallet-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(41, 151, 255, 0.28) 0%, transparent 70%);
+  pointer-events: none;
+}
+.ios-wallet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 16px;
+}
+.ios-wallet-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.ios-wallet-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 980px;
+  background: rgba(41, 151, 255, 0.22);
+  color: #64d2ff;
+  border: 1px solid rgba(100, 210, 255, 0.3);
+}
+.ios-wallet-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(235, 235, 245, 0.6);
+  margin-bottom: 2px;
+}
+.ios-wallet-primary-val {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 14px;
+}
+.ios-wallet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ios-wallet-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f5f5f7;
+  word-break: break-word;
+}
+.ios-wallet-qr-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+.ios-wallet-serial {
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: 0.06em;
+}
+
+.passkey-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+

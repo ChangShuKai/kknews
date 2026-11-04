@@ -448,6 +448,20 @@ s1120002
           </label>
           <button type="submit" class="btn primary block" id="createAdminBtn" style="margin-top:22px">建立管理員帳號</button>
         </form>
+
+        <!-- Apple Passkey (Face ID / Touch ID) 管理員硬體生物辨識金鑰綁定 -->
+        <div style="margin-top:22px;padding-top:20px;border-top:1px solid var(--line)">
+          <span class="apple-eyebrow blue" style="margin-bottom:4px">Apple Passkeys · WebAuthn</span>
+          <h4 style="margin:0 0 6px;font-size:16px">Face ID / Touch ID 通行密鑰綁定</h4>
+          <p style="margin:0 0 12px;font-size:12.5px;color:var(--ink-secondary);line-height:1.5">
+            將您當前的 Mac (Touch ID)、iPhone 或 iPad (Face ID) 綁定為管理員硬體生物辨識金鑰，日後於後台登入頁可免密碼一鍵進入。
+          </p>
+          <button type="button" class="apple-passkey-btn" id="bindAdminPasskeyBtn" style="margin-bottom:10px">
+            <span>🔑</span>
+            <span>綁定當前裝置 Face ID / Touch ID 通行密鑰</span>
+          </button>
+          <div id="adminPasskeyListWrap" style="font-size:12.5px;color:var(--ink-secondary)"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -5994,6 +6008,145 @@ if (fab) {
   }, { passive: true });
   fab.onclick = () => window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+/* ---------- 管理員 Apple Passkey (WebAuthn) 綁定與管理 ---------- */
+function adminB64urlToUint8(b64url) {
+  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+  const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function adminBufToB64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function refreshAdminPasskeys() {
+  const wrap = $("adminPasskeyListWrap");
+  if (!wrap) return;
+  try {
+    const r = await fetch("/api/passkey/list?scope=admin");
+    const j = await r.json().catch(() => ({}));
+    const keys = Array.isArray(j.passkeys) ? j.passkeys : [];
+    if (!keys.length) {
+      wrap.innerHTML = `<div style="padding:8px 10px;border-radius:10px;background:var(--bg);color:var(--ink-tertiary);font-size:12px">目前尚未綁定管理員 Passkey 金鑰</div>`;
+      return;
+    }
+    wrap.innerHTML = keys.map(k => `
+      <div class="passkey-item-row">
+        <div>
+          <div style="font-weight:700;color:var(--ink);font-size:13px">🔑 ${esc(k.deviceName || "Apple Passkey")}</div>
+          <div style="font-size:11.5px;color:var(--ink-tertiary)">綁定於 ${esc((k.createdAt || "").slice(0, 10))} · 使用 ${Number(k.signCount) || 1} 次</div>
+        </div>
+        <button type="button" class="btn ghost sm del-admin-pk-btn" data-pk-id="${esc(k.id)}" style="color:var(--err);font-size:11.5px">移除</button>
+      </div>
+    `).join("");
+    wrap.querySelectorAll(".del-admin-pk-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute("data-pk-id");
+        if (!id) return;
+        const dr = await fetch(`/api/passkey/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: { "X-Requested-With": "fetch" },
+        });
+        if (dr.ok) {
+          toast("已移除該把 Apple Passkey 金鑰");
+          refreshAdminPasskeys();
+        }
+      };
+    });
+  } catch {}
+}
+
+if ($("bindAdminPasskeyBtn")) {
+  $("bindAdminPasskeyBtn").onclick = async () => {
+    if (!window.PublicKeyCredential || !navigator.credentials?.create) {
+      toast("您的瀏覽器環境不支援 WebAuthn / Apple Passkey", true);
+      return;
+    }
+    const btn = $("bindAdminPasskeyBtn");
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = "🔑 請在系統視窗驗證 Face ID / Touch ID...";
+    try {
+      const optRes = await fetch("/api/passkey/register-options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({ scope: "admin" }),
+      });
+      const opts = await optRes.json().catch(() => ({}));
+      if (!optRes.ok || !opts.challenge) throw new Error(opts.error || "無法初始化 Passkey 綁定");
+
+      const publicKey = {
+        challenge: adminB64urlToUint8(opts.challenge),
+        rp: opts.rp,
+        user: {
+          id: adminB64urlToUint8(opts.user.id),
+          name: opts.user.name,
+          displayName: opts.user.displayName,
+        },
+        pubKeyCredParams: opts.pubKeyCredParams,
+        authenticatorSelection: opts.authenticatorSelection,
+        timeout: opts.timeout || 60000,
+      };
+      if (Array.isArray(opts.excludeCredentials) && opts.excludeCredentials.length) {
+        publicKey.excludeCredentials = opts.excludeCredentials.map(c => ({
+          id: adminB64urlToUint8(c.id),
+          type: "public-key",
+        }));
+      }
+
+      const cred = await navigator.credentials.create({ publicKey });
+      if (!cred) throw new Error("已取消 Passkey 綁定");
+
+      let pubKeyB64 = "";
+      let pubKeyAlg = -7;
+      try {
+        if (cred.response.getPublicKey) {
+          const pkBuf = cred.response.getPublicKey();
+          if (pkBuf) pubKeyB64 = adminBufToB64url(pkBuf);
+        }
+        if (cred.response.getPublicKeyAlgorithm) {
+          pubKeyAlg = cred.response.getPublicKeyAlgorithm();
+        }
+      } catch {}
+
+      const verRes = await fetch("/api/passkey/register-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({
+          challengeToken: opts.challengeToken,
+          credential: {
+            id: cred.id,
+            rawId: adminBufToB64url(cred.rawId),
+            type: cred.type,
+            clientDataJSON: adminBufToB64url(cred.response.clientDataJSON),
+            attestationObject: adminBufToB64url(cred.response.attestationObject),
+            publicKey: pubKeyB64,
+            publicKeyAlgorithm: pubKeyAlg,
+            transports: cred.response.getTransports ? cred.response.getTransports() : ["internal", "hybrid"],
+          },
+        }),
+      });
+      const vj = await verRes.json().catch(() => ({}));
+      if (!verRes.ok || !vj.ok) throw new Error(vj.error || "Passkey 儲存失敗");
+      toast("✓ 已成功綁定 Apple Passkey！下次可直接以 Face ID / Touch ID 登入後台");
+      refreshAdminPasskeys();
+    } catch (e) {
+      if (e.name !== "NotAllowedError") {
+        toast(e.message || "Passkey 綁定失敗", true);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  };
+}
+refreshAdminPasskeys();
 
 load(true);
 </script>
