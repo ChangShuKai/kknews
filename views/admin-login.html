@@ -9,11 +9,11 @@
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   .login-card {
-    width: min(440px, 100%);
+    width: min(450px, 100%);
     background: var(--surface-solid);
     border: 1px solid var(--line);
     border-radius: var(--r-xl);
-    padding: 44px 38px 38px;
+    padding: 40px 36px 36px;
     box-shadow: var(--shadow-floating), var(--shadow-inner-glow);
     animation: applePop 0.38s var(--spring-smooth) both;
   }
@@ -22,7 +22,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -62,12 +62,28 @@
     border-radius: var(--r-pill);
   }
   [data-theme="dark"] .login-card {
-    background: rgba(19, 29, 51, 0.92);
+    background: rgba(19, 29, 51, 0.94);
     border-color: rgba(255, 255, 255, 0.14);
   }
   [data-theme="dark"] .login-brand small {
     background: var(--blue);
     color: #fff;
+  }
+  .otp-code-input {
+    font-size: 28px !important;
+    letter-spacing: 12px !important;
+    text-align: center !important;
+    font-weight: 800 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    padding: 14px 12px !important;
+    background: var(--bg) !important;
+    border-radius: var(--r-lg) !important;
+  }
+  .otp-code-input::placeholder {
+    letter-spacing: 8px;
+    color: var(--ink-tertiary);
+    font-weight: 500;
+    opacity: 0.5;
   }
 </style>
 </head>
@@ -86,30 +102,67 @@
     </div>
   </div>
 
-  <h1 style="margin:0 0 8px;font-size:24px;font-weight:800">管理員安全登入</h1>
-  <p class="sub" style="margin-bottom:22px;font-size:13.5px;line-height:1.55">請輸入授權管理員信箱與密碼，進入 KKNews 雲端管理與 DFC 防暴雷主控台。</p>
+  <!-- 步驟一：帳號密碼登入 -->
+  <div id="stepCredentials">
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800">管理員安全登入</h1>
+    <p class="sub" style="margin-bottom:22px;font-size:13.5px;line-height:1.55">請輸入授權管理員信箱與密碼，進入 KKNews 雲端管理與 DFC 防暴雷主控台。</p>
 
-  <form id="loginForm" autocomplete="off">
-    <label class="field" style="margin-top:0">
-      <span class="lbl">管理員電子郵件</span>
-      <input class="input" id="email" type="email" placeholder="admin@example.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-    </label>
+    <form id="loginForm" autocomplete="off">
+      <label class="field" style="margin-top:0">
+        <span class="lbl">管理員電子郵件</span>
+        <input class="input" id="email" type="email" placeholder="admin@example.com" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      </label>
 
-    <label class="field">
-      <span class="lbl">
-        <span>安全密碼</span>
-        <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px">
-          <span id="togglePwIcon">👁️</span>
-          <span id="togglePwText">顯示密碼</span>
-        </button>
-      </span>
-      <input class="input" id="pw" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
-    </label>
+      <label class="field">
+        <span class="lbl">
+          <span>安全密碼</span>
+          <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px">
+            <span id="togglePwIcon">👁️</span>
+            <span id="togglePwText">顯示密碼</span>
+          </button>
+        </span>
+        <input class="input" id="pw" type="password" placeholder="請輸入登入密碼" autocomplete="current-password" required>
+      </label>
 
-    <button type="submit" class="btn primary block" id="btn" style="margin-top:24px">登入後台主控台</button>
-  </form>
+      <button type="submit" class="btn primary block" id="btn" style="margin-top:24px">登入後台主控台</button>
+    </form>
+  </div>
+
+  <!-- 步驟二：新裝置一次性驗證碼 (OTP 二次授權) -->
+  <div id="stepOtp" class="hide">
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(24,104,199,0.12);color:var(--blue);padding:4px 12px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;margin-bottom:12px">
+      <span>🛡️</span> 新裝置安全授權驗證
+    </div>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:800">請輸入 6 位數驗證碼</h1>
+    <p class="sub" style="margin-bottom:16px;font-size:13px;line-height:1.6">
+      偵測到新裝置登入，系統已傳送一次性安全驗證碼至主管信箱：<br>
+      <strong id="otpTargetEmail" style="color:var(--blue);font-family:monospace;font-size:14px;display:inline-block;margin-top:4px">kai1010210@gmail.com</strong>
+    </p>
+
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;font-size:12px;line-height:1.55;color:var(--ink-secondary);margin-bottom:20px">
+      💡 <strong>裝置信任機制：</strong>每個裝置僅需驗證一次，通過後將自動信任此裝置，未來換裝置才需重新驗證。其他協同管理員請向主管索取驗證碼。
+    </div>
+
+    <form id="otpForm" autocomplete="off">
+      <label class="field" style="margin-top:0">
+        <span class="lbl" style="justify-content:space-between">
+          <span>一次性驗證碼 (OTP)</span>
+          <span id="otpCountdown" style="font-size:12px;font-weight:600;color:var(--blue)">有效時間 10:00</span>
+        </span>
+        <input class="input otp-code-input" id="otpCode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
+      </label>
+
+      <button type="submit" class="btn primary block" id="verifyOtpBtn" style="margin-top:20px">驗證並信任此裝置</button>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px">
+        <button type="button" class="btn ghost sm" id="backToCredsBtn" style="font-size:12px">← 返回更換帳號</button>
+        <button type="button" class="btn ghost sm" id="resendOtpBtn" style="font-size:12px">重新發送驗證碼</button>
+      </div>
+    </form>
+  </div>
 
   <div id="err" class="alert err" role="alert" aria-live="polite"></div>
+  <div id="okMsg" class="alert ok hide" role="status" aria-live="polite"></div>
 </main>
 
 <script>
@@ -158,13 +211,6 @@ function applyLoginDeviceProfile() {
 applyLoginDeviceProfile();
 window.addEventListener("resize", applyLoginDeviceProfile);
 
-const urlK = new URLSearchParams(location.search).get("k") || "";
-if (urlK) {
-  try { sessionStorage.setItem("kk_admin_k", urlK); } catch {}
-  history.replaceState(null, "", location.pathname);
-}
-const k = urlK || (() => { try { return sessionStorage.getItem("kk_admin_k") || ""; } catch { return ""; } })();
-
 const themeBtn = $("themeToggleBtn");
 if (themeBtn) {
   const updateThemeBtn = () => {
@@ -191,24 +237,97 @@ function sayErr(t) {
   const m = $("err");
   m.textContent = t;
   m.className = t ? "alert show err" : "alert err";
+  if (t) {
+    const ok = $("okMsg");
+    if (ok) ok.className = "alert ok hide";
+  }
 }
 
+function sayOk(t) {
+  const ok = $("okMsg");
+  if (!ok) return;
+  ok.textContent = t;
+  ok.className = t ? "alert show ok" : "alert ok hide";
+  if (t) {
+    const err = $("err");
+    if (err) err.className = "alert err";
+  }
+}
+
+let activeChallenge = "";
+let countdownTimer = null;
+let resendCooldown = 0;
+let resendTimer = null;
+
+function startOtpCountdown(seconds = 600) {
+  clearInterval(countdownTimer);
+  let remain = seconds;
+  const update = () => {
+    const m = Math.floor(remain / 60);
+    const s = remain % 60;
+    const str = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    if ($("otpCountdown")) $("otpCountdown").textContent = `有效時間 ${str}`;
+    if (remain <= 0) {
+      clearInterval(countdownTimer);
+      if ($("otpCountdown")) $("otpCountdown").textContent = "驗證碼已過期，請重新發送";
+      sayErr("驗證碼已失效，請點擊「重新發送驗證碼」");
+    }
+    remain--;
+  };
+  update();
+  countdownTimer = setInterval(update, 1000);
+}
+
+function startResendCooldown(sec = 45) {
+  clearInterval(resendTimer);
+  resendCooldown = sec;
+  const btn = $("resendOtpBtn");
+  btn.disabled = true;
+  btn.textContent = `重新發送 (${resendCooldown}s)`;
+  resendTimer = setInterval(() => {
+    resendCooldown--;
+    if (resendCooldown <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      btn.textContent = "重新發送驗證碼";
+    } else {
+      btn.textContent = `重新發送 (${resendCooldown}s)`;
+    }
+  }, 1000);
+}
+
+// 步驟一：提交帳密
 $("loginForm").onsubmit = async ev => {
   ev.preventDefault();
   sayErr("");
+  sayOk("");
   $("btn").disabled = true;
   $("btn").textContent = "正在安全驗證...";
   try {
     const r = await fetch("/api/admin/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch", "X-Access-Key": k },
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
       body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }),
     });
-    if (r.ok) {
-      location.replace("/adminusercontrol");
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.trusted) {
+      sayOk("✅ 裝置已信任，正在直接進入後台主控台...");
+      setTimeout(() => location.replace("/adminusercontrol"), 300);
       return;
     }
-    const j = await r.json().catch(() => ({}));
+    if (j.requireOtp && j.challenge) {
+      activeChallenge = j.challenge;
+      $("stepCredentials").classList.add("hide");
+      $("stepOtp").classList.remove("hide");
+      if ($("otpTargetEmail")) $("otpTargetEmail").textContent = j.targetEmail || "kai1010210@gmail.com";
+      $("otpCode").value = "";
+      $("otpCode").focus();
+      sayErr("");
+      sayOk(j.message || "已傳送 6 位數一次性驗證碼至主管信箱");
+      startOtpCountdown(j.expiresIn || 600);
+      startResendCooldown(45);
+      return;
+    }
     $("btn").disabled = false;
     $("btn").textContent = "登入後台主控台";
     sayErr(r.status === 429 ? "登入嘗試次數過多，請稍後再試" : (j.error || "帳號或密碼錯誤"));
@@ -218,6 +337,89 @@ $("loginForm").onsubmit = async ev => {
     sayErr("伺服器連線逾時，請重試");
   }
 };
+
+// 步驟二：提交 OTP 驗證碼
+$("otpForm").onsubmit = async ev => {
+  ev.preventDefault();
+  sayErr("");
+  sayOk("");
+  const code = $("otpCode").value.trim();
+  if (code.length !== 6) {
+    sayErr("請輸入完整的 6 位數純數字驗證碼");
+    return;
+  }
+  $("verifyOtpBtn").disabled = true;
+  $("verifyOtpBtn").textContent = "正在驗證並信任裝置...";
+  try {
+    const r = await fetch("/api/admin/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: JSON.stringify({ challenge: activeChallenge, code }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) {
+      clearInterval(countdownTimer);
+      clearInterval(resendTimer);
+      sayOk("✅ 裝置驗證成功！已將此裝置加入信任清單，正在進入主控台...");
+      setTimeout(() => location.replace("/adminusercontrol"), 500);
+      return;
+    }
+    $("verifyOtpBtn").disabled = false;
+    $("verifyOtpBtn").textContent = "驗證並信任此裝置";
+    sayErr(j.error || "驗證碼錯誤，請重新確認");
+  } catch {
+    $("verifyOtpBtn").disabled = false;
+    $("verifyOtpBtn").textContent = "驗證並信任此裝置";
+    sayErr("驗證連線逾時，請重試");
+  }
+};
+
+// 重發 OTP
+$("resendOtpBtn").onclick = async () => {
+  if (resendCooldown > 0) return;
+  sayErr("");
+  sayOk("正在重新發送驗證碼至主管信箱...");
+  try {
+    const r = await fetch("/api/admin/resend-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: JSON.stringify({ challenge: activeChallenge }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      sayOk(j.message || "已重新發送驗證碼至主管信箱");
+      startOtpCountdown(600);
+      startResendCooldown(45);
+      $("otpCode").value = "";
+      $("otpCode").focus();
+    } else {
+      sayErr(j.error || "重發失敗，請稍後再試");
+    }
+  } catch {
+    sayErr("網路連線錯誤，無法重新發送驗證碼");
+  }
+};
+
+// 返回更換帳號
+$("backToCredsBtn").onclick = () => {
+  clearInterval(countdownTimer);
+  clearInterval(resendTimer);
+  $("stepOtp").classList.add("hide");
+  $("stepCredentials").classList.remove("hide");
+  $("btn").disabled = false;
+  $("btn").textContent = "登入後台主控台";
+  sayErr("");
+  sayOk("");
+};
+
+// 自動只允許純數字輸入
+$("otpCode").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+  if (e.target.value.length === 6) {
+    // 輸入完 6 位數自動聚焦至提交按鈕
+    $("verifyOtpBtn").focus();
+  }
+});
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "62fcc30a49fc4291b7d006d18ddf21d6"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

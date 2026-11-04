@@ -317,21 +317,43 @@ s1120002
   <section id="adminsPanel" class="hide" aria-label="管理員權限管理">
     <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start">
       <div style="display:flex;flex-direction:column;gap:18px">
-        <!-- 後台密鑰卡片 (僅 Super Admin 可見) -->
-        <div class="panel-surface hide" id="accessKeyCard" style="border-left:4px solid var(--blue)">
-          <div class="panel-surface-head" style="margin-bottom:8px">
+        <!-- 後台入口與雙重驗證 (2FA & 裝置信任安全防護) -->
+        <div class="panel-surface" id="deviceTrustSecurityCard" style="border-left:4px solid var(--blue)">
+          <div class="panel-surface-head" style="margin-bottom:12px">
             <div>
-              <h3>後台專屬入口密鑰 (ADMIN_ACCESS_KEY)</h3>
-              <p>後台訪問需攜帶通行碼 <code>k</code> 避免路徑遭公開探測。</p>
+              <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(24,104,199,0.12);color:var(--blue);padding:3px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;margin-bottom:6px">
+                <span>🛡️</span> 雙重安全防護 (2FA & 裝置信任)
+              </div>
+              <h3 style="margin:0 0 4px">後台入口與新裝置安全授權</h3>
+              <p style="margin:0;font-size:13px;color:var(--ink-secondary)">已取消金鑰限制，直達登入頁。新裝置登入強制傳送一次性驗證碼至主管信箱，驗證一次即永久信任。</p>
             </div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);padding:12px 16px;border-radius:var(--r-md)">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-size:13px;font-weight:600;color:var(--ink-secondary)">入口密鑰：</span>
-              <span id="accessKeyVal" style="font-family:monospace;font-size:14px;font-weight:700">••••••••••••</span>
-              <button type="button" class="btn ghost sm" id="toggleAccessKeyBtn" style="padding:4px 10px;font-size:12px">顯示密鑰</button>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div style="background:var(--bg);padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
+              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">後台直接登入網址</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <code style="font-size:12.5px;color:var(--ink);font-weight:600">/adminusercontrol</code>
+                <button type="button" class="btn ghost sm" id="copyAdminDirectLinkBtn" style="padding:3px 8px;font-size:11.5px">複製連結</button>
+              </div>
             </div>
-            <button type="button" class="btn ghost sm" id="copyAdminLinkBtn">複製專屬登入連結</button>
+            <div style="background:var(--bg);padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line)">
+              <div style="font-size:11.5px;font-weight:600;color:var(--ink-tertiary);margin-bottom:4px">驗證碼接收主管信箱</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:13px;font-weight:700;color:var(--blue);font-family:monospace" id="displayAdminOtpEmail">kai1010210@gmail.com</span>
+                <span class="role-chip" style="font-size:10px;padding:2px 6px">中央管控</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-top:10px;border-top:1px solid var(--line)">
+            <div style="font-size:12px;color:var(--ink-secondary)">
+              💻 當前裝置狀態：<strong style="color:var(--green)">已信任</strong>（登入免重打驗證碼）
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button type="button" class="btn ghost sm" id="revokeMyDeviceBtn" style="font-size:12px;color:var(--amber)" title="清除此瀏覽器上的信任憑證">撤銷本裝置信任</button>
+              <button type="button" class="btn danger sm" id="revokeAllDevicesBtn" style="font-size:12px" title="強制所有管理員下次登入必須重新輸入驗證碼">強制所有裝置重新驗證</button>
+            </div>
           </div>
         </div>
 
@@ -1630,6 +1652,10 @@ async function load(forceRender = false) {
       if (syncData.accounts.me) applyRoleUi(syncData.accounts.me.role, syncData.accounts.me.email);
       adminAccounts = syncData.accounts.accounts || [];
       adminAccessKey = syncData.accounts.accessKey || "";
+      if (syncData.accounts.otpEmail) {
+        adminOtpEmail = syncData.accounts.otpEmail;
+        if ($("displayAdminOtpEmail")) $("displayAdminOtpEmail").textContent = adminOtpEmail;
+      }
     }
     if (Array.isArray(syncData.auditLogs)) auditLogs = syncData.auditLogs;
 
@@ -4848,28 +4874,50 @@ $("editAdminForm").onsubmit = async (ev) => {
   load(true);
 };
 
-if ($("toggleAccessKeyBtn")) {
-  $("toggleAccessKeyBtn").onclick = () => {
-    const el = $("accessKeyVal");
-    const isMasked = el.textContent.includes("•");
-    el.textContent = isMasked ? (adminAccessKey || "未設定") : "••••••••••••";
-    $("toggleAccessKeyBtn").textContent = isMasked ? "隱藏密碼" : "顯示密鑰";
+let adminOtpEmail = "kai1010210@gmail.com";
+
+if ($("copyAdminDirectLinkBtn")) {
+  $("copyAdminDirectLinkBtn").onclick = () => {
+    const link = `${location.origin}/adminusercontrol`;
+    navigator.clipboard?.writeText(link).catch(() => {});
+    toast("已複製後台登入連結 (/adminusercontrol)");
   };
 }
-if ($("copyAdminLinkBtn")) {
-  $("copyAdminLinkBtn").onclick = () => {
-    const link = adminAccessKey
-      ? `${location.origin}/adminusercontrol?k=${encodeURIComponent(adminAccessKey)}`
-      : `${location.origin}/adminusercontrol`;
-    navigator.clipboard?.writeText(link).catch(() => {});
-    toast("已複製管理員登入連結");
+
+if ($("revokeMyDeviceBtn")) {
+  $("revokeMyDeviceBtn").onclick = async () => {
+    if (!confirm("確定要撤銷此裝置的信任狀態嗎？撤銷後將自動登出，下次登入必須重新輸入驗證碼。")) return;
+    try {
+      await fetch("/api/admin/devices/revoke-current", { method: "POST" });
+      location.replace("/adminusercontrol");
+    } catch {
+      toast("撤銷失敗，請稍後再試");
+    }
+  };
+}
+
+if ($("revokeAllDevicesBtn")) {
+  $("revokeAllDevicesBtn").onclick = async () => {
+    if (!confirm("確定要【強制所有裝置重新驗證】嗎？\n\n所有管理員（包含您與其他管理員）下次登入時，都必須重新向主管信箱取得 6 位數一次性驗證碼。")) return;
+    try {
+      const r = await fetch("/api/admin/devices/revoke-all", { method: "POST" });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        toast("已強制所有裝置下次登入須重新通過驗證碼授權！");
+        load(true);
+      } else {
+        toast(j.error || "操作失敗");
+      }
+    } catch {
+      toast("連線失敗");
+    }
   };
 }
 
 function renderAdminsPanel() {
-  const accessKeyCard = $("accessKeyCard");
-  if (accessKeyCard) {
-    accessKeyCard.classList.toggle("hide", !isSuper() || !adminAccessKey);
+  const deviceCard = $("deviceTrustSecurityCard");
+  if (deviceCard) {
+    deviceCard.classList.toggle("hide", !isSuper());
   }
 
   const wrap = $("adminsListWrap");
