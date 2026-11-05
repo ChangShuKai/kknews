@@ -42,10 +42,18 @@ const SCHOOL = "@hlc.edu.tw";
 const SCHOOL_HD = "hlc.edu.tw";
 const SECURE = BASE_URL.startsWith("https") || process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
-/* 前端頁面：內嵌 <script> 抽成外部檔案，CSP 即可移除 script 的 'unsafe-inline' */
+/* 前端頁面：內嵌 <script> 抽成外部檔案並自動附加內容雜湊 (?v=hash)，徹底杜絕瀏覽器與 CDN 舊快取殘留 */
+const RAW_UI_CSS = fs.readFileSync(path.join(__dirname, "views", "ui.css"), "utf8");
+const UI_CSS_HASH = crypto.createHash("md5").update(RAW_UI_CSS).digest("hex").slice(0, 10);
+
 function splitPage(html, name) {
   let js = "";
-  const out = html.replace(/<script>([\s\S]*?)<\/script>/, (m, code) => { js = code; return `<script src="/assets/${name}.js" defer></script>`; });
+  const withCssHash = html.replace(/\/assets\/ui\.css(?:\?[^"']*)?/g, `/assets/ui.css?v=${UI_CSS_HASH}`);
+  const out = withCssHash.replace(/<script>([\s\S]*?)<\/script>/, (m, code) => {
+    js = code;
+    const jsHash = crypto.createHash("md5").update(code).digest("hex").slice(0, 10);
+    return `<script src="/assets/${name}.js?v=${jsHash}" defer></script>`;
+  });
   return { html: out, js };
 }
 function readIconSvg() {
@@ -64,7 +72,7 @@ const PAGES = {
   index: splitPage(fs.readFileSync(path.join(__dirname, "views", "index.html"), "utf8"), "index"),
   login: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"), "login"),
   admin: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"), "admin"),
-  css: fs.readFileSync(path.join(__dirname, "views", "ui.css"), "utf8"),
+  css: RAW_UI_CSS,
   jszip: readJsZip(),
   icon: readIconSvg(),
 };
@@ -1207,7 +1215,7 @@ function sendStaticAsset(req, res, content, contentType, cacheControl = "public,
 }
 
 /* --- 前台與靜態資源 --- */
-app.get("/", (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "public, max-age=60, s-maxage=600, stale-while-revalidate=86400"));
+app.get("/", (req, res) => sendStaticAsset(req, res, PAGES.index.html, "text/html; charset=utf-8", "private, no-cache, no-store, must-revalidate"));
 app.get(["/diagnostics", "/check"], async (req, res) => {
   if (!sysCache.has("admins")) await readSysStore("admins", []).catch(() => {});
   if (!adminOf(req)) return res.redirect(302, "/adminusercontrol");
@@ -1230,11 +1238,29 @@ app.get("/assets/dfc.mp4", async (req, res) => {
   return notFound(res);
 });
 
-/* --- 極速 YouTube 級 ABR 多畫質影片串流代理：支援 Google Drive 轉碼分流 (360p/720p)、2MB 對齊區塊快取、併發去重與防暴雷權限保護 --- */
+/* --- 極速 YouTube 級 ABR 多畫質影片串流代理：支援 Google Drive 轉碼分流 (360p/720p)、2MB 對齊區塊快取、Fast-Start moov 前置加速與防暴雷權限保護 --- */
 const VIDEO_BLOCK_SIZE = 2 * 1024 * 1024; // 2 MB 標準對齊切塊
 const MAX_CHUNK_CACHE_BYTES = 180 * 1024 * 1024; // 180 MB 記憶體快取池
 const DEFAULT_DFC_VIDEO_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
 const DEFAULT_WORKSPACE_VIDEO_KEY = (process.env.GOOGLE_WORKSPACE_VIDEO_KEY || process.env.GOOGLE_API_KEY || "AIzaSyDVQw45DwoYh632gvsP5vPDqEKvb-Ywnb8").trim();
+const DEFAULT_DRIVE_MEDIA_API_KEY = "AIzaSyC1eQ1xj69IdTMeii5r7brs3R90eck-m7k";
+
+// 預載預設 DFC 影片的 Fast-Start 前置標頭 (ftyp + free + 已位移 stco 之 moov，共 170,066 bytes)，讓原始串流在第 0 區塊即可直接解碼播放，免除尾端尋軌往返
+let DEFAULT_FASTSTART_HEAD_BUF = null;
+const DEFAULT_FASTSTART_MOOV_SHIFT = 170030;
+try {
+  const fsHeadPath = path.join(__dirname, "views", "dfc-faststart-head.bin");
+  if (fs.existsSync(fsHeadPath)) {
+    const b = fs.readFileSync(fsHeadPath);
+    if (b.byteLength === 170066) DEFAULT_FASTSTART_HEAD_BUF = b;
+  }
+} catch {}
+
+function getLocalH264Path(fileId, q) {
+  if (!/^[a-zA-Z0-9_-]{12,80}$/.test(fileId) || (q !== "360p" && q !== "720p")) return null;
+  const p = path.join(__dirname, "views", "video", `${fileId}-${q}.mp4`);
+  try { return fs.statSync(p).size > 0 ? p : null; } catch { return null; }
+}
 
 const driveVideoMetaCache = new Map();
 const driveVideoChunkCache = new Map();
@@ -1312,12 +1338,45 @@ async function resolveDriveDownloadUrl(fileId, signal, forceRefresh = false) {
   const cached = driveResolvedUrlCache.get(fileId);
   if (!forceRefresh && cached && now - cached.ts < 10 * 60 * 1000) return cached.url;
 
+  const apiMediaUrl = `https://www.googleapis.com/drive/v2beta/files/${encodeURIComponent(fileId)}?key=${encodeURIComponent(DEFAULT_DRIVE_MEDIA_API_KEY)}&alt=media`;
   const baseUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
   const existingRawMeta = driveVideoMetaCache.get(`${fileId}:raw`);
   if (!forceRefresh && existingRawMeta?.totalSize > 0) {
-    driveResolvedUrlCache.set(fileId, { url: baseUrl, ts: now });
-    return baseUrl;
+    driveResolvedUrlCache.set(fileId, { url: apiMediaUrl, ts: now });
+    return apiMediaUrl;
   }
+
+  try {
+    const probe = await fetch(apiMediaUrl, {
+      method: "GET",
+      headers: {
+        "Range": "bytes=0-1",
+        "Origin": "https://drive.google.com",
+        "Referer": "https://drive.google.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+      },
+      redirect: "follow",
+      signal: signal || AbortSignal.timeout(5000),
+    });
+    if (probe.ok || probe.status === 206) {
+      const cr = probe.headers.get("content-range") || "";
+      const sizeMatch = cr.match(/\/(\d+)$/);
+      if (sizeMatch) {
+        const newSize = parseInt(sizeMatch[1], 10);
+        const prevRaw = driveVideoMetaCache.get(`${fileId}:raw`);
+        if (prevRaw?.totalSize && prevRaw.totalSize !== newSize) {
+          invalidateDriveVideoCache(fileId);
+        }
+        driveVideoMetaCache.set(`${fileId}:raw`, {
+          totalSize: newSize,
+          contentType: "video/mp4",
+          ts: now,
+        });
+      }
+      driveResolvedUrlCache.set(fileId, { url: apiMediaUrl, ts: now });
+      return apiMediaUrl;
+    }
+  } catch {}
 
   try {
     const probe = await fetch(baseUrl, {
@@ -1563,7 +1622,7 @@ async function getStreamTargetForQuality(fileId, requestedQuality, signal) {
   };
 }
 
-// 以 2MB 標準區塊為單位抓取並快取影片位元組（Key 綁定 totalSize，確保影片更新時絕不誤用舊快取）
+// 以 2MB 標準區塊為單位抓取並快取影片位元組（Key 綁定 totalSize，且針對預設原始串流自動注入 Fast-Start moov 前置標頭）
 async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
   const target = await getStreamTargetForQuality(fileId, quality, signal);
   const actualQ = target.quality;
@@ -1574,7 +1633,14 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
     ? Math.min(totalSize - 1, (blockIndex + 1) * VIDEO_BLOCK_SIZE - 1)
     : ((blockIndex + 1) * VIDEO_BLOCK_SIZE - 1);
 
-  const blockKey = `${fileId}:${actualQ}:${totalSize || 0}:${blockStart}-${blockEnd}`;
+  const isFastStartRaw = Boolean(
+    actualQ === "raw"
+    && fileId === DEFAULT_DFC_VIDEO_ID
+    && DEFAULT_FASTSTART_HEAD_BUF
+    && (!totalSize || totalSize === DEFAULT_TRANSCODE_SIZES.raw.totalSize)
+  );
+
+  const blockKey = `${fileId}:${actualQ}:${isFastStartRaw ? "fs:" : ""}${totalSize || 0}:${blockStart}-${blockEnd}`;
   if (driveVideoChunkCache.has(blockKey)) {
     return { buf: driveVideoChunkCache.get(blockKey), blockStart, blockEnd, totalSize, actualQ };
   }
@@ -1584,16 +1650,22 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
 
   const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
   const inflightPromise = (async () => {
+    const headLen = isFastStartRaw ? DEFAULT_FASTSTART_HEAD_BUF.byteLength : 0; // 170066
+    const upstreamStart = isFastStartRaw
+      ? (blockIndex === 0 ? 36 : (blockStart - DEFAULT_FASTSTART_MOOV_SHIFT))
+      : blockStart;
+    const upstreamEnd = isFastStartRaw
+      ? (blockEnd - DEFAULT_FASTSTART_MOOV_SHIFT)
+      : blockEnd;
+
     const fetchOnce = async (streamTarget) => {
       const headers = {
-        "Range": `bytes=${blockStart}-${blockEnd}`,
+        "Range": `bytes=${upstreamStart}-${upstreamEnd}`,
         "User-Agent": ua,
+        "Origin": "https://drive.google.com",
+        "Referer": "https://drive.google.com/",
       };
       if (streamTarget.cookieHeader) headers["Cookie"] = streamTarget.cookieHeader;
-      if (streamTarget.isTranscoded) {
-        headers["Origin"] = "https://drive.google.com",
-        headers["Referer"] = "https://drive.google.com/";
-      }
       return fetch(streamTarget.url, {
         method: "GET",
         headers,
@@ -1607,7 +1679,10 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
     if ((!r.ok && r.status !== 206) || ct.includes("text/html")) {
       driveTranscodeCache.delete(fileId);
       driveResolvedUrlCache.delete(fileId);
-      const refreshedTarget = await getStreamTargetForQuality(fileId, quality, signal);
+      const fallbackRawUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+      const refreshedTarget = actualQ === "raw"
+        ? { ...target, url: fallbackRawUrl }
+        : await getStreamTargetForQuality(fileId, quality, signal);
       r = await fetchOnce(refreshedTarget);
     }
 
@@ -1630,9 +1705,12 @@ async function fetchAndCacheVideoBlock(fileId, quality, blockIndex, signal) {
       });
     }
 
-    const buf = Buffer.from(await r.arrayBuffer());
+    const rawSlice = Buffer.from(await r.arrayBuffer());
+    const buf = (isFastStartRaw && blockIndex === 0 && headLen > 0)
+      ? Buffer.concat([DEFAULT_FASTSTART_HEAD_BUF, rawSlice])
+      : rawSlice;
     const finalEnd = blockStart + buf.byteLength - 1;
-    const finalKey = `${fileId}:${actualQ}:${resolvedTotal || 0}:${blockStart}-${finalEnd}`;
+    const finalKey = `${fileId}:${actualQ}:${isFastStartRaw ? "fs:" : ""}${resolvedTotal || 0}:${blockStart}-${finalEnd}`;
     if (buf.byteLength > 0) {
       storeVideoChunk(finalKey, buf);
       if (finalKey !== blockKey) storeVideoChunk(blockKey, buf);
@@ -1655,7 +1733,12 @@ function prefetchNextVideoBlocks(fileId, quality, fromBlockIndex, count = 2) {
 
 function prewarmVideoHeadAndMoov(fileId, quality, totalSize) {
   fetchAndCacheVideoBlock(fileId, quality, 0, AbortSignal.timeout(15000)).catch(() => {});
-  if (totalSize > VIDEO_BLOCK_SIZE) {
+  const isFastStartRaw = Boolean(
+    quality === "raw"
+    && fileId === DEFAULT_DFC_VIDEO_ID
+    && DEFAULT_FASTSTART_HEAD_BUF
+  );
+  if (!isFastStartRaw && totalSize > VIDEO_BLOCK_SIZE) {
     const lastBlockIdx = Math.floor((totalSize - 1) / VIDEO_BLOCK_SIZE);
     if (lastBlockIdx > 0) {
       fetchAndCacheVideoBlock(fileId, quality, lastBlockIdx, AbortSignal.timeout(15000)).catch(() => {});
@@ -1724,6 +1807,28 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
     const formUpdatedAt = matchedForm?.updatedAt || "";
 
     const outTiers = {};
+    const localTiers = {};
+    for (const qKey of ["360p", "720p"]) {
+      const p = getLocalH264Path(fileId, qKey);
+      if (!p) continue;
+      const totalSize = fs.statSync(p).size;
+      const tierVer = `${fileId}-${qKey}-h264-${totalSize}`;
+      localTiers[qKey] = {
+        quality: qKey, label: qKey === "360p" ? "360p 極速流暢" : "720p HD 高清", itag: 0, totalSize,
+        width: qKey === "360p" ? 640 : 1280, height: qKey === "360p" ? 360 : 720,
+        blockSize: VIDEO_BLOCK_SIZE, chunkCount: Math.ceil(totalSize / VIDEO_BLOCK_SIZE), isRawFallback: false,
+        version: tierVer,
+        url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${qKey}&v=${encodeURIComponent(tierVer)}`,
+      };
+    }
+    if (localTiers["360p"]) {
+      res.set("Cache-Control", "private, max-age=60");
+      return res.json({
+        fileId, version: `${fileId}-h264-${localTiers["360p"].totalSize}-${formUpdatedAt}`, updatedAt: formUpdatedAt,
+        checkedAt: new Date().toISOString(), duration: 362.881, blockSize: VIDEO_BLOCK_SIZE,
+        defaultQuality: "360p", isFallback: false, tiers: localTiers,
+      });
+    }
     for (const [qKey, t] of Object.entries(transcoded?.tiers || {})) {
       if (qKey !== "360p" && qKey !== "720p") continue;
       const totalSize = t.totalSize || driveVideoMetaCache.get(`${fileId}:${qKey}`)?.totalSize || 0;
@@ -1739,12 +1844,13 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
         height: t.height || (qKey === "360p" ? 360 : 720),
         blockSize: VIDEO_BLOCK_SIZE,
         chunkCount: Math.ceil(totalSize / VIDEO_BLOCK_SIZE),
+        isRawFallback: Boolean(t.isRawFallback),
         version: tierVer,
         url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}&v=${encodeURIComponent(tierVer)}`,
       };
     }
 
-    if (!outTiers["360p"] && fileId === DEFAULT_DFC_VIDEO_ID) {
+    if (!outTiers["360p"] && !transcoded?.isFallback && fileId === DEFAULT_DFC_VIDEO_ID) {
       for (const qKey of ["360p", "720p"]) {
         const d = DEFAULT_TRANSCODE_SIZES[qKey];
         const tierVer = `${fileId}-${qKey}-${d.totalSize}-${formUpdatedAt}`;
@@ -1758,6 +1864,7 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
           height: d.height,
           blockSize: VIDEO_BLOCK_SIZE,
           chunkCount: Math.ceil(d.totalSize / VIDEO_BLOCK_SIZE),
+          isRawFallback: false,
           version: tierVer,
           url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${encodeURIComponent(qKey)}&v=${encodeURIComponent(tierVer)}`,
         };
@@ -1780,6 +1887,8 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
       duration: transcoded?.durationSec || 362.881,
       blockSize: VIDEO_BLOCK_SIZE,
       defaultQuality: "360p",
+      isFallback: Boolean(transcoded?.isFallback),
+      fastStart: Boolean(fileId === DEFAULT_DFC_VIDEO_ID && DEFAULT_FASTSTART_HEAD_BUF),
       tiers: outTiers,
     });
   } catch (e) {
@@ -1812,6 +1921,18 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
 
   const requestedQuality = normalizeRequestedQuality(req.query?.q || req.query?.quality || "360p");
   const knownMeta = driveVideoMetaCache.get(`${fileId}:${requestedQuality}`);
+
+  // 優先使用預先轉碼之 H.264 本地檔（原始檔為 HEVC，多數瀏覽器僅能播放聲音無畫面）
+  const localH264 = getLocalH264Path(fileId, requestedQuality === "raw" ? "720p" : requestedQuality);
+  if (localH264) {
+    res.set({
+      "Content-Type": "video/mp4",
+      "Accept-Ranges": "bytes",
+      "X-Video-Quality": requestedQuality === "raw" ? "720p" : requestedQuality,
+      "Cache-Control": "private, max-age=86400",
+    });
+    return res.sendFile(localH264, { acceptRanges: true, cacheControl: false, lastModified: true });
+  }
 
   // 1. HEAD 請求即時回傳最新中繼資料
   if (req.method === "HEAD") {
@@ -1874,8 +1995,14 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
     }
     if (!Number.isFinite(start) || start < 0) start = 0;
 
-    // 當瀏覽器首次請求開頭區塊 (start === 0) 時，立即併發預抓檔案尾端 moov 元資料區塊，消除第二次 Range 往返等待
-    if (start === 0 && totalSize > VIDEO_BLOCK_SIZE) {
+    const isFastStartRaw = Boolean(
+      actualQ === "raw"
+      && fileId === DEFAULT_DFC_VIDEO_ID
+      && DEFAULT_FASTSTART_HEAD_BUF
+    );
+
+    // 若非 Fast-Start 前置 moov 串流，首次請求開頭時併發預抓尾端 moov 區塊
+    if (!isFastStartRaw && start === 0 && totalSize > VIDEO_BLOCK_SIZE) {
       const moovBlockIdx = Math.floor((totalSize - 1) / VIDEO_BLOCK_SIZE);
       if (moovBlockIdx > 0) {
         fetchAndCacheVideoBlock(fileId, actualQ, moovBlockIdx, AbortSignal.timeout(15000)).catch(() => {});
