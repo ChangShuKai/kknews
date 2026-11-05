@@ -1233,7 +1233,7 @@ app.get("/assets/dfc.mp4", async (req, res) => {
   }
   res.set("Cache-Control", "no-store, no-cache, must-revalidate");
   for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
-    if (fs.existsSync(p)) return res.sendFile(p);
+    if (fs.existsSync(p)) return res.sendFile(p, { acceptRanges: true, dotfiles: "allow" });
   }
   return notFound(res);
 });
@@ -1946,7 +1946,7 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
       "X-Video-Quality": localQ,
       "Cache-Control": "private, max-age=86400",
     });
-    return res.sendFile(localH264, { acceptRanges: true, cacheControl: false, lastModified: true });
+    return res.sendFile(localH264, { acceptRanges: true, dotfiles: "allow", cacheControl: false, lastModified: true });
   }
 
   // 1. HEAD 請求即時回傳最新中繼資料
@@ -2662,7 +2662,7 @@ app.get("/api/proverbs/images/:filename", (req, res) => {
     const mime = filename.endsWith(".png") ? "image/png" : "image/jpeg";
     res.setHeader("Content-Type", mime);
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800");
-    return res.sendFile(tmpFile);
+    return res.sendFile(tmpFile, { dotfiles: "allow" });
   }
   notFound(res);
 });
