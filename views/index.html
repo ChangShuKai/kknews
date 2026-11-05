@@ -3529,7 +3529,7 @@
 
       const timeLabel = $("dfcTimeLabel");
       if (timeLabel) {
-        if (dfcState.videoLoading && !dfcState.videoReady) {
+        if ((dfcState.videoLoading || dfcState.pendingPlay) && !dfcState.videoReady) {
           timeLabel.textContent = `00:00 / ${fmtSec(dur)} (載入中)`;
         } else {
           timeLabel.textContent = `${fmtSec(cur)} / ${fmtSec(dur)}`;
@@ -3538,7 +3538,7 @@
 
       const playBtn = $("dfcPlayBtn");
       if (playBtn) {
-        if (dfcState.videoLoading && !dfcState.videoReady) {
+        if ((dfcState.videoLoading || dfcState.pendingPlay) && !dfcState.videoReady) {
           playBtn.textContent = "⏳";
         } else {
           playBtn.textContent = dfcState.playing ? "❚❚" : "▶";
@@ -3547,7 +3547,10 @@
 
       const centerPlay = $("dfcCenterPlay");
       if (centerPlay) {
-        const hideCenter = dfcState.playing || dfcState.activeCheckpointIndex !== -1 || dfcState.isEmbed || (dfcState.videoLoading && !dfcState.videoReady);
+        const loadingEl = $("dfcVideoLoading");
+        const isLoadingVisible = Boolean(loadingEl && !loadingEl.classList.contains("hide"));
+        const isErrorVisible = Boolean($("dfcVideoError") && !$("dfcVideoError").classList.contains("hide"));
+        const hideCenter = dfcState.playing || dfcState.pendingPlay || isPrebufferingGate || isLoadingVisible || isErrorVisible || dfcState.activeCheckpointIndex !== -1 || dfcState.isEmbed || (dfcState.videoLoading && !dfcState.videoReady);
         centerPlay.classList.toggle("hide-overlay", hideCenter);
       }
       drawDemoCanvas(cur);
@@ -3988,6 +3991,16 @@
       if (dfcState.playing) dfcState.rafId = requestAnimationFrame(dfcLoop);
     }
 
+    let dfcPendingPlayTimer = null;
+    let dfcPendingPlayRetried = false;
+
+    function clearDfcPendingPlayTimer() {
+      if (dfcPendingPlayTimer) {
+        clearTimeout(dfcPendingPlayTimer);
+        dfcPendingPlayTimer = null;
+      }
+    }
+
     function setDfcPlaying(play) {
       const v = $("dfcVideo");
       const badge = $("dfcVideoBadge");
@@ -3996,28 +4009,65 @@
       if (play) {
         if (dfcState.activeCheckpointIndex !== -1) return;
         dfcState.watchSessionActive = true;
+        $("dfcVideoError")?.classList.add("hide");
 
         // 播放 DFC 問卷影片時強制全螢幕
         if (!isDfcFullscreenActive() && !isDfcFinished()) {
           requestDfcFullscreen().catch(() => {});
         }
 
+        if (dfcState.useRealVideo && !dfcState.videoReady && v && v.readyState >= 1) {
+          dfcState.videoReady = true;
+          dfcState.videoLoading = false;
+          if (v.duration && Number.isFinite(v.duration) && v.duration > 0) {
+            dfcState.duration = v.duration;
+          }
+        }
+
         // 若為實體影片且尚未載入就緒，進入等待佇列，切勿提前開啟計時跑表！
         if (dfcState.useRealVideo && !dfcState.videoReady) {
           dfcState.pendingPlay = true;
+          dfcState.videoLoading = true;
           if (loadingEl) {
             const loadingTxt = $("dfcLoadingText");
             if (loadingTxt) loadingTxt.textContent = "雲端影片載入中，即將開始播放...";
             loadingEl.classList.remove("hide");
           }
           if (badge) badge.textContent = "⏳ 載入中，請稍候...";
+
+          // 若影片先前發生錯誤或尚未載入來源，立即重新觸發載入
+          if (v && (v.error || !v.getAttribute("src") || (v.readyState === 0 && v.networkState !== 2))) {
+            const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
+            applyDfcVideoSource(targetUrl, true);
+          }
+
+          clearDfcPendingPlayTimer();
+          dfcPendingPlayTimer = setTimeout(() => {
+            if (!dfcState.pendingPlay || dfcState.videoReady) return;
+            if (!dfcPendingPlayRetried) {
+              dfcPendingPlayRetried = true;
+              const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
+              applyDfcVideoSource(targetUrl, true);
+            } else {
+              dfcState.pendingPlay = false;
+              dfcState.videoLoading = false;
+              if (loadingEl) loadingEl.classList.add("hide");
+              $("dfcVideoError")?.classList.remove("hide");
+              updateDfcUiProgress();
+            }
+          }, 10000);
+
           updateDfcUiProgress();
           return;
         }
 
+        clearDfcPendingPlayTimer();
+        dfcPendingPlayRetried = false;
         dfcState.playing = true;
         dfcState.pendingPlay = false;
+        dfcState.videoLoading = false;
         dfcState.lastTickTs = performance.now();
+        if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
 
         if (badge) {
           dfcEngagement.playCount++; badge.textContent = '🎬 高速影片播放中';
@@ -4031,6 +4081,9 @@
             playPromise.catch((err) => {
               console.warn("v.play() blocked or aborted:", err);
               dfcState.playing = false;
+              dfcState.pendingPlay = false;
+              dfcState.videoLoading = false;
+              if (loadingEl) loadingEl.classList.add("hide");
               if (badge) badge.textContent = "點擊畫面或播放鈕開始";
               updateDfcUiProgress();
             });
@@ -4039,8 +4092,11 @@
         if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
         dfcState.rafId = requestAnimationFrame(dfcLoop);
       } else {
+        clearDfcPendingPlayTimer();
         dfcState.playing = false;
         dfcState.pendingPlay = false;
+        dfcState.videoLoading = false;
+        if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
         if (dfcState.useRealVideo && v) v.pause();
         if (dfcState.rafId) { cancelAnimationFrame(dfcState.rafId); dfcState.rafId = null; }
         if (dfcState.activeCheckpointIndex === -1 && badge) {
@@ -4392,7 +4448,7 @@
         if (dfcActiveTier !== dfcQualityMode) applyVisualQualityTier(dfcQualityMode);
         if (dfcActiveStreamQuality !== manualStreamQ && !isSeamlessSwapping) {
           const targetUrl = dfcTurboState.blobUrls[manualStreamQ]
-            || (dfcTurboState.fileId ? `/api/dfc/drive-video/${encodeURIComponent(dfcTurboState.fileId)}?q=${manualStreamQ}&v=${encodeURIComponent(dfcTurboState.manifestVersion || Date.now())}` : null);
+            || (dfcTurboState.fileId ? `/api/dfc/drive-video/${encodeURIComponent(dfcTurboState.fileId)}?q=${manualStreamQ}&proxy=1&v=${encodeURIComponent(dfcTurboState.manifestVersion || Date.now())}` : null);
           if (targetUrl) seamlessSwapVideoSource(targetUrl, manualStreamQ, dfcQualityMode);
         }
         return;
@@ -4463,7 +4519,7 @@
       return blobUrl;
     }
 
-    // 核心：進入 DFC 頁面即查驗雲端最新版串流資訊，並由瀏覽器原生 <video> 透過 Google CDN 直連分流播放（完全杜絕 Vercel Fast Origin Transfer 爆量）
+    // 核心：進入 DFC 頁面即查驗雲端最新版串流資訊，並由伺服器 2MB 對齊區塊代理與尾端 moov 預熱機制實現極速播放
     async function startDfcTurboPreloader(fileId) {
       if (!fileId || DFC_CONFIG.restricted || !currentDfcAccess.allowed) return;
 
@@ -4477,10 +4533,10 @@
         false
       );
 
-      // Step 1: 向雲端查驗最新 Manifest 中繼資料
+      // Step 1: 向雲端查驗最新 Manifest 中繼資料（避免每次強制 fresh=1 消耗 Google 配額）
       let manifest = null;
       try {
-        const mr = await fetch(`/api/dfc/video-manifest/${encodeURIComponent(fileId)}?fresh=1&_t=${Date.now()}`);
+        const mr = await fetch(`/api/dfc/video-manifest/${encodeURIComponent(fileId)}?_t=${Date.now()}`);
         if (mr.ok) {
           manifest = await mr.json();
         }
@@ -4514,13 +4570,13 @@
       );
       if (badge && !badge.classList.contains("question-stop")) {
         badge.textContent = dfcState.playing
-          ? "🎬 Google CDN 高速串流播放中"
+          ? "🎬 高速串流播放中"
           : "⚡ 雲端串流就緒 · 點擊開始觀看";
       }
       updateDfcUiProgress();
     }
 
-    function applyDfcVideoSource(url) {
+    function applyDfcVideoSource(url, isRetry = false) {
       const v = $("dfcVideo");
       const canvas = $("dfcDemoCanvas");
       const badge = $("dfcVideoBadge");
@@ -4533,18 +4589,26 @@
 
       if (!url) return;
 
+      const preservePendingPlay = Boolean(isRetry && dfcState.pendingPlay);
       updateDfcPlayerControlUi();
       const driveId = extractGoogleDriveId(url);
-      const verParam = encodeURIComponent(DFC_CONFIG.videoVersion || DFC_CONFIG.updatedAt || Date.now());
+      const verParam = encodeURIComponent(
+        isRetry
+          ? `${DFC_CONFIG.videoVersion || DFC_CONFIG.updatedAt || ""}_r${Date.now()}`
+          : (DFC_CONFIG.videoVersion || DFC_CONFIG.updatedAt || Date.now())
+      );
       dfcState.isEmbed = false;
       dfcState.isDriveStream = Boolean(driveId);
       dfcState.useRealVideo = true;
       dfcState.videoReady = false;
-      dfcState.videoLoading = false;
+      dfcState.videoLoading = true;
       dfcState.playing = false;
-      dfcState.pendingPlay = false;
+      dfcState.pendingPlay = preservePendingPlay;
 
-      if (loadingEl) loadingEl.classList.add("hide");
+      $("dfcVideoError")?.classList.add("hide");
+      if (!preservePendingPlay && loadingEl) {
+        loadingEl.classList.add("hide");
+      }
 
       // 僅在當次工作階段已驗證為同一檔案且同一最新版時才使用記憶體 Blob；否則一律向伺服器請求最新串流
       const isSameVerifiedSession = driveId
@@ -4560,16 +4624,17 @@
 
       const directUrlWithBust = url.includes("?") ? `${url}&_v=${verParam}` : `${url}?_v=${verParam}`;
       const streamSrc = existingBlob
-        || (driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}?q=360p&v=${verParam}&_s=${encodeURIComponent(dfcTurboState.sessionToken)}` : directUrlWithBust);
+        || (driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}?q=360p&proxy=1&v=${verParam}&_s=${encodeURIComponent(dfcTurboState.sessionToken)}` : directUrlWithBust);
 
       if (v) {
-        if (v.getAttribute("src") !== streamSrc) {
+        if (isRetry || v.getAttribute("src") !== streamSrc) {
           v.pause();
           v.preload = "auto";
           v.src = streamSrc;
           v.load();
         } else if (v.readyState >= 1 && v.duration && Number.isFinite(v.duration) && v.duration > 0) {
           dfcState.videoReady = true;
+          dfcState.videoLoading = false;
           dfcState.duration = v.duration;
         }
         v.classList.remove("hide");
@@ -4585,7 +4650,7 @@
       renderDfcMarkers();
       updateDfcUiProgress();
 
-      // 立即向雲端查驗最新版 Manifest 並啟動當次全片下載
+      // 立即向雲端查驗最新版 Manifest 並預熱區塊
       if (driveId) {
         startDfcTurboPreloader(driveId);
       }
@@ -4690,6 +4755,8 @@
       const handleMetadataLoaded = () => {
         if (dfcState.isEmbed) return;
         if (v.duration && Number.isFinite(v.duration) && v.duration > 0) {
+          clearDfcPendingPlayTimer();
+          dfcPendingPlayRetried = false;
           dfcState.useRealVideo = true;
           dfcState.videoReady = true;
           dfcState.videoLoading = false;
@@ -4697,6 +4764,10 @@
           DFC_CONFIG.fallbackDuration = Math.round(v.duration);
           if (!isSeamlessSwapping) {
             dfcState.currentTime = v.currentTime || 0;
+          }
+          $("dfcVideoError")?.classList.add("hide");
+          if (loadingEl && !isPrebufferingGate && !dfcState.pendingPlay) {
+            loadingEl.classList.add("hide");
           }
           v.classList.remove("hide");
           if (canvas) canvas.classList.add("hide");
@@ -4722,13 +4793,23 @@
 
       v.onloadedmetadata = handleMetadataLoaded;
       v.ondurationchange = handleMetadataLoaded;
+      v.onloadeddata = handleMetadataLoaded;
 
       v.oncanplay = () => {
+        clearDfcPendingPlayTimer();
+        dfcPendingPlayRetried = false;
         dfcState.videoReady = true;
+        dfcState.videoLoading = false;
+        $("dfcVideoError")?.classList.add("hide");
+        if (loadingEl && !isPrebufferingGate && !dfcState.pendingPlay) {
+          loadingEl.classList.add("hide");
+        }
         evaluateAdaptiveQuality();
         if (dfcState.pendingPlay) {
           dfcState.pendingPlay = false;
           setDfcPlaying(true);
+        } else {
+          updateDfcUiProgress();
         }
       };
 
@@ -4763,8 +4844,12 @@
       };
 
       v.onplay = () => {
+        clearDfcPendingPlayTimer();
         $("dfcVideoError")?.classList.add("hide");
+        if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
         dfcState.playing = true;
+        dfcState.pendingPlay = false;
+        dfcState.videoLoading = false;
         updateDfcUiProgress();
         if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
         dfcState.rafId = requestAnimationFrame(dfcLoop);
@@ -4784,10 +4869,15 @@
       };
 
       v.onplaying = () => {
+        clearDfcPendingPlayTimer();
+        $("dfcVideoError")?.classList.add("hide");
         if (getForwardBufferSeconds(v) >= 1.5 || v.readyState >= 3) {
           stopPrebufferGate();
+        } else if (loadingEl && !isPrebufferingGate) {
+          loadingEl.classList.add("hide");
         }
         evaluateAdaptiveQuality();
+        updateDfcUiProgress();
       };
 
       v.onprogress = () => {
@@ -4804,9 +4894,13 @@
 
       v.onerror = (e) => {
         if (isSeamlessSwapping) return;
+        clearDfcPendingPlayTimer();
         stopPrebufferGate();
         console.warn("dfcVideo stream warning:", e);
         dfcState.videoLoading = false;
+        dfcState.pendingPlay = false;
+        dfcState.playing = false;
+        if (loadingEl) loadingEl.classList.add("hide");
         const badge = $("dfcVideoBadge");
         if (badge) {
           badge.textContent = "🎬 專屬劇院播放器 · 點擊重新連接";
@@ -4817,7 +4911,10 @@
       };
       $("dfcRetryStreamBtn")?.addEventListener("click", () => {
         $("dfcVideoError")?.classList.add("hide");
-        if (dfcState.currentForm) loadDfcVideo(dfcState.currentForm, true);
+        const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
+        dfcState.pendingPlay = true;
+        applyDfcVideoSource(targetUrl, true);
+        setDfcPlaying(true);
       });
 
       v.onended = () => {
@@ -4846,7 +4943,7 @@
         if (!dfcState.playing) {
           dfcState.watchSessionActive = true;
           if (!isDfcFullscreenActive()) {
-            await requestDfcFullscreen();
+            requestDfcFullscreen().catch(() => {});
           }
           setDfcPlaying(true);
         } else {
@@ -5057,7 +5154,7 @@
       if (isDfcFullscreenActive()) exitDfcFullscreen();
     }
 
-    $("dfcPlayBtn").onclick = async () => {
+    $("dfcPlayBtn").onclick = () => {
       if (dfcState.activeCheckpointIndex !== -1) return;
       if (dfcState.currentTime >= dfcState.duration - 0.2) {
         dfcState.currentTime = 0;
@@ -5066,7 +5163,7 @@
       if (!dfcState.playing) {
         dfcState.watchSessionActive = true;
         if (!isDfcFullscreenActive()) {
-          await requestDfcFullscreen();
+          requestDfcFullscreen().catch(() => {});
         }
         setDfcPlaying(true);
       } else {

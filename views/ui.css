@@ -4509,7 +4509,7 @@ canvas.live-cv:hover {
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
-  z-index: 8;
+  z-index: 12;
   pointer-events: none;
 }
 .video-spinner {
