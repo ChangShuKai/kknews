@@ -2622,6 +2622,17 @@ html[data-layout="mobile"] .dfc-grid,
 html[data-layout="mobile"] .row {
   grid-template-columns: 1fr !important;
 }
+html[data-layout="mobile"] .dfc-stage-wrap.split-active,
+html[data-layout="tablet"] .dfc-stage-wrap.split-active {
+  flex-direction: column !important;
+}
+html[data-layout="mobile"] .dfc-stage-wrap.split-active .dfc-video-pane,
+html[data-layout="mobile"] .dfc-stage-wrap.split-active .dfc-q-pane,
+html[data-layout="tablet"] .dfc-stage-wrap.split-active .dfc-video-pane,
+html[data-layout="tablet"] .dfc-stage-wrap.split-active .dfc-q-pane {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+}
 html[data-layout="mobile"] .card,
 html[data-layout="mobile"] .hero {
   padding: 16px 14px;

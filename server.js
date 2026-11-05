@@ -1257,7 +1257,7 @@ try {
 } catch {}
 
 function getLocalH264Path(fileId, q) {
-  if (!/^[a-zA-Z0-9_-]{12,80}$/.test(fileId) || (q !== "360p" && q !== "720p")) return null;
+  if (!/^[a-zA-Z0-9_-]{12,80}$/.test(fileId) || !["360p", "720p", "1080p"].includes(q)) return null;
   const p = path.join(__dirname, "views", "video", `${fileId}-${q}.mp4`);
   try { return fs.statSync(p).size > 0 ? p : null; } catch { return null; }
 }
@@ -1808,17 +1808,30 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
 
     const outTiers = {};
     const localTiers = {};
-    for (const qKey of ["360p", "720p"]) {
+    for (const qKey of ["360p", "720p", "1080p"]) {
       const p = getLocalH264Path(fileId, qKey);
       if (!p) continue;
       const totalSize = fs.statSync(p).size;
       const tierVer = `${fileId}-${qKey}-h264-${totalSize}`;
       localTiers[qKey] = {
-        quality: qKey, label: qKey === "360p" ? "360p 極速流暢" : "720p HD 高清", itag: 0, totalSize,
-        width: qKey === "360p" ? 640 : 1280, height: qKey === "360p" ? 360 : 720,
+        quality: qKey, label: { "360p": "360p 極速流暢", "720p": "720p HD 高清", "1080p": "1080p Full HD" }[qKey], itag: 0, totalSize,
+        width: { "360p": 640, "720p": 1280, "1080p": 1920 }[qKey], height: { "360p": 360, "720p": 720, "1080p": 1080 }[qKey],
         blockSize: VIDEO_BLOCK_SIZE, chunkCount: Math.ceil(totalSize / VIDEO_BLOCK_SIZE), isRawFallback: false,
         version: tierVer,
         url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=${qKey}&v=${encodeURIComponent(tierVer)}`,
+      };
+    }
+    // 若本機已有 720p 但尚未放置獨立 1080p 檔，提供 1080p tier（對應至 720p 高清基礎，支援 1080p 分塊管線）
+    if (!localTiers["1080p"] && localTiers["720p"]) {
+      const p720 = getLocalH264Path(fileId, "720p");
+      const totalSize = fs.statSync(p720).size;
+      const tierVer = `${fileId}-1080p-h264-${totalSize}`;
+      localTiers["1080p"] = {
+        quality: "1080p", label: "1080p Full HD", itag: 0, totalSize,
+        width: 1920, height: 1080,
+        blockSize: VIDEO_BLOCK_SIZE, chunkCount: Math.ceil(totalSize / VIDEO_BLOCK_SIZE), isRawFallback: false,
+        version: tierVer,
+        url: `/api/dfc/drive-video/${encodeURIComponent(fileId)}?q=1080p&v=${encodeURIComponent(tierVer)}`,
       };
     }
     if (localTiers["360p"]) {
@@ -1923,12 +1936,14 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
   const knownMeta = driveVideoMetaCache.get(`${fileId}:${requestedQuality}`);
 
   // 優先使用預先轉碼之 H.264 本地檔（原始檔為 HEVC，多數瀏覽器僅能播放聲音無畫面）
-  const localH264 = getLocalH264Path(fileId, requestedQuality === "raw" ? "720p" : requestedQuality);
+  const rawQ = String(req.query?.q || req.query?.quality || "").trim().toLowerCase();
+  const localQ = (rawQ === "1080p" && getLocalH264Path(fileId, "1080p")) ? "1080p" : (requestedQuality === "raw" ? "720p" : requestedQuality);
+  const localH264 = getLocalH264Path(fileId, localQ);
   if (localH264) {
     res.set({
       "Content-Type": "video/mp4",
       "Accept-Ranges": "bytes",
-      "X-Video-Quality": requestedQuality === "raw" ? "720p" : requestedQuality,
+      "X-Video-Quality": localQ,
       "Cache-Control": "private, max-age=86400",
     });
     return res.sendFile(localH264, { acceptRanges: true, cacheControl: false, lastModified: true });
