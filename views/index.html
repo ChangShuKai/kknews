@@ -693,7 +693,7 @@
                   <div class="video-center-play-circle">▶</div>
                 </div>
                 <div class="video-lock-toast" id="dfcLockToast">請循序觀看影片，未解鎖段落暫不開放快轉跳躍</div>
-                <video id="dfcVideo" playsinline preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
+                <video id="dfcVideo" playsinline webkit-playsinline="true" x5-playsinline="true" x5-video-player-type="h5" preload="auto" controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture class="hide video-q-360p"></video>
                 <canvas id="dfcBridgeCanvas" class="video-bridge-canvas" width="1280" height="720"></canvas>
                 <canvas id="dfcDemoCanvas" width="1280" height="720"></canvas>
                 <div class="video-error-overlay hide" id="dfcVideoError">
@@ -1890,6 +1890,7 @@
      * DFC 互動影片表單配置與引擎
      * ============================================================================ */
     let dfcConfigLoaded = false;
+    const DEFAULT_DFC_DRIVE_ID = "1Jm37XrtHhQP8BIVapn7jY00mx2T_MESe";
     const DFC_CONFIG = {
       videoUrl: "",
       videoVersion: "",
@@ -3112,9 +3113,19 @@
     };
     const SPEED_STEPS = [0.75, 1.0, 1.25, 1.5];
 
-    function isDfcFullscreenActive() {
-      // 在 9:16 手機專屬模式下，支援直向沉浸觀看與問答，不強制鎖定橫向全螢幕
+    function isMobileDevice() {
       if (document.documentElement.getAttribute("data-device-ui") === "mobile") return true;
+      if (document.documentElement.getAttribute("data-layout") === "mobile") return true;
+      const ua = navigator.userAgent || "";
+      if (/Mobile|iPhone|iPod|Android.*Mobile|Windows Phone|iPad|Tablet/i.test(ua)) return true;
+      if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) return true;
+      if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches && (window.innerWidth <= 1024)) return true;
+      return false;
+    }
+
+    function isDfcFullscreenActive() {
+      // 在手機或觸控裝置下，支援直向與橫向原生沉浸觀看與問答，不強制鎖定桌面全螢幕遮罩
+      if (isMobileDevice()) return true;
       const stage = $("dfcStage");
       const v = $("dfcVideo");
       const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
@@ -3138,7 +3149,7 @@
     }
 
     async function requestDfcFullscreen(forceExplicit = false) {
-      if (!forceExplicit && document.documentElement.getAttribute("data-device-ui") === "mobile") {
+      if (!forceExplicit && isMobileDevice()) {
         return true;
       }
       const stage = $("dfcStage");
@@ -3152,7 +3163,7 @@
           stage.webkitRequestFullscreen();
         } else if (stage.msRequestFullscreen) {
           stage.msRequestFullscreen();
-        } else {
+        } else if (forceExplicit) {
           const v = $("dfcVideo");
           if (v && v.webkitEnterFullscreen) v.webkitEnterFullscreen();
         }
@@ -3292,6 +3303,7 @@
     }
 
     function triggerWinKeyExitAlert() {
+      if (isMobileDevice()) return;
       // 1. 暫停影片
       if (dfcState.playing) {
         setDfcPlaying(false);
@@ -3314,6 +3326,7 @@
     }
 
     function showDfcFsLockOverlay(isWinKey = false) {
+      if (isMobileDevice()) return;
       updateDfcFsLockOverlayContent(isWinKey);
       const overlay = $("dfcFsLockOverlay");
       if (overlay) overlay.classList.remove("hide");
@@ -3529,7 +3542,7 @@
 
       const timeLabel = $("dfcTimeLabel");
       if (timeLabel) {
-        if ((dfcState.videoLoading || dfcState.pendingPlay) && !dfcState.videoReady) {
+        if (dfcState.pendingPlay && !dfcState.videoReady) {
           timeLabel.textContent = `00:00 / ${fmtSec(dur)} (載入中)`;
         } else {
           timeLabel.textContent = `${fmtSec(cur)} / ${fmtSec(dur)}`;
@@ -3538,7 +3551,7 @@
 
       const playBtn = $("dfcPlayBtn");
       if (playBtn) {
-        if ((dfcState.videoLoading || dfcState.pendingPlay) && !dfcState.videoReady) {
+        if (dfcState.pendingPlay && !dfcState.videoReady) {
           playBtn.textContent = "⏳";
         } else {
           playBtn.textContent = dfcState.playing ? "❚❚" : "▶";
@@ -3550,7 +3563,13 @@
         const loadingEl = $("dfcVideoLoading");
         const isLoadingVisible = Boolean(loadingEl && !loadingEl.classList.contains("hide"));
         const isErrorVisible = Boolean($("dfcVideoError") && !$("dfcVideoError").classList.contains("hide"));
-        const hideCenter = dfcState.playing || dfcState.pendingPlay || isPrebufferingGate || isLoadingVisible || isErrorVisible || dfcState.activeCheckpointIndex !== -1 || dfcState.isEmbed || (dfcState.videoLoading && !dfcState.videoReady);
+        const hideCenter = dfcState.playing
+          || (dfcState.pendingPlay && dfcState.videoLoading)
+          || isPrebufferingGate
+          || isLoadingVisible
+          || isErrorVisible
+          || dfcState.activeCheckpointIndex !== -1
+          || dfcState.isEmbed;
         centerPlay.classList.toggle("hide-overlay", hideCenter);
       }
       drawDemoCanvas(cur);
@@ -3756,6 +3775,11 @@
 
       renderDfcStepPills();
       renderDfcMarkers();
+      if (isMobileDevice()) {
+        setTimeout(() => {
+          $("dfcQuestionCol")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }
     }
 
     async function submitDfcAnswers(payloadAnswers) {
@@ -3894,6 +3918,10 @@
       renderDfcStepPills();
       renderDfcMarkers();
 
+      if (isMobileDevice()) {
+        $("dfcCinemaBox")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
       if (dfcState.currentTime < dfcState.duration - 0.3) {
         if (!isDfcFullscreenActive() && dfcState.watchSessionActive) {
           requestDfcFullscreen().catch(() => {});
@@ -4011,86 +4039,131 @@
         dfcState.watchSessionActive = true;
         $("dfcVideoError")?.classList.add("hide");
 
-        // 播放 DFC 問卷影片時強制全螢幕
+        // 電腦版播放 DFC 問卷影片時請求全螢幕；手機版則維持沉浸式直立播放
         if (!isDfcFullscreenActive() && !isDfcFinished()) {
           requestDfcFullscreen().catch(() => {});
         }
 
-        if (dfcState.useRealVideo && !dfcState.videoReady && v && v.readyState >= 1) {
-          dfcState.videoReady = true;
-          dfcState.videoLoading = false;
-          if (v.duration && Number.isFinite(v.duration) && v.duration > 0) {
-            dfcState.duration = v.duration;
-          }
-        }
-
-        // 若為實體影片且尚未載入就緒，進入等待佇列，切勿提前開啟計時跑表！
-        if (dfcState.useRealVideo && !dfcState.videoReady) {
-          dfcState.pendingPlay = true;
-          dfcState.videoLoading = true;
-          if (loadingEl) {
-            const loadingTxt = $("dfcLoadingText");
-            if (loadingTxt) loadingTxt.textContent = "雲端影片載入中，即將開始播放...";
-            loadingEl.classList.remove("hide");
-          }
-          if (badge) badge.textContent = "⏳ 載入中，請稍候...";
-
-          // 若影片先前發生錯誤或尚未載入來源，立即重新觸發載入
-          if (v && (v.error || !v.getAttribute("src") || (v.readyState === 0 && v.networkState !== 2))) {
+        if (dfcState.useRealVideo && v) {
+          // 若影片尚未載入來源或先前出錯，立即補上來源
+          if (v.error || !v.getAttribute("src") || (v.readyState === 0 && v.networkState === 3)) {
             const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
             applyDfcVideoSource(targetUrl, true);
           }
 
-          clearDfcPendingPlayTimer();
-          dfcPendingPlayTimer = setTimeout(() => {
-            if (!dfcState.pendingPlay || dfcState.videoReady) return;
-            if (!dfcPendingPlayRetried) {
-              dfcPendingPlayRetried = true;
-              const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
-              applyDfcVideoSource(targetUrl, true);
-            } else {
-              dfcState.pendingPlay = false;
-              dfcState.videoLoading = false;
-              if (loadingEl) loadingEl.classList.add("hide");
-              $("dfcVideoError")?.classList.remove("hide");
-              updateDfcUiProgress();
-            }
-          }, 10000);
-
-          updateDfcUiProgress();
-          return;
-        }
-
-        clearDfcPendingPlayTimer();
-        dfcPendingPlayRetried = false;
-        dfcState.playing = true;
-        dfcState.pendingPlay = false;
-        dfcState.videoLoading = false;
-        dfcState.lastTickTs = performance.now();
-        if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
-
-        if (badge) {
-          dfcEngagement.playCount++; badge.textContent = '🎬 高速影片播放中';
-          badge.classList.remove("question-stop");
-        }
-        logAction("播放 DFC 影片", `播放時間點: ${Math.round(dfcState.currentTime)} 秒`);
-
-        if (dfcState.useRealVideo && v) {
-          const playPromise = v.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((err) => {
-              console.warn("v.play() blocked or aborted:", err);
-              dfcState.playing = false;
-              dfcState.pendingPlay = false;
-              dfcState.videoLoading = false;
-              if (loadingEl) loadingEl.classList.add("hide");
-              if (badge) badge.textContent = "點擊畫面或播放鈕開始";
-              updateDfcUiProgress();
-            });
+          if (v.readyState >= 1 && v.duration && Number.isFinite(v.duration) && v.duration > 0) {
+            dfcState.videoReady = true;
+            dfcState.duration = v.duration;
           }
+
+          // 若影片尚未解碼就緒，在畫面顯示旋轉緩衝指示器，但不阻斷 v.play() 手勢觸發
+          if (!dfcState.videoReady || v.readyState < 2) {
+            dfcState.pendingPlay = true;
+            dfcState.videoLoading = true;
+            if (loadingEl) {
+              const loadingTxt = $("dfcLoadingText");
+              if (loadingTxt) loadingTxt.textContent = "⚡ 正在載入影音串流，即將開始播放...";
+              loadingEl.classList.remove("hide");
+            }
+            if (badge) badge.textContent = "⏳ 載入中，請稍候...";
+
+            clearDfcPendingPlayTimer();
+            dfcPendingPlayTimer = setTimeout(() => {
+              if (!dfcState.pendingPlay || dfcState.videoReady) return;
+              if (!dfcPendingPlayRetried) {
+                dfcPendingPlayRetried = true;
+                const targetUrl = DFC_CONFIG.videoUrl || `https://drive.google.com/file/d/${DEFAULT_DFC_DRIVE_ID}/preview`;
+                applyDfcVideoSource(targetUrl, true);
+                setDfcPlaying(true);
+              } else {
+                dfcState.pendingPlay = false;
+                dfcState.videoLoading = false;
+                if (loadingEl) loadingEl.classList.add("hide");
+                $("dfcVideoError")?.classList.remove("hide");
+                updateDfcUiProgress();
+              }
+            }, 12000);
+          } else {
+            clearDfcPendingPlayTimer();
+            dfcPendingPlayRetried = false;
+            dfcState.videoLoading = false;
+            dfcState.pendingPlay = false;
+            if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
+          }
+
+          dfcState.playing = true;
+          dfcState.lastTickTs = performance.now();
+          if (badge) {
+            dfcEngagement.playCount++;
+            badge.textContent = "🎬 高速影片播放中";
+            badge.classList.remove("question-stop");
+          }
+          logAction("播放 DFC 影片", `播放時間點: ${Math.round(dfcState.currentTime)} 秒`);
+
+          // 核心關鍵：在使用者點擊手勢事件鏈內立即執行 v.play()，解鎖 iOS Safari / 行動瀏覽器媒體播放授權
+          try {
+            const playPromise = v.play();
+            if (playPromise !== undefined) {
+              playPromise.then(() => {
+                clearDfcPendingPlayTimer();
+                dfcPendingPlayRetried = false;
+                dfcState.videoReady = true;
+                dfcState.videoLoading = false;
+                dfcState.pendingPlay = false;
+                dfcState.playing = true;
+                if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
+                if (v.duration && Number.isFinite(v.duration) && v.duration > 0) {
+                  dfcState.duration = v.duration;
+                }
+                updateDfcUiProgress();
+                if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
+                dfcState.rafId = requestAnimationFrame(dfcLoop);
+              }).catch((err) => {
+                console.warn("v.play() interrupted or blocked:", err);
+                if (err && err.name === "NotAllowedError") {
+                  // 行動裝置自動靜音重試機制（繞過 iOS / Android 聲音自動播放限制）
+                  v.muted = true;
+                  v.play().then(() => {
+                    showDfcLockToast("🔊 已為您靜音播放，點擊右下角音量鍵即可開啟聲音");
+                    if ($("dfcMuteBtn")) $("dfcMuteBtn").textContent = "🔇";
+                    clearDfcPendingPlayTimer();
+                    dfcState.videoReady = true;
+                    dfcState.videoLoading = false;
+                    dfcState.pendingPlay = false;
+                    dfcState.playing = true;
+                    if (loadingEl && !isPrebufferingGate) loadingEl.classList.add("hide");
+                    updateDfcUiProgress();
+                    if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
+                    dfcState.rafId = requestAnimationFrame(dfcLoop);
+                  }).catch(() => {
+                    dfcState.playing = false;
+                    dfcState.pendingPlay = false;
+                    dfcState.videoLoading = false;
+                    if (loadingEl) loadingEl.classList.add("hide");
+                    updateDfcUiProgress();
+                  });
+                  return;
+                }
+                dfcState.playing = false;
+                dfcState.pendingPlay = false;
+                dfcState.videoLoading = false;
+                if (loadingEl) loadingEl.classList.add("hide");
+                updateDfcUiProgress();
+              });
+            }
+          } catch (err) {
+            console.warn("Direct v.play() error:", err);
+          }
+
+          if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
+          dfcState.rafId = requestAnimationFrame(dfcLoop);
+        } else {
+          // 動態 Canvas 示範播放模式
+          dfcState.playing = true;
+          dfcState.lastTickTs = performance.now();
+          if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
+          dfcState.rafId = requestAnimationFrame(dfcLoop);
         }
-        if (dfcState.rafId) cancelAnimationFrame(dfcState.rafId);
-        dfcState.rafId = requestAnimationFrame(dfcLoop);
       } else {
         clearDfcPendingPlayTimer();
         dfcState.playing = false;
@@ -4903,7 +4976,7 @@
       dfcState.isDriveStream = Boolean(driveId);
       dfcState.useRealVideo = true;
       dfcState.videoReady = false;
-      dfcState.videoLoading = true;
+      dfcState.videoLoading = preservePendingPlay;
       dfcState.playing = false;
       dfcState.pendingPlay = preservePendingPlay;
 
@@ -4933,6 +5006,11 @@
         || (driveId ? `/api/dfc/drive-video/${encodeURIComponent(driveId)}?q=360p&proxy=1&v=${verParam}&_s=${encodeURIComponent(dfcTurboState.sessionToken)}` : directUrlWithBust);
 
       if (v) {
+        v.playsInline = true;
+        v.setAttribute("playsinline", "true");
+        v.setAttribute("webkit-playsinline", "true");
+        v.setAttribute("x5-playsinline", "true");
+        v.setAttribute("x5-video-player-type", "h5");
         if (isRetry || v.getAttribute("src") !== streamSrc) {
           v.pause();
           v.preload = "auto";
@@ -5241,7 +5319,8 @@
 
       const togglePlayOnScreen = async (e) => {
         if (dfcState.isEmbed || dfcState.activeCheckpointIndex !== -1) return;
-        e.stopPropagation();
+        if (e && e.target && e.target.closest && e.target.closest("#dfcVideoError, #dfcFsLockOverlay, .cinema-controls, #dfcLockToast, .dfc-fs-lock-overlay")) return;
+        if (e && e.stopPropagation) e.stopPropagation();
         if (dfcState.currentTime >= dfcState.duration - 0.2) {
           dfcState.currentTime = 0;
           if (dfcState.useRealVideo) v.currentTime = 0;
@@ -5256,8 +5335,9 @@
           setDfcPlaying(false);
         }
       };
-      v.onclick = togglePlayOnScreen;
+      if (v) v.onclick = togglePlayOnScreen;
       if ($("dfcCenterPlay")) $("dfcCenterPlay").onclick = togglePlayOnScreen;
+      $("dfcCinemaBox")?.addEventListener("click", togglePlayOnScreen);
 
       if ($("dfcRewindBtn")) {
         $("dfcRewindBtn").onclick = () => {
@@ -5413,7 +5493,9 @@
             triggerWinKeyExitAlert();
           } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
             setDfcPlaying(false);
-            showDfcFsLockOverlay();
+            if (!isMobileDevice()) {
+              showDfcFsLockOverlay();
+            }
             showDfcLockToast("⏸️ 偵測到切換視窗，影片已自動暫停");
           }
         }
@@ -5421,7 +5503,7 @@
 
       window.addEventListener("blur", () => {
         const isDfcActive = (currentTab === "dfc" || $("paneDfc")?.style.display !== "none");
-        if (!isDfcActive) return;
+        if (!isDfcActive || isMobileDevice()) return;
         if (Date.now() - lastWinKeyPressTime < 3000) {
           triggerWinKeyExitAlert();
         } else if (dfcState.playing && DFC_CONFIG.pauseOnBlur !== false) {
@@ -5509,12 +5591,19 @@
     let isTrackScrubbing = false;
     const trackEl = $("dfcTrackWrap");
     if (trackEl) {
+      const getClientXFromEvt = (e) => {
+        if (e.touches && e.touches.length > 0) return e.touches[0].clientX;
+        if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0].clientX;
+        return e.clientX;
+      };
+
       const updateTooltipFromEvent = (e) => {
         const tip = $("dfcTrackTooltip");
         if (!tip) return;
-        const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration);
+        const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
         const rect = trackEl.getBoundingClientRect();
-        const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        const clientX = getClientXFromEvt(e);
+        const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
         const hoverSec = ratio * dur;
         const seekMode = DFC_CONFIG.allowSeek || "watched";
         const isLocked = (!dfcState.videoReady && dfcState.useRealVideo)
@@ -5530,8 +5619,9 @@
         updateTooltipFromEvent(e);
         if (isTrackScrubbing) {
           const rect = trackEl.getBoundingClientRect();
+          const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
           const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-          seekDfcWithPolicy(ratio * dfcState.duration, true);
+          seekDfcWithPolicy(ratio * dur, true);
         }
       });
 
@@ -5547,8 +5637,9 @@
         isTrackScrubbing = true;
         try { trackEl.setPointerCapture(e.pointerId); } catch {}
         const rect = trackEl.getBoundingClientRect();
+        const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
         const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-        seekDfcWithPolicy(ratio * dfcState.duration, true);
+        seekDfcWithPolicy(ratio * dur, true);
       });
 
       const stopTrackScrub = (e) => {
@@ -5558,6 +5649,27 @@
       };
       trackEl.addEventListener("pointerup", stopTrackScrub);
       trackEl.addEventListener("pointercancel", stopTrackScrub);
+
+      // 行動裝置專屬觸控平滑滑動事件支援
+      const handleTouchScrub = (e) => {
+        if (!dfcState.videoReady && dfcState.useRealVideo) return;
+        if (dfcState.activeCheckpointIndex !== -1) return;
+        const rect = trackEl.getBoundingClientRect();
+        const clientX = getClientXFromEvt(e);
+        const dur = Math.max(1, dfcState.duration || DFC_CONFIG.fallbackDuration || 363);
+        const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+        seekDfcWithPolicy(ratio * dur, true);
+        updateTooltipFromEvent(e);
+      };
+      trackEl.addEventListener("touchstart", (e) => {
+        isTrackScrubbing = true;
+        handleTouchScrub(e);
+      }, { passive: true });
+      trackEl.addEventListener("touchmove", (e) => {
+        if (isTrackScrubbing) handleTouchScrub(e);
+      }, { passive: true });
+      trackEl.addEventListener("touchend", () => { isTrackScrubbing = false; }, { passive: true });
+      trackEl.addEventListener("touchcancel", () => { isTrackScrubbing = false; }, { passive: true });
     }
 
     function generateDfcCertificate() {
@@ -5781,6 +5893,10 @@
       $("dfcPlayBtn").disabled = false;
       renderDfcStepPills();
       renderDfcMarkers();
+
+      if (isMobileDevice()) {
+        $("dfcCinemaBox")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
       if (!isDfcFullscreenActive()) {
         await requestDfcFullscreen();
       }

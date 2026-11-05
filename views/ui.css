@@ -4408,36 +4408,125 @@ canvas.live-cv:hover {
 
 .dfc-stage-wrap {
   display: flex;
-  gap: 24px;
+  gap: 28px;
   width: 100%;
-  align-items: flex-start;
-  transition: all 0.35s var(--spring-smooth);
+  align-items: center; /* 關鍵修正：左右兩欄永遠垂直置中對齊，徹底告別置頂 */
+  justify-content: center;
+  position: relative;
 }
 .dfc-video-pane {
   flex: 1 1 100%;
+  max-width: 100%;
   min-width: 0;
-  transition: all 0.35s var(--spring-smooth);
+  transition: flex 0.38s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .dfc-stage-wrap.split-active .dfc-video-pane {
-  flex: 1 1 60%;
+  flex: 1 1 58%;
+  max-width: 58%;
 }
 .dfc-q-pane {
   display: none;
-  flex: 1 1 40%;
+  flex: 1 1 42%;
+  max-width: 42%;
   min-width: 0;
-  animation: applePop 0.32s var(--spring-smooth) both;
+  align-self: center; /* 關鍵修正：問卷題卡在右側永遠垂直置中 */
 }
 .dfc-stage-wrap.split-active .dfc-q-pane {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+  animation: dfcQuestionSlideIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+@keyframes dfcQuestionSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dfcQuestionSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 劇院全螢幕模式專用配置：保證全螢幕時左右兩欄均垂直置中對齊 (Cinema Fullscreen Centering) */
+#dfcStage:fullscreen,
+#dfcStage:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  background: #000000 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important; /* 垂直置中！ */
+  justify-content: center !important;
+  padding: 32px 48px !important;
+  box-sizing: border-box !important;
+  gap: 32px !important;
+  overflow: hidden !important;
+}
+
+#dfcStage:fullscreen .dfc-video-pane,
+#dfcStage:-webkit-full-screen .dfc-video-pane {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-self: center !important;
+  flex: 1 1 100% !important;
+  max-height: calc(100vh - 64px) !important;
+  min-width: 0 !important;
+}
+
+#dfcStage:fullscreen.split-active .dfc-video-pane,
+#dfcStage:-webkit-full-screen.split-active .dfc-video-pane {
+  flex: 1 1 58% !important;
+  max-width: 58% !important;
+}
+
+#dfcStage:fullscreen .dfc-q-pane,
+#dfcStage:-webkit-full-screen .dfc-q-pane {
+  display: none !important;
+}
+
+#dfcStage:fullscreen.split-active .dfc-q-pane,
+#dfcStage:-webkit-full-screen.split-active .dfc-q-pane {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-self: center !important; /* 全螢幕右側題卡垂直置中！ */
+  flex: 1 1 42% !important;
+  max-width: 42% !important;
+  max-height: calc(100vh - 64px) !important;
+  overflow-y: auto !important;
+  animation: dfcQuestionSlideIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
 @media (max-width: 860px) {
   .dfc-stage-wrap.split-active {
     flex-direction: column;
+    align-items: stretch;
   }
   .dfc-stage-wrap.split-active .dfc-video-pane,
   .dfc-stage-wrap.split-active .dfc-q-pane {
     flex: 1 1 100%;
+    max-width: 100%;
     width: 100%;
+  }
+  .dfc-stage-wrap.split-active .dfc-q-pane {
+    animation: dfcQuestionSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 }
 
@@ -4748,7 +4837,12 @@ canvas.live-cv:hover {
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: 24px;
-  box-shadow: var(--shadow-lg), var(--shadow-inner-glow);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32), 0 2px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 .dfc-q-step-badge {
   display: inline-flex;
