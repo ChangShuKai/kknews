@@ -1340,6 +1340,7 @@ function safeImgSrc(url) {
 function openLightbox(src) {
   const safe = safeImgSrc(src);
   if (!safe) return;
+<<<<<<< Updated upstream
   const img = $("lightboxImg");
   const fb = $("lightboxFallback");
   img.classList.remove("hide");
@@ -1349,10 +1350,21 @@ function openLightbox(src) {
     if (fb) fb.classList.remove("hide");
   };
   img.src = safe;
+=======
+  const lbImg = $("lightboxImg");
+  lbImg.onerror = () => {
+    lbImg.src = "/icon.svg";
+    lbImg.style.objectFit = "contain";
+    lbImg.style.padding = "24px";
+    if (typeof toast === "function") toast("圖片載入失敗，已切換預設圖示", true);
+  };
+  lbImg.src = safe;
+>>>>>>> Stashed changes
   $("lightbox").classList.remove("hide");
 }
 $("lightbox").onclick = () => {
   $("lightbox").classList.add("hide");
+<<<<<<< Updated upstream
   $("lightboxImg").src = "";
   $("lightboxImg").classList.remove("hide");
   $("lightboxFallback")?.classList.add("hide");
@@ -1391,6 +1403,14 @@ window.addEventListener("keydown", (e) => {
     else if (e.key === "5") switchAdminDock("status");
   }
 });
+=======
+  const lbImg = $("lightboxImg");
+  lbImg.src = "";
+  lbImg.onerror = null;
+  lbImg.style.objectFit = "";
+  lbImg.style.padding = "";
+};
+>>>>>>> Stashed changes
 
 function applyRoleUi(role, email) {
   const changed = currentRole !== role || currentEmail !== email;
@@ -2642,10 +2662,16 @@ function renderUsers() {
     const avImgEl = el.querySelector(".u-av-img");
     if (avImgEl) {
       avImgEl.addEventListener("error", () => {
+<<<<<<< Updated upstream
         avImgEl.classList.add("hide");
         if (!el.querySelector(".user-avatar-fallback")) {
           avImgEl.insertAdjacentHTML("afterend", `<div class="user-avatar-circle user-avatar-fallback">${esc(displayName[0]?.toUpperCase() || "U")}</div>`);
         }
+=======
+        avImgEl.src = "/icon.svg";
+        avImgEl.style.objectFit = "contain";
+        avImgEl.style.padding = "4px";
+>>>>>>> Stashed changes
       }, { once: true });
     }
     el.querySelectorAll(".u-strip-img").forEach(img => {

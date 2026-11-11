@@ -1308,9 +1308,34 @@ h1, h2, h3 {
   }
 }
 
+@media (max-width: 860px) {
+  header.admin-header {
+    height: auto !important;
+    min-height: 56px;
+    padding: 8px 14px !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header.admin-header .brand-wrap {
+    order: 1;
+  }
+  header.admin-header .acct-zone {
+    order: 2;
+    margin-left: auto;
+  }
+  header.admin-header nav.admin-dock {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 3px 4px;
+  }
+}
+
 @media (max-width: 640px) {
   .top-header, header.admin-header {
-    padding: 0 14px;
+    padding: 8px 14px;
     gap: 8px;
   }
   .dock-nav-item {
@@ -1974,15 +1999,20 @@ h1, h2, h3 {
    KKNEWS 旗艦級整合體驗與多裝置版面自動適配系統 (Desktop 不動 / Tablet / Mobile 專屬版面)
    ========================================================================== */
 
-/* 防破圖與全域媒體安全邊界 */
-img, video, canvas, svg {
+/* 防破圖與全域媒體安全邊界 (Universal Media Safety & Anti-Broken-Image Protection) */
+img, video, canvas, svg, picture {
   max-width: 100%;
+  box-sizing: border-box;
 }
 img {
   height: auto;
   vertical-align: middle;
   object-fit: cover;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  font-style: italic;
 }
+<<<<<<< Updated upstream
 img.brand-icon, .brand-icon {
   width: 28px !important;
   height: 28px !important;
@@ -1999,11 +2029,34 @@ img.entry-gate-icon, .entry-gate-icon {
   max-height: 40px !important;
   border-radius: 12px;
   object-fit: contain;
+=======
+/* 向量圖、Icon 與標章保持完整等比不被裁切或變形 */
+img[src$=".svg"],
+img[src*=".svg?"],
+img.brand-icon,
+img.entry-gate-icon,
+.brand img,
+.brand svg,
+.login-brand img {
+  object-fit: contain !important;
+>>>>>>> Stashed changes
   flex-shrink: 0;
 }
-img.av, img.user-avatar-circle {
+img.av,
+img.user-avatar-circle,
+.u-av-img {
   object-fit: cover;
   flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+}
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+/* 瀏覽器未載入或無有效 src 時隱藏原生破損圖示框線 */
+img:not([src]),
+img[src=""] {
+  visibility: hidden !important;
 }
 .hub-square-grid,
 .post-studio-layout,
