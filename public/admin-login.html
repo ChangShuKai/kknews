@@ -1,0 +1,584 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>KKNews · 後台管理中心登入</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="stylesheet" href="/assets/ui.css?v=20261104">
+<style>
+  .apple-login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--bg);
+    color: var(--ink);
+  }
+  .apple-login-nav {
+    height: 48px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(251, 251, 253, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+  [data-theme="dark"] .apple-login-nav {
+    background: rgba(22, 22, 23, 0.8);
+  }
+  .apple-login-stage {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 40px 20px;
+  }
+  .login-card {
+    width: min(460px, 100%);
+    background: var(--surface-solid);
+    border: 1px solid var(--line);
+    border-radius: 32px;
+    padding: 48px 42px 42px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+    animation: applePop 0.42s var(--spring-smooth) both;
+  }
+  .login-emblem-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 28px;
+  }
+<<<<<<< Updated upstream
+  .login-emblem-squircle {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+=======
+  .login-brand img {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  @media (max-width: 480px) {
+    .login-card {
+      padding: 28px 20px 24px;
+      border-radius: var(--r-lg);
+    }
+>>>>>>> Stashed changes
+  }
+  .login-emblem-squircle img {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px;
+    object-fit: contain;
+  }
+  .brand-icon-fallback {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--gradient-brand);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-grid;
+    place-items: center;
+    letter-spacing: -0.04em;
+  }
+  .otp-code-input {
+    font-size: 30px !important;
+    letter-spacing: 14px !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    padding: 16px 14px !important;
+    background: var(--bg) !important;
+    border-radius: 18px !important;
+  }
+  .otp-code-input::placeholder {
+    letter-spacing: 10px;
+    color: var(--ink-tertiary);
+    font-weight: 400;
+    opacity: 0.45;
+  }
+  .apple-login-footer {
+    padding: 18px 28px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+</style>
+</head>
+<body class="apple-login-page">
+
+<header class="apple-login-nav">
+  <a href="/" style="display:inline-flex;align-items:center;gap:9px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none">
+    <span>KKNews</span>
+    <span style="color:var(--ink-tertiary);font-weight:400">/</span>
+    <span style="color:var(--ink-secondary);font-weight:500">管理中心</span>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="device-profile-badge" id="adminLoginDeviceBadge" style="font-size:11.5px;color:var(--ink-tertiary)">桌面視窗</span>
+    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="切換深淺色外觀" aria-label="切換深淺色外觀">🌙</button>
+  </div>
+</header>
+
+<div class="apple-login-stage">
+  <main class="login-card">
+    <div class="login-emblem-wrap">
+      <div class="login-emblem-squircle">
+        <img src="/icon.svg" class="brand-icon" width="38" height="38" alt="KKNews Emblem">
+      </div>
+      <span class="apple-eyebrow blue" style="margin-bottom:4px">KKNews 管理主控台</span>
+    </div>
+
+    <!-- 步驟一：管理員憑證登入 -->
+    <div id="stepCredentials">
+      <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;letter-spacing:-0.024em;text-align:center">管理中心登入</h1>
+      <p class="sub" style="margin:0 auto 24px;font-size:13.5px;line-height:1.5;text-align:center;color:var(--ink-secondary)">
+        驗證授權信箱或 Passkey 以進入主控台。
+      </p>
+
+      <form id="loginForm" autocomplete="off">
+        <label class="field" style="margin-top:0">
+          <span class="lbl">管理員電子郵件</span>
+          <input class="input" id="email" type="email" placeholder="name@hlc.edu.tw" autocomplete="username" autocapitalize="off" spellcheck="false" required style="border-radius:14px;padding:13px 16px">
+        </label>
+
+        <label class="field" style="margin-top:16px">
+          <span class="lbl" style="display:flex;justify-content:space-between;align-items:center">
+            <span>登入密碼</span>
+            <button type="button" id="togglePwBtn" style="background:none;border:0;color:var(--blue);font:inherit;font-size:12px;font-weight:500;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px">
+              <span id="togglePwIcon">👁️</span>
+              <span id="togglePwText">顯示密碼</span>
+            </button>
+          </span>
+          <input class="input" id="pw" type="password" placeholder="請輸入管理員密碼" autocomplete="current-password" required style="border-radius:14px;padding:13px 16px">
+        </label>
+
+        <button type="submit" class="btn primary block" id="btn" style="margin-top:24px;padding:13px 20px;font-size:15px">進入主控台 →</button>
+      </form>
+
+      <div class="entry-minimal-links" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:center">
+        <button type="button" class="minimal-link-btn" id="adminPasskeyLoginBtn">
+          <span>🔑</span>
+          <span>使用 Passkey (Face ID / Touch ID) 登入</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 步驟二：雙重認證 (2FA OTP 二次授權) -->
+    <div id="stepOtp" class="hide">
+      <div style="text-align:center;margin-bottom:18px">
+        <span class="apple-eyebrow" style="justify-content:center">雙重安全驗證</span>
+        <h1 style="margin:4px 0 8px;font-size:24px;font-weight:700;letter-spacing:-0.02em">輸入 6 位數安全驗證碼。</h1>
+        <p class="sub" style="margin:0 auto;font-size:13.5px;line-height:1.55;color:var(--ink-secondary)">
+          系統已偵測到新裝置連線，並將一次性安全驗證碼傳送至安全主管信箱：<br>
+          <strong id="otpTargetEmail" style="color:var(--blue);font-family:ui-monospace,SFMono-Regular,monospace;font-size:13.5px;display:inline-block;margin-top:4px">kai1010210@gmail.com</strong>
+        </p>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:12px 16px;font-size:12.5px;line-height:1.55;color:var(--ink-secondary);margin-bottom:22px">
+        <strong>裝置信任機制：</strong>完成本次驗證後，此瀏覽器將納入受信任裝置，日後可直接登入而無須重複輸入驗證碼。
+      </div>
+
+      <form id="otpForm" autocomplete="off">
+        <label class="field" style="margin-top:0">
+          <span class="lbl" style="display:flex;justify-content:space-between;align-items:center">
+            <span>一次性驗證碼</span>
+            <span id="otpCountdown" style="font-size:12px;font-weight:600;color:var(--blue)">有效時間 10:00</span>
+          </span>
+          <input class="input otp-code-input" id="otpCode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
+        </label>
+
+        <button type="submit" class="btn primary block" id="verifyOtpBtn" style="margin-top:22px;padding:14px 20px;font-size:15px">驗證並信任此裝置</button>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px">
+          <button type="button" class="btn ghost sm" id="backToCredsBtn" style="font-size:12.5px">← 更換帳號</button>
+          <button type="button" class="btn ghost sm" id="resendOtpBtn" style="font-size:12.5px">重新傳送驗證碼</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="err" class="alert err" role="alert" aria-live="polite" style="margin-top:16px"></div>
+    <div id="okMsg" class="alert ok hide" role="status" aria-live="polite" style="margin-top:16px"></div>
+  </main>
+</div>
+
+<footer class="apple-login-footer">
+  <span>Copyright © 2026 KKNews 校園共創平台. 保留一切權利。</span>
+  <div style="display:flex;gap:16px">
+    <a href="/" style="color:var(--ink-secondary)">返回前台首頁</a>
+    <a href="/diagnostics" style="color:var(--blue)">系統全功能檢測頁面 ›</a>
+  </div>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+try {
+  const saved = localStorage.getItem("kk_theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+} catch {}
+
+window.addEventListener("error", e => {
+  if (e.target && e.target.tagName === "IMG") {
+    e.target.classList.add("img-load-error", "hide");
+    const p = e.target.parentElement;
+    if (p && !p.querySelector(".brand-icon-fallback")) {
+      p.insertAdjacentHTML("afterbegin", '<div class="brand-icon-fallback">KK</div>');
+    }
+  }
+}, true);
+
+function applyLoginDeviceProfile() {
+  const sw = Math.round(window.screen?.width || window.innerWidth);
+  const sh = Math.round(window.screen?.height || window.innerHeight);
+  const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
+  const isMobileUA = /Mobile|iPhone|Android.*Mobile/i.test(navigator.userAgent || "");
+  const vw = Math.round(window.innerWidth || document.documentElement.clientWidth || 1280);
+  const vh = Math.round(window.innerHeight || document.documentElement.clientHeight || 800);
+  const aspectRatio = vw / Math.max(vh, 1);
+  const isPortrait916 = vw <= 740 || (aspectRatio <= 0.78 && vw <= 920) || (isMobileUA && vw <= 920);
+
+  let zoom = 1.0;
+  if (!isPortrait916) {
+    if (vw >= 3000 || sw >= 3400) zoom = 1.35;
+    else if (vw >= 2300 || (sw >= 2560 && dpr <= 1.25)) zoom = 1.20;
+    else if (vw >= 1950) zoom = 1.12;
+    else if (vw >= 1750 && vh >= 940) zoom = 1.05;
+    else if (vh < 740 && vw >= 1024) zoom = 0.92;
+  }
+
+  document.documentElement.style.zoom = isPortrait916 ? "" : String(zoom);
+  document.documentElement.style.setProperty("--app-zoom", String(zoom));
+
+  const layout = isPortrait916 ? "mobile" : vw < 1024 ? "tablet" : "desktop";
+  document.documentElement.setAttribute("data-layout", layout);
+  document.documentElement.setAttribute("data-device-ui", isPortrait916 ? "mobile" : "desktop");
+  document.body?.classList.toggle("mobile-916-mode", isPortrait916);
+  const label = isPortrait916 ? "📱 9:16 行動版" : layout === "tablet" ? "📟 平板版" : "💻 桌面版";
+  if ($("adminLoginDeviceBadge")) $("adminLoginDeviceBadge").textContent = label;
+}
+applyLoginDeviceProfile();
+window.addEventListener("resize", applyLoginDeviceProfile);
+
+const themeBtn = $("themeToggleBtn");
+if (themeBtn) {
+  const updateThemeBtn = () => {
+    themeBtn.textContent = document.documentElement.getAttribute("data-theme") === "dark" ? "☀️" : "🌙";
+  };
+  updateThemeBtn();
+  themeBtn.onclick = () => {
+    const cur = document.documentElement.getAttribute("data-theme") || "light";
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("kk_theme", next); } catch {}
+    updateThemeBtn();
+  };
+}
+
+$("togglePwBtn").onclick = () => {
+  const isPw = $("pw").type === "password";
+  $("pw").type = isPw ? "text" : "password";
+  if ($("togglePwText")) $("togglePwText").textContent = isPw ? "隱藏密碼" : "顯示密碼";
+  if ($("togglePwIcon")) $("togglePwIcon").textContent = isPw ? "🔒" : "👁️";
+};
+
+function sayErr(t) {
+  const m = $("err");
+  m.textContent = t;
+  m.className = t ? "alert show err" : "alert err";
+  if (t) {
+    const ok = $("okMsg");
+    if (ok) ok.className = "alert ok hide";
+  }
+}
+
+function sayOk(t) {
+  const ok = $("okMsg");
+  if (!ok) return;
+  ok.textContent = t;
+  ok.className = t ? "alert show ok" : "alert ok hide";
+  if (t) {
+    const err = $("err");
+    if (err) err.className = "alert err";
+  }
+}
+
+let activeChallenge = "";
+let countdownTimer = null;
+let resendCooldown = 0;
+let resendTimer = null;
+
+function startOtpCountdown(seconds = 600) {
+  clearInterval(countdownTimer);
+  let remain = seconds;
+  const update = () => {
+    const m = Math.floor(remain / 60);
+    const s = remain % 60;
+    const str = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    if ($("otpCountdown")) $("otpCountdown").textContent = `有效時間 ${str}`;
+    if (remain <= 0) {
+      clearInterval(countdownTimer);
+      if ($("otpCountdown")) $("otpCountdown").textContent = "驗證碼已逾時，請重新傳送";
+      sayErr("驗證碼已失效，請點選「重新傳送驗證碼」");
+    }
+    remain--;
+  };
+  update();
+  countdownTimer = setInterval(update, 1000);
+}
+
+function startResendCooldown(sec = 45) {
+  clearInterval(resendTimer);
+  resendCooldown = sec;
+  const btn = $("resendOtpBtn");
+  btn.disabled = true;
+  btn.textContent = `重新傳送 (${resendCooldown}s)`;
+  resendTimer = setInterval(() => {
+    resendCooldown--;
+    if (resendCooldown <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      btn.textContent = "重新傳送驗證碼";
+    } else {
+      btn.textContent = `重新傳送 (${resendCooldown}s)`;
+    }
+  }, 1000);
+}
+
+// 步驟一：提交帳密
+$("loginForm").onsubmit = async ev => {
+  ev.preventDefault();
+  sayErr("");
+  sayOk("");
+  $("btn").disabled = true;
+  $("btn").textContent = "正在驗證憑證...";
+  try {
+    const r = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.trusted) {
+      sayOk("✓ 裝置已受信任，正在開啟管理中心...");
+      setTimeout(() => location.replace("/adminusercontrol"), 300);
+      return;
+    }
+    if (j.requireOtp && j.challenge) {
+      activeChallenge = j.challenge;
+      $("stepCredentials").classList.add("hide");
+      $("stepOtp").classList.remove("hide");
+      if ($("otpTargetEmail")) $("otpTargetEmail").textContent = j.targetEmail || "kai1010210@gmail.com";
+      $("otpCode").value = "";
+      $("otpCode").focus();
+      sayErr("");
+      sayOk(j.message || "已傳送 6 位數安全驗證碼至主管信箱");
+      startOtpCountdown(j.expiresIn || 600);
+      startResendCooldown(45);
+      return;
+    }
+    $("btn").disabled = false;
+    $("btn").textContent = "繼續並進入主控台 →";
+    sayErr(r.status === 429 ? "登入嘗試過於頻繁，請稍候再試" : (j.error || "帳號或密碼不正確"));
+  } catch {
+    $("btn").disabled = false;
+    $("btn").textContent = "繼續並進入主控台 →";
+    sayErr("網路連線逾時，請再試一次");
+  }
+};
+
+// 步驟二：提交 OTP 驗證碼
+$("otpForm").onsubmit = async ev => {
+  ev.preventDefault();
+  sayErr("");
+  sayOk("");
+  const code = $("otpCode").value.trim();
+  if (code.length !== 6) {
+    sayErr("請輸入完整的 6 位數數字驗證碼");
+    return;
+  }
+  $("verifyOtpBtn").disabled = true;
+  $("verifyOtpBtn").textContent = "正在驗證並註冊信任裝置...";
+  try {
+    const r = await fetch("/api/admin/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: JSON.stringify({ challenge: activeChallenge, code }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) {
+      clearInterval(countdownTimer);
+      clearInterval(resendTimer);
+      sayOk("✓ 雙重認證通過，正在進入管理中心...");
+      setTimeout(() => location.replace("/adminusercontrol"), 500);
+      return;
+    }
+    $("verifyOtpBtn").disabled = false;
+    $("verifyOtpBtn").textContent = "驗證並信任此裝置";
+    sayErr(j.error || "驗證碼不正確，請重新確認");
+  } catch {
+    $("verifyOtpBtn").disabled = false;
+    $("verifyOtpBtn").textContent = "驗證並信任此裝置";
+    sayErr("驗證連線逾時，請重試");
+  }
+};
+
+// 重發 OTP
+$("resendOtpBtn").onclick = async () => {
+  if (resendCooldown > 0) return;
+  sayErr("");
+  sayOk("正在重新傳送驗證碼至主管信箱...");
+  try {
+    const r = await fetch("/api/admin/resend-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+      body: JSON.stringify({ challenge: activeChallenge }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      sayOk(j.message || "已重新傳送驗證碼至主管信箱");
+      startOtpCountdown(600);
+      startResendCooldown(45);
+      $("otpCode").value = "";
+      $("otpCode").focus();
+    } else {
+      sayErr(j.error || "重發失敗，請稍候再試");
+    }
+  } catch {
+    sayErr("網路連線異常，無法重新傳送驗證碼");
+  }
+};
+
+// 返回更換帳號
+$("backToCredsBtn").onclick = () => {
+  clearInterval(countdownTimer);
+  clearInterval(resendTimer);
+  $("stepOtp").classList.add("hide");
+  $("stepCredentials").classList.remove("hide");
+  $("btn").disabled = false;
+  $("btn").textContent = "繼續並進入主控台 →";
+  sayErr("");
+  sayOk("");
+};
+
+// 自動只允許純數字輸入
+$("otpCode").addEventListener("input", e => {
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+  if (e.target.value.length === 6) {
+    $("verifyOtpBtn").focus();
+  }
+});
+
+// Apple Passkey (WebAuthn Face ID / Touch ID) 免密碼登入
+function b64urlToUint8(b64url) {
+  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+  const b64 = (b64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function bufToB64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+if ($("adminPasskeyLoginBtn")) {
+  $("adminPasskeyLoginBtn").onclick = async () => {
+    sayErr("");
+    sayOk("");
+    if (!window.PublicKeyCredential || !navigator.credentials?.get) {
+      sayErr("您目前的瀏覽器環境不支援 Passkey 生物辨識，請改用信箱與密碼登入。");
+      return;
+    }
+    const pkBtn = $("adminPasskeyLoginBtn");
+    const origHtml = pkBtn.innerHTML;
+    pkBtn.disabled = true;
+    pkBtn.textContent = "🔑 正在喚起 Face ID / Touch ID 驗證...";
+    try {
+      const optRes = await fetch("/api/passkey/login-options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({ scope: "admin", email: ($("email")?.value || "").trim() }),
+      });
+      const opts = await optRes.json().catch(() => ({}));
+      if (!optRes.ok || !opts.challenge) {
+        throw new Error(opts.error || "無法初始化 Passkey 挑戰");
+      }
+
+      const publicKey = {
+        challenge: b64urlToUint8(opts.challenge),
+        rpId: opts.rpId || location.hostname,
+        timeout: opts.timeout || 60000,
+        userVerification: "required",
+      };
+      if (Array.isArray(opts.allowCredentials) && opts.allowCredentials.length > 0) {
+        publicKey.allowCredentials = opts.allowCredentials.map(c => ({
+          id: b64urlToUint8(c.id),
+          type: "public-key",
+          transports: c.transports || ["internal", "hybrid"],
+        }));
+      }
+
+      const assertion = await navigator.credentials.get({ publicKey });
+      if (!assertion) throw new Error("已取消 Passkey 驗證");
+
+      const verifyRes = await fetch("/api/passkey/login-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+        body: JSON.stringify({
+          challengeToken: opts.challengeToken,
+          credential: {
+            id: assertion.id,
+            rawId: bufToB64url(assertion.rawId),
+            type: assertion.type,
+            clientDataJSON: bufToB64url(assertion.response.clientDataJSON),
+            authenticatorData: bufToB64url(assertion.response.authenticatorData),
+            signature: bufToB64url(assertion.response.signature),
+            userHandle: assertion.response.userHandle ? bufToB64url(assertion.response.userHandle) : "",
+          },
+        }),
+      });
+      const vj = await verifyRes.json().catch(() => ({}));
+      if (!verifyRes.ok || !vj.ok) {
+        throw new Error(vj.error || "Passkey 驗證未通過，請確認是否已於後台綁定此裝置");
+      }
+      sayOk("✓ Passkey 生物辨識通過，正在進入管理中心...");
+      setTimeout(() => location.replace("/adminusercontrol"), 300);
+    } catch (e) {
+      pkBtn.disabled = false;
+      pkBtn.innerHTML = origHtml;
+      if (e.name === "NotAllowedError") {
+        sayErr("已取消 Face ID / Touch ID 驗證，或此裝置尚未於後台綁定管理員 Passkey。");
+      } else {
+        sayErr(e.message || "Passkey 驗證失敗，請先以帳密登入後至「管理員與安全」綁定 Passkey。");
+      }
+    }
+  };
+}
+</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "62fcc30a49fc4291b7d006d18ddf21d6"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
