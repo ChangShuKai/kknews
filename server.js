@@ -4,8 +4,57 @@ const path = require("path");
 const crypto = require("crypto");
 const tls = require("tls");
 const zlib = require("zlib");
+const util = require("util");
 const { Readable } = require("stream");
-try { process.loadEnvFile(path.join(__dirname, ".env")); } catch {}
+
+let sea = null;
+try { sea = require("node:sea"); } catch {}
+const IS_SEA = Boolean(sea && typeof sea.isSea === "function" && sea.isSea());
+
+function loadRuntimeEnv() {
+  const embeddedKeys = new Set();
+  if (IS_SEA) {
+    try {
+      const rawEmbedded = sea.getAsset(".env", "utf8");
+      const parsed = util.parseEnv(rawEmbedded);
+      for (const [k, v] of Object.entries(parsed)) {
+        if (process.env[k] === undefined) {
+          process.env[k] = v;
+          embeddedKeys.add(k);
+        }
+      }
+    } catch {}
+  }
+
+  const candidatePaths = IS_SEA
+    ? [
+        process.env.KKNEWS_ENV_PATH,
+        path.join(path.dirname(process.execPath), ".env"),
+        path.join(process.cwd(), ".env"),
+      ]
+    : [
+        process.env.KKNEWS_ENV_PATH,
+        path.join(__dirname, ".env"),
+        path.join(process.cwd(), ".env"),
+      ];
+
+  for (const envPath of candidatePaths) {
+    if (!envPath) continue;
+    try {
+      if (!fs.existsSync(envPath)) continue;
+      const parsed = util.parseEnv(fs.readFileSync(envPath, "utf8"));
+      for (const [k, v] of Object.entries(parsed)) {
+        if (process.env[k] === undefined || embeddedKeys.has(k)) {
+          process.env[k] = v;
+          embeddedKeys.delete(k);
+        }
+      }
+      break;
+    } catch {}
+  }
+}
+loadRuntimeEnv();
+
 const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -36,14 +85,56 @@ const {
   INSTAGRAM_WEBHOOK_URL = process.env.INSTAGRAM_WEBHOOK_URL || "",
 } = process.env;
 for (const [k, v] of Object.entries({ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH })) {
-  if (!v) { console.error(`缺少環境變數 ${k}（請參考 .env.example）`); process.exit(1); }
+  if (!v) {
+    const msg = `缺少環境變數 ${k}（請參考 .env.example）`;
+    if (process.env.KKNEWS_THROW_ON_ENV_ERROR === "1") throw new Error(msg);
+    console.error(msg);
+    process.exit(1);
+  }
 }
 const SCHOOL = "@hlc.edu.tw";
 const SCHOOL_HD = "hlc.edu.tw";
 const SECURE = BASE_URL.startsWith("https") || process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
+const seaAssetBufCache = new Map();
+function getSeaRawBuffer(assetKey) {
+  if (!IS_SEA) return null;
+  if (seaAssetBufCache.has(assetKey)) return seaAssetBufCache.get(assetKey);
+  try {
+    const buf = Buffer.from(sea.getRawAsset(assetKey));
+    seaAssetBufCache.set(assetKey, buf);
+    return buf;
+  } catch {
+    seaAssetBufCache.set(assetKey, null);
+    return null;
+  }
+}
+function readAppText(diskPaths, seaKeys, fallback = "") {
+  for (const p of diskPaths) {
+    try { return fs.readFileSync(p, "utf8"); } catch {}
+  }
+  if (IS_SEA) {
+    for (const k of seaKeys) {
+      try { return sea.getAsset(k, "utf8"); } catch {}
+    }
+  }
+  return fallback;
+}
+function readAppBuffer(diskPaths, seaKeys) {
+  for (const p of diskPaths) {
+    try { return fs.readFileSync(p); } catch {}
+  }
+  if (IS_SEA) {
+    for (const k of seaKeys) {
+      const buf = getSeaRawBuffer(k);
+      if (buf) return buf;
+    }
+  }
+  return null;
+}
+
 /* 前端頁面：內嵌 <script> 抽成外部檔案並自動附加內容雜湊 (?v=hash)，徹底杜絕瀏覽器與 CDN 舊快取殘留 */
-const RAW_UI_CSS = fs.readFileSync(path.join(__dirname, "views", "ui.css"), "utf8");
+const RAW_UI_CSS = readAppText([path.join(__dirname, "views", "ui.css")], ["views/ui.css"]);
 const UI_CSS_HASH = crypto.createHash("md5").update(RAW_UI_CSS).digest("hex").slice(0, 10);
 
 function splitPage(html, name) {
@@ -57,21 +148,23 @@ function splitPage(html, name) {
   return { html: out, js };
 }
 function readIconSvg() {
-  for (const p of [path.join(__dirname, "icon.svg"), path.join(__dirname, "views", "icon.svg")]) {
-    try { return fs.readFileSync(p, "utf8"); } catch {}
-  }
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#1868c7"/><text x="50" y="64" font-size="42" font-family="sans-serif" font-weight="bold" fill="#fff" text-anchor="middle">KK</text></svg>';
+  return readAppText(
+    [path.join(__dirname, "icon.svg"), path.join(__dirname, "views", "icon.svg")],
+    ["icon.svg", "views/icon.svg"],
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#1868c7"/><text x="50" y="64" font-size="42" font-family="sans-serif" font-weight="bold" fill="#fff" text-anchor="middle">KK</text></svg>'
+  );
 }
 function readJsZip() {
-  for (const p of [path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), path.join(__dirname, "jszip.min.js")]) {
-    try { return fs.readFileSync(p, "utf8"); } catch {}
-  }
-  return "";
+  return readAppText(
+    [path.join(__dirname, "node_modules", "jszip", "dist", "jszip.min.js"), path.join(__dirname, "jszip.min.js")],
+    ["node_modules/jszip/dist/jszip.min.js", "jszip.min.js"],
+    ""
+  );
 }
 const PAGES = {
-  index: splitPage(fs.readFileSync(path.join(__dirname, "views", "index.html"), "utf8"), "index"),
-  login: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin-login.html"), "utf8"), "login"),
-  admin: splitPage(fs.readFileSync(path.join(__dirname, "views", "admin.html"), "utf8"), "admin"),
+  index: splitPage(readAppText([path.join(__dirname, "views", "index.html")], ["views/index.html"]), "index"),
+  login: splitPage(readAppText([path.join(__dirname, "views", "admin-login.html")], ["views/admin-login.html"]), "login"),
+  admin: splitPage(readAppText([path.join(__dirname, "views", "admin.html")], ["views/admin.html"]), "admin"),
   css: RAW_UI_CSS,
   jszip: readJsZip(),
   icon: readIconSvg(),
@@ -1226,16 +1319,74 @@ app.get("/assets/ui.css", (req, res) => sendStaticAsset(req, res, PAGES.css, "te
 app.get("/assets/index.js", (req, res) => sendStaticAsset(req, res, PAGES.index.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
 app.get("/assets/login.js", (req, res) => sendStaticAsset(req, res, PAGES.login.js, "application/javascript; charset=utf-8", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"));
 app.get("/assets/admin.js", (req, res) => adminOf(req) ? sendStaticAsset(req, res, PAGES.admin.js, "application/javascript; charset=utf-8", "private, max-age=60, stale-while-revalidate=86400") : notFound(res));
+function sendLocalMediaAsset(req, res, asset, extraHeaders = {}) {
+  if (!asset) return notFound(res);
+  if (asset.kind === "file") {
+    res.set(extraHeaders);
+    return res.sendFile(asset.path, { acceptRanges: true, dotfiles: "allow", cacheControl: false, lastModified: true });
+  }
+  const buf = asset.buf;
+  const total = buf.byteLength;
+  res.set({
+    "Content-Type": "video/mp4",
+    "Accept-Ranges": "bytes",
+    ...extraHeaders,
+  });
+  if (req.method === "HEAD") {
+    res.set("Content-Length", String(total));
+    return res.status(200).end();
+  }
+  const rangeHeader = String(req.headers.range || "").trim();
+  if (!rangeHeader) {
+    res.set("Content-Length", String(total));
+    return res.status(200).end(buf);
+  }
+  const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/i);
+  if (!m) {
+    return res.status(416).set("Content-Range", `bytes */${total}`).end();
+  }
+  let start;
+  let end;
+  if (m[1] === "" && m[2] !== "") {
+    const suffix = Number(m[2]);
+    start = Math.max(0, total - suffix);
+    end = total - 1;
+  } else {
+    start = m[1] === "" ? 0 : Number(m[1]);
+    end = m[2] === "" ? total - 1 : Math.min(total - 1, Number(m[2]));
+  }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || start > end || start >= total) {
+    return res.status(416).set("Content-Range", `bytes */${total}`).end();
+  }
+  res.status(206).set({
+    "Content-Range": `bytes ${start}-${end}/${total}`,
+    "Content-Length": String(end - start + 1),
+  });
+  return res.end(buf.subarray(start, end + 1));
+}
+
+function getStandaloneDfcVideoAsset() {
+  for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
+    try {
+      const st = fs.statSync(p);
+      if (st.size > 0) return { kind: "file", path: p, size: st.size };
+    } catch {}
+  }
+  for (const k of ["views/dfc.mp4", "dfc.mp4"]) {
+    const buf = getSeaRawBuffer(k);
+    if (buf && buf.byteLength > 0) return { kind: "buffer", buf, size: buf.byteLength };
+  }
+  return null;
+}
+
 app.get("/assets/dfc.mp4", async (req, res) => {
   const access = await evaluateDfcAccess(req);
   if (!access.allowed) {
     return res.status(403).json({ error: access.message || "權限保護中：僅限授權帳號觀看" });
   }
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
-  for (const p of [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")]) {
-    if (fs.existsSync(p)) return res.sendFile(p, { acceptRanges: true, dotfiles: "allow" });
-  }
-  return notFound(res);
+  const asset = getStandaloneDfcVideoAsset();
+  if (!asset) return notFound(res);
+  return sendLocalMediaAsset(req, res, asset, { "Cache-Control": "no-store, no-cache, must-revalidate" });
 });
 
 /* --- 極速 YouTube 級 ABR 多畫質影片串流代理：支援 Google Drive 轉碼分流 (360p/720p)、2MB 對齊區塊快取、Fast-Start moov 前置加速與防暴雷權限保護 --- */
@@ -1249,17 +1400,22 @@ const DEFAULT_DRIVE_MEDIA_API_KEY = "AIzaSyC1eQ1xj69IdTMeii5r7brs3R90eck-m7k";
 let DEFAULT_FASTSTART_HEAD_BUF = null;
 const DEFAULT_FASTSTART_MOOV_SHIFT = 170030;
 try {
-  const fsHeadPath = path.join(__dirname, "views", "dfc-faststart-head.bin");
-  if (fs.existsSync(fsHeadPath)) {
-    const b = fs.readFileSync(fsHeadPath);
-    if (b.byteLength === 170066) DEFAULT_FASTSTART_HEAD_BUF = b;
-  }
+  const b = readAppBuffer([path.join(__dirname, "views", "dfc-faststart-head.bin")], ["views/dfc-faststart-head.bin"]);
+  if (b && b.byteLength === 170066) DEFAULT_FASTSTART_HEAD_BUF = b;
 } catch {}
 
-function getLocalH264Path(fileId, q) {
+function getLocalH264Asset(fileId, q) {
   if (!/^[a-zA-Z0-9_-]{12,80}$/.test(fileId) || !["360p", "720p", "1080p"].includes(q)) return null;
-  const p = path.join(__dirname, "views", "video", `${fileId}-${q}.mp4`);
-  try { return fs.statSync(p).size > 0 ? p : null; } catch { return null; }
+  const diskPath = path.join(__dirname, "views", "video", `${fileId}-${q}.mp4`);
+  try {
+    const st = fs.statSync(diskPath);
+    if (st.size > 0) return { kind: "file", path: diskPath, size: st.size };
+  } catch {}
+  const seaBuf = getSeaRawBuffer(`views/video/${fileId}-${q}.mp4`);
+  if (seaBuf && seaBuf.byteLength > 0) {
+    return { kind: "buffer", buf: seaBuf, size: seaBuf.byteLength };
+  }
+  return null;
 }
 
 const driveVideoMetaCache = new Map();
@@ -1753,6 +1909,7 @@ async function prewarmDefaultDfcVideo() {
     const forms = Array.isArray(store?.forms) && store.forms.length ? store.forms : DEFAULT_DFC_STORE.forms;
     const activeForm = forms.find(f => f.id === store?.activeFormId) || forms[0];
     const fileId = extractGoogleDriveFileId(activeForm?.videoUrl || "") || DEFAULT_DFC_VIDEO_ID;
+    if (getLocalH264Asset(fileId, "360p")) return;
     const target = await getStreamTargetForQuality(fileId, "360p", AbortSignal.timeout(10000));
     if (target && target.totalSize > 0) {
       prewarmVideoHeadAndMoov(fileId, target.quality || "360p", target.totalSize);
@@ -1801,17 +1958,15 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
 
   try {
     const forceFresh = req.query?.fresh === "1" || req.query?.fresh === "true";
-    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(9000), forceFresh);
     const forms = Array.isArray(store?.forms) ? store.forms : [];
     const matchedForm = forms.find(f => extractGoogleDriveFileId(f.videoUrl) === fileId) || forms[0];
     const formUpdatedAt = matchedForm?.updatedAt || "";
 
-    const outTiers = {};
     const localTiers = {};
     for (const qKey of ["360p", "720p", "1080p"]) {
-      const p = getLocalH264Path(fileId, qKey);
-      if (!p) continue;
-      const totalSize = fs.statSync(p).size;
+      const asset = getLocalH264Asset(fileId, qKey);
+      if (!asset) continue;
+      const totalSize = asset.size;
       const tierVer = `${fileId}-${qKey}-h264-${totalSize}`;
       localTiers[qKey] = {
         quality: qKey, label: { "360p": "360p 極速流暢", "720p": "720p HD 高清", "1080p": "1080p Full HD" }[qKey], itag: 0, totalSize,
@@ -1823,8 +1978,8 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
     }
     // 若本機已有 720p 但尚未放置獨立 1080p 檔，提供 1080p tier（對應至 720p 高清基礎，支援 1080p 分塊管線）
     if (!localTiers["1080p"] && localTiers["720p"]) {
-      const p720 = getLocalH264Path(fileId, "720p");
-      const totalSize = fs.statSync(p720).size;
+      const a720 = getLocalH264Asset(fileId, "720p");
+      const totalSize = a720.size;
       const tierVer = `${fileId}-1080p-h264-${totalSize}`;
       localTiers["1080p"] = {
         quality: "1080p", label: "1080p Full HD", itag: 0, totalSize,
@@ -1842,6 +1997,9 @@ app.get("/api/dfc/video-manifest/:fileId", async (req, res) => {
         defaultQuality: "360p", isFallback: false, tiers: localTiers,
       });
     }
+
+    const transcoded = await resolveDriveTranscodedStreams(fileId, AbortSignal.timeout(9000), forceFresh);
+    const outTiers = {};
     for (const [qKey, t] of Object.entries(transcoded?.tiers || {})) {
       if (qKey !== "360p" && qKey !== "720p") continue;
       const totalSize = t.totalSize || driveVideoMetaCache.get(`${fileId}:${qKey}`)?.totalSize || 0;
@@ -1937,16 +2095,15 @@ app.all("/api/dfc/drive-video/:fileId", async (req, res) => {
 
   // 優先使用預先轉碼之 H.264 本地檔（原始檔為 HEVC，多數瀏覽器僅能播放聲音無畫面）
   const rawQ = String(req.query?.q || req.query?.quality || "").trim().toLowerCase();
-  const localQ = (rawQ === "1080p" && getLocalH264Path(fileId, "1080p")) ? "1080p" : (requestedQuality === "raw" ? "720p" : requestedQuality);
-  const localH264 = getLocalH264Path(fileId, localQ);
+  const localQ = (rawQ === "1080p" && getLocalH264Asset(fileId, "1080p")) ? "1080p" : (requestedQuality === "raw" ? "720p" : requestedQuality);
+  const localH264 = getLocalH264Asset(fileId, localQ);
   if (localH264) {
-    res.set({
+    return sendLocalMediaAsset(req, res, localH264, {
       "Content-Type": "video/mp4",
       "Accept-Ranges": "bytes",
       "X-Video-Quality": localQ,
       "Cache-Control": "private, max-age=86400",
     });
-    return res.sendFile(localH264, { acceptRanges: true, dotfiles: "allow", cacheControl: false, lastModified: true });
   }
 
   // 1. HEAD 請求即時回傳最新中繼資料
@@ -5316,7 +5473,7 @@ app.get("/api/diagnostics", async (req, res) => {
       readSysStore("passkeys", []).catch(() => []),
       readSysStore("wallet_passes", []).catch(() => []),
     ]);
-    const hasLocalVideo = [path.join(__dirname, "views", "dfc.mp4"), path.join(__dirname, "dfc.mp4")].some(p => fs.existsSync(p));
+    const hasLocalVideo = Boolean(getStandaloneDfcVideoAsset() || getLocalH264Asset(DEFAULT_DFC_VIDEO_ID, "360p"));
     const hasMailChannel = Boolean(RESEND_API_KEY || (SMTP_USER && SMTP_PASS) || SENDGRID_API_KEY || BREVO_API_KEY || MAIL_WEBHOOK_URL);
     const hasIgConfig = Boolean((igCfg && igCfg.accountId && igCfg.accessToken) || (INSTAGRAM_ACCOUNT_ID && INSTAGRAM_ACCESS_TOKEN) || (igCfg && igCfg.webhookUrl) || INSTAGRAM_WEBHOOK_URL);
     res.json({

@@ -1318,6 +1318,10 @@
     function handleTurnstileError() {
       console.warn("Turnstile failed or blocked");
       isVerifyingTurnstile = false;
+      if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+        markTurnstilePassed(true);
+        return;
+      }
       const fb = $("turnstileStatus");
       if (fb) {
         fb.style.color = "var(--red)";
@@ -1349,6 +1353,10 @@
 
       const ov = $("turnstileOverlay");
       if (ov) ov.classList.remove("hide");
+
+      if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+        setTimeout(() => { if (!turnstileVerified) markTurnstilePassed(true); }, 3500);
+      }
 
       try {
         turnstileWidgetId = window.turnstile.render(container, {
